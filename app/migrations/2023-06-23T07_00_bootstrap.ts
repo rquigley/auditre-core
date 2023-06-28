@@ -1,0 +1,55 @@
+import { Kysely, sql } from "kysely";
+
+export async function up(db: Kysely<any>): Promise<void> {
+  await sql`
+    CREATE TABLE "user" (
+      "id" serial PRIMARY KEY,
+      "name" varchar,
+      "email" varchar UNIQUE,
+      "email_verified" varchar,
+      "image" varchar,
+      "created_at" timestamp DEFAULT now() NOT NULL
+    );
+    `.execute(db);
+
+  await sql`
+    CREATE TABLE "account" (
+      "user_id" integer NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+      "type" varchar NOT NULL,
+      "provider" varchar NOT NULL,
+      "provider_account_id" varchar NOT NULL,
+      "refresh_token" varchar,
+      "access_token" varchar,
+      "expires_at" integer,
+      "token_type" varchar,
+      "scope" varchar,
+      "id_token" varchar,
+      "session_state" varchar,
+      "created_at" timestamp DEFAULT now() NOT NULL,
+      PRIMARY KEY (provider, provider_account_id)
+    );
+    `.execute(db);
+
+  await sql`
+    CREATE TABLE "session" (
+      "id" serial PRIMARY KEY,
+      "session_token" varchar NOT NULL UNIQUE,
+      "user_id" integer NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+      "expires" timestamp without time zone NOT NULL
+    );
+    `.execute(db);
+
+  await sql`
+    CREATE TABLE "verification_token" (
+      "identifier" serial PRIMARY KEY,
+      "token" varchar NOT NULL UNIQUE,
+      "session_token" varchar NOT NULL UNIQUE,
+      "expires" timestamp without time zone NOT NULL
+    );
+    `.execute(db);
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  await db.schema.dropTable("pet").execute();
+  await db.schema.dropTable("person").execute();
+}
