@@ -1,8 +1,8 @@
-import { getDb } from "@/lib/db";
+import { db } from "@/lib/db";
 import { SessionUpdate, Session, NewSession } from "@/types";
 
 export async function create(user: NewSession): Promise<Session> {
-  return getDb()
+  return db
     .insertInto("session")
     .values(user)
     .returningAll()
@@ -10,14 +10,14 @@ export async function create(user: NewSession): Promise<Session> {
 }
 
 export async function deleteSession(id: number): Promise<number> {
-  return getDb()
+  return db
     .deleteFrom("session")
     .where("id", "=", id)
     .returningAll()
     .executeTakeFirst();
 }
 export async function getById(id: number): Promise<Session> {
-  return getDb()
+  return db
     .selectFrom("session")
     .where("id", "=", id)
     .selectAll()
@@ -25,7 +25,7 @@ export async function getById(id: number): Promise<Session> {
 }
 
 export async function getByUserId(userId: number): Promise<Session> {
-  return getDb()
+  return db
     .selectFrom("session")
     .where("userId", "=", userId)
     .selectAll()
@@ -33,7 +33,7 @@ export async function getByUserId(userId: number): Promise<Session> {
 }
 
 export async function update(id: number, updateWith: SessionUpdate) {
-  await getDb()
+  return db
     .updateTable("session")
     .set(updateWith)
     .where("id", "=", id)

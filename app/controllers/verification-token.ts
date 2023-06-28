@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/db";
+import { db } from "@/lib/db";
 import {
   VerificationTokenUpdate,
   VerificationToken,
@@ -8,7 +8,7 @@ import {
 export async function create(
   user: NewVerificationToken
 ): Promise<VerificationToken> {
-  return getDb()
+  return db
     .insertInto("verificationToken")
     .values(user)
     .returningAll()
@@ -18,7 +18,7 @@ export async function create(
 export async function deleteVerificationToken(
   identifier: number
 ): Promise<void> {
-  return getDb()
+  return db
     .deleteFrom("verificationToken")
     .where("identifier", "=", identifier)
     .returningAll()
@@ -27,7 +27,7 @@ export async function deleteVerificationToken(
 export async function getByIdentifier(
   identifier: number
 ): Promise<VerificationToken> {
-  return getDb()
+  return db
     .selectFrom("verificationToken")
     .where("identifier", "=", identifier)
     .selectAll()
@@ -38,7 +38,7 @@ export async function update(
   identifier: number,
   updateWith: VerificationTokenUpdate
 ) {
-  await getDb()
+  return db
     .updateTable("verificationToken")
     .set(updateWith)
     .where("identifier", "=", identifier)
