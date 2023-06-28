@@ -1,6 +1,8 @@
 import { create, getById, update } from "../user";
-import { getDb } from "@/lib/db";
+import { db } from "@/lib/db";
 import { NewUser, UserUpdate } from "@/types";
+// import pg from "pg";
+// delete pg.native;
 
 describe("User Controller", () => {
   let testUser: NewUser;

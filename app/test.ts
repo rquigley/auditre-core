@@ -1,5 +1,4 @@
 import { create, getById, update } from "@/controllers/user";
-import { getDb } from "@/lib/db";
 import { NewUser, UserUpdate } from "@/types";
 
 async function run() {

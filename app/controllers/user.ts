@@ -1,8 +1,8 @@
-import { getDb } from "@/lib/db";
+import { db } from "@/lib/db";
 import { UserUpdate, User, NewUser } from "@/types";
 
 export async function create(user: NewUser): Promise<User> {
-  return getDb()
+  return db
     .insertInto("user")
     .values(user)
     .returningAll()
@@ -10,7 +10,7 @@ export async function create(user: NewUser): Promise<User> {
 }
 
 export async function getById(id: number): Promise<User> {
-  return getDb()
+  return db
     .selectFrom("user")
     .where("id", "=", id)
     .selectAll()
@@ -18,7 +18,7 @@ export async function getById(id: number): Promise<User> {
 }
 
 export async function getByEmail(email: string): Promise<User> {
-  return getDb()
+  return db
     .selectFrom("user")
     .where("email", "=", email)
     .selectAll()
@@ -26,9 +26,5 @@ export async function getByEmail(email: string): Promise<User> {
 }
 
 export async function update(id: number, updateWith: UserUpdate) {
-  await getDb()
-    .updateTable("user")
-    .set(updateWith)
-    .where("id", "=", id)
-    .execute();
+  return db.updateTable("user").set(updateWith).where("id", "=", id).execute();
 }

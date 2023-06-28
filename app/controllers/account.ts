@@ -1,8 +1,8 @@
-import { getDb } from "@/lib/db";
+import { db } from "@/lib/db";
 import { AccountUpdate, Account, NewAccount } from "@/types";
 
 export async function create(user: NewAccount): Promise<Account> {
-  return getDb()
+  return db
     .insertInto("account")
     .values(user)
     .returningAll()
@@ -13,7 +13,7 @@ export async function deleteAccount(
   provider: string,
   providerAccountId: string
 ): Promise<void> {
-  return getDb()
+  return db
     .deleteFrom("account")
     .where("provider", "=", provider)
     .where("providerAccountId", "=", providerAccountId)
@@ -21,7 +21,7 @@ export async function deleteAccount(
     .executeTakeFirst();
 }
 export async function getById(id: number): Promise<Account> {
-  return getDb()
+  return db
     .selectFrom("account")
     .where("id", "=", id)
     .selectAll()
@@ -29,7 +29,7 @@ export async function getById(id: number): Promise<Account> {
 }
 
 export async function update(id: number, updateWith: AccountUpdate) {
-  await getDb()
+  return db
     .updateTable("account")
     .set(updateWith)
     .where("id", "=", id)

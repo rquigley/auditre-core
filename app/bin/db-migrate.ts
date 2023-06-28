@@ -1,20 +1,18 @@
-import * as path from 'path';
-import { Pool } from 'pg';
-import { promises as fs } from 'fs';
+import * as path from "path";
+import { Pool } from "pg";
+import { promises as fs } from "fs";
 import {
   Kysely,
   Migrator,
   PostgresDialect,
   FileMigrationProvider,
-} from 'kysely';
+} from "kysely";
 
-import { getDb } from '@/lib/db';
+import { db } from "@/lib/db";
 
-export const MIGRATIONS_PATH: string = path.resolve(__dirname, '../migrations');
+export const MIGRATIONS_PATH: string = path.resolve(__dirname, "../migrations");
 
 export async function migrateToLatest() {
-  const db = getDb();
-
   const migrator = new Migrator({
     db,
     provider: new FileMigrationProvider({
@@ -27,15 +25,15 @@ export async function migrateToLatest() {
   const { error, results } = await migrator.migrateToLatest();
 
   results?.forEach((it) => {
-    if (it.status === 'Success') {
+    if (it.status === "Success") {
       console.log(`migration "${it.migrationName}" was executed successfully`);
-    } else if (it.status === 'Error') {
+    } else if (it.status === "Error") {
       console.error(`failed to execute migration "${it.migrationName}"`);
     }
   });
 
   if (error) {
-    console.error('failed to migrate');
+    console.error("failed to migrate");
     console.error(error);
     process.exit(1);
   }
