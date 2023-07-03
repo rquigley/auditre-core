@@ -1,29 +1,75 @@
 //import { db } from '@/lib/db';
-import type { Adapter, AdapterAccount } from "@auth/core/adapters";
+import type {
+  Adapter,
+  AdapterAccount,
+  AdapterSession,
+  AdapterUser,
+  VerificationToken,
+} from "@auth/core/adapters";
 import { Kysely } from "kysely";
 import { Database } from "@/types";
 import * as userController from "@/controllers/user";
 import * as accountController from "@/controllers/account";
 import * as Types from "@/types";
 
-export function AuthAdapter(p: Kysely<Database>): Adapter {
+function isDate(date: any) {
+  return (
+    new Date(date).toString() !== "Invalid Date" && !isNaN(Date.parse(date))
+  );
+}
+
+export function format<T>(obj: Record<string, any>): T {
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === null) {
+      delete obj[key];
+    }
+
+    if (isDate(value)) {
+      obj[key] = new Date(value);
+    }
+  }
+
+  return obj as T;
+}
+
+//export function AuthAdapter(p: Kysely<Database>): Adapter {
+export function AuthAdapter(): Adapter {
   return {
-    createUser: (data) =>
-      userController.create({
+    createUser: async (data) => {
+      const user = userController.create({
         name: data.name,
         email: data.email,
         image: data.image,
-      }),
+        emailVerified: data.emailVerified,
+      });
+      return format<AdapterUser>(user);
+    },
 
-    getUser: (id: string) => userController.getById(Number(id)),
+    getUser: async (id: string) => {
+      const data = userController.getById(Number(id));
+      if (!data) {
+        return null;
+      }
+      return format<AdapterUser>(data);
+    },
 
-    getUserByEmail: (email: string) => userController.getByEmail(email),
-    async getUserByAccount(provider_providerAccountId) {
-      const account = await p.account.findUnique({
-        where: { provider_providerAccountId },
+    getUserByEmail: async (email: string) => {
+      const data = userController.getByEmail(email);
+      if (!data) {
+        return null;
+      }
+      return format<AdapterUser>(data);
+    },
+
+    getUserByAccount: async ({ provider, providerAccountId }) => {
+      const data = await p.account.findUnique({
+        where: { provider, providerAccountId },
         select: { user: true },
       });
-      return account?.user ?? null;
+      if (!data) {
+        return null;
+      }
+      return format<AdapterUser>(data);
     },
 
     updateUser: ({ id, ...data }) => userController.update(id, { data }),
