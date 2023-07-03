@@ -17,12 +17,25 @@ export async function getById(id: number): Promise<User> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getByEmail(email: string): Promise<User> {
+export async function getByEmail(email: string): Promise<User | undefined> {
   return db
     .selectFrom("user")
     .where("email", "=", email)
     .selectAll()
-    .executeTakeFirstOrThrow();
+    .executeTakeFirst();
+}
+
+export async function getByAccountProviderAndProviderId(
+  provider: string,
+  providerAccountId: string
+): Promise<User | undefined> {
+  return db
+    .selectFrom("user")
+    .innerJoin("account", "account.userId", "user.id")
+    .where("account.provider", "=", provider)
+    .where("account.providerAccountId", "=", providerAccountId)
+    .selectAll("user")
+    .executeTakeFirst();
 }
 
 export async function update(id: number, updateWith: UserUpdate) {

@@ -1,5 +1,6 @@
-import { create, getById, update } from "../user";
+import { create, getById, update } from "@/controllers/user";
 import { db } from "@/lib/db";
+import { sql } from "kysely";
 import { NewUser, UserUpdate } from "@/types";
 // import pg from "pg";
 // delete pg.native;
@@ -22,19 +23,19 @@ describe("User Controller", () => {
   //   testUserId = createdUser.id;
   // });
 
-  // afterAll(async () => {
-  //   // Delete the test user
-  //   await getDb().deleteFrom("user").where("id", "=", testUserId).execute();
-
-  //   // Disconnect from the test database
-  //   await getDb().disconnect();
-  // });
+  afterAll(async () => {
+    // Delete the test user
+    // await getDb().deleteFrom("user").where("id", "=", testUserId).execute();
+    //await sql`truncate table ${sql.table("user")}`.execute(db);
+    await db.destroy();
+  });
 
   describe("create", () => {
     it("should create a new user", async () => {
+      const email = `newuser${Date.now().toString()}@example.com`;
       const newUser: NewUser = {
         name: "New User",
-        email: "newuser@example.com",
+        email,
         //password: "newpassword",
       };
       const createdUser = await create(newUser);
@@ -46,7 +47,13 @@ describe("User Controller", () => {
 
   describe("getById", () => {
     it("should get a user by id", async () => {
-      const user = await getById(testUserId);
+      const testUser = await create({
+        name: "New User",
+        email: `newuser${Date.now().toString()}@example.com`,
+        //password: "newpassword",
+      });
+
+      const user = await getById(testUser.id);
       expect(user.name).toBe(testUser.name);
       expect(user.email).toBe(testUser.email);
       //expect(user.password).toBe(testUser.password);
@@ -55,11 +62,16 @@ describe("User Controller", () => {
 
   describe("update", () => {
     it("should update a user", async () => {
+      const testUser = await create({
+        name: "New User",
+        email: `newuser${Date.now().toString()}@example.com`,
+        //password: "newpassword",
+      });
       const updateWith: UserUpdate = {
         name: "Updated User",
       };
-      await update(testUserId, updateWith);
-      const updatedUser = await getById(testUserId);
+      await update(testUser.id, updateWith);
+      const updatedUser = await getById(testUser.id);
       expect(updatedUser.name).toBe(updateWith.name);
     });
   });
