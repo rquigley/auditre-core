@@ -36,7 +36,7 @@ async function run() {
     provider,
     providerAccountId
   );
-  console.log(data);
+  console.log(data)
 
   // const user = await getById(testUserId);
   // const updateWith: UserUpdate = {

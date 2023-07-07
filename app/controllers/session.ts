@@ -9,10 +9,12 @@ export async function create(user: NewSession): Promise<Session> {
     .executeTakeFirstOrThrow();
 }
 
-export async function deleteSession(id: number): Promise<number> {
+export async function deleteBySessionToken(
+  sessionToken: string
+): Promise<number> {
   return db
     .deleteFrom("session")
-    .where("id", "=", id)
+    .where("sessionToken", "=", sessionToken)
     .returningAll()
     .executeTakeFirst();
 }
@@ -32,10 +34,13 @@ export async function getByUserId(userId: number): Promise<Session> {
     .executeTakeFirstOrThrow();
 }
 
-export async function update(id: number, updateWith: SessionUpdate) {
+export async function updateBySessionToken(
+  sessionToken: string,
+  updateWith: SessionUpdate
+) {
   return db
     .updateTable("session")
     .set(updateWith)
-    .where("id", "=", id)
+    .where("sessionToken", "=", sessionToken)
     .execute();
 }

@@ -15,8 +15,7 @@ async function reCreateDb() {
   });
 
   const database = process.env.DB_DATABASE;
-  console.log(process.env);
-  console.log(`CREATE DATABASE ${database}`);
+  
   if (!database) {
     throw new Error("DB_DATABASE is not set");
   }

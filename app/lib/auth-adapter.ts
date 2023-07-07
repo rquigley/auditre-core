@@ -10,6 +10,7 @@ import { Kysely } from "kysely";
 import { Database } from "@/types";
 import * as userController from "@/controllers/user";
 import * as accountController from "@/controllers/account";
+import * as sessionController from "@/controllers/session";
 import * as Types from "@/types";
 
 function isDate(date: any) {
@@ -62,17 +63,18 @@ export function AuthAdapter(): Adapter {
     },
 
     getUserByAccount: async ({ provider, providerAccountId }) => {
-      const data = await p.account.findUnique({
-        where: { provider, providerAccountId },
-        select: { user: true },
-      });
+      const data = await userController.getByAccountProviderAndProviderId(
+        provider,
+        providerAccountId
+      );
       if (!data) {
         return null;
       }
       return format<AdapterUser>(data);
     },
 
-    updateUser: ({ id, ...data }) => userController.update(id, { data }),
+    updateUser: ({ id, ...data }) =>
+      userController.update(Number(id), { data }),
 
     deleteUser: {},
     ///////////////
@@ -95,11 +97,11 @@ export function AuthAdapter(): Adapter {
       const { user, ...session } = userAndSession;
       return { user, session };
     },
-    createSession: (data) => p.session.create({ data }),
+    createSession: (data) => sessionController.create({ data }),
     updateSession: (data) =>
-      p.session.update({ where: { sessionToken: data.sessionToken }, data }),
+      sessionController.updateBySessionToken(data.sessionToken, data),
     deleteSession: (sessionToken) =>
-      p.session.delete({ where: { sessionToken } }),
+      sessionController.deleteBySessionToken(sessionToken),
 
     ///////////////
     async createVerificationToken(data) {
