@@ -28,6 +28,14 @@ export function getById(id: number): Promise<Account> {
     .executeTakeFirstOrThrow();
 }
 
+export function TEMPgetByUserId(id: number): Promise<Account> {
+  return db
+    .selectFrom('account')
+    .where('userId', '=', id)
+    .selectAll()
+    .executeTakeFirstOrThrow();
+}
+
 export function update(id: number, updateWith: AccountUpdate) {
   return db
     .updateTable('account')

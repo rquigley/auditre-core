@@ -1,35 +1,34 @@
-import NextAuth, { type NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-//import prisma from "@/lib/prisma";
-import { compare } from "bcrypt";
+import NextAuth, { type NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { compare } from 'bcrypt';
+import { getByEmail } from '@/controllers/user';
+import { TEMPgetByUserId } from '@/controllers/account';
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         const { email, password } = credentials ?? {};
-        console.log("shit", email, password);
+
         if (!email || !password) {
-          throw new Error("Missing username or password");
+          throw new Error('Missing username or password');
         }
-        // const user = await prisma.user.findUnique({
-        //   where: {
-        //     email,
-        //   },
-        // });
-        const user = {
-          name: "haha",
-          email: "asds",
-          image: "asfdads",
-          password: "sdfsdf",
-        };
+
+        const user = await getByEmail(email);
+        if (!user) {
+          throw new Error('Invalid username or password');
+        }
+        // TODO: this is a hack
+        const account = await TEMPgetByUserId(user.id);
+        const hashedPassword = account.providerAccountId;
+
         // if user doesn't exist or password doesn't match
-        if (!user || !(await compare(password, user.password))) {
-          throw new Error("Invalid username or password");
+        if (false === (await compare(password, hashedPassword))) {
+          throw new Error('Invalid username or password');
         }
         return user;
       },
