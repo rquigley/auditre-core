@@ -1,32 +1,27 @@
-export { auth as default } from './auth';
+import { getToken } from "next-auth/jwt";
+import { NextRequest, NextResponse } from "next/server";
+export const config = {
+  matcher: [
+    "/login",
+    "/((?!api|_next/static|_next/image|_next/chunks|_next/image|favicon.ico).*)",
+  ],
+};
 
-// export const config = {
-//   matcher: [
-//     //'/((?!api.*)',
-//     '/login',
-//     '/((?!_next/static|_next/image|favicon.ico).*)',
-//   ],
-// };
+export default async function middleware(req: NextRequest) {
+  const session = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
 
-// import { auth } from './auth';
-// export default auth(req => {
-//   // req.auth
-//   const path = req.nextUrl.pathname;
-
-//   // If it's the root path, just render it
-//   if (path === '/login') {
-//     return NextResponse.next();
-//   }
-
-//   const session = await auth(req, res){
-//     req,
-//     secret: process.env.NEXTAUTH_SECRET,
-//   });
-
-//   if (!session) {
-//     return NextResponse.redirect(new URL('/login', req.url));
-//   } else if (session && (path === '/login' || path === '/register')) {
-//     return NextResponse.redirect(new URL('/protected', req.url));
-//   }
-//   return NextResponse.next();
-// })
+  const path = req.nextUrl.pathname;
+  console.log(session, path);
+  if (!session && path !== "/login" && path !== "/register") {
+    console.log("here1");
+    return NextResponse.redirect(new URL("/login", req.url));
+  } else if (session && (path === "/login" || path === "/register")) {
+    console.log("here2");
+    return NextResponse.redirect(new URL("/protected", req.url));
+  }
+  console.log("here3");
+  return NextResponse.next();
+}
