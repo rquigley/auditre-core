@@ -5,10 +5,24 @@ import {
   Selectable,
   Insertable,
   Updateable,
-} from "kysely";
+} from 'kysely';
+
+export type OrgId = number;
+export type UserId = number;
+
+export interface OrgTable {
+  id: Generated<OrgId>;
+  name: string | null;
+  createdAt: ColumnType<Date, string | undefined, never>;
+}
+
+export type OrgUpdate = Updateable<OrgTable>;
+export type NewOrg = Insertable<OrgTable>;
+export type Org = Selectable<OrgTable>;
 
 export interface UserTable {
-  id: Generated<number>;
+  id: Generated<UserId>;
+  orgId: OrgId;
   name: string | null;
   email: string | null;
   emailVerified: Date | null;
@@ -22,7 +36,7 @@ export type User = Selectable<UserTable>;
 
 export interface AccountTable {
   id: Generated<number>;
-  userId: number;
+  userId: UserId;
   type: string;
   provider: string;
   providerAccountId: string;
@@ -33,6 +47,7 @@ export interface AccountTable {
   scope: string | null;
   idToken: string | null;
   session_state: string | null;
+  createdAt: ColumnType<Date, string | undefined, never>;
 }
 export type AccountUpdate = Updateable<AccountTable>;
 export type NewAccount = Insertable<AccountTable>;
@@ -41,7 +56,7 @@ export type Account = Selectable<AccountTable>;
 export interface SessionTable {
   id: Generated<number>;
   sessionToken: string;
-  userId: string;
+  userId: UserId;
   expires: Date;
 }
 export type SessionUpdate = Updateable<SessionTable>;
@@ -59,6 +74,7 @@ export type VerificationToken = Selectable<VerificationTokenTable>;
 
 export interface Database extends Kysely<Database> {
   account: AccountTable;
+  org: OrgTable;
   session: SessionTable;
   user: UserTable;
   verificationToken: VerificationTokenTable;
