@@ -1,37 +1,37 @@
-import { db } from "@/lib/db";
-import { AccountUpdate, Account, NewAccount } from "@/types";
+import { db } from '@/lib/db';
+import { AccountUpdate, Account, NewAccount } from '@/types';
 
-export async function create(user: NewAccount): Promise<Account> {
+export function create(user: NewAccount): Promise<Account> {
   return db
-    .insertInto("account")
+    .insertInto('account')
     .values(user)
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export async function deleteAccount(
+export function deleteAccount(
   provider: string,
-  providerAccountId: string
-): Promise<void> {
+  providerAccountId: string,
+): Promise<Account | undefined> {
   return db
-    .deleteFrom("account")
-    .where("provider", "=", provider)
-    .where("providerAccountId", "=", providerAccountId)
+    .deleteFrom('account')
+    .where('provider', '=', provider)
+    .where('providerAccountId', '=', providerAccountId)
     .returningAll()
     .executeTakeFirst();
 }
-export async function getById(id: number): Promise<Account> {
+export function getById(id: number): Promise<Account> {
   return db
-    .selectFrom("account")
-    .where("id", "=", id)
+    .selectFrom('account')
+    .where('id', '=', id)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
 
-export async function update(id: number, updateWith: AccountUpdate) {
+export function update(id: number, updateWith: AccountUpdate) {
   return db
-    .updateTable("account")
+    .updateTable('account')
     .set(updateWith)
-    .where("id", "=", id)
+    .where('id', '=', id)
     .execute();
 }

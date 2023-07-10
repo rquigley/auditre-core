@@ -1,46 +1,44 @@
-import { db } from "@/lib/db";
+import { db } from '@/lib/db';
 import {
   VerificationTokenUpdate,
   VerificationToken,
   NewVerificationToken,
-} from "@/types";
+} from '@/types';
 
-export async function create(
-  user: NewVerificationToken
-): Promise<VerificationToken> {
+export function create(user: NewVerificationToken): Promise<VerificationToken> {
   return db
-    .insertInto("verificationToken")
+    .insertInto('verificationToken')
     .values(user)
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export async function deleteVerificationToken(
-  identifier: number
-): Promise<void> {
+export function deleteVerificationToken(
+  identifier: number,
+): Promise<VerificationToken | undefined> {
   return db
-    .deleteFrom("verificationToken")
-    .where("identifier", "=", identifier)
+    .deleteFrom('verificationToken')
+    .where('identifier', '=', identifier)
     .returningAll()
     .executeTakeFirst();
 }
-export async function getByIdentifier(
-  identifier: number
+export function getByIdentifier(
+  identifier: number,
 ): Promise<VerificationToken> {
   return db
-    .selectFrom("verificationToken")
-    .where("identifier", "=", identifier)
+    .selectFrom('verificationToken')
+    .where('identifier', '=', identifier)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
 
-export async function update(
+export function update(
   identifier: number,
-  updateWith: VerificationTokenUpdate
+  updateWith: VerificationTokenUpdate,
 ) {
   return db
-    .updateTable("verificationToken")
+    .updateTable('verificationToken')
     .set(updateWith)
-    .where("identifier", "=", identifier)
+    .where('identifier', '=', identifier)
     .execute();
 }
