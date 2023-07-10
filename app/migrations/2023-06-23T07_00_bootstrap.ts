@@ -2,8 +2,17 @@ import { Kysely, sql } from "kysely";
 
 export async function up(db: Kysely<any>): Promise<void> {
   await sql`
+    CREATE TABLE "org" (
+      "id" serial PRIMARY KEY,
+      "name" varchar,
+      "created_at" timestamp DEFAULT now() NOT NULL
+    );
+    `.execute(db);
+
+  await sql`
     CREATE TABLE "user" (
       "id" serial PRIMARY KEY,
+      "org_id" integer NOT NULL REFERENCES "org" ("id") ON DELETE CASCADE,
       "name" varchar,
       "email" varchar UNIQUE,
       "email_verified" varchar,
@@ -49,7 +58,4 @@ export async function up(db: Kysely<any>): Promise<void> {
     `.execute(db);
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
-  await db.schema.dropTable("pet").execute();
-  await db.schema.dropTable("person").execute();
-}
+export async function down(db: Kysely<any>): Promise<void> {}
