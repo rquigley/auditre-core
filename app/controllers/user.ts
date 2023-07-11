@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
 import { UserUpdate, User, NewUser } from '@/types';
 
-export async function create(user: NewUser): Promise<User> {
+export function create(user: NewUser): Promise<User> {
   return db
     .insertInto('user')
     .values(user)
@@ -9,7 +9,7 @@ export async function create(user: NewUser): Promise<User> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getById(id: number): Promise<User> {
+export function getById(id: number): Promise<User> {
   return db
     .selectFrom('user')
     .where('id', '=', id)
@@ -17,7 +17,7 @@ export async function getById(id: number): Promise<User> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getByEmail(email: string): Promise<User | undefined> {
+export function getByEmail(email: string): Promise<User | undefined> {
   return db
     .selectFrom('user')
     .where('email', '=', email)
@@ -25,7 +25,7 @@ export async function getByEmail(email: string): Promise<User | undefined> {
     .executeTakeFirst();
 }
 
-export async function getByAccountProviderAndProviderId(
+export function getByAccountProviderAndProviderId(
   provider: string,
   providerAccountId: string,
 ): Promise<User | undefined> {
