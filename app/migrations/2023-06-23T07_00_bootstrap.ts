@@ -1,11 +1,12 @@
-import { Kysely, sql } from "kysely";
+import { Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<any>): Promise<void> {
   await sql`
     CREATE TABLE "org" (
       "id" serial PRIMARY KEY,
       "name" varchar,
-      "created_at" timestamp DEFAULT now() NOT NULL
+      "created_at" timestamp DEFAULT now() NOT NULL,
+      "is_deleted" boolean DEFAULT FALSE
     );
     `.execute(db);
 
@@ -17,7 +18,8 @@ export async function up(db: Kysely<any>): Promise<void> {
       "email" varchar UNIQUE,
       "email_verified" varchar,
       "image" varchar,
-      "created_at" timestamp DEFAULT now() NOT NULL
+      "created_at" timestamp DEFAULT now() NOT NULL,
+      "is_deleted" boolean DEFAULT FALSE
     );
     `.execute(db);
 
@@ -54,6 +56,18 @@ export async function up(db: Kysely<any>): Promise<void> {
       "token" varchar NOT NULL UNIQUE,
       "session_token" varchar NOT NULL UNIQUE,
       "expires" timestamp without time zone NOT NULL
+    );
+    `.execute(db);
+
+  await sql`
+    CREATE TABLE "documents" (
+      "id" serial PRIMARY KEY,
+      "org_id" integer NOT NULL REFERENCES "org" ("id"),
+      "s3_key" varchar NOT NULL UNIQUE,
+      "filename" varchar NOT NULL,
+      "type" varchar NOT NULL,
+      "created_at" timestamp DEFAULT now() NOT NULL,
+      "is_deleted" boolean DEFAULT FALSE
     );
     `.execute(db);
 }
