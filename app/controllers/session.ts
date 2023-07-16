@@ -1,10 +1,15 @@
 import { db } from '@/lib/db';
+import { sql } from 'kysely';
 import { SessionUpdate, Session, NewSession } from '@/types';
 
 export function create(session: NewSession): Promise<Session> {
   return db
     .insertInto('session')
-    .values(session)
+    .values({
+      userId: session.userId,
+      expires: session.expires,
+      sessionToken: sql`gen_random_uuid()`,
+    })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
@@ -27,12 +32,20 @@ export function getById(id: number): Promise<Session> {
     .executeTakeFirstOrThrow();
 }
 
-export function getByUserId(userId: number): Promise<Session> {
+export function getBySessionToken(sessionToken: string): Promise<Session> {
+  return db
+    .selectFrom('session')
+    .where('sessionToken', '=', sessionToken)
+    .selectAll()
+    .executeTakeFirstOrThrow();
+}
+
+export function getAllByUserId(userId: number): Promise<Session[]> {
   return db
     .selectFrom('session')
     .where('userId', '=', userId)
     .selectAll()
-    .executeTakeFirstOrThrow();
+    .execute();
 }
 
 export function updateBySessionToken(

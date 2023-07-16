@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
+import { Dialog, Menu, Transition } from '@headlessui/react';
 import {
   Bars3Icon,
   CalendarIcon,
@@ -12,11 +12,18 @@ import {
   UsersIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
+import { ClientSafeUser } from '@/types';
 
 const navigation = [
-  { name: 'Requests', href: '/requests', icon: HomeIcon, current: true },
-  { name: 'Documents', href: '#', icon: DocumentDuplicateIcon, current: false },
-  { name: 'Reports', href: '#', icon: ChartPieIcon, current: false },
+  { name: 'Requests', href: '/requests', icon: HomeIcon },
+  {
+    name: 'Documents',
+    href: '/documents',
+    icon: DocumentDuplicateIcon,
+  },
+  { name: 'Reports', href: '/reports', icon: ChartPieIcon },
 ];
 const orgNavigation = [
   {
@@ -24,16 +31,18 @@ const orgNavigation = [
     name: 'Organization Settings',
     href: '#',
     initial: 'H',
-    current: false,
   },
-  { id: 2, name: 'Team', href: '#', initial: 'T', current: false },
+  { id: 2, name: 'Team', href: '#', initial: 'T' },
 ];
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
 }
 
-export default function Navbar() {
+export default function Navbar({ user }: { user: ClientSafeUser }) {
+  console.log(user, 'FFFFFFFFF');
+
+  const currentPathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -104,7 +113,7 @@ export default function Navbar() {
                               <a
                                 href={item.href}
                                 className={classNames(
-                                  item.current
+                                  item.href === currentPathname
                                     ? 'bg-gray-50 text-indigo-600'
                                     : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50',
                                   'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
@@ -112,7 +121,7 @@ export default function Navbar() {
                               >
                                 <item.icon
                                   className={classNames(
-                                    item.current
+                                    item.href === currentPathname
                                       ? 'text-indigo-600'
                                       : 'text-gray-400 group-hover:text-indigo-600',
                                     'h-6 w-6 shrink-0',
@@ -135,7 +144,7 @@ export default function Navbar() {
                               <a
                                 href={item.href}
                                 className={classNames(
-                                  item.current
+                                  item.href === currentPathname
                                     ? 'bg-gray-50 text-indigo-600'
                                     : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50',
                                   'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
@@ -143,7 +152,7 @@ export default function Navbar() {
                               >
                                 <span
                                   className={classNames(
-                                    item.current
+                                    item.href === currentPathname
                                       ? 'text-indigo-600 border-indigo-600'
                                       : 'text-gray-400 border-gray-200 group-hover:border-indigo-600 group-hover:text-indigo-600',
                                     'flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border text-[0.625rem] font-medium bg-white',
@@ -182,7 +191,7 @@ export default function Navbar() {
                       <a
                         href={item.href}
                         className={classNames(
-                          item.current
+                          item.href === currentPathname
                             ? 'bg-gray-50 text-indigo-600'
                             : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50',
                           'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
@@ -190,7 +199,7 @@ export default function Navbar() {
                       >
                         <item.icon
                           className={classNames(
-                            item.current
+                            item.href === currentPathname
                               ? 'text-indigo-600'
                               : 'text-gray-400 group-hover:text-indigo-600',
                             'h-6 w-6 shrink-0',
@@ -213,7 +222,7 @@ export default function Navbar() {
                       <a
                         href={item.href}
                         className={classNames(
-                          item.current
+                          item.href === currentPathname
                             ? 'bg-gray-50 text-indigo-600'
                             : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50',
                           'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
@@ -221,7 +230,7 @@ export default function Navbar() {
                       >
                         <span
                           className={classNames(
-                            item.current
+                            item.href === currentPathname
                               ? 'text-indigo-600 border-indigo-600'
                               : 'text-gray-400 border-gray-200 group-hover:border-indigo-600 group-hover:text-indigo-600',
                             'flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border text-[0.625rem] font-medium bg-white',
@@ -236,18 +245,20 @@ export default function Navbar() {
                 </ul>
               </li>
               <li className="-mx-6 mt-auto">
-                <a
-                  href="#"
-                  className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900 hover:bg-gray-50"
-                >
-                  <img
-                    className="h-8 w-8 rounded-full bg-gray-50"
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                    alt=""
-                  />
-                  <span className="sr-only">Your profile</span>
-                  <span aria-hidden="true">USER NAME HERE</span>
-                </a>
+                <Menu as="div" className="flex relative inline-block text-left">
+                  <div>
+                    <Menu.Button className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900 hover:bg-gray-50">
+                      <img
+                        className="h-8 w-8 rounded-full bg-gray-50"
+                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                        alt=""
+                      />
+                      <span className="sr-only">Your profile</span>
+                      <span aria-hidden="true">{user.name}</span>
+                    </Menu.Button>
+                  </div>
+                  <AccountMenuItems />
+                </Menu>
               </li>
             </ul>
           </nav>
@@ -276,5 +287,63 @@ export default function Navbar() {
         </a>
       </div>
     </>
+  );
+}
+
+function AccountMenuItems() {
+  return (
+    <Transition
+      as={Fragment}
+      enter="transition ease-out duration-100"
+      enterFrom="transform opacity-0 scale-95"
+      enterTo="transform opacity-100 scale-100"
+      leave="transition ease-in duration-75"
+      leaveFrom="transform opacity-100 scale-100"
+      leaveTo="transform opacity-0 scale-95"
+    >
+      <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right bottom-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <div className="py-1">
+          <Menu.Item>
+            {({ active }) => (
+              <a
+                href="#"
+                className={classNames(
+                  active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                  'block px-4 py-2 text-sm',
+                )}
+              >
+                Account settings
+              </a>
+            )}
+          </Menu.Item>
+          <Menu.Item>
+            {({ active }) => (
+              <a
+                href="#"
+                className={classNames(
+                  active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                  'block px-4 py-2 text-sm',
+                )}
+              >
+                Support
+              </a>
+            )}
+          </Menu.Item>
+          <Menu.Item>
+            {({ active }) => (
+              <a
+                onClick={() => signOut()}
+                className={classNames(
+                  active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                  'block w-full px-4 py-2 text-left text-sm',
+                )}
+              >
+                Sign out
+              </a>
+            )}
+          </Menu.Item>
+        </div>
+      </Menu.Items>
+    </Transition>
   );
 }

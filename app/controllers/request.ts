@@ -1,7 +1,46 @@
+import { db } from '@/lib/db';
 import { delay } from '@/lib/util';
+import { RequestUpdate, Request, NewRequest } from '@/types';
+import { nanoid } from 'nanoid';
 
-export interface Request {
+export function create(request: NewRequest): Promise<Request> {
+  if (!request.externalId) {
+    request.externalId = nanoid();
+  }
+  return db
+    .insertInto('request')
+    .values(request)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+export function getById(id: number): Promise<Request> {
+  return db
+    .selectFrom('request')
+    .where('id', '=', id)
+    .selectAll()
+    .executeTakeFirstOrThrow();
+}
+
+export function getAllByOrgId(orgId: number): Promise<Request[]> {
+  return db
+    .selectFrom('request')
+    .where('orgId', '=', orgId)
+    .selectAll()
+    .execute();
+}
+
+export async function update(id: number, updateWith: RequestUpdate) {
+  return db
+    .updateTable('request')
+    .set(updateWith)
+    .where('id', '=', id)
+    .execute();
+}
+
+export interface DummyRequest {
   id: number;
+  slug: string;
   name: string;
   description: string;
   dueDate: Date;
@@ -10,7 +49,7 @@ export interface Request {
   status: 'requested' | 'complete' | 'overdue';
 }
 
-function getTestRequests(n: number): Request[] {
+function getTestRequests(n: number): DummyRequest[] {
   const taskNames = [
     'Quarterly Budget Review',
     'Annual Tax Preparation',
@@ -129,7 +168,7 @@ function getTestRequests(n: number): Request[] {
     ['Alice Williams', 'John Doe'],
     ['Alice Williams'],
   ];
-  const statuses = ['requested', 'complete', 'overdue'];
+  const statuses = ['requested', 'complete', 'overdue'] as const;
 
   let items = [];
 
@@ -145,6 +184,7 @@ function getTestRequests(n: number): Request[] {
     dueDate.setDate(dueDate.getDate() + i);
     const item = {
       id: i + 1,
+      slug: (i + 1).toString(),
       name: taskNames[i % taskNames.length],
       description: descriptions[i % descriptions.length],
       dueDate: dueDate,
@@ -159,8 +199,20 @@ function getTestRequests(n: number): Request[] {
 }
 
 export async function getAll() {
+  const defaultRequests = [
+    {
+      id: 'def-1',
+      slug: 'def-1',
+      name: 'Legal name of business',
+      description: '',
+      dueDate: null,
+      requestee: null,
+      owners: [],
+      status: 'requested',
+    },
+  ];
   // TODO: Temporarily delay the response to simulate slower network
-  await delay(1000);
-
-  return getTestRequests(50);
+  //await delay(1000);
+  //return [...defaultRequests, ...getTestRequests(50)];
+  return defaultRequests;
 }

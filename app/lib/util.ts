@@ -22,3 +22,16 @@ export function generatePassword(
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+export function omit(obj: T, keysToOmit: K[]): Omit<T, K> {
+  let result = { ...obj };
+  keysToOmit.forEach((key) => {
+    delete result[key];
+  });
+  return result;
+}
+
+const unsafeDbAttrs = ['id', 'orgId'];
+export function clientSafe<T extends object>(obj: T): Omit<T, 'id' | 'orgId'> {
+  return omit(obj, unsafeDbAttrs);
+}

@@ -1,8 +1,6 @@
 'use client';
 import { Request } from '@/controllers/request';
 import dayjs from 'dayjs';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
@@ -34,26 +32,14 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function RequestRow({ request }: { request: Request }) {
-  const router = useRouter();
   return (
-    <tr key={request.id} className="hover:bg-gray-100">
-      <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-sm font-medium sm:pr-0">
-        <Link
-          href={`/requests/${request.id}`}
-          className="text-indigo-600 hover:text-indigo-900"
-        >
-          View<span className="sr-only">, {request.name}</span>
-        </Link>
-      </td>
+    <tr
+      key={request.id}
+      className="hover:bg-gray-100"
+      onClick={() => console.log('sdfsdf')}
+    >
       <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
-        <div className="text-gray-900 font-semibold">
-          <Link
-            href={`/requests/${request.id}`}
-            className="hover:underline hover:text-blue-500"
-          >
-            {request.name}
-          </Link>
-        </div>
+        <div className="text-gray-900 font-semibold">{request.name}</div>
 
         <div className="text-gray-900">{request.description}</div>
       </td>
@@ -62,14 +48,19 @@ export default function RequestRow({ request }: { request: Request }) {
       </td>
       <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
         <div className="text-gray-900">
-          {request.dueDate ? dayjs(request.dueDate).format('MM/DD/YYYY') : null}
+          {dayjs(request.dueDate).format('MM/DD/YYYY')}
         </div>
       </td>
 
       <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-        {request.owners
-          ? request.owners.map((owner) => <div key={owner}>{owner}</div>)
-          : null}
+        {request.owners.map((owner) => (
+          <div key={owner}>{owner}</div>
+        ))}
+      </td>
+      <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+        <a href="#" className="text-indigo-600 hover:text-indigo-900">
+          Edit<span className="sr-only">, {request.name}</span>
+        </a>
       </td>
     </tr>
   );
