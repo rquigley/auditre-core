@@ -1,7 +1,12 @@
 import { db } from '@/lib/db';
 import { UserUpdate, User, NewUser } from '@/types';
+import { getServerSession } from 'next-auth/next';
+import { nanoid } from 'nanoid';
 
 export function create(user: NewUser): Promise<User> {
+  if (!user.externalId) {
+    user.externalId = nanoid();
+  }
   return db
     .insertInto('user')
     .values(user)
@@ -37,7 +42,39 @@ export function getByAccountProviderAndProviderId(
     .selectAll('user')
     .executeTakeFirst();
 }
+export function getBySessionToken(
+  sessionToken: string,
+): Promise<User | undefined> {
+  return db
+    .selectFrom('user')
+    .innerJoin('session', 'session.userId', 'user.id')
+    .where('session.sessionToken', '=', sessionToken)
+    .selectAll('user')
+    .executeTakeFirst();
+}
 
 export async function update(id: number, updateWith: UserUpdate) {
   return db.updateTable('user').set(updateWith).where('id', '=', id).execute();
+}
+
+export async function getCurrentUser(): Promise<User> {
+  const session = await getServerSession();
+  console.log('HERE current user', session);
+  if (!session) {
+    throw new Error('Session does not exist');
+  }
+  // Hijack the email attribute on the session to store our
+  // db-persisted session token. Next-auth – rightly - wants
+  // to dissuade you from using password based authentication
+  // but we don't have anything sufficiently better/usable.
+  // Storing additional data doesn't seem currently possible.
+  const sessionToken = session?.user?.email;
+  if (!sessionToken) {
+    throw new Error('Session token does not exist');
+  }
+  const user = await getBySessionToken(sessionToken);
+  if (!user) {
+    throw new Error('Session does not exist for this user');
+  }
+  return user;
 }

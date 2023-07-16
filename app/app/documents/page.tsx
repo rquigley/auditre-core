@@ -1,33 +1,40 @@
+import { Fragment, useState } from 'react';
+
 //import { auth } from '@/auth';
 // import { Suspense } from 'react';
 // import { redirect } from 'next/navigation';
-import { redirect } from 'next/navigation';
+import Nav from '@/app/nav';
 import { getAll, Request } from '@/controllers/request';
-import { getCurrentUser } from '@/controllers/user';
-import * as na from 'next-auth/next';
-
 import RequestRow from './request-row';
 
-async function getUser() {
-  try {
-    const user = await getCurrentUser();
-    return user;
-  } catch (err) {
-    redirect(`/login?next=/requests`);
-  }
-}
-
 export default async function RequestsPage() {
-  const user = await getUser();
+  //const session = await auth();
 
+  // if (!session?.user) {
+  //   redirect(`/login?next=/requests`);
+  // }
   const requests = await getAll();
 
   return (
-    <div className="sm:px-6 lg:px-8 bg-white rounded-sm py-3 px-3">
+    <>
+      <Nav />
+
+      <main className="py-10 lg:pl-72 bg-slate-100">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <RequestGrid requests={requests} />
+        </div>
+      </main>
+    </>
+  );
+}
+
+function RequestGrid({ requests }: { requests: Request[] }) {
+  return (
+    <div className="px-4 sm:px-6 lg:px-8 bg-white rounded-sm py-3 px-3">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-base font-semibold leading-6 text-gray-900">
-            2022 Audit: Requests
+            Documents
           </h1>
           {/* <p className="mt-2 text-sm text-gray-700">All active requests</p> */}
         </div>
@@ -46,10 +53,6 @@ export default async function RequestsPage() {
             <table className="min-w-full divide-y divide-gray-300">
               <thead>
                 <tr>
-                  <th
-                    scope="col"
-                    className="relative py-3.5 pl-3 pr-4 sm:pr-0"
-                  ></th>
                   <th
                     scope="col"
                     className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
@@ -73,6 +76,9 @@ export default async function RequestsPage() {
                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                   >
                     Owners
+                  </th>
+                  <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
+                    <span className="sr-only">Edit</span>
                   </th>
                 </tr>
               </thead>

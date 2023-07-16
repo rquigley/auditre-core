@@ -1,8 +1,6 @@
-import Image from "next/image";
-import Form from "@/components/form";
-import Link from "next/link";
-import LoginForm from './login-form'
-
+import Image from 'next/image';
+import Link from 'next/link';
+import LoginForm from './login-form';
 
 export default function Login() {
   return (

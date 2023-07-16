@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import LoadingDots from "@/components/loading-dots";
+import { useState } from 'react';
+import { signIn } from 'next-auth/react';
+import LoadingDots from '@/components/loading-dots';
 //import toast from "react-hot-toast";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function Form() {
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ export default function Form() {
       onSubmit={(e) => {
         e.preventDefault();
         setLoading(true);
-        signIn("credentials", {
+        signIn('credentials', {
           redirect: false,
           email: e.currentTarget.email.value,
           password: e.currentTarget.password.value,
@@ -27,7 +27,8 @@ export default function Form() {
             //toast.error(error);
           } else {
             // router.refresh();
-            // router.push("/protected");
+            // TODO: redirect to existing route
+            router.push('/');
           }
         });
       }}
@@ -69,8 +70,8 @@ export default function Form() {
         disabled={loading}
         className={`${
           loading
-            ? "cursor-not-allowed border-gray-200 bg-gray-100"
-            : "border-black bg-black text-white hover:bg-white hover:text-black"
+            ? 'cursor-not-allowed border-gray-200 bg-gray-100'
+            : 'border-black bg-black text-white hover:bg-white hover:text-black'
         } flex h-10 w-full items-center justify-center rounded-md border text-sm transition-all focus:outline-none`}
       >
         {loading ? <LoadingDots color="#808080" /> : <p>Sign In</p>}

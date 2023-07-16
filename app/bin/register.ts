@@ -1,30 +1,25 @@
 import { program } from 'commander';
 import prompts from 'prompts';
 import { loadEnvConfig } from '@next/env';
-import { hash } from 'bcrypt';
+
 import { create as createUser } from '@/controllers/user';
-import { create as createAccount } from '@/controllers/account';
+import { create as createPassword } from '@/controllers/password';
 import { create as createOrg } from '@/controllers/org';
 import { db } from '@/lib/db';
 import { OrgId } from '@/types';
-import { generatePassword } from '@/lib/util';
 
 const dev = process.env.NODE_ENV !== 'production';
 loadEnvConfig(process.cwd(), dev, { info: () => null, error: console.error });
 
-async function registerUser(orgId: OrgId, email: string, password: string) {
-  const hashedPassword = await hash(password, 4);
-
+async function registerUser(orgId: OrgId, email: string, password?: string) {
   const user = await createUser({
     orgId,
     email,
   });
 
-  await createAccount({
+  await createPassword({
     userId: user.id,
-    type: 'password',
-    provider: 'password',
-    providerAccountId: hashedPassword,
+    value: password,
   });
   console.log(
     `Created User with\nID: ${user.id}\nEmail: ${email}\nPassword: ${password}`,
@@ -66,8 +61,6 @@ program
         },
       });
       password = resp.value;
-    } else {
-      password = generatePassword(10, false);
     }
 
     await registerUser(orgId, email, password);
