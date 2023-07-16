@@ -59,7 +59,6 @@ export async function update(id: number, updateWith: UserUpdate) {
 
 export async function getCurrentUser(): Promise<User> {
   const session = await getServerSession();
-  console.log('HERE current user', session);
   if (!session) {
     throw new Error('Session does not exist');
   }

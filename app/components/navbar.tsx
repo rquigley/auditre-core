@@ -40,8 +40,6 @@ function classNames(...classes: string[]) {
 }
 
 export default function Navbar({ user }: { user: ClientSafeUser }) {
-  console.log(user, 'FFFFFFFFF');
-
   const currentPathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
