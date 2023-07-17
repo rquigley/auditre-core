@@ -23,15 +23,34 @@ export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function omit(obj: T, keysToOmit: K[]): Omit<T, K> {
-  let result = { ...obj };
-  keysToOmit.forEach((key) => {
-    delete result[key];
-  });
-  return result;
+type AnyObject = {
+  [key: string]: any;
+};
+
+export function deepCopy<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+export function omit(
+  obj: any[] | AnyObject,
+  keysToOmit: string[],
+): any[] | AnyObject {
+  if (Array.isArray(obj)) {
+    return obj.map((item) => omit(item, keysToOmit));
+  } else if (typeof obj === 'object' && obj !== null) {
+    const newObj: AnyObject = {};
+    Object.keys(obj)
+      .filter((key) => !keysToOmit.includes(key))
+      .forEach((key) => {
+        newObj[key] = omit(obj[key], keysToOmit);
+      });
+    return newObj;
+  }
+  return obj;
 }
 
 const unsafeDbAttrs = ['id', 'orgId'];
-export function clientSafe<T extends object>(obj: T): Omit<T, 'id' | 'orgId'> {
-  return omit(obj, unsafeDbAttrs);
+
+export function clientSafe(obj: any[] | AnyObject, keys = unsafeDbAttrs) {
+  return omit(obj, keys);
 }
