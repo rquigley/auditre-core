@@ -3,18 +3,35 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import LoadingDots from '@/components/loading-dots';
-//import toast from "react-hot-toast";
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
+import { XCircleIcon } from '@heroicons/react/20/solid';
+
+export function Error({ error }: { error: string }) {
+  return (
+    <div className="rounded-md bg-red-50 p-4">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+        </div>
+        <div className="ml-3">
+          <h3 className="text-sm font-medium text-red-800">{error}</h3>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Form() {
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const router = useRouter();
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        setLoginError('');
         setLoading(true);
         signIn('credentials', {
           redirect: false,
@@ -24,7 +41,7 @@ export default function Form() {
         }).then(({ error }) => {
           if (error) {
             setLoading(false);
-            //toast.error(error);
+            setLoginError(error);
           } else {
             // router.refresh();
             // TODO: redirect to existing route
@@ -76,6 +93,7 @@ export default function Form() {
       >
         {loading ? <LoadingDots color="#808080" /> : <p>Sign In</p>}
       </button>
+      {loginError ? <Error error={loginError} /> : null}
     </form>
   );
 }
