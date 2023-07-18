@@ -1,29 +1,28 @@
 import Navbar from '@/components/navbar';
 //import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-
+import { ClientSafeUser } from '@/types';
 import { getServerSession } from 'next-auth/next';
 import { getCurrentUser } from '@/controllers/user';
-import { clientSafe } from '@/lib/util';
+import { clientSafe, omit } from '@/lib/util';
+import { getAllByOrgId } from '@/controllers/audit';
 
 async function getUser() {
   try {
-    const user = await getCurrentUser();
-    return clientSafe(user);
+    return await getCurrentUser();
   } catch (err) {
     redirect(`/login?next=/`);
   }
 }
 
 export default async function Nav() {
-  //const session = await auth();
-  //const session = await getServerSession();
   const user = await getUser();
-  //console.log(session?.user, '______ nav.tsx');
+  const audits = await getAllByOrgId(user.orgId);
 
-  // if (!session?.user) {
-  //   //redirect(`/sign-in?next=/chat/${params.id}`)
-  // }
-  //const user = session?.user || {};
-  return <Navbar user={user} />;
+  return (
+    <Navbar
+      user={clientSafe(user) as ClientSafeUser}
+      audits={clientSafe(audits)}
+    />
+  );
 }

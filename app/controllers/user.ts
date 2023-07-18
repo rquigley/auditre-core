@@ -3,13 +3,10 @@ import { UserUpdate, User, NewUser } from '@/types';
 import { getServerSession } from 'next-auth/next';
 import { nanoid } from 'nanoid';
 
-export function create(user: NewUser): Promise<User> {
-  if (!user.externalId) {
-    user.externalId = nanoid();
-  }
+export function create(user: Omit<NewUser, 'externalId'>): Promise<User> {
   return db
     .insertInto('user')
-    .values(user)
+    .values({ ...user, externalId: nanoid() })
     .returningAll()
     .executeTakeFirstOrThrow();
 }

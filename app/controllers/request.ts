@@ -1,20 +1,63 @@
 import { db } from '@/lib/db';
-import { delay } from '@/lib/util';
-import { RequestUpdate, Request, NewRequest } from '@/types';
+import type {
+  RequestUpdate,
+  Request,
+  NewRequest,
+  OrgId,
+  AuditId,
+  RequestId,
+} from '@/types';
 import { nanoid } from 'nanoid';
 
-export function create(request: NewRequest): Promise<Request> {
-  if (!request.externalId) {
-    request.externalId = nanoid();
-  }
+export function create(
+  request: Omit<NewRequest, 'externalId'>,
+): Promise<Request> {
   return db
     .insertInto('request')
-    .values(request)
+    .values({ ...request, externalId: nanoid() })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getById(id: number): Promise<Request> {
+export async function upsertDefault(auditId: AuditId) {
+  const currentReqs = await getAllByAuditId(auditId);
+  if (!currentReqs.find((r) => r.type === 'SYSTEM_BUSINESS_NAME')) {
+    await create({
+      auditId,
+      type: 'SYSTEM_BUSINESS_NAME',
+      name: 'Legal Name of business',
+      status: 'requested',
+    });
+  }
+  if (!currentReqs.find((r) => r.type === 'SYSTEM_BUSINESS_NAME')) {
+    await create({
+      auditId,
+      type: 'SYSTEM_BUSINESS_MODEL',
+      name: 'Business Model',
+      status: 'requested',
+    });
+  }
+  if (!currentReqs.find((r) => r.type === 'SYSTEM_BUSINESS_DESCRIPTION')) {
+    await create({
+      auditId,
+      type: 'SYSTEM_BUSINESS_DESCRIPTION',
+      name: 'Business Description',
+      description: 'Description of the business',
+      status: 'requested',
+    });
+  }
+  if (!currentReqs.find((r) => r.type === 'SYSTEM_MULTIPLE_BUSINESS_LINES')) {
+    await create({
+      auditId,
+      type: 'SYSTEM_MULTIPLE_BUSINESS_LINES',
+      name: 'Multiple lines',
+      description: 'Does the business have multiple business lines?',
+      status: 'requested',
+    });
+  }
+}
+
+export function getById(id: RequestId): Promise<Request> {
   return db
     .selectFrom('request')
     .where('id', '=', id)
@@ -22,10 +65,10 @@ export function getById(id: number): Promise<Request> {
     .executeTakeFirstOrThrow();
 }
 
-export function getAllByOrgId(orgId: number): Promise<Request[]> {
+export function getAllByAuditId(auditId: AuditId): Promise<Request[]> {
   return db
     .selectFrom('request')
-    .where('orgId', '=', orgId)
+    .where('auditId', '=', auditId)
     .selectAll()
     .execute();
 }
@@ -49,7 +92,7 @@ export interface DummyRequest {
   status: 'requested' | 'complete' | 'overdue';
 }
 
-function getTestRequests(n: number): DummyRequest[] {
+export function getTestRequests(n: number): DummyRequest[] {
   const taskNames = [
     'Quarterly Budget Review',
     'Annual Tax Preparation',

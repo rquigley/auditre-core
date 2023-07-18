@@ -87,6 +87,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       "external_id" varchar NOT NULL,
       "org_id" integer NOT NULL REFERENCES "org" ("id"),
       "name" varchar,
+      "year" numeric(4,0),
       "created_at" timestamp DEFAULT now() NOT NULL,
       "is_deleted" boolean NOT NULL DEFAULT FALSE,
       unique (org_id, external_id)
@@ -99,6 +100,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       "external_id" varchar NOT NULL,
       "audit_id" integer NOT NULL REFERENCES "audit" ("id"),
       "name" varchar,
+      "type" varchar,
       "description" varchar,
       "status" varchar,
       "requestee" integer REFERENCES "user" ("id"),

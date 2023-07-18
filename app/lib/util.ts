@@ -23,18 +23,17 @@ export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export function deepCopy<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
 type AnyObject = {
   [key: string]: any;
 };
 
-export function deepCopy<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
-}
-
 export function omit(
-  obj: any[] | AnyObject,
+  obj: AnyObject[] | AnyObject,
   keysToOmit: string[],
-): any[] | AnyObject {
+): AnyObject[] | AnyObject {
   if (Array.isArray(obj)) {
     return obj.map((item) => omit(item, keysToOmit));
   } else if (typeof obj === 'object' && obj !== null) {
@@ -50,7 +49,9 @@ export function omit(
 }
 
 const unsafeDbAttrs = ['id', 'orgId'];
-
-export function clientSafe(obj: any[] | AnyObject, keys = unsafeDbAttrs) {
+export function clientSafe(
+  obj: AnyObject[] | AnyObject,
+  keys = unsafeDbAttrs,
+): AnyObject[] | AnyObject {
   return omit(obj, keys);
 }
