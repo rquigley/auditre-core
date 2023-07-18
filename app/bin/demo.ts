@@ -6,7 +6,7 @@ import { create as createUser } from '@/controllers/user';
 import { create as createPassword } from '@/controllers/password';
 import { create as createOrg } from '@/controllers/org';
 import { create as createAudit } from '@/controllers/audit';
-import { create as createRequest } from '@/controllers/request';
+import { create as createRequest, upsertDefault } from '@/controllers/request';
 import { db } from '@/lib/db';
 import { OrgId } from '@/types';
 
@@ -42,14 +42,16 @@ async function setupAccount(): Promise<OrgId> {
 async function setupAudit(orgId: OrgId) {
   const audit1 = await createAudit({
     orgId,
-    externalId: 'FIXME-1',
-    name: '2023 - T1',
+    name: 'Our First Audit',
+    year: 2023,
   });
-  const audit12 = await createAudit({
+  await upsertDefault(audit1.id);
+  const audit2 = await createAudit({
     orgId,
-    externalId: 'FIXME-2',
-    name: '2022 - T22',
+    name: 'Old Audit',
+    year: 2022,
   });
+  await upsertDefault(audit2.id);
 }
 
 async function main() {

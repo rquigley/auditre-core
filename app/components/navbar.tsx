@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { ClientSafeUser } from '@/types';
+import type { ClientSafeUser, ClientSafeAudit } from '@/types';
 
 const navigation = [
   { name: 'Requests', href: '/requests', icon: HomeIcon },
@@ -27,21 +27,40 @@ const navigation = [
 ];
 const orgNavigation = [
   {
-    id: 1,
     name: 'Organization Settings',
     href: '#',
-    initial: 'H',
+    icon: DocumentDuplicateIcon,
   },
-  { id: 2, name: 'Team', href: '#', initial: 'T' },
+  { name: 'Team', href: '#', icon: UsersIcon },
 ];
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
 }
 
-export default function Navbar({ user }: { user: ClientSafeUser }) {
-  const currentPathname = usePathname();
+export default function Navbar({
+  user,
+  audits,
+}: {
+  user: ClientSafeUser;
+  audits: ClientSafeAudit[];
+}) {
+  const rootPathname = `/${usePathname().split('/')[1]}`;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const selectedAuditExternalId = audits[0]?.externalId ?? '';
+  const requestHref = selectedAuditExternalId
+    ? `/audit/${selectedAuditExternalId}`
+    : '/audits';
+
+  const navigation = [
+    { name: 'Requests', href: requestHref, icon: HomeIcon },
+    {
+      name: 'Documents',
+      href: '/documents',
+      icon: DocumentDuplicateIcon,
+    },
+    { name: 'Reports', href: '/reports', icon: ChartPieIcon },
+  ];
 
   return (
     <>
@@ -107,60 +126,25 @@ export default function Navbar({ user }: { user: ClientSafeUser }) {
                       <li>
                         <ul role="list" className="-mx-2 space-y-1">
                           {navigation.map((item) => (
-                            <li key={item.name}>
-                              <a
-                                href={item.href}
-                                className={classNames(
-                                  item.href === currentPathname
-                                    ? 'bg-gray-50 text-indigo-600'
-                                    : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50',
-                                  'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
-                                )}
-                              >
-                                <item.icon
-                                  className={classNames(
-                                    item.href === currentPathname
-                                      ? 'text-indigo-600'
-                                      : 'text-gray-400 group-hover:text-indigo-600',
-                                    'h-6 w-6 shrink-0',
-                                  )}
-                                  aria-hidden="true"
-                                />
-                                {item.name}
-                              </a>
-                            </li>
+                            <NavItem
+                              key={item.name}
+                              item={item}
+                              rootPathname={rootPathname}
+                            />
                           ))}
                         </ul>
                       </li>
                       <li>
                         <div className="text-xs font-semibold leading-6 text-gray-400">
-                          Your Organization
+                          Your Organization2
                         </div>
                         <ul role="list" className="-mx-2 mt-2 space-y-1">
                           {orgNavigation.map((item) => (
-                            <li key={item.name}>
-                              <a
-                                href={item.href}
-                                className={classNames(
-                                  item.href === currentPathname
-                                    ? 'bg-gray-50 text-indigo-600'
-                                    : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50',
-                                  'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
-                                )}
-                              >
-                                <span
-                                  className={classNames(
-                                    item.href === currentPathname
-                                      ? 'text-indigo-600 border-indigo-600'
-                                      : 'text-gray-400 border-gray-200 group-hover:border-indigo-600 group-hover:text-indigo-600',
-                                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border text-[0.625rem] font-medium bg-white',
-                                  )}
-                                >
-                                  {item.initial}
-                                </span>
-                                <span className="truncate">{item.name}</span>
-                              </a>
-                            </li>
+                            <NavItem
+                              key={item.name}
+                              item={item}
+                              rootPathname={rootPathname}
+                            />
                           ))}
                         </ul>
                       </li>
@@ -185,28 +169,11 @@ export default function Navbar({ user }: { user: ClientSafeUser }) {
               <li>
                 <ul role="list" className="-mx-2 space-y-1">
                   {navigation.map((item) => (
-                    <li key={item.name}>
-                      <a
-                        href={item.href}
-                        className={classNames(
-                          item.href === currentPathname
-                            ? 'bg-gray-50 text-indigo-600'
-                            : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50',
-                          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
-                        )}
-                      >
-                        <item.icon
-                          className={classNames(
-                            item.href === currentPathname
-                              ? 'text-indigo-600'
-                              : 'text-gray-400 group-hover:text-indigo-600',
-                            'h-6 w-6 shrink-0',
-                          )}
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </a>
-                    </li>
+                    <NavItem
+                      key={item.name}
+                      item={item}
+                      rootPathname={rootPathname}
+                    />
                   ))}
                 </ul>
               </li>
@@ -216,29 +183,11 @@ export default function Navbar({ user }: { user: ClientSafeUser }) {
                 </div>
                 <ul role="list" className="-mx-2 mt-2 space-y-1">
                   {orgNavigation.map((item) => (
-                    <li key={item.name}>
-                      <a
-                        href={item.href}
-                        className={classNames(
-                          item.href === currentPathname
-                            ? 'bg-gray-50 text-indigo-600'
-                            : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50',
-                          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
-                        )}
-                      >
-                        <span
-                          className={classNames(
-                            item.href === currentPathname
-                              ? 'text-indigo-600 border-indigo-600'
-                              : 'text-gray-400 border-gray-200 group-hover:border-indigo-600 group-hover:text-indigo-600',
-                            'flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border text-[0.625rem] font-medium bg-white',
-                          )}
-                        >
-                          {item.initial}
-                        </span>
-                        <span className="truncate">{item.name}</span>
-                      </a>
-                    </li>
+                    <NavItem
+                      key={item.name}
+                      item={item}
+                      rootPathname={rootPathname}
+                    />
                   ))}
                 </ul>
               </li>
@@ -343,5 +292,44 @@ function AccountMenuItems() {
         </div>
       </Menu.Items>
     </Transition>
+  );
+}
+
+type NavItemProps = {
+  name: string;
+  href: string;
+};
+function NavItem({
+  item,
+  rootPathname,
+}: {
+  item: NavItemProps;
+  rootPathname: string;
+}) {
+  const isSelected = `/${item.href.split('/')[1]}` === rootPathname;
+
+  return (
+    <li key={item.name}>
+      <a
+        href={item.href}
+        className={classNames(
+          isSelected
+            ? 'bg-gray-50 text-indigo-600'
+            : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50',
+          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
+        )}
+      >
+        <item.icon
+          className={classNames(
+            isSelected
+              ? 'text-indigo-600'
+              : 'text-gray-400 group-hover:text-indigo-600',
+            'h-6 w-6 shrink-0',
+          )}
+          aria-hidden="true"
+        />
+        {item.name}
+      </a>
+    </li>
   );
 }

@@ -10,6 +10,7 @@ import {
 export type OrgId = number;
 export type UserId = number;
 export type AuditId = number;
+export type RequestId = number;
 
 type ClientSafeOmitTypes = 'id' | 'orgId';
 
@@ -25,7 +26,7 @@ export type Org = Selectable<OrgTable>;
 
 export interface UserTable {
   id: Generated<UserId>;
-  externalId: ColumnType<string, string | undefined, never>;
+  externalId: ColumnType<string, string, never>;
   orgId: OrgId;
   name: string | null;
   email: string | null;
@@ -89,10 +90,11 @@ export type NewVerificationToken = Insertable<VerificationTokenTable>;
 export type VerificationToken = Selectable<VerificationTokenTable>;
 
 export interface AuditTable {
-  id: Generated<UserId>;
-  externalId: string;
+  id: Generated<AuditId>;
+  externalId: ColumnType<string, string, never>;
   orgId: OrgId;
   name: string | null;
+  year: number | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<Boolean, never, Boolean>;
 }
@@ -100,14 +102,22 @@ export interface AuditTable {
 export type AuditUpdate = Updateable<AuditTable>;
 export type NewAudit = Insertable<AuditTable>;
 export type Audit = Selectable<AuditTable>;
+export type ClientSafeAudit = Omit<Selectable<AuditTable>, ClientSafeOmitTypes>;
 
+export type RequestType =
+  | 'SYSTEM_BUSINESS_NAME'
+  | 'SYSTEM_BUSINESS_MODEL'
+  | 'SYSTEM_BUSINESS_DESCRIPTION'
+  | 'SYSTEM_MULTIPLE_BUSINESS_LINES'
+  | 'USER_REQUESTED';
 export interface RequestTable {
-  id: Generated<UserId>;
-  externalId: string;
+  id: Generated<RequestId>;
+  externalId: ColumnType<string, string, never>;
   auditId: AuditId;
   name: string | null;
   description: string | null;
   status: 'requested' | 'complete' | 'overdue';
+  type: RequestType;
   requestee: UserId | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<Boolean, never, Boolean>;
