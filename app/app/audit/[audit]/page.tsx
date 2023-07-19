@@ -1,11 +1,9 @@
-//import { auth } from '@/auth';
-// import { Suspense } from 'react';
-// import { redirect } from 'next/navigation';
 import { redirect } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import { getAllByAuditId } from '@/controllers/request';
 import { getCurrentUser } from '@/controllers/user';
 import { getByExternalId } from '@/controllers/audit';
+import type { ClientSafeRequest } from '@/types';
 import { Fragment } from 'react';
 import {
   BriefcaseIcon,
@@ -19,7 +17,7 @@ import {
   PencilIcon,
 } from '@heroicons/react/20/solid';
 import { Menu, Transition } from '@headlessui/react';
-import Header from './header';
+import Header from '@/components/header';
 import { clientSafe } from '@/lib/util';
 
 import RequestRow from './request-row';
@@ -33,11 +31,14 @@ async function getUser() {
   }
 }
 
-export default async function RequestsPage({ params: { audit: externalId } }) {
+export default async function RequestsPage({
+  params: { audit: externalId },
+}: {
+  params: { audit: string };
+}) {
   const user = await getUser();
 
   const audit = await getByExternalId(externalId);
-  console.log(externalId, audit, user);
 
   // TODO, how do we better enforce this across routes
   if (audit.orgId !== user.orgId) {
@@ -45,11 +46,19 @@ export default async function RequestsPage({ params: { audit: externalId } }) {
   }
 
   const requests = await getAllByAuditId(audit.id);
-  console.log(audit.id, clientSafe(audit));
+  const clientSafeRequests = clientSafe(requests) as ClientSafeRequest[];
 
+  const breadcrumbs = [
+    { name: 'Audits', href: '/audits' },
+    { name: 'Requests', href: '/audits' },
+  ];
   return (
     <div className="sm:px-6 lg:px-8 bg-white rounded-sm py-3 px-3">
-      <Header audit={clientSafe(audit)} />
+      <Header
+        title={audit.name || ''}
+        subtitle={audit.year ? String(audit.year) : undefined}
+        breadcrumbs={breadcrumbs}
+      />
 
       <div className="mt-8 flow-root">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -88,7 +97,7 @@ export default async function RequestsPage({ params: { audit: externalId } }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {requests.map((request) => (
+                {clientSafeRequests.map((request) => (
                   <RequestRow request={request} />
                 ))}
               </tbody>
