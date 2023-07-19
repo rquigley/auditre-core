@@ -14,7 +14,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     CREATE TABLE "user" (
       "id" serial PRIMARY KEY,
       "org_id" integer NOT NULL REFERENCES "org" ("id"),
-      "external_id" varchar NOT NULL,
+      "external_id" varchar NOT NULL UNIQUE,
       "name" varchar,
       "email" varchar UNIQUE,
       "email_verified" varchar,
@@ -84,26 +84,26 @@ export async function up(db: Kysely<any>): Promise<void> {
   await sql`
     CREATE TABLE "audit" (
       "id" serial PRIMARY KEY,
-      "external_id" varchar NOT NULL,
+      "external_id" varchar NOT NULL UNIQUE,
       "org_id" integer NOT NULL REFERENCES "org" ("id"),
       "name" varchar,
       "year" numeric(4,0),
       "created_at" timestamp DEFAULT now() NOT NULL,
-      "is_deleted" boolean NOT NULL DEFAULT FALSE,
-      unique (org_id, external_id)
+      "is_deleted" boolean NOT NULL DEFAULT FALSE
     );
     `.execute(db);
 
   await sql`
     CREATE TABLE "request" (
       "id" serial PRIMARY KEY,
-      "external_id" varchar NOT NULL,
+      "external_id" varchar NOT NULL UNIQUE,
       "audit_id" integer NOT NULL REFERENCES "audit" ("id"),
       "name" varchar,
       "type" varchar,
       "description" varchar,
       "status" varchar,
       "requestee" integer REFERENCES "user" ("id"),
+      "due_date" date,
       "created_at" timestamp DEFAULT now() NOT NULL,
       "is_deleted" boolean NOT NULL DEFAULT FALSE
     );
