@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import type { ClientSafeUser, ClientSafeAudit } from '@/types';
+import type { ClientSafeUser, ClientSafeAudit, IconProps } from '@/types';
 
 const navigation = [
   { name: 'Requests', href: '/requests', icon: HomeIcon },
@@ -298,6 +298,7 @@ function AccountMenuItems() {
 type NavItemProps = {
   name: string;
   href: string;
+  icon: React.FC<IconProps>;
 };
 function NavItem({
   item,

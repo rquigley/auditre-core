@@ -1,5 +1,5 @@
 'use client';
-import { Request } from '@/controllers/request';
+import type { ClientSafeRequest } from '@/types';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -33,13 +33,18 @@ function StatusBadge({ status }: { status: string }) {
   }
 }
 
-export default function RequestRow({ request }: { request: Request }) {
+export default function RequestRow({
+  request,
+}: {
+  request: ClientSafeRequest;
+}) {
   const router = useRouter();
+  console.log(request);
   return (
-    <tr key={request.id} className="hover:bg-gray-100">
+    <tr key={request.externalId} className="hover:bg-gray-100">
       <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-sm font-medium sm:pr-0">
         <Link
-          href={`/request/${request.id}`}
+          href={`/request/${request.externalId}`}
           className="text-indigo-600 hover:text-indigo-900"
         >
           View<span className="sr-only">, {request.name}</span>
@@ -48,7 +53,7 @@ export default function RequestRow({ request }: { request: Request }) {
       <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
         <div className="text-gray-900 font-semibold">
           <Link
-            href={`/requests/${request.id}`}
+            href={`/request/${request.externalId}`}
             className="hover:underline hover:text-blue-500"
           >
             {request.name}
@@ -67,9 +72,12 @@ export default function RequestRow({ request }: { request: Request }) {
       </td>
 
       <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-        {request.owners
-          ? request.owners.map((owner) => <div key={owner}>{owner}</div>)
-          : null}
+        TODO
+        {/* {request.owners
+          ? request.owners.map((owner: string) => (
+              <div key={owner}>{owner}</div>
+            ))
+          : null} */}
       </td>
     </tr>
   );

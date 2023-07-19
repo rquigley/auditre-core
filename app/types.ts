@@ -119,6 +119,7 @@ export interface RequestTable {
   status: 'requested' | 'complete' | 'overdue';
   type: RequestType;
   requestee: UserId | null;
+  dueDate: Date | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<Boolean, never, Boolean>;
 }
@@ -126,6 +127,10 @@ export interface RequestTable {
 export type RequestUpdate = Updateable<RequestTable>;
 export type NewRequest = Insertable<RequestTable>;
 export type Request = Selectable<RequestTable>;
+export type ClientSafeRequest = Omit<
+  Selectable<RequestTable>,
+  ClientSafeOmitTypes
+>;
 
 export interface Database extends Kysely<Database> {
   account: AccountTable;
@@ -137,3 +142,12 @@ export interface Database extends Kysely<Database> {
   user: UserTable;
   verificationToken: VerificationTokenTable;
 }
+
+export type IconSVGProps = React.PropsWithoutRef<
+  React.SVGProps<SVGSVGElement>
+> &
+  React.RefAttributes<SVGSVGElement>;
+export type IconProps = IconSVGProps & {
+  title?: string;
+  titleId?: string;
+};
