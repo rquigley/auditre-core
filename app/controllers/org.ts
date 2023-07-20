@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { db } from '@/lib/db';
 import { OrgUpdate, Org, NewOrg, OrgId } from '@/types';
 

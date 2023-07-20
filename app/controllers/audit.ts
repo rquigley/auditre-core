@@ -1,3 +1,4 @@
+import 'server-only';
 import { db } from '@/lib/db';
 import { AuditUpdate, Audit, NewAudit, OrgId } from '@/types';
 import { nanoid } from 'nanoid';

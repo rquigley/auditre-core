@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { Pool } from 'pg';
 import { Kysely, PostgresDialect, CamelCasePlugin } from 'kysely';
 import { Database } from '@/types';
