@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { db } from '@/lib/db';
 import { NewPassword, Password, PasswordUpdate, UserId } from '@/types';
 import { generatePassword } from '@/lib/util';

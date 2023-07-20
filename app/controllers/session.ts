@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { db } from '@/lib/db';
 import { sql } from 'kysely';
 import { SessionUpdate, Session, NewSession } from '@/types';

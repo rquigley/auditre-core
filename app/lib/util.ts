@@ -1,3 +1,4 @@
+import 'server-only';
 export function generatePassword(
   length: number = 8,
   includeSymbols = true,

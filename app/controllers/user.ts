@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { db } from '@/lib/db';
 import { UserUpdate, User, NewUser } from '@/types';
 import { getServerSession } from 'next-auth/next';
