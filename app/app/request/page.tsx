@@ -2,7 +2,7 @@
 // import { Suspense } from 'react';
 // import { redirect } from 'next/navigation';
 import { redirect } from 'next/navigation';
-import { getAll, Request } from '@/controllers/request';
+import { getAll } from '@/controllers/request';
 import { getCurrentUser } from '@/controllers/user';
 import * as na from 'next-auth/next';
 

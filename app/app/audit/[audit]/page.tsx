@@ -1,5 +1,4 @@
-import { redirect } from 'next/navigation';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getAllByAuditId } from '@/controllers/request';
 import { getCurrentUser } from '@/controllers/user';
 import { getByExternalId } from '@/controllers/audit';
@@ -31,7 +30,7 @@ async function getUser() {
   }
 }
 
-export default async function RequestsPage({
+export default async function AuditPage({
   params: { audit: externalId },
 }: {
   params: { audit: string };
@@ -42,7 +41,7 @@ export default async function RequestsPage({
 
   // TODO, how do we better enforce this across routes
   if (audit.orgId !== user.orgId) {
-    notFound();
+    return notFound();
   }
 
   const requests = await getAllByAuditId(audit.id);
@@ -53,7 +52,7 @@ export default async function RequestsPage({
     { name: 'Requests', href: '/audits' },
   ];
   return (
-    <div className="sm:px-6 lg:px-8 bg-white rounded-sm py-3 px-3">
+    <main className="sm:px-6 lg:px-8 bg-white rounded-sm py-3 px-3">
       <Header
         title={audit.name || ''}
         subtitle={audit.year ? String(audit.year) : undefined}
@@ -105,6 +104,6 @@ export default async function RequestsPage({
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
