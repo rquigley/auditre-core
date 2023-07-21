@@ -31,7 +31,7 @@ export default function Header({ title, subtitle, breadcrumbs }: Props) {
           <ol role="list" className="flex items-center space-x-4">
             {breadcrumbs
               ? breadcrumbs.map(({ name, href }, idx) => (
-                  <BreadcrumbItem name={name} href={href} idx={idx} />
+                  <BreadcrumbItem name={name} href={href} key={idx} idx={idx} />
                 ))
               : null}
           </ol>

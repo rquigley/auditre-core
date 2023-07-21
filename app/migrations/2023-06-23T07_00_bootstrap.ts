@@ -103,11 +103,37 @@ export async function up(db: Kysely<any>): Promise<void> {
       "description" varchar,
       "status" varchar,
       "requestee" integer REFERENCES "user" ("id"),
+      "value" jsonb,
       "due_date" date,
       "created_at" timestamp DEFAULT now() NOT NULL,
       "is_deleted" boolean NOT NULL DEFAULT FALSE
     );
     `.execute(db);
+
+  await sql`
+    CREATE TABLE "request_change" (
+      "id" serial PRIMARY KEY,
+      "request_id" integer NOT NULL REFERENCES "request" ("id"),
+      "external_id" varchar NOT NULL UNIQUE,
+      "created_at" timestamp DEFAULT now() NOT NULL,
+      "audit_id" integer NOT NULL REFERENCES "audit" ("id"),
+      "actor" jsonb,
+      "new_data" JSONB
+    );
+    `.execute(db);
+
+  // await sql`
+  //   CREATE TABLE "log" (
+  //     "id" serial PRIMARY KEY,
+  //     "org_id" integer NOT NULL REFERENCES "org" ("id"),
+  //     "action" varchar,
+  //     "actor_id" integer,
+  //     "actor_type" varchar,
+  //     "context_ip" varchar,
+  //     "context_user_agent" varchar,
+  //     "created_at" timestamp DEFAULT now() NOT NULL
+  //   );
+  //   `.execute(db);
 }
 
 export async function down(db: Kysely<any>): Promise<void> {}

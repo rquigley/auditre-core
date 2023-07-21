@@ -8,7 +8,7 @@ function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case 'requested':
       return (
-        <span className="inline-flex items-center rounded-md bg-yellow-400/10 px-2 py-1 text-xs font-medium text-yellow-500 ring-1 ring-inset ring-yellow-400/20">
+        <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
           Requested
         </span>
       );
@@ -39,7 +39,7 @@ export default function RequestRow({
   request: ClientSafeRequest;
 }) {
   const router = useRouter();
-  console.log(request);
+
   return (
     <tr key={request.externalId} className="hover:bg-gray-100">
       <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-sm font-medium sm:pr-0">

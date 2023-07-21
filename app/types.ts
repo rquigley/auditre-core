@@ -1,5 +1,7 @@
+import { DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import {
   Kysely,
+  JSONColumnType,
   Generated,
   ColumnType,
   Selectable,
@@ -23,6 +25,8 @@ export interface OrgTable {
 export type OrgUpdate = Updateable<OrgTable>;
 export type NewOrg = Insertable<OrgTable>;
 export type Org = Selectable<OrgTable>;
+
+export type Actor = { userId: UserId; type: 'USER' } | { type: 'SYSTEM' };
 
 export interface UserTable {
   id: Generated<UserId>;
@@ -104,21 +108,27 @@ export type NewAudit = Insertable<AuditTable>;
 export type Audit = Selectable<AuditTable>;
 export type ClientSafeAudit = Omit<Selectable<AuditTable>, ClientSafeOmitTypes>;
 
+export type RequestValue = {
+  value: string;
+};
 export type RequestType =
-  | 'SYSTEM_BUSINESS_NAME'
-  | 'SYSTEM_BUSINESS_MODEL'
-  | 'SYSTEM_BUSINESS_DESCRIPTION'
-  | 'SYSTEM_MULTIPLE_BUSINESS_LINES'
+  | 'BUSINESS_NAME'
+  | 'BUSINESS_MODEL'
+  | 'BUSINESS_DESCRIPTION'
+  | 'MULTIPLE_BUSINESS_LINES'
   | 'USER_REQUESTED';
+export type RequestStatus = 'requested' | 'complete' | 'overdue';
 export interface RequestTable {
   id: Generated<RequestId>;
-  externalId: ColumnType<string, string, never>;
+  externalId: string;
   auditId: AuditId;
   name: string | null;
   description: string | null;
-  status: 'requested' | 'complete' | 'overdue';
+  status: RequestStatus;
   type: RequestType;
-  requestee: UserId | null;
+  //requestee: UserId | null;
+  //value: JSONColumnType<RequestValue>;
+  value: RequestValue;
   dueDate: Date | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<Boolean, never, Boolean>;
@@ -132,11 +142,36 @@ export type ClientSafeRequest = Omit<
   ClientSafeOmitTypes
 >;
 
+export type RequestChangeValue = RequestValue & {
+  status: RequestStatus;
+  dueDate: Date | null;
+  isDeleted: Boolean;
+};
+export interface RequestChangeTable {
+  id: Generated<number>;
+  requestId: RequestId;
+  externalId: string;
+  auditId: AuditId;
+  //actor: JSONColumnType<Actor, Actor, Actor>;
+  actor: Actor;
+  newData: RequestChangeValue;
+  createdAt: ColumnType<Date, string | undefined, never>;
+}
+
+export type RequestChangeUpdate = Updateable<RequestChangeTable>;
+export type NewRequestChange = Insertable<RequestChangeTable>;
+export type RequestChange = Selectable<RequestChangeTable>;
+export type ClientSafeRequestChange = Omit<
+  Selectable<RequestChangeTable>,
+  ClientSafeOmitTypes
+>;
+
 export interface Database extends Kysely<Database> {
   account: AccountTable;
   audit: AuditTable;
   org: OrgTable;
   request: RequestTable;
+  requestChange: RequestChangeTable;
   password: PasswordTable;
   session: SessionTable;
   user: UserTable;

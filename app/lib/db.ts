@@ -1,7 +1,13 @@
-import 'server-only';
+//import 'server-only';
 
 import { Pool } from 'pg';
-import { Kysely, PostgresDialect, CamelCasePlugin } from 'kysely';
+import {
+  Kysely,
+  PostgresDialect,
+  CamelCasePlugin,
+  RawBuilder,
+  sql,
+} from 'kysely';
 import { Database } from '@/types';
 
 const dialect = new PostgresDialect({
@@ -17,6 +23,10 @@ const dialect = new PostgresDialect({
     });
   },
 });
+
+export function json<T>(value: T): RawBuilder<T> {
+  return sql`CAST(${JSON.stringify(value)} AS JSONB)`;
+}
 
 export const db = new Kysely<Database>({
   dialect,

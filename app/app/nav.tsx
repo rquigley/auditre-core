@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth/next';
 import { getCurrentUser } from '@/controllers/user';
 import { clientSafe, omit } from '@/lib/util';
 import { getAllByOrgId } from '@/controllers/audit';
+import type { User } from '@/types';
 
 async function getUser() {
   try {
@@ -18,7 +19,7 @@ async function getUser() {
 export default async function Nav() {
   const user = await getUser();
   const audits = await getAllByOrgId(user.orgId);
-
+  const a2 = clientSafe(audits);
   return (
     <Navbar
       user={clientSafe(user) as ClientSafeUser}
