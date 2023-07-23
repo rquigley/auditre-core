@@ -28,7 +28,7 @@ import { getByExternalId, getChangesById } from '@/controllers/request';
 import { getById as getAuditById } from '@/controllers/audit';
 
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import BusinessName from './BusinessName';
+import FormContainer from './form-container';
 
 dayjs.extend(relativeTime);
 
@@ -44,56 +44,6 @@ async function getUser() {
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
 }
-
-const activity = [
-  {
-    id: 1,
-    type: 'created',
-    person: { name: 'Chelsea Hagon' },
-    date: '7d ago',
-    dateTime: '2023-01-23T10:32',
-  },
-  {
-    id: 2,
-    type: 'edited',
-    person: { name: 'Chelsea Hagon' },
-    date: '6d ago',
-    dateTime: '2023-01-23T11:03',
-  },
-  {
-    id: 3,
-    type: 'sent',
-    person: { name: 'Chelsea Hagon' },
-    date: '6d ago',
-    dateTime: '2023-01-23T11:24',
-  },
-  {
-    id: 4,
-    type: 'commented',
-    person: {
-      name: 'Chelsea Hagon',
-      imageUrl:
-        'https://images.unsplash.com/photo-1550525811-e5869dd03032?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    },
-    comment: 'Name change in effect.',
-    date: '3d ago',
-    dateTime: '2023-01-23T15:56',
-  },
-  {
-    id: 5,
-    type: 'viewed',
-    person: { name: 'Alex Curren' },
-    date: '2d ago',
-    dateTime: '2023-01-24T09:12',
-  },
-  {
-    id: 6,
-    type: 'paid',
-    person: { name: 'Alex Curren' },
-    date: '1d ago',
-    dateTime: '2023-01-24T09:20',
-  },
-];
 
 export default async function RequestPage({
   params: { request: externalId },
@@ -194,7 +144,7 @@ export default async function RequestPage({
 
           {/* Invoice */}
           <div className="-mx-4 px-4 py-8 shadow-sm ring-1 ring-gray-900/5 sm:mx-0 sm:rounded-lg sm:px-8 sm:pb-14 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:px-16 xl:pb-20 xl:pt-16">
-            <BusinessName request={request} user={user} audit={audit} />
+            <FormContainer request={request} user={user} audit={audit} />
           </div>
 
           <div className="lg:col-start-3">

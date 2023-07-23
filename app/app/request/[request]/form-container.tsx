@@ -1,7 +1,7 @@
 import { useForm, SubmitHandler, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { businessName as formSchema } from '@/lib/formSchema';
+import { businessNameSchema as formSchema } from '@/lib/formSchema';
 import { updateValue } from '@/controllers/request';
 import BusinessNameForm from './BusinessNameForm';
 import BusinessModelForm from './BusinessModelForm';
