@@ -3,18 +3,19 @@ import {
   getById,
   update,
   getByAccountProviderAndProviderId,
-} from "@/controllers/user";
-import { create as createAccount } from "@/controllers/account";
-import { NewUser, UserUpdate } from "@/types";
-import { loadEnvConfig } from "@next/env";
-import { db } from "@/lib/db";
+} from '@/controllers/user';
+import { create as createAccount } from '@/controllers/account';
+import * as sessionCtrl from '@/controllers/session';
+import { NewUser, UserUpdate } from '@/types';
+import { loadEnvConfig } from '@next/env';
+import { db } from '@/lib/db';
 
 const projectDir = process.cwd();
 loadEnvConfig(projectDir);
 
-async function run() {
+async function run1() {
   const newUser: NewUser = {
-    name: "New User",
+    name: 'New User',
     email: `newuser${Date.now()}@example.com`,
     //password: "newpassword",
   };
@@ -22,11 +23,11 @@ async function run() {
   //console.log(createdUser);
   const testUserId = createdUser.id;
 
-  const provider = "github";
+  const provider = 'github';
   const providerAccountId = Date.now().toString();
   const account = await createAccount({
     userId: createdUser.id,
-    type: "github",
+    type: 'github',
     provider,
     providerAccountId,
   });
@@ -34,9 +35,9 @@ async function run() {
 
   const data = await getByAccountProviderAndProviderId(
     provider,
-    providerAccountId
+    providerAccountId,
   );
-  console.log(data)
+  console.log(data);
 
   // const user = await getById(testUserId);
   // const updateWith: UserUpdate = {
@@ -49,4 +50,16 @@ async function run() {
   db.destroy();
 }
 
-run();
+async function run2() {
+  const account = await sessionCtrl.create({
+    userId: 1,
+    sessionToken: '2sdfhfsdhfdshfds',
+    expires: new Date(Date.now()),
+  });
+  console.log(account.id);
+  const res = await sessionCtrl.deleteBySessionToken('2sdfhfsdhfdshfds');
+  console.log(res);
+  db.destroy();
+}
+
+run2();
