@@ -7,7 +7,7 @@ import {
   businessModelSchema as formSchema,
   businessModels,
   businessModelTypesOnly,
-} from '@/lib/formSchema';
+} from '@/lib/form-schema';
 
 type Props = {
   businessModel: typeof businessModelTypesOnly;

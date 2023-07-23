@@ -1,10 +1,10 @@
 import { useForm, SubmitHandler, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { businessNameSchema as formSchema } from '@/lib/formSchema';
+import { businessModelSchema, businessNameSchema } from '@/lib/form-schema';
 import { updateValue } from '@/controllers/request';
-import BusinessNameForm from './BusinessNameForm';
-import BusinessModelForm from './BusinessModelForm';
+import BusinessNameForm from './business-name-form';
+import BusinessModelForm from './business-model-form';
 
 import { Request, User, Audit } from '@/types';
 type Props = {
@@ -12,7 +12,23 @@ type Props = {
   user: User;
   audit: Audit;
 };
+const typeMap = {
+  BUSINESS_NAME: {
+    cmp: BusinessNameForm,
+    schema: businessNameSchema,
+  },
+  BUSINESS_MODEL: {
+    cmp: BusinessModelForm,
+    schema: businessModelSchema,
+  },
+} as const;
 export default async function BusinessName({ request, user, audit }: Props) {
+  if (!typeMap.hasOwnProperty(request.type))) {
+    throw new Error('Invalid request type');
+  }
+  const FormCmp = typeMap[request.type].cmp;
+  const formSchema = typeMap[request.type].schema;
+
   async function saveValues(inputVals: z.infer<typeof formSchema>) {
     'use server';
 
@@ -22,22 +38,5 @@ export default async function BusinessName({ request, user, audit }: Props) {
       userId: user.id,
     });
   }
-  //const businessName = request.value;
-  if (request.type === 'BUSINESS_NAME') {
-    return (
-      <BusinessNameForm
-        businessName={request?.value?.value || ''}
-        saveValues={saveValues}
-        // schema={formSchema}
-      />
-    );
-  } else if (request.type === 'BUSINESS_MODEL') {
-    return (
-      <BusinessModelForm
-        businessModel={request?.value?.value || ''}
-        saveValues={saveValues}
-        // schema={formSchema}
-      />
-    );
-  }
+  return <FormCmp value={request?.value} saveValues={saveValues} />;
 }
