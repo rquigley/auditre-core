@@ -23,7 +23,7 @@ const typeMap = {
   },
 } as const;
 export default async function BusinessName({ request, user, audit }: Props) {
-  if (!typeMap.hasOwnProperty(request.type))) {
+  if (!typeMap.hasOwnProperty(request.type)) {
     throw new Error('Invalid request type');
   }
   const FormCmp = typeMap[request.type].cmp;
