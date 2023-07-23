@@ -157,7 +157,7 @@ export default async function RequestPage({
                 <li key={idx} className="relative flex gap-x-4">
                   <div
                     className={classNames(
-                      idx === activity.length - 1 ? 'h-6' : '-bottom-6',
+                      idx === changes.length - 1 ? 'h-6' : '-bottom-6',
                       'absolute left-0 top-0 flex w-6 justify-center',
                     )}
                   >
