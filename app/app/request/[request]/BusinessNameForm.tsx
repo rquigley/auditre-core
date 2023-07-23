@@ -3,7 +3,7 @@ import { PhotoIcon, UserCircleIcon } from '@heroicons/react/24/solid';
 import { useForm, SubmitHandler, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { businessName as formSchema } from '@/lib/formSchema';
+import { businessNameSchema as formSchema } from '@/lib/formSchema';
 
 type Props = {
   businessName: string;
@@ -29,9 +29,9 @@ export default function BusinessNameForm({ businessName, saveValues }: Props) {
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-12">
         <div className="border-b border-gray-900/10 pb-12">
-          <h2 className="text-base font-semibold leading-7 text-gray-900">
+          {/* <h2 className="text-base font-semibold leading-7 text-gray-900">
             Legal name of the business
-          </h2>
+          </h2> */}
           <p className="mt-1 text-sm leading-6 text-gray-600">
             As entered on financial statements. This will be used for all report
             generation.

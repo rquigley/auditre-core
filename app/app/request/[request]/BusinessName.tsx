@@ -4,6 +4,7 @@ import * as z from 'zod';
 import { businessName as formSchema } from '@/lib/formSchema';
 import { updateValue } from '@/controllers/request';
 import BusinessNameForm from './BusinessNameForm';
+import BusinessModelForm from './BusinessModelForm';
 
 import { Request, User, Audit } from '@/types';
 type Props = {
@@ -22,11 +23,21 @@ export default async function BusinessName({ request, user, audit }: Props) {
     });
   }
   //const businessName = request.value;
-  return (
-    <BusinessNameForm
-      businessName={request?.value?.value || ''}
-      saveValues={saveValues}
-      // schema={formSchema}
-    />
-  );
+  if (request.type === 'BUSINESS_NAME') {
+    return (
+      <BusinessNameForm
+        businessName={request?.value?.value || ''}
+        saveValues={saveValues}
+        // schema={formSchema}
+      />
+    );
+  } else if (request.type === 'BUSINESS_MODEL') {
+    return (
+      <BusinessModelForm
+        businessModel={request?.value?.value || ''}
+        saveValues={saveValues}
+        // schema={formSchema}
+      />
+    );
+  }
 }
