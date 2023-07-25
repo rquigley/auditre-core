@@ -103,7 +103,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       "description" varchar,
       "status" varchar,
       "requestee" integer REFERENCES "user" ("id"),
-      "value" jsonb,
+      "data" jsonb,
       "due_date" date,
       "created_at" timestamp DEFAULT now() NOT NULL,
       "is_deleted" boolean NOT NULL DEFAULT FALSE

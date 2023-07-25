@@ -5,7 +5,7 @@ import type {
   RequestUpdate,
   Actor,
   Request,
-  RequestValue,
+  RequestData,
   RequestChangeValue,
   NewRequest,
   UserId,
@@ -13,26 +13,77 @@ import type {
   RequestId,
   RequestChange,
   NewRequestChange,
+  RequestType,
 } from '@/types';
 import { nanoid } from 'nanoid';
 import { getById as getUserById } from '@/controllers/user';
+import type { ZodTypeAny } from 'zod';
+import * as schemas from '@/lib/form-schema';
 
 type CreateRequest = Omit<NewRequest, 'externalId' | 'value'> & {
-  value: any;
+  data: any;
 };
+
+type RequestFormType = {
+  name: string;
+  defaultValue: RequestData;
+  schema: ZodTypeAny;
+};
+type RequestTypes = {
+  [key in RequestType]: RequestFormType;
+};
+
+export const requestTypes: RequestTypes = {
+  BUSINESS_NAME: {
+    name: 'Legal Name of business',
+    defaultValue: {
+      value: '',
+    },
+    schema: schemas.businessNameSchema,
+  },
+  BUSINESS_MODEL: {
+    name: 'Business Model',
+    defaultValue: {
+      value: '',
+    },
+    schema: schemas.businessModelSchema,
+  },
+  BUSINESS_DESCRIPTION: {
+    name: 'Business Description',
+    defaultValue: {
+      value: '',
+    },
+    schema: schemas.businessModelSchema,
+  },
+  MULTIPLE_BUSINESS_LINES: {
+    name: 'Multiple lines',
+    defaultValue: {
+      value: '',
+    },
+    schema: schemas.businessModelSchema,
+  },
+  USER_REQUESTED: {
+    name: '???',
+    defaultValue: {
+      value: '',
+    },
+    schema: schemas.businessModelSchema,
+  },
+} as const;
+
 export async function create(
   request: CreateRequest,
   actor: Actor,
 ): Promise<Request> {
   const res = await db
     .insertInto('request')
-    .values({ ...request, externalId: nanoid(), value: json(request.value) })
+    .values({ ...request, externalId: nanoid(), data: json(request.data) })
     .returningAll()
     .executeTakeFirstOrThrow();
 
   await logChange({
     requestId: res.id,
-    newData: request.value,
+    newData: request.data,
     actor,
     auditId: request.auditId,
   });
@@ -42,52 +93,19 @@ export async function create(
 
 export async function upsertDefault(auditId: AuditId) {
   const currentReqs = await getAllByAuditId(auditId);
-  if (!currentReqs.find((r) => r.type === 'BUSINESS_NAME')) {
+  for (let type in requestTypes) {
+    if (type === 'USER_REQUESTED' || currentReqs.find((r) => r.type === type)) {
+      // TODO: check for different value shape here.
+      continue;
+    }
+    const request = requestTypes[type as RequestType];
     await create(
       {
         auditId,
-        type: 'BUSINESS_NAME',
-        name: 'Legal Name of business',
+        type: type as RequestType,
+        name: request.name,
         status: 'requested',
-        value: { value: '' },
-      },
-      { type: 'SYSTEM' },
-    );
-  }
-  if (!currentReqs.find((r) => r.type === 'BUSINESS_NAME')) {
-    await create(
-      {
-        auditId,
-        type: 'BUSINESS_MODEL',
-        name: 'Business Model',
-        status: 'requested',
-        value: { value: '' },
-      },
-      { type: 'SYSTEM' },
-    );
-  }
-  if (!currentReqs.find((r) => r.type === 'BUSINESS_DESCRIPTION')) {
-    await create(
-      {
-        auditId,
-        type: 'BUSINESS_DESCRIPTION',
-        name: 'Business Description',
-        description: 'Description of the business',
-        status: 'requested',
-        value: { value: '' },
-      },
-      { type: 'SYSTEM' },
-    );
-  }
-  if (!currentReqs.find((r) => r.type === 'MULTIPLE_BUSINESS_LINES')) {
-    await create(
-      {
-        auditId,
-        type: 'MULTIPLE_BUSINESS_LINES',
-        name: 'Multiple lines',
-        description: 'Does the business have multiple business lines?',
-        status: 'requested',
-        value: { value: '' },
+        data: request.defaultValue,
       },
       { type: 'SYSTEM' },
     );
@@ -131,7 +149,7 @@ export async function update(
     .executeTakeFirstOrThrow();
 
   const newData = {
-    ...request.value,
+    ...request.data,
     status: request.status,
     dueDate: request.dueDate,
     isDeleted: request.isDeleted,
@@ -144,8 +162,21 @@ export async function update(
   });
 }
 
-export async function updateValue(id: number, value: string, actor: Actor) {
-  return update(id, { value: { value } }, actor);
+export async function updateData({
+  id,
+  data,
+  actor,
+  schema,
+}: {
+  id: RequestId;
+  data: string;
+  actor: Actor;
+  schema: ZodTypeAny;
+}) {
+  console.log('new', data);
+  const parsed = schema.parse(data);
+
+  return await update(id, { data: parsed }, actor);
 }
 
 export function logChange({
@@ -203,7 +234,7 @@ export async function getChangesById(requestId: RequestId): Promise<Change[]> {
         actor,
       });
     } else {
-      if (changes[n - 1].newData.value !== change.newData.value) {
+      if (changes[n - 1].newData !== change.newData) {
         ret.push({
           type: 'VALUE',
           createdAt: change.createdAt,

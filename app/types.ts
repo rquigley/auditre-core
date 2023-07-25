@@ -108,9 +108,13 @@ export type NewAudit = Insertable<AuditTable>;
 export type Audit = Selectable<AuditTable>;
 export type ClientSafeAudit = Omit<Selectable<AuditTable>, ClientSafeOmitTypes>;
 
-export type RequestValue = {
-  value: string;
-};
+export type RequestData =
+  | {
+      value: string;
+    }
+  | {
+      value: string[];
+    };
 export type RequestType =
   | 'BUSINESS_NAME'
   | 'BUSINESS_MODEL'
@@ -127,8 +131,7 @@ export interface RequestTable {
   status: RequestStatus;
   type: RequestType;
   //requestee: UserId | null;
-  //value: JSONColumnType<RequestValue>;
-  value: RequestValue;
+  data: RequestData;
   dueDate: Date | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<Boolean, never, Boolean>;
@@ -142,7 +145,7 @@ export type ClientSafeRequest = Omit<
   ClientSafeOmitTypes
 >;
 
-export type RequestChangeValue = RequestValue & {
+export type RequestChangeValue = RequestData & {
   status: RequestStatus;
   dueDate: Date | null;
   isDeleted: Boolean;
