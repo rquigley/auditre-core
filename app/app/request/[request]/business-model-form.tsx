@@ -1,12 +1,11 @@
 'use client';
-import { PhotoIcon, UserCircleIcon } from '@heroicons/react/24/solid';
-import { useForm, SubmitHandler, FormProvider } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
   businessModelSchema as formSchema,
   businessModels,
-  businessModelTypesOnly,
 } from '@/lib/form-schema';
 import type { RequestData } from '@/types';
 
@@ -15,8 +14,11 @@ type Props = {
   saveData: (data: z.infer<typeof formSchema>) => void;
 };
 export default function BusinessModelForm({ data, saveData }: Props) {
-  function onSubmit(newData: z.infer<typeof formSchema>) {
-    saveData(newData);
+  const router = useRouter();
+
+  async function onSubmit(data: z.infer<typeof formSchema>) {
+    await saveData(data);
+    router.refresh();
   }
 
   const {

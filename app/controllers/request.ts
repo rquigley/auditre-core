@@ -28,6 +28,7 @@ type RequestFormType = {
   name: string;
   defaultValue: RequestData;
   schema: ZodTypeAny;
+  completeOnSet: boolean;
 };
 type RequestTypes = {
   [key in RequestType]: RequestFormType;
@@ -39,6 +40,7 @@ export const requestTypes: RequestTypes = {
     defaultValue: {
       value: '',
     },
+    completeOnSet: true,
     schema: schemas.businessNameSchema,
   },
   BUSINESS_MODEL: {
@@ -46,6 +48,7 @@ export const requestTypes: RequestTypes = {
     defaultValue: {
       value: '',
     },
+    completeOnSet: true,
     schema: schemas.businessModelSchema,
   },
   BUSINESS_DESCRIPTION: {
@@ -53,13 +56,15 @@ export const requestTypes: RequestTypes = {
     defaultValue: {
       value: '',
     },
-    schema: schemas.businessModelSchema,
+    completeOnSet: true,
+    schema: schemas.businessDescriptionSchema,
   },
   MULTIPLE_BUSINESS_LINES: {
     name: 'Multiple lines',
     defaultValue: {
       value: '',
     },
+    completeOnSet: true,
     schema: schemas.businessModelSchema,
   },
   USER_REQUESTED: {
@@ -67,6 +72,7 @@ export const requestTypes: RequestTypes = {
     defaultValue: {
       value: '',
     },
+    completeOnSet: false,
     schema: schemas.businessModelSchema,
   },
 } as const;
@@ -166,17 +172,20 @@ export async function updateData({
   id,
   data,
   actor,
-  schema,
+  type,
 }: {
   id: RequestId;
   data: string;
   actor: Actor;
-  schema: ZodTypeAny;
+  type: RequestType;
 }) {
   console.log('new', data);
+  const schema = requestTypes[type].schema;
   const parsed = schema.parse(data);
 
-  return await update(id, { data: parsed }, actor);
+  const status = requestTypes[type].completeOnSet ? 'complete' : undefined;
+
+  return await update(id, { data: parsed, status }, actor);
 }
 
 export function logChange({

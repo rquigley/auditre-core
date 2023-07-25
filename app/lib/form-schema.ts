@@ -6,9 +6,13 @@ export const businessNameSchema = z.object({
     .min(2, {
       message: 'This must be at least 2 characters.',
     })
-    .max(3, {
+    .max(128, {
       message: 'This must be under 128 characters.',
     }),
+});
+
+export const businessDescriptionSchema = z.object({
+  value: z.string(),
 });
 
 export const businessModels = [
