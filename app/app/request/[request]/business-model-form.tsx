@@ -8,19 +8,15 @@ import {
   businessModels,
   businessModelTypesOnly,
 } from '@/lib/form-schema';
+import type { RequestData } from '@/types';
 
 type Props = {
-  businessModel: typeof businessModelTypesOnly;
-  saveValues: (values: z.infer<typeof formSchema>) => void;
+  data: RequestData;
+  saveData: (data: z.infer<typeof formSchema>) => void;
 };
-export default function BusinessModelForm({
-  businessModel,
-  saveValues,
-}: Props) {
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    console.log('asads');
-    saveValues(values);
+export default function BusinessModelForm({ data, saveData }: Props) {
+  function onSubmit(newData: z.infer<typeof formSchema>) {
+    saveData(newData);
   }
 
   const {
@@ -30,11 +26,9 @@ export default function BusinessModelForm({
   } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      businessModel,
+      value: data.value,
     },
   });
-  console.log(errors.businessModel?.message);
-  const models = [];
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -51,13 +45,13 @@ export default function BusinessModelForm({
           <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             <div className="sm:col-span-4 lg:col-span-8">
               <fieldset>
-                <legend className="sr-only">Notifications</legend>
+                <legend className="sr-only">Business Models</legend>
                 <div className="space-y-5">
                   {businessModels.map((model, idx) => (
-                    <div key={idx} className="relative flex items-start">
+                    <div key={model.type} className="relative flex items-start">
                       <div className="flex h-6 items-center">
                         <input
-                          {...register(`businessModel`)}
+                          {...register(`value`)}
                           value={model.type}
                           aria-describedby={`${model.type}-description`}
                           type="checkbox"

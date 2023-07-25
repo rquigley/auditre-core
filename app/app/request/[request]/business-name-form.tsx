@@ -4,14 +4,17 @@ import { useForm, SubmitHandler, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { businessNameSchema as formSchema } from '@/lib/form-schema';
+import { classNames } from '@/lib/util';
+import type { RequestData } from '@/types';
 
 type Props = {
-  businessName: string;
-  saveValues: (values: z.infer<typeof formSchema>) => void;
+  data: RequestData;
+  saveData: (data: z.infer<typeof formSchema>) => void;
 };
-export default function BusinessNameForm({ businessName, saveValues }: Props) {
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    saveValues(values);
+
+export default function BusinessNameForm({ data, saveData }: Props) {
+  function onSubmit(data: z.infer<typeof formSchema>) {
+    saveData(data);
   }
 
   const {
@@ -21,7 +24,7 @@ export default function BusinessNameForm({ businessName, saveValues }: Props) {
   } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      businessName,
+      value: data.value,
     },
   });
 
@@ -43,16 +46,24 @@ export default function BusinessNameForm({ businessName, saveValues }: Props) {
                 htmlFor="username"
                 className="block text-sm font-medium leading-6 text-gray-900"
               >
-                Name <p>{errors.businessName?.message}</p>
+                Name
               </label>
               <div className="mt-2">
                 <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600 sm:max-w-md">
                   <input
-                    {...register('businessName')}
+                    {...register('value')}
                     autoComplete="off"
-                    className="block w-full rounded-md border-0 py-1.5 px-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    className={classNames(
+                      errors.value
+                        ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
+                        : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600',
+                      'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
+                    )}
                   />
                 </div>
+                <p className="mt-2 text-sm text-red-600" id="email-error">
+                  {errors.value?.message}
+                </p>
               </div>
             </div>
           </div>

@@ -1,42 +1,53 @@
 import { useForm, SubmitHandler, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { businessModelSchema, businessNameSchema } from '@/lib/form-schema';
-import { updateValue } from '@/controllers/request';
+
+import { updateData } from '@/controllers/request';
 import BusinessNameForm from './business-name-form';
 import BusinessModelForm from './business-model-form';
+import type { RequestType } from '@/types';
+import { requestTypes } from '@/controllers/request';
+import type { Request, User, Audit } from '@/types';
 
-import { Request, User, Audit } from '@/types';
+type FormType = { cmp: React.FC<Props>; schema: z.ZodSchema<any, any, any> };
+type TypeMap = {
+  [key in RequestType]: FormType;
+};
+
 type Props = {
   request: Request;
   user: User;
   audit: Audit;
 };
-const typeMap = {
-  BUSINESS_NAME: {
-    cmp: BusinessNameForm,
-    schema: businessNameSchema,
-  },
-  BUSINESS_MODEL: {
-    cmp: BusinessModelForm,
-    schema: businessModelSchema,
-  },
+
+const formComponents = {
+  BUSINESS_NAME: BusinessNameForm,
+  BUSINESS_DESCRIPTION: BusinessNameForm,
+  BUSINESS_MODEL: BusinessModelForm,
+  MULTIPLE_BUSINESS_LINES: BusinessNameForm,
+  USER_REQUESTED: BusinessNameForm,
 } as const;
+
 export default async function BusinessName({ request, user, audit }: Props) {
-  if (!typeMap.hasOwnProperty(request.type)) {
+  if (!formComponents.hasOwnProperty(request.type)) {
     throw new Error('Invalid request type');
   }
-  const FormCmp = typeMap[request.type].cmp;
-  const formSchema = typeMap[request.type].schema;
+  const FormCmp = formComponents[request.type];
 
-  async function saveValues(inputVals: z.infer<typeof formSchema>) {
+  async function saveData(data: z.infer<typeof formSchema>) {
     'use server';
+    const formSchema = requestTypes[request.type].schema;
 
-    const values = formSchema.parse(inputVals);
-    updateValue(request.id, values.businessName, {
-      type: 'USER',
-      userId: user.id,
+    await updateData({
+      id: request.id,
+      data,
+      actor: {
+        type: 'USER',
+        userId: user.id,
+      },
+      schema: formSchema,
     });
   }
-  return <FormCmp value={request?.value} saveValues={saveValues} />;
+
+  return <FormCmp data={request.data} saveData={saveData} />;
 }
