@@ -8,19 +8,33 @@ import {
   RawBuilder,
   sql,
 } from 'kysely';
+import { z } from 'zod';
 import { Database } from '@/types';
+const dBConfig = z.object({
+  database: z.string().min(3).max(40),
+  host: z.string().min(3).max(128),
+  user: z.string().min(3).max(40),
+  password: z.string().min(3).max(255),
+});
 
 const dialect = new PostgresDialect({
   pool: async () => {
-    if (!process.env.DB_DATABASE) {
-      throw new Error('DB_DATABASE not set');
-    }
-    return new Pool({
+    const config = {
       database: process.env.DB_DATABASE,
       host: process.env.DB_HOSTNAME,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
-    });
+    };
+    try {
+      dBConfig.parse(config);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error(err.message);
+      }
+      process.exit(1);
+    }
+
+    return new Pool(config);
   },
 });
 
