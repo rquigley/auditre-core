@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import { redirect, notFound } from 'next/navigation';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { classNames } from '@/lib/util';
 
 import { Dialog, Listbox, Menu, Transition } from '@headlessui/react';
 import {
@@ -39,10 +40,6 @@ async function getUser() {
   } catch (err) {
     redirect(`/login?next=/requests`);
   }
-}
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
 }
 
 export default async function RequestPage({

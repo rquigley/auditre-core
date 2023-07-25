@@ -1,10 +1,10 @@
 import { useForm, SubmitHandler, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-
 import { updateData } from '@/controllers/request';
 import BusinessNameForm from './business-name-form';
 import BusinessModelForm from './business-model-form';
+import BusinessDescriptionForm from './business-description-form';
 import type { RequestType } from '@/types';
 import { requestTypes } from '@/controllers/request';
 import type { Request, User, Audit } from '@/types';
@@ -22,7 +22,7 @@ type Props = {
 
 const formComponents = {
   BUSINESS_NAME: BusinessNameForm,
-  BUSINESS_DESCRIPTION: BusinessNameForm,
+  BUSINESS_DESCRIPTION: BusinessDescriptionForm,
   BUSINESS_MODEL: BusinessModelForm,
   MULTIPLE_BUSINESS_LINES: BusinessNameForm,
   USER_REQUESTED: BusinessNameForm,
@@ -45,7 +45,7 @@ export default async function BusinessName({ request, user, audit }: Props) {
         type: 'USER',
         userId: user.id,
       },
-      schema: formSchema,
+      type: request.type,
     });
   }
 
