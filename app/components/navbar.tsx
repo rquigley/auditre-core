@@ -15,6 +15,7 @@ import {
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import type { ClientSafeUser, ClientSafeAudit, IconProps } from '@/types';
+import { classNames } from '@/lib/util';
 
 const navigation = [
   { name: 'Requests', href: '/requests', icon: HomeIcon },
@@ -33,10 +34,6 @@ const orgNavigation = [
   },
   { name: 'Team', href: '#', icon: UsersIcon },
 ];
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
 
 export default function Navbar({
   user,

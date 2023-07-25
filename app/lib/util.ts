@@ -1,5 +1,9 @@
 // import 'server-only';
 
+export function classNames(...classes: string[]): string {
+  return classes.filter(Boolean).join(' ');
+}
+
 export function generatePassword(
   length: number = 8,
   includeSymbols = true,
