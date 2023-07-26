@@ -17,15 +17,6 @@ import { signOut } from 'next-auth/react';
 import type { ClientSafeUser, ClientSafeAudit, IconProps } from '@/types';
 import { classNames } from '@/lib/util';
 
-const navigation = [
-  { name: 'Requests', href: '/requests', icon: HomeIcon },
-  {
-    name: 'Documents',
-    href: '/documents',
-    icon: DocumentDuplicateIcon,
-  },
-  { name: 'Reports', href: '/reports', icon: ChartPieIcon },
-];
 const orgNavigation = [
   {
     name: 'Organization Settings',
@@ -50,7 +41,12 @@ export default function Navbar({
     : '/audits';
 
   const navigation = [
-    { name: 'Requests', href: requestHref, icon: HomeIcon },
+    {
+      name: 'Requests',
+      href: requestHref,
+      altRoots: ['/request'],
+      icon: HomeIcon,
+    },
     {
       name: 'Documents',
       href: '/documents',
@@ -296,6 +292,7 @@ type NavItemProps = {
   name: string;
   href: string;
   icon: React.FC<IconProps>;
+  altRoots?: string[];
 };
 function NavItem({
   item,
@@ -304,7 +301,12 @@ function NavItem({
   item: NavItemProps;
   rootPathname: string;
 }) {
-  const isSelected = `/${item.href.split('/')[1]}` === rootPathname;
+  const matchingPaths = [
+    `/${item.href.split('/')[1]}`,
+    ...(item.altRoots ?? []),
+  ];
+  console.log(matchingPaths, rootPathname);
+  const isSelected = matchingPaths.includes(rootPathname);
 
   return (
     <li key={item.name}>
