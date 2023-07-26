@@ -305,7 +305,6 @@ function NavItem({
     `/${item.href.split('/')[1]}`,
     ...(item.altRoots ?? []),
   ];
-  console.log(matchingPaths, rootPathname);
   const isSelected = matchingPaths.includes(rootPathname);
 
   return (
