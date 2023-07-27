@@ -13,69 +13,14 @@ import type {
   RequestId,
   RequestChange,
   NewRequestChange,
-  RequestType,
 } from '@/types';
 import { nanoid } from 'nanoid';
 import { getById as getUserById } from '@/controllers/user';
-import type { ZodTypeAny } from 'zod';
-import * as schemas from '@/lib/form-schema';
+import { requestTypes, RequestType } from '@/lib/request-types';
 
 type CreateRequest = Omit<NewRequest, 'externalId' | 'value'> & {
   data: any;
 };
-
-type RequestFormType = {
-  name: string;
-  defaultValue: RequestData;
-  schema: ZodTypeAny;
-  completeOnSet: boolean;
-};
-type RequestTypes = {
-  [key in RequestType]: RequestFormType;
-};
-
-export const requestTypes: RequestTypes = {
-  BUSINESS_NAME: {
-    name: 'Legal Name of business',
-    defaultValue: {
-      value: '',
-    },
-    completeOnSet: true,
-    schema: schemas.businessNameSchema,
-  },
-  BUSINESS_MODEL: {
-    name: 'Business Model',
-    defaultValue: {
-      value: '',
-    },
-    completeOnSet: true,
-    schema: schemas.businessModelSchema,
-  },
-  BUSINESS_DESCRIPTION: {
-    name: 'Business Description',
-    defaultValue: {
-      value: '',
-    },
-    completeOnSet: true,
-    schema: schemas.businessDescriptionSchema,
-  },
-  MULTIPLE_BUSINESS_LINES: {
-    name: 'Multiple lines',
-    defaultValue: {
-      value: '',
-    },
-    completeOnSet: true,
-    schema: schemas.businessModelSchema,
-  },
-  USER_REQUESTED: {
-    name: '???',
-    defaultValue: {
-      value: '',
-    },
-    completeOnSet: false,
-    schema: schemas.businessModelSchema,
-  },
-} as const;
 
 export async function create(
   request: CreateRequest,
@@ -138,6 +83,7 @@ export function getAllByAuditId(auditId: AuditId): Promise<Request[]> {
   return db
     .selectFrom('request')
     .where('auditId', '=', auditId)
+    .orderBy('createdAt')
     .selectAll()
     .execute();
 }
@@ -179,7 +125,6 @@ export async function updateData({
   actor: Actor;
   type: RequestType;
 }) {
-  console.log('new', data);
   const schema = requestTypes[type].schema;
   const parsed = schema.parse(data);
 
