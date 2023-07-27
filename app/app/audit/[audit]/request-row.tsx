@@ -50,7 +50,7 @@ export default function RequestRow({
           View<span className="sr-only">, {request.name}</span>
         </Link>
       </td>
-      <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
+      <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
         <div className="text-gray-900 font-semibold">
           <Link
             href={`/request/${request.externalId}`}

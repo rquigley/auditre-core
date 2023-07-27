@@ -8,6 +8,7 @@ import {
   Insertable,
   Updateable,
 } from 'kysely';
+import { RequestType } from './lib/request-types';
 
 export type OrgId = number;
 export type UserId = number;
@@ -115,12 +116,7 @@ export type RequestData =
   | {
       value: string[];
     };
-export type RequestType =
-  | 'BUSINESS_NAME'
-  | 'BUSINESS_MODEL'
-  | 'BUSINESS_DESCRIPTION'
-  | 'MULTIPLE_BUSINESS_LINES'
-  | 'USER_REQUESTED';
+
 export type RequestStatus = 'requested' | 'complete' | 'overdue';
 export interface RequestTable {
   id: Generated<RequestId>;
@@ -155,7 +151,6 @@ export interface RequestChangeTable {
   requestId: RequestId;
   externalId: string;
   auditId: AuditId;
-  //actor: JSONColumnType<Actor, Actor, Actor>;
   actor: Actor;
   newData: RequestChangeValue;
   createdAt: ColumnType<Date, string | undefined, never>;
