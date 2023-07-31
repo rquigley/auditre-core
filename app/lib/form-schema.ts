@@ -10,6 +10,9 @@ export const businessNameSchema = z.object({
 export const basicString = z.object({
   value: z.string(),
 });
+export const basicAny = z.object({
+  value: z.any(),
+});
 
 // export type BusinessModel =
 //   keyof typeof requestTypes.BUSINESS_MODEL.form.value.items;

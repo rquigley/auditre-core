@@ -1,17 +1,9 @@
 import * as z from 'zod';
 import { updateData } from '@/controllers/request';
-import BusinessNameForm from './business-name-form';
-import BusinessModelForm from './business-model-form';
-import BusinessDescriptionForm from './business-description-form';
 import BasicForm from './basic-form';
 import { requestTypes } from '@/lib/request-types';
 import type { Request, User, Audit } from '@/types';
 import { clientSafe } from '@/lib/util';
-
-type FormType = { cmp: React.FC<Props>; schema: z.ZodSchema<any, any, any> };
-type TypeMap = {
-  [key in RequestType]: FormType;
-};
 
 type Props = {
   request: Request;
@@ -28,10 +20,11 @@ const formComponents = {
 } as const;
 
 export default async function BusinessName({ request, user, audit }: Props) {
-  if (!formComponents.hasOwnProperty(request.type)) {
-    throw new Error('Invalid request type');
-  }
-  const FormCmp = formComponents[request.type];
+  // if (!formComponents.hasOwnProperty(request.type)) {
+  //   throw new Error(`Invalid request type ${request.type}`);
+  // }
+  // const FormCmp = formComponents[request.type];
+  const FormCmp = BasicForm;
   const requestConfig = requestTypes[request.type];
 
   async function saveData(data: z.infer<typeof formSchema>) {

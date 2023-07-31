@@ -7,13 +7,37 @@ export type RequestTypeConfig = {
   description: string;
   defaultValue: RequestData;
   form: {
-    [key: string]: {
-      input: 'text' | 'textarea' | 'checkbox';
-    };
+    [key: string]: InputConfig;
   };
   schema: ZodTypeAny;
   completeOnSet: boolean;
 };
+export interface FileUploadInputConfig {
+  input: 'fileupload';
+  extensions: string[];
+  maxFilesizeMB: number;
+}
+export interface CheckboxInputConfig {
+  input: 'checkbox';
+  items: {
+    [key: string]: { name: string; description: string };
+  };
+}
+export interface TextInputConfig {
+  input: 'text';
+}
+export interface TextareaInputConfig {
+  input: 'textarea';
+}
+export interface DateInputConfig {
+  input: 'date';
+}
+export type InputConfig =
+  | TextInputConfig
+  | TextareaInputConfig
+  | DateInputConfig
+  | CheckboxInputConfig
+  | FileUploadInputConfig;
 
 export const businessModelTypes = {
   SOFTWARE_AS_A_SERVICE: {
@@ -140,11 +164,13 @@ export const requestTypes = {
     },
     form: {
       value: {
-        input: 'date',
+        extensions: ['XLS', 'XLSX', 'CSV'],
+        maxFilesizeMB: 10,
+        input: 'fileupload',
       },
     },
     completeOnSet: true,
-    schema: schemas.businessModelSchema,
+    schema: schemas.basicAny,
   },
   CHART_OF_ACCOUNTS: {
     name: 'Upload the chart of accounts',
@@ -154,7 +180,9 @@ export const requestTypes = {
     },
     form: {
       value: {
-        input: 'date',
+        extensions: ['XLS', 'XLSX', 'CSV'],
+        maxFilesizeMB: 10,
+        input: 'fileupload',
       },
     },
     completeOnSet: true,
@@ -272,6 +300,6 @@ export const requestTypes = {
     completeOnSet: false,
     schema: schemas.businessModelSchema,
   },
-} as const;
+};
 
 export type RequestType = keyof typeof requestTypes;
