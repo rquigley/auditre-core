@@ -1,12 +1,22 @@
 'use client';
-import { useForm } from 'react-hook-form';
+import { useForm, UseFormRegister } from 'react-hook-form';
+import { PhotoIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-//import { businessDescriptionSchema as formSchema } from '@/lib/form-schema';
 import { classNames } from '@/lib/util';
-import { requestTypes, RequestTypeConfig } from '@/lib/request-types';
+import { getPresignedUploadUrl } from '@/lib/actions';
+import {
+  requestTypes,
+  DateInputConfig,
+  TextInputConfig,
+  FileUploadInputConfig,
+  InputConfig,
+  CheckboxInputConfig,
+  TextareaInputConfig,
+} from '@/lib/request-types';
 import type { RequestData, ClientSafeRequest } from '@/types';
+import { Input } from 'postcss';
 
 type Props = {
   request: ClientSafeRequest;
@@ -19,6 +29,14 @@ export default function BasicForm({ request, data, saveData }: Props) {
   const config = requestTypes[request.type];
 
   async function onSubmit(data: z.infer<typeof config.schema>) {
+    // const signedUrl = await getPresignedUploadUrl('hahaha');
+    // const file = data.value[0];
+    // console.log(file, signedUrl);
+    // await fetch(signedUrl, {
+    //   method: 'PUT',
+    //   body: file,
+    // });
+    // return;
     await saveData(data);
     router.refresh();
   }
@@ -35,6 +53,7 @@ export default function BasicForm({ request, data, saveData }: Props) {
     },
   });
 
+  const fieldConfig = config.form.value as InputConfig;
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-12">
@@ -54,28 +73,40 @@ export default function BasicForm({ request, data, saveData }: Props) {
                 htmlFor="username"
                 className="block text-sm font-medium leading-6 text-gray-900"
               >
-                Description
+                {/* Description */}
               </label>
               <div className="mt-4">
-                {config.form.value.input === 'checkbox' ? (
+                {fieldConfig.input === 'fileupload' ? (
+                  <FileUpload
+                    register={register}
+                    errors={errors}
+                    config={fieldConfig}
+                  />
+                ) : fieldConfig.input === 'checkbox' ? (
                   <Checkbox
                     register={register}
                     errors={errors}
-                    config={config.form.value}
+                    config={fieldConfig}
                   />
-                ) : config.form.value.input === 'textarea' ? (
-                  <TextArea
+                ) : fieldConfig.input === 'textarea' ? (
+                  <Textarea
                     register={register}
                     errors={errors}
-                    config={config.form.value}
+                    config={fieldConfig}
                   />
-                ) : (
+                ) : fieldConfig.input === 'date' ? (
+                  <Date
+                    register={register}
+                    errors={errors}
+                    config={fieldConfig}
+                  />
+                ) : fieldConfig.input === 'text' ? (
                   <Text
                     register={register}
                     errors={errors}
-                    config={config.form.value}
+                    config={fieldConfig}
                   />
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -100,7 +131,16 @@ export default function BasicForm({ request, data, saveData }: Props) {
   );
 }
 
-function Text({ register, errors, config }) {
+type FormFieldProps = {
+  register: any;
+  errors: any;
+};
+
+function Text({
+  register,
+  errors,
+  config,
+}: FormFieldProps & { config: TextInputConfig }) {
   return (
     <>
       <input
@@ -121,7 +161,11 @@ function Text({ register, errors, config }) {
   );
 }
 
-function TextArea({ register, errors, config }) {
+function Textarea({
+  register,
+  errors,
+  config,
+}: FormFieldProps & { config: TextareaInputConfig }) {
   return (
     <>
       <textarea
@@ -142,7 +186,37 @@ function TextArea({ register, errors, config }) {
   );
 }
 
-function Checkbox({ register, errors, config }) {
+function Date({
+  register,
+  errors,
+  config,
+}: FormFieldProps & { config: DateInputConfig }) {
+  return (
+    <>
+      <input
+        {...register('value')}
+        autoComplete="off"
+        className={classNames(
+          errors.value
+            ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
+            : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600',
+          'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
+        )}
+      />
+
+      <p className="mt-2 text-sm text-red-600" id="email-error">
+        {errors.value?.message}
+      </p>
+    </>
+  );
+}
+
+function Checkbox({
+  register,
+  errors,
+  config,
+}: FormFieldProps & { config: CheckboxInputConfig }) {
+  config.input;
   const items = Object.keys(config.items).map((key, idx) => {
     return { type: key, ...config.items[key] };
   });
@@ -174,5 +248,43 @@ function Checkbox({ register, errors, config }) {
         {errors.value?.message}
       </p>
     </>
+  );
+}
+function FileUpload({
+  register,
+  errors,
+  config,
+}: FormFieldProps & { config: FileUploadInputConfig }) {
+  return (
+    <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
+      <div className="text-center">
+        <PhotoIcon
+          className="mx-auto h-12 w-12 text-gray-300"
+          aria-hidden="true"
+        />
+        <div className="mt-4 flex text-sm leading-6 text-gray-600">
+          <label
+            htmlFor="value"
+            className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
+          >
+            <span>Upload a file</span>
+            <input
+              {...register(`value`, { required: true })}
+              id="value"
+              name="value"
+              type="file"
+              className="sr-only"
+            />
+          </label>
+          <p className="pl-1">or drag and drop</p>
+        </div>
+        <p className="text-xs leading-5 text-gray-600">
+          {config.extensions.join(', ')} up to {config.maxFilesizeMB}MB
+        </p>
+        <p className="mt-2 text-sm text-red-600" id="email-error">
+          {errors.value?.message}
+        </p>
+      </div>
+    </div>
   );
 }
