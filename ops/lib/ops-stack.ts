@@ -9,8 +9,20 @@ export class OpsStack extends cdk.Stack {
     new s3.Bucket(this, 'Bah7Ogh9', {
       bucketName: 'com-auditrehq-org-files-dev',
       publicReadAccess: false,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // should be RETAINED for prod
       enforceSSL: true,
+      versioned: false, // should be true for prod
+      cors: [
+        {
+          allowedMethods: [
+            s3.HttpMethods.GET,
+            s3.HttpMethods.POST,
+            s3.HttpMethods.PUT,
+          ],
+          allowedOrigins: ['http://localhost:3000'],
+          allowedHeaders: ['*'],
+        },
+      ],
       //objectLockEnabled: true,
     });
   }
