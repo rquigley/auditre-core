@@ -1,6 +1,6 @@
 // import 'server-only';
 import { db } from '@/lib/db';
-import { AccountUpdate, Account, NewAccount } from '@/types';
+import type { AccountUpdate, Account, NewAccount } from '@/types';
 
 export function create(user: NewAccount): Promise<Account> {
   return db

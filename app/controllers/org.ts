@@ -1,7 +1,7 @@
 // import 'server-only';
 
 import { db } from '@/lib/db';
-import { OrgUpdate, Org, NewOrg, OrgId } from '@/types';
+import type { OrgUpdate, Org, NewOrg, OrgId } from '@/types';
 import { nanoid } from 'nanoid';
 
 export function create(org: NewOrg): Promise<Org> {

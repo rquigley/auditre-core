@@ -6,7 +6,7 @@ import { create as createUser } from '@/controllers/user';
 import { create as createPassword } from '@/controllers/password';
 import { create as createOrg } from '@/controllers/org';
 import { db } from '@/lib/db';
-import { OrgId } from '@/types';
+import type { OrgId } from '@/types';
 
 const dev = process.env.NODE_ENV !== 'production';
 loadEnvConfig(process.cwd(), dev, { info: () => null, error: console.error });
