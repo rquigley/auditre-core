@@ -6,6 +6,14 @@ export const basicInfo = z.object({
   description: z.string().min(2).max(1024),
   chiefDecisionMaker: z.string().min(2).max(128),
 });
+export const auditInfo = z.object({
+  year: z.coerce
+    .number()
+    .min(1970, 'The year must be at least 1970')
+    .max(2050, 'The year must be before 2050'),
+  hasBeenAudited: z.coerce.boolean(),
+  fiscalYearEnd: z.coerce.date(),
+});
 
 export const basicString = z.object({
   value: z.string(),
