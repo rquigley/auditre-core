@@ -118,6 +118,11 @@ export type RequestData =
     }
   | {
       value: S3File;
+    }
+  | {
+      businessName: string;
+      description: string;
+      chiefDecisionMaker: string;
     };
 
 export type RequestStatus = 'requested' | 'complete' | 'overdue';

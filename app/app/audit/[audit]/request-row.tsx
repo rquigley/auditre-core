@@ -43,12 +43,12 @@ export default function RequestRow({
   return (
     <tr key={request.externalId} className="hover:bg-gray-100">
       <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-sm font-medium sm:pr-0">
-        <Link
+        {/* <Link
           href={`/request/${request.externalId}`}
           className="text-indigo-600 hover:text-indigo-900"
         >
           View<span className="sr-only">, {request.name}</span>
-        </Link>
+        </Link> */}
       </td>
       <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
         <div className="text-gray-900 font-semibold">

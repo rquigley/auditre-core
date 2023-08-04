@@ -1,10 +1,10 @@
 import * as z from 'zod';
-import { requestTypes, businessModelTypes } from './request-types';
+import { businessModelTypes } from './request-types';
 
-export const businessNameSchema = z.object({
-  value: z.string().min(2, {
-    message: 'This must be at least 2 characters.',
-  }),
+export const basicInfo = z.object({
+  businessName: z.string().min(2).max(128),
+  description: z.string().min(2).max(1024),
+  chiefDecisionMaker: z.string().min(2).max(128),
 });
 
 export const basicString = z.object({

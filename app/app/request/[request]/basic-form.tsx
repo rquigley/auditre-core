@@ -16,7 +16,6 @@ import {
   TextareaInputConfig,
 } from '@/lib/request-types';
 import type { RequestData, ClientSafeRequest, S3File } from '@/types';
-import { Input } from 'postcss';
 
 type Props = {
   request: ClientSafeRequest;
@@ -33,6 +32,11 @@ export default function BasicForm({ request, data, saveData }: Props) {
     router.refresh();
   }
 
+  let defaultValues = {};
+  for (const key of Object.keys(config.defaultValue)) {
+    defaultValues[key] = data[key];
+  }
+
   const {
     register,
     setValue,
@@ -41,13 +45,9 @@ export default function BasicForm({ request, data, saveData }: Props) {
     formState: { errors },
   } = useForm<z.infer<typeof config.schema>>({
     resolver: zodResolver(config.schema),
-    defaultValues: {
-      // todo: use config
-      value: data.value,
-    },
+    defaultValues,
   });
 
-  const fieldConfig = config.form.value as InputConfig;
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-12">
@@ -62,50 +62,61 @@ export default function BasicForm({ request, data, saveData }: Props) {
           </p>
 
           <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-            <div className="sm:col-span-8">
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium leading-6 text-gray-900"
-              >
-                {/* Description */}
-              </label>
-              <div className="mt-4">
-                {fieldConfig.input === 'fileupload' ? (
-                  <FileUpload
-                    register={register}
-                    errors={errors}
-                    config={fieldConfig}
-                    request={request}
-                    setValue={setValue}
-                    getValues={getValues}
-                  />
-                ) : fieldConfig.input === 'checkbox' ? (
-                  <Checkbox
-                    register={register}
-                    errors={errors}
-                    config={fieldConfig}
-                  />
-                ) : fieldConfig.input === 'textarea' ? (
-                  <Textarea
-                    register={register}
-                    errors={errors}
-                    config={fieldConfig}
-                  />
-                ) : fieldConfig.input === 'date' ? (
-                  <Date
-                    register={register}
-                    errors={errors}
-                    config={fieldConfig}
-                  />
-                ) : fieldConfig.input === 'text' ? (
-                  <Text
-                    register={register}
-                    errors={errors}
-                    config={fieldConfig}
-                  />
-                ) : null}
-              </div>
-            </div>
+            {Object.keys(config.form).map((field) => {
+              const fieldConfig = config.form[field] as InputConfig;
+
+              return (
+                <div className="sm:col-span-8">
+                  <label
+                    htmlFor="username"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    {fieldConfig.label}
+                  </label>
+                  <div className="mt-4">
+                    {fieldConfig.input === 'fileupload' ? (
+                      <FileUpload
+                        field={field}
+                        register={register}
+                        errors={errors}
+                        config={fieldConfig}
+                        request={request}
+                        setValue={setValue}
+                        getValues={getValues}
+                      />
+                    ) : fieldConfig.input === 'checkbox' ? (
+                      <Checkbox
+                        field={field}
+                        register={register}
+                        errors={errors}
+                        config={fieldConfig}
+                      />
+                    ) : fieldConfig.input === 'textarea' ? (
+                      <Textarea
+                        field={field}
+                        register={register}
+                        errors={errors}
+                        config={fieldConfig}
+                      />
+                    ) : fieldConfig.input === 'date' ? (
+                      <Date
+                        field={field}
+                        register={register}
+                        errors={errors}
+                        config={fieldConfig}
+                      />
+                    ) : fieldConfig.input === 'text' ? (
+                      <Text
+                        field={field}
+                        register={register}
+                        errors={errors}
+                        config={fieldConfig}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -129,11 +140,13 @@ export default function BasicForm({ request, data, saveData }: Props) {
 }
 
 type FormFieldProps = {
+  field: string;
   register: any;
   errors: any;
 };
 
 function Text({
+  field,
   register,
   errors,
   config,
@@ -141,10 +154,10 @@ function Text({
   return (
     <>
       <input
-        {...register('value')}
+        {...register(field)}
         autoComplete="off"
         className={classNames(
-          errors.value
+          errors[field]
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600',
           'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
@@ -152,13 +165,14 @@ function Text({
       />
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors.value?.message}
+        {errors[field]?.message}
       </p>
     </>
   );
 }
 
 function Textarea({
+  field,
   register,
   errors,
   config,
@@ -167,9 +181,9 @@ function Textarea({
     <>
       <textarea
         rows={4}
-        {...register('value')}
+        {...register(field)}
         className={classNames(
-          errors.value
+          errors[field]
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600',
           'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
@@ -177,13 +191,14 @@ function Textarea({
       />
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors.value?.message}
+        {errors[field]?.message}
       </p>
     </>
   );
 }
 
 function Date({
+  field,
   register,
   errors,
   config,
@@ -191,10 +206,10 @@ function Date({
   return (
     <>
       <input
-        {...register('value')}
+        {...register(field)}
         autoComplete="off"
         className={classNames(
-          errors.value
+          errors[field]
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600',
           'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
@@ -202,13 +217,14 @@ function Date({
       />
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors.value?.message}
+        {errors[field]?.message}
       </p>
     </>
   );
 }
 
 function Checkbox({
+  field,
   register,
   errors,
   config,
@@ -223,7 +239,7 @@ function Checkbox({
         <div key={model.type} className="relative flex items-start">
           <div className="flex h-6 items-center">
             <input
-              {...register(`value`)}
+              {...register(field)}
               value={model.type}
               aria-describedby={`${model.type}-description`}
               type="checkbox"
@@ -242,12 +258,13 @@ function Checkbox({
       ))}
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors.value?.message}
+        {errors[field]?.message}
       </p>
     </>
   );
 }
 function FileUpload({
+  field,
   register,
   setValue,
   getValues,
@@ -287,14 +304,14 @@ function FileUpload({
     };
     if (resp.ok) {
       // TODO: show progress
-      setValue('value', toSave);
+      setValue(field, toSave);
       console.log('SUCCESS', resp.ok, toSave);
     } else {
       // TODO: handle
       console.log('ERROR', resp.ok);
     }
   }
-  const value = getValues().value;
+  const value = getValues()[field];
 
   return (
     <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
@@ -305,14 +322,14 @@ function FileUpload({
         />
         <div className="mt-4 flex text-sm leading-6 text-gray-600">
           <label
-            htmlFor="value-file"
+            htmlFor={`${field}-file`}
             className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
           >
             <span>Upload a file</span>
-            <input {...register(`value`, { required: true })} type="hidden" />
+            <input {...register(field, { required: true })} type="hidden" />
             <input
-              id="value-file"
-              name="value-file"
+              id={`${field}-file`}
+              name={`${field}-file`}
               type="file"
               className="sr-only"
               multiple={false}
@@ -326,7 +343,7 @@ function FileUpload({
           {config.extensions.join(', ')} up to {config.maxFilesizeMB}MB
         </p>
         <p className="mt-2 text-sm text-red-600" id="email-error">
-          {errors.value?.message}
+          {errors[field]?.message}
         </p>
         {value && (
           <div className="mt-2">
