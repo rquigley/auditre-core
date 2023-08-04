@@ -4,7 +4,8 @@ import { db } from '@/lib/db';
 import type { OrgUpdate, Org, NewOrg, OrgId } from '@/types';
 import { nanoid } from 'nanoid';
 
-export function create(org: NewOrg): Promise<Org> {
+type CreateOrg = Omit<NewOrg, 'externalId'>;
+export function create(org: CreateOrg): Promise<Org> {
   return db
     .insertInto('org')
     .values({ ...org, externalId: nanoid() })
