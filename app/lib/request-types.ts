@@ -186,7 +186,7 @@ export const requestTypes = {
       },
     },
     completeOnSet: true,
-    schema: schemas.businessModelSchema,
+    schema: schemas.basicAny,
   },
   MULTIPLE_BUSINESS_LINES: {
     name: 'Multiple lines',
