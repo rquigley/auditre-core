@@ -97,6 +97,32 @@ export const businessModelTypes = {
   },
 };
 export const requestTypes = {
+  BASIC_INFO: {
+    name: 'Basic Information',
+    description:
+      'As entered on financial statements. This will be used for all report generation.',
+    defaultValue: {
+      businessName: '',
+      description: '',
+      chiefDecisionMaker: '',
+    },
+    form: {
+      businessName: {
+        input: 'text',
+        label: 'Legal Name of the business',
+      },
+      description: {
+        input: 'textarea',
+        label: 'Description of the business',
+      },
+      chiefDecisionMaker: {
+        input: 'text',
+        label: 'Chief Decision Maker',
+      },
+    },
+    completeOnSet: true,
+    schema: schemas.basicInfo,
+  },
   AUDIT_YEAR: {
     name: 'What year is being audited',
     description: '[Description TODO]',
@@ -110,21 +136,6 @@ export const requestTypes = {
     },
     completeOnSet: true,
     schema: schemas.businessModelSchema,
-  },
-  BUSINESS_NAME: {
-    name: 'Legal Name of the business',
-    description:
-      'As entered on financial statements. This will be used for all report generation.',
-    defaultValue: {
-      value: '',
-    },
-    form: {
-      value: {
-        input: 'text',
-      },
-    },
-    completeOnSet: true,
-    schema: schemas.businessNameSchema,
   },
   BUSINESS_MODEL: {
     name: 'Business Model',
@@ -141,20 +152,6 @@ export const requestTypes = {
     },
     completeOnSet: true,
     schema: schemas.businessModelSchema,
-  },
-  BUSINESS_DESCRIPTION: {
-    name: 'Business Description',
-    description: '[Description of the business TODO]',
-    defaultValue: {
-      value: '',
-    },
-    form: {
-      value: {
-        input: 'textarea',
-      },
-    },
-    completeOnSet: true,
-    schema: schemas.basicString,
   },
   TRIAL_BALANCE: {
     name: 'Upload the trial balance',
@@ -218,20 +215,6 @@ export const requestTypes = {
   },
   PREVIOUS_AUDITS: {
     name: 'Has the company been audited before?',
-    description: '[Description TODO]',
-    defaultValue: {
-      value: '',
-    },
-    form: {
-      value: {
-        input: 'date',
-      },
-    },
-    completeOnSet: true,
-    schema: schemas.businessModelSchema,
-  },
-  CHIEF_DECISION_MAKER: {
-    name: "Who is the company's chief decision maker?",
     description: '[Description TODO]',
     defaultValue: {
       value: '',
