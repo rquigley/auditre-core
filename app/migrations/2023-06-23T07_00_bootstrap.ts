@@ -4,6 +4,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   await sql`
     CREATE TABLE "org" (
       "id" serial PRIMARY KEY,
+      "external_id" varchar NOT NULL UNIQUE,
       "name" varchar,
       "created_at" timestamp DEFAULT now() NOT NULL,
       "is_deleted" boolean DEFAULT FALSE

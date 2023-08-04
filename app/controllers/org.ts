@@ -2,12 +2,22 @@
 
 import { db } from '@/lib/db';
 import { OrgUpdate, Org, NewOrg, OrgId } from '@/types';
+import { nanoid } from 'nanoid';
 
 export function create(org: NewOrg): Promise<Org> {
   return db
     .insertInto('org')
-    .values(org)
+    .values({ ...org, externalId: nanoid() })
     .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+export function getByExternalId(externalId: string): Promise<Org> {
+  return db
+    .selectFrom('org')
+    .where('externalId', '=', externalId)
+    .where('isDeleted', '=', false)
+    .selectAll()
     .executeTakeFirstOrThrow();
 }
 

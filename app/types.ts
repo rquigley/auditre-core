@@ -1,7 +1,5 @@
-import { DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import {
   Kysely,
-  JSONColumnType,
   Generated,
   ColumnType,
   Selectable,
@@ -19,8 +17,10 @@ type ClientSafeOmitTypes = 'id' | 'orgId';
 
 export interface OrgTable {
   id: Generated<OrgId>;
+  externalId: ColumnType<string, string, never>;
   name: string | null;
   createdAt: ColumnType<Date, string | undefined, never>;
+  isDeleted: ColumnType<Boolean, never, Boolean>;
 }
 
 export type OrgUpdate = Updateable<OrgTable>;
@@ -115,6 +115,9 @@ export type RequestData =
     }
   | {
       value: string[];
+    }
+  | {
+      value: S3File;
     };
 
 export type RequestStatus = 'requested' | 'complete' | 'overdue';
@@ -163,6 +166,15 @@ export type ClientSafeRequestChange = Omit<
   Selectable<RequestChangeTable>,
   ClientSafeOmitTypes
 >;
+
+export type S3File = {
+  key: string;
+  bucket: string;
+  name: string;
+  size: number;
+  lastModified: number;
+  type: string;
+};
 
 export interface Database extends Kysely<Database> {
   account: AccountTable;
