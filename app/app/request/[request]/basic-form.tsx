@@ -15,7 +15,7 @@ import {
   CheckboxInputConfig,
   TextareaInputConfig,
 } from '@/lib/request-types';
-import type { RequestData, ClientSafeRequest } from '@/types';
+import type { RequestData, ClientSafeRequest, S3File } from '@/types';
 import { Input } from 'postcss';
 
 type Props = {
@@ -29,20 +29,14 @@ export default function BasicForm({ request, data, saveData }: Props) {
   const config = requestTypes[request.type];
 
   async function onSubmit(data: z.infer<typeof config.schema>) {
-    // const signedUrl = await getPresignedUploadUrl('hahaha');
-    // const file = data.value[0];
-    // console.log(file, signedUrl);
-    // await fetch(signedUrl, {
-    //   method: 'PUT',
-    //   body: file,
-    // });
-    // return;
     await saveData(data);
     router.refresh();
   }
 
   const {
     register,
+    setValue,
+    getValues,
     handleSubmit,
     formState: { errors },
   } = useForm<z.infer<typeof config.schema>>({
@@ -81,6 +75,9 @@ export default function BasicForm({ request, data, saveData }: Props) {
                     register={register}
                     errors={errors}
                     config={fieldConfig}
+                    request={request}
+                    setValue={setValue}
+                    getValues={getValues}
                   />
                 ) : fieldConfig.input === 'checkbox' ? (
                   <Checkbox
@@ -252,9 +249,53 @@ function Checkbox({
 }
 function FileUpload({
   register,
+  setValue,
+  getValues,
   errors,
   config,
-}: FormFieldProps & { config: FileUploadInputConfig }) {
+  request,
+}: FormFieldProps & {
+  config: FileUploadInputConfig;
+  request: ClientSafeRequest;
+  setValue: (key: string, val: any) => void;
+  getValues: () => any;
+}) {
+  async function uploadFile(
+    e: React.ChangeEvent<HTMLInputElement>,
+    request: ClientSafeRequest,
+  ) {
+    const file = e.target.files?.[0]!;
+    const filename = encodeURIComponent(file.name);
+    const fileType = encodeURIComponent(file.type);
+
+    const signedUrl = await getPresignedUploadUrl({
+      filename,
+      requestExternalId: request.externalId,
+    });
+
+    const resp = await fetch(signedUrl.url, {
+      method: 'PUT',
+      body: file,
+    });
+    const toSave: S3File = {
+      key: signedUrl.key,
+      bucket: signedUrl.bucket,
+      name: file.name,
+      size: file.size,
+      lastModified: file.lastModified,
+      type: file.type,
+    };
+    if (resp.ok) {
+      // TODO: show progress
+      setValue('value', toSave);
+      console.log('SUCCESS', resp.ok, toSave);
+    } else {
+      // TODO: handle
+      console.log('ERROR', resp.ok);
+    }
+  }
+  const value = getValues().value;
+
   return (
     <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
       <div className="text-center">
@@ -264,16 +305,19 @@ function FileUpload({
         />
         <div className="mt-4 flex text-sm leading-6 text-gray-600">
           <label
-            htmlFor="value"
+            htmlFor="value-file"
             className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
           >
             <span>Upload a file</span>
+            <input {...register(`value`, { required: true })} type="hidden" />
             <input
-              {...register(`value`, { required: true })}
-              id="value"
-              name="value"
+              id="value-file"
+              name="value-file"
               type="file"
               className="sr-only"
+              multiple={false}
+              onChange={(e) => uploadFile(e, request)}
+              // accept="image/png, image/jpeg"
             />
           </label>
           <p className="pl-1">or drag and drop</p>
@@ -284,6 +328,18 @@ function FileUpload({
         <p className="mt-2 text-sm text-red-600" id="email-error">
           {errors.value?.message}
         </p>
+        {value && (
+          <div className="mt-2">
+            <p className="text-xs leading-5 text-gray-600">
+              <a
+                href={`/request/${request.externalId}/file/${`value`}`}
+                target="_blank"
+              >
+                Download
+              </a>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
