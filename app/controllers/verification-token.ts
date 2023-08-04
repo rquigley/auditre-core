@@ -1,7 +1,7 @@
 // import 'server-only';
 
 import { db } from '@/lib/db';
-import {
+import type {
   VerificationTokenUpdate,
   VerificationToken,
   NewVerificationToken,

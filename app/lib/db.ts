@@ -9,7 +9,7 @@ import {
   sql,
 } from 'kysely';
 import { z } from 'zod';
-import { Database } from '@/types';
+import type { Database } from '@/types';
 const dBConfig = z.object({
   database: z.string().min(3).max(40),
   host: z.string().min(3).max(128),

@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { sql } from 'kysely';
-import { SessionUpdate, Session, NewSession } from '@/types';
+import type { SessionUpdate, Session, NewSession } from '@/types';
 
 export function create(session: NewSession): Promise<Session> {
   return db

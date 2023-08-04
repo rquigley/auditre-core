@@ -1,10 +1,10 @@
 import { create, getById, update } from '@/controllers/user';
 import * as orgCtrl from '@/controllers/org';
 import { db } from '@/lib/db';
-import { NewUser, UserUpdate, OrgId } from '@/types';
+import type { UserUpdate, Org, OrgId } from '@/types';
 
 describe('User Controller', () => {
-  let testOrg: NewUser;
+  let testOrg: Org;
   let testOrgId: OrgId;
 
   beforeAll(async () => {
@@ -19,7 +19,7 @@ describe('User Controller', () => {
   describe('create', () => {
     it('should create a new user', async () => {
       const email = `newuser${Date.now().toString()}@example.com`;
-      const newUser: NewUser = {
+      const newUser = {
         orgId: testOrgId,
         name: 'New User',
         email,
