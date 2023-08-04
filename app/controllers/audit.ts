@@ -37,6 +37,10 @@ export function getAllByOrgId(orgId: OrgId): Promise<Audit[]> {
     .execute();
 }
 
+export function getAll(): Promise<Audit[]> {
+  return db.selectFrom('audit').selectAll().execute();
+}
+
 export async function update(id: number, updateWith: AuditUpdate) {
   return db.updateTable('audit').set(updateWith).where('id', '=', id).execute();
 }
