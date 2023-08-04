@@ -1,5 +1,5 @@
 import { program } from 'commander';
-import prompts from 'prompts';
+//import prompts from 'prompts';
 import { loadEnvConfig } from '@next/env';
 import { create as createUser } from '@/controllers/user';
 import { create as createPassword } from '@/controllers/password';
