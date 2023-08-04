@@ -99,8 +99,7 @@ export const businessModelTypes = {
 export const requestTypes = {
   BASIC_INFO: {
     name: 'Basic Information',
-    description:
-      'As entered on financial statements. This will be used for all report generation.',
+    description: '[description TODO]',
     defaultValue: {
       businessName: '',
       description: '',
@@ -123,19 +122,30 @@ export const requestTypes = {
     completeOnSet: true,
     schema: schemas.basicInfo,
   },
-  AUDIT_YEAR: {
-    name: 'What year is being audited',
-    description: '[Description TODO]',
+  AUDIT_INFO: {
+    name: 'Audit Information',
+    description: '[audit info description TODO]',
     defaultValue: {
-      value: '',
+      year: '',
+      hasBeenAudited: false,
+      fiscalYearEnd: '',
     },
     form: {
-      value: {
+      year: {
+        input: 'text',
+        label: 'What year is being audited?',
+      },
+      hasBeenAudited: {
+        input: 'text',
+        label: 'Has the company been audted before?',
+      },
+      fiscalYearEnd: {
         input: 'date',
+        label: "When does the company's fiscal year end?",
       },
     },
     completeOnSet: true,
-    schema: schemas.businessModelSchema,
+    schema: schemas.auditInfo,
   },
   BUSINESS_MODEL: {
     name: 'Business Model',
@@ -194,34 +204,6 @@ export const requestTypes = {
     form: {
       value: {
         input: 'textarea',
-      },
-    },
-    completeOnSet: true,
-    schema: schemas.businessModelSchema,
-  },
-  FISCAL_YEAR_END: {
-    name: "When does the company's fiscal year end?",
-    description: '[Description TODO]',
-    defaultValue: {
-      value: '',
-    },
-    form: {
-      value: {
-        input: 'date',
-      },
-    },
-    completeOnSet: true,
-    schema: schemas.businessModelSchema,
-  },
-  PREVIOUS_AUDITS: {
-    name: 'Has the company been audited before?',
-    description: '[Description TODO]',
-    defaultValue: {
-      value: '',
-    },
-    form: {
-      value: {
-        input: 'date',
       },
     },
     completeOnSet: true,
