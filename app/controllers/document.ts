@@ -1,7 +1,7 @@
 // import 'server-only';
 
 import { db } from '@/lib/db';
-import type { DocumentUpdate, Document, NewDocument } from '@/types';
+import type { DocumentUpdate, Document, NewDocument, OrgId } from '@/types';
 import { nanoid } from 'nanoid';
 
 export function create(document: NewDocument): Promise<Document> {
@@ -27,6 +27,15 @@ export function getById(id: number): Promise<Document> {
     .where('id', '=', id)
     .selectAll()
     .executeTakeFirstOrThrow();
+}
+
+export function getAllByOrgId(orgId: OrgId): Promise<Document[]> {
+  return db
+    .selectFrom('document')
+    .where('orgId', '=', orgId)
+    .where('isDeleted', '=', false)
+    .selectAll()
+    .execute();
 }
 
 export function update(id: number, updateWith: DocumentUpdate) {

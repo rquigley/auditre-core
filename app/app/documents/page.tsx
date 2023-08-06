@@ -1,19 +1,32 @@
+import { redirect, notFound } from 'next/navigation';
 import { Fragment, useState } from 'react';
 
 //import { auth } from '@/auth';
 // import { Suspense } from 'react';
 // import { redirect } from 'next/navigation';
 import Nav from '@/app/nav';
-import { getAll, Request } from '@/controllers/request';
+import { getAllByOrgId } from '@/controllers/document';
+import { getCurrentUser } from '@/controllers/user';
+import { getByExternalId } from '@/controllers/request';
+import { Document } from '@/types';
 import RequestRow from './request-row';
 
-export default async function RequestsPage() {
-  //const session = await auth();
+async function getUser() {
+  try {
+    const user = await getCurrentUser();
+    return user;
+  } catch (err) {
+    redirect(`/login?next=/requests`);
+  }
+}
 
-  // if (!session?.user) {
-  //   redirect(`/login?next=/requests`);
+export default async function DocumentsPage() {
+  const user = await getUser();
+
+  const documents = await getAllByOrgId(user.orgId);
+  // for (const document of documents) {
+  //   document.request = await getByExternalId(document.requestId);
   // }
-  const requests = await getAll();
 
   return (
     <>
@@ -21,14 +34,14 @@ export default async function RequestsPage() {
 
       <main className="py-10 lg:pl-72 bg-slate-100">
         <div className="px-4 sm:px-6 lg:px-8">
-          <RequestGrid requests={requests} />
+          <Grid documents={documents} />
         </div>
       </main>
     </>
   );
 }
 
-function RequestGrid({ requests }: { requests: Request[] }) {
+function Grid({ documents }: { documents: Document[] }) {
   return (
     <div className="px-4 sm:px-6 lg:px-8 bg-white rounded-sm py-3 px-3">
       <div className="sm:flex sm:items-center">
@@ -63,28 +76,31 @@ function RequestGrid({ requests }: { requests: Request[] }) {
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                   >
-                    Status
+                    Uploaded
                   </th>
                   <th
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                   >
-                    Due Date
+                    Last modified
                   </th>
                   <th
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                   >
-                    Owners
+                    Added by
                   </th>
-                  <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
-                    <span className="sr-only">Edit</span>
+                  <th
+                    scope="col"
+                    className=" py-3.5 text-right text-sm font-semibold text-gray-900"
+                  >
+                    Uploaded
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {requests.map((request) => (
-                  <RequestRow request={request} />
+                {documents.map((document) => (
+                  <RequestRow document={document} />
                 ))}
               </tbody>
             </table>

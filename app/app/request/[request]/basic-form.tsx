@@ -349,10 +349,7 @@ function FileUpload({
         {value && (
           <div className="mt-2">
             <p className="text-xs leading-5 text-gray-600">
-              <a
-                href={`/document/${value.documentExternalId}/download`}
-                target="_blank"
-              >
+              <a href={`/document/${value.documentExternalId}/download`}>
                 Download
               </a>
             </p>
