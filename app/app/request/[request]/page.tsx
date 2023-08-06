@@ -1,28 +1,9 @@
-import { Fragment, useState } from 'react';
 import { redirect, notFound } from 'next/navigation';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { classNames } from '@/lib/util';
 
-import { Dialog, Listbox, Menu, Transition } from '@headlessui/react';
-import {
-  Bars3Icon,
-  CalendarDaysIcon,
-  CreditCardIcon,
-  EllipsisVerticalIcon,
-  FaceFrownIcon,
-  FaceSmileIcon,
-  FireIcon,
-  HandThumbUpIcon,
-  HeartIcon,
-  PaperClipIcon,
-  UserCircleIcon,
-  XMarkIcon as XMarkIconMini,
-} from '@heroicons/react/20/solid';
-import {
-  BellIcon,
-  XMarkIcon as XMarkIconOutline,
-} from '@heroicons/react/24/outline';
+import { PaperClipIcon } from '@heroicons/react/20/solid';
 import Header from '@/components/header';
 import { getCurrentUser } from '@/controllers/user';
 import { getByExternalId, getChangesById } from '@/controllers/request';
@@ -72,80 +53,11 @@ export default async function RequestPage({
 
       <div className=" max-w-7xl px-4 py-16 sm:px-1 lg:px-1">
         <div className=" grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
-          {/* Invoice summary */}
-          {/* <div className="lg:col-start-3 lg:row-end-1">
-            <h2 className="sr-only">Summary</h2>
-            <div className="rounded-lg bg-gray-50 shadow-sm ring-1 ring-gray-900/5">
-              <dl className="flex flex-wrap">
-                <div className="flex-auto pl-6 pt-6">
-                  <dt className="text-sm font-semibold leading-6 text-gray-900">
-                    Amount
-                  </dt>
-                  <dd className="mt-1 text-base font-semibold leading-6 text-gray-900">
-                    $10,560.00
-                  </dd>
-                </div>
-                <div className="flex-none self-end px-6 pt-4">
-                  <dt className="sr-only">Status</dt>
-                  <dd className="rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-600 ring-1 ring-inset ring-green-600/20">
-                    Paid
-                  </dd>
-                </div>
-                <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-gray-900/5 px-6 pt-6">
-                  <dt className="flex-none">
-                    <span className="sr-only">Client</span>
-                    <UserCircleIcon
-                      className="h-6 w-5 text-gray-400"
-                      aria-hidden="true"
-                    />
-                  </dt>
-                  <dd className="text-sm font-medium leading-6 text-gray-900">
-                    Alex Curren
-                  </dd>
-                </div>
-                <div className="mt-4 flex w-full flex-none gap-x-4 px-6">
-                  <dt className="flex-none">
-                    <span className="sr-only">Due date</span>
-                    <CalendarDaysIcon
-                      className="h-6 w-5 text-gray-400"
-                      aria-hidden="true"
-                    />
-                  </dt>
-                  <dd className="text-sm leading-6 text-gray-500">
-                    <time dateTime="2023-01-31">January 31, 2023</time>
-                  </dd>
-                </div>
-                <div className="mt-4 flex w-full flex-none gap-x-4 px-6">
-                  <dt className="flex-none">
-                    <span className="sr-only">Status</span>
-                    <CreditCardIcon
-                      className="h-6 w-5 text-gray-400"
-                      aria-hidden="true"
-                    />
-                  </dt>
-                  <dd className="text-sm leading-6 text-gray-500">
-                    Paid with MasterCard
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-6 border-t border-gray-900/5 px-6 py-6">
-                <a
-                  href="#"
-                  className="text-sm font-semibold leading-6 text-gray-900"
-                >
-                  Download receipt <span aria-hidden="true">&rarr;</span>
-                </a>
-              </div>
-            </div>
-          </div> */}
-
-          {/* Invoice */}
           <div className="-mx-4 px-4 py-8 shadow-sm ring-1 ring-gray-900/5 sm:mx-0 sm:rounded-lg sm:px-8 sm:pb-14 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:px-16 xl:pb-20 xl:pt-16">
             <FormContainer request={request} user={user} audit={audit} />
           </div>
 
           <div className="lg:col-start-3">
-            {/* Activity feed */}
             <h2 className="text-sm font-semibold leading-6 text-gray-900">
               Activity
             </h2>

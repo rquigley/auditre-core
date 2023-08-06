@@ -22,10 +22,8 @@ export async function GET(
     params: { document: string };
   },
 ) {
-  console.log(externalId);
   const user = await getUser();
   const document = await getByExternalId(externalId);
-  console.log(document);
   if (document.orgId !== user.orgId) {
     return notFound();
   }
