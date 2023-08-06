@@ -1,66 +1,47 @@
 'use client';
-import { Request } from '@/controllers/request';
+
 import dayjs from 'dayjs';
+import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 
-function StatusBadge({ status }: { status: string }) {
-  switch (status) {
-    case 'requested':
-      return (
-        <span className="inline-flex items-center rounded-md bg-yellow-400/10 px-2 py-1 text-xs font-medium text-yellow-500 ring-1 ring-inset ring-yellow-400/20">
-          Requested
-        </span>
-      );
-    case 'complete':
-      return (
-        <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-          Complete
-        </span>
-      );
-    case 'overdue':
-      return (
-        <span className="inline-flex items-center rounded-md bg-red-400/10 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-400/20">
-          Overdue
-        </span>
-      );
-    default:
-      return (
-        <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-          {status}
-        </span>
-      );
-  }
-}
+import type { Document } from '@/types';
 
-export default function RequestRow({ request }: { request: Request }) {
+export default function RequestRow({ document }: { document: Document }) {
   return (
     <tr
-      key={request.id}
+      key={document.externalId}
       className="hover:bg-gray-100"
       onClick={() => console.log('sdfsdf')}
     >
-      <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
-        <div className="text-gray-900 font-semibold">{request.name}</div>
+      <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
+        <a
+          href={`/document/${document.externalId}/download`}
+          className="flex items-center gap-x-1"
+        >
+          <DocumentArrowDownIcon
+            className="h-4 w-4 text-green-700"
+            aria-hidden="true"
+          />
 
-        <div className="text-gray-900">{request.description}</div>
-      </td>
-      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-        <StatusBadge status={request.status} />
-      </td>
-      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-        <div className="text-gray-900">
-          {dayjs(request.dueDate).format('MM/DD/YYYY')}
-        </div>
-      </td>
-
-      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-        {request.owners.map((owner) => (
-          <div key={owner}>{owner}</div>
-        ))}
-      </td>
-      <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-        <a href="#" className="text-indigo-600 hover:text-indigo-900">
-          Edit<span className="sr-only">, {request.name}</span>
+          <span className="text-gray-900 font-semibold">{document.name}</span>
         </a>
+      </td>
+      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
+        {dayjs(document.createdAt).format('MM/DD/YYYY HH:mma UTC')}
+      </td>
+      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
+        {dayjs(document.lastModified).format('MM/DD/YYYY HH:mma ')}
+      </td>
+
+      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
+        [Added by user]
+      </td>
+      <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm sm:pr-0">
+        <div>
+          <a href="#" className="text-indigo-600 hover:text-indigo-900">
+            View request
+          </a>
+        </div>
+        <span className="text-xs">Request name</span>
       </td>
     </tr>
   );
