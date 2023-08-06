@@ -277,17 +277,18 @@ function FileUpload({
   setValue: (key: string, val: any) => void;
   getValues: () => any;
 }) {
-  async function uploadFile(
+  async function uploadDocument(
     e: React.ChangeEvent<HTMLInputElement>,
     request: ClientSafeRequest,
   ) {
     const file = e.target.files?.[0]!;
     const filename = encodeURIComponent(file.name);
-    const fileType = encodeURIComponent(file.type);
+    //const fileType = encodeURIComponent(file.type);
 
     const signedUrl = await getPresignedUploadUrl({
       filename,
       requestExternalId: request.externalId,
+      contentType: file.type,
     });
 
     const resp = await fetch(signedUrl.url, {
@@ -312,6 +313,7 @@ function FileUpload({
     }
   }
   const value = getValues()[field];
+  console.log(value);
 
   return (
     <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
@@ -325,7 +327,7 @@ function FileUpload({
             htmlFor={`${field}-file`}
             className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
           >
-            <span>Upload a file</span>
+            <span>Upload a document</span>
             <input {...register(field, { required: true })} type="hidden" />
             <input
               id={`${field}-file`}
@@ -333,7 +335,7 @@ function FileUpload({
               type="file"
               className="sr-only"
               multiple={false}
-              onChange={(e) => uploadFile(e, request)}
+              onChange={(e) => uploadDocument(e, request)}
               // accept="image/png, image/jpeg"
             />
           </label>
@@ -349,7 +351,7 @@ function FileUpload({
           <div className="mt-2">
             <p className="text-xs leading-5 text-gray-600">
               <a
-                href={`/request/${request.externalId}/file/${`value`}`}
+                href={`/document/${value.documentExternalId}/download`}
                 target="_blank"
               >
                 Download
