@@ -15,9 +15,11 @@ const keySchema = z.string().min(4).max(120);
 export async function getPresignedUrl({
   bucket,
   key,
+  contentType,
 }: {
   bucket: string;
   key: string;
+  contentType: string;
 }) {
   if (!bucket) {
     throw new Error('Missing bucket');
@@ -34,7 +36,11 @@ export async function getPresignedUrl({
     region,
   });
 
-  const command = new PutObjectCommand({ Bucket: bucket, Key: key });
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    ContentType: contentType,
+  });
   return getSignedUrl(client, command, { expiresIn: 3600 });
 }
 

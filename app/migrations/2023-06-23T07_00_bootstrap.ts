@@ -115,11 +115,27 @@ export async function up(db: Kysely<any>): Promise<void> {
     CREATE TABLE "request_change" (
       "id" serial PRIMARY KEY,
       "request_id" integer NOT NULL REFERENCES "request" ("id"),
-      "external_id" varchar NOT NULL UNIQUE,
+      "external_id" varchar NOT NULL UNIQUE, -- TODO: IS THIS NEEDED?
       "created_at" timestamp DEFAULT now() NOT NULL,
       "audit_id" integer NOT NULL REFERENCES "audit" ("id"),
       "actor" jsonb,
       "new_data" JSONB
+    );
+    `.execute(db);
+
+  await sql`
+    CREATE TABLE "document" (
+      "id" serial PRIMARY KEY,
+      "external_id" varchar NOT NULL UNIQUE,
+      "key" varchar NOT NULL UNIQUE,
+      "bucket" varchar NOT NULL,
+      "name" varchar,
+      "size" integer NOT NULL,
+      "type" varchar,
+      "last_modified" timestamp NOT NULL,
+      "org_id" integer NOT NULL REFERENCES "org" ("id"),
+      "created_at" timestamp DEFAULT now() NOT NULL,
+      "is_deleted" boolean NOT NULL DEFAULT FALSE
     );
     `.execute(db);
 

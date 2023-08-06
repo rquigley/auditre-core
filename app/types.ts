@@ -172,6 +172,28 @@ export type ClientSafeRequestChange = Omit<
   ClientSafeOmitTypes
 >;
 
+export interface DocumentTable {
+  id: Generated<number>;
+  externalId: Generated<string>;
+  key: Generated<string>;
+  bucket: string;
+  name: string;
+  size: number;
+  type: string;
+  lastModified: Date;
+  orgId: OrgId;
+  createdAt: ColumnType<Date, string | undefined, never>;
+  isDeleted: ColumnType<Boolean, never, Boolean>;
+}
+
+export type DocumentUpdate = Updateable<DocumentTable>;
+export type NewDocument = Insertable<DocumentTable>;
+export type Document = Selectable<DocumentTable>;
+export type ClientSafeDocument = Omit<
+  Selectable<DocumentTable>,
+  ClientSafeOmitTypes
+>;
+
 export type S3File = {
   key: string;
   bucket: string;
@@ -184,6 +206,7 @@ export type S3File = {
 export interface Database extends Kysely<Database> {
   account: AccountTable;
   audit: AuditTable;
+  document: DocumentTable;
   org: OrgTable;
   request: RequestTable;
   requestChange: RequestChangeTable;
