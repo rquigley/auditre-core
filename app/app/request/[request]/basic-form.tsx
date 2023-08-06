@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { useForm, UseFormRegister } from 'react-hook-form';
 import { PhotoIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
@@ -27,10 +28,7 @@ export default function BasicForm({ request, data, saveData }: Props) {
   const router = useRouter();
   const config = requestTypes[request.type];
 
-  async function onSubmit(data: z.infer<typeof config.schema>) {
-    await saveData(data);
-    router.refresh();
-  }
+  const [uploading, setUploading] = useState(false);
 
   let defaultValues = {};
   for (const key of Object.keys(config.defaultValue)) {
@@ -42,11 +40,22 @@ export default function BasicForm({ request, data, saveData }: Props) {
     setValue,
     getValues,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<z.infer<typeof config.schema>>({
     resolver: zodResolver(config.schema),
     defaultValues,
   });
+
+  async function onSubmit(data: z.infer<typeof config.schema>) {
+    await saveData(data);
+
+    // prevent documents from being created multiple times
+    reset();
+
+    // reload activity feed
+    router.refresh();
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -83,6 +92,7 @@ export default function BasicForm({ request, data, saveData }: Props) {
                         request={request}
                         setValue={setValue}
                         getValues={getValues}
+                        setUploading={setUploading}
                       />
                     ) : fieldConfig.input === 'checkbox' ? (
                       <Checkbox
@@ -130,9 +140,13 @@ export default function BasicForm({ request, data, saveData }: Props) {
         </button>
         <button
           type="submit"
-          className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          disabled={uploading}
+          className={classNames(
+            uploading ? 'bg-gray-400' : 'bg-indigo-600',
+            'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600',
+          )}
         >
-          Save
+          {uploading ? 'Uploading' : 'Save'}
         </button>
       </div>
     </form>
@@ -271,16 +285,21 @@ function FileUpload({
   errors,
   config,
   request,
+  setUploading,
 }: FormFieldProps & {
   config: FileUploadInputConfig;
   request: ClientSafeRequest;
   setValue: (key: string, val: any) => void;
   getValues: () => any;
+  setUploading: (val: boolean) => void;
 }) {
   async function uploadDocument(
     e: React.ChangeEvent<HTMLInputElement>,
     request: ClientSafeRequest,
   ) {
+    setUploading(true);
+    //const el = e.target;
+
     const file = e.target.files?.[0]!;
     const filename = encodeURIComponent(file.name);
     //const fileType = encodeURIComponent(file.type);
@@ -311,6 +330,9 @@ function FileUpload({
       // TODO: handle
       console.log('ERROR', resp.ok);
     }
+    // Clear out the file input
+    //el.value = '';
+    setUploading(false);
   }
   const value = getValues()[field];
 
@@ -346,7 +368,14 @@ function FileUpload({
         <p className="mt-2 text-sm text-red-600" id="email-error">
           {errors[field]?.message}
         </p>
-        {value && (
+        {value && value.key && (
+          <div className="mt-2">
+            <p className="text-xs leading-5 text-gray-600">
+              File has been uploaded but not saved
+            </p>
+          </div>
+        )}
+        {value && value.documentExternalId && (
           <div className="mt-2">
             <p className="text-xs leading-5 text-gray-600">
               <a href={`/document/${value.documentExternalId}/download`}>

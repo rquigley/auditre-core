@@ -33,7 +33,12 @@ export default async function BusinessName({ request, user, audit }: Props) {
     const formSchema = requestTypes[request.type].schema;
 
     for (const [key, field] of Object.entries(requestConfig.form)) {
-      if (field.input === 'fileupload' && data[key]) {
+      if (
+        field.input === 'fileupload' &&
+        data[key] &&
+        // data[key].key indicates that a new file has been uploaded
+        data[key].key
+      ) {
         const file: S3File = data[key];
         const doc = await createDocument({
           key: file.key,
@@ -52,7 +57,7 @@ export default async function BusinessName({ request, user, audit }: Props) {
 
     await updateData({
       id: request.id,
-      data,
+      c,
       actor: {
         type: 'USER',
         userId: user.id,
