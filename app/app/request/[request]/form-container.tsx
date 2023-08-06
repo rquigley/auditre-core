@@ -57,7 +57,7 @@ export default async function BusinessName({ request, user, audit }: Props) {
 
     await updateData({
       id: request.id,
-      c,
+      data,
       actor: {
         type: 'USER',
         userId: user.id,
