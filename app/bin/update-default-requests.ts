@@ -10,7 +10,7 @@ loadEnvConfig(process.cwd(), dev, { info: () => null, error: console.error });
 async function main() {
   const audits = await getAll();
   for (const audit of audits) {
-    await upsertDefault(audit.id);
+    await upsertDefault({ auditId: audit.id, orgId: audit.orgId });
   }
   console.log(`Updated ${audits.length} audits.`);
   await db.destroy();

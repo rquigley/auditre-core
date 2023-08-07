@@ -99,6 +99,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       "id" serial PRIMARY KEY,
       "external_id" varchar NOT NULL UNIQUE,
       "audit_id" integer NOT NULL REFERENCES "audit" ("id"),
+      "org_id" integer NOT NULL REFERENCES "org" ("id"),
       "name" varchar,
       "type" varchar,
       "description" varchar,

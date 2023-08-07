@@ -136,6 +136,7 @@ export interface RequestTable {
   id: Generated<RequestId>;
   externalId: string;
   auditId: AuditId;
+  orgId: OrgId;
   name: string | null;
   description: string | null;
   status: RequestStatus;

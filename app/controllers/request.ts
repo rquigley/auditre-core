@@ -8,7 +8,7 @@ import type {
   RequestData,
   RequestChangeValue,
   NewRequest,
-  UserId,
+  OrgId,
   AuditId,
   RequestId,
   RequestChange,
@@ -42,7 +42,13 @@ export async function create(
   return res;
 }
 
-export async function upsertDefault(auditId: AuditId) {
+export async function upsertDefault({
+  auditId,
+  orgId,
+}: {
+  auditId: AuditId;
+  orgId: OrgId;
+}) {
   const currentReqs = await getAllByAuditId(auditId);
   for (let type in requestTypes) {
     if (type === 'USER_REQUESTED' || currentReqs.find((r) => r.type === type)) {
@@ -53,6 +59,7 @@ export async function upsertDefault(auditId: AuditId) {
     await create(
       {
         auditId,
+        orgId,
         type: type as RequestType,
         name: request.name,
         status: 'requested',
