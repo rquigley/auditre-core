@@ -100,19 +100,21 @@ export const businessModelTypes = {
       'Businesses that provide medical services, products, or equipment to promote health and well-being.',
   },
 };
+
 export const requestTypes = {
   BASIC_INFO: {
-    name: 'Basic Information',
-    description: '[description TODO]',
+    name: 'Basic information',
+    description: '',
     defaultValue: {
       businessName: '',
       description: '',
+      businessModels: [],
       chiefDecisionMaker: '',
     },
     form: {
       businessName: {
         input: 'text',
-        label: 'Legal Name of the business',
+        label: 'Legal name of the business',
       },
       description: {
         input: 'textarea',
@@ -120,16 +122,21 @@ export const requestTypes = {
         description:
           'Provide a high-level overview of the business so anyone who reads the audited financials can easily understand how your business description fits into your financial statements. This can best be summarized as your "elevator pitch" if you were to sell someone about your business for the first time.',
       },
+      businessModels: {
+        input: 'checkbox',
+        label: 'Business model',
+        items: businessModelTypes,
+      },
       chiefDecisionMaker: {
         input: 'text',
-        label: 'Chief Decision Maker',
+        label: 'Chief decision maker',
       },
     },
     completeOnSet: true,
     schema: schemas.basicInfo,
   },
   AUDIT_INFO: {
-    name: 'Audit Information',
+    name: 'Audit information',
     description: '[audit info description TODO]',
     defaultValue: {
       year: '',
@@ -153,24 +160,8 @@ export const requestTypes = {
     completeOnSet: true,
     schema: schemas.auditInfo,
   },
-  BUSINESS_MODEL: {
-    name: 'Business Model',
-    description:
-      'Model description. This will affect other parts of the audit, creating tasks depending on which model is selected.',
-    defaultValue: {
-      value: '',
-    },
-    form: {
-      value: {
-        input: 'checkbox',
-        items: businessModelTypes,
-      },
-    },
-    completeOnSet: true,
-    schema: schemas.businessModelSchema,
-  },
   TRIAL_BALANCE: {
-    name: 'Upload the trial balance',
+    name: 'Upload the Trial Balance',
     description: '[Description TODO]',
     defaultValue: {
       value: '',
@@ -186,7 +177,7 @@ export const requestTypes = {
     schema: schemas.basicAny,
   },
   CHART_OF_ACCOUNTS: {
-    name: 'Upload the chart of accounts',
+    name: 'Upload the Chart of Accounts',
     description: '[Description TODO]',
     defaultValue: {
       value: '',
