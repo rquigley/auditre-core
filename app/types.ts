@@ -122,7 +122,13 @@ export type RequestData =
   | {
       businessName: string;
       description: string;
+      businessModels: string[];
       chiefDecisionMaker: string;
+    }
+  | {
+      year: string;
+      hasBeenAudited: boolean;
+      fiscalYearEnd: string;
     };
 
 export type RequestStatus = 'requested' | 'complete' | 'overdue';
