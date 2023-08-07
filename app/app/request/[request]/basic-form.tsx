@@ -73,7 +73,7 @@ export default function BasicForm({ request, data, saveData }: Props) {
 
           <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             {Object.keys(config.form).map((field) => {
-              const fieldConfig = config.form[field] as InputConfig;
+              const fieldConfig: InputConfig = config.form[field];
 
               return (
                 <div className="sm:col-span-8" key={field}>
@@ -83,6 +83,11 @@ export default function BasicForm({ request, data, saveData }: Props) {
                   >
                     {fieldConfig.label}
                   </label>
+                  {fieldConfig.description && (
+                    <div className="text-xs text-gray-500">
+                      {fieldConfig.description}
+                    </div>
+                  )}
                   <div className="mt-4">
                     {fieldConfig.input === 'fileupload' ? (
                       <FileUpload
