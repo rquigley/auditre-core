@@ -16,6 +16,7 @@ import {
   CheckboxInputConfig,
   TextareaInputConfig,
 } from '@/lib/request-types';
+import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import type { RequestData, ClientSafeRequest, S3File } from '@/types';
 
 type Props = {
@@ -75,7 +76,7 @@ export default function BasicForm({ request, data, saveData }: Props) {
               const fieldConfig = config.form[field] as InputConfig;
 
               return (
-                <div className="sm:col-span-8">
+                <div className="sm:col-span-8" key={field}>
                   <label
                     htmlFor="username"
                     className="block text-sm font-medium leading-6 text-gray-900"
@@ -378,7 +379,14 @@ function FileUpload({
         {value && value.documentExternalId && (
           <div className="mt-2">
             <p className="text-xs leading-5 text-gray-600">
-              <a href={`/document/${value.documentExternalId}/download`}>
+              <a
+                href={`/document/${value.documentExternalId}/download`}
+                className="flex items-center gap-x-1"
+              >
+                <DocumentArrowDownIcon
+                  className="h-4 w-4 text-green-700"
+                  aria-hidden="true"
+                />
                 Download
               </a>
             </p>
