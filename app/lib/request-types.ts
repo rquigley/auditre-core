@@ -160,6 +160,22 @@ export const requestTypes = {
     completeOnSet: true,
     schema: schemas.auditInfo,
   },
+  ARTICLES_OF_INCORPORATION: {
+    name: 'Upload the Articles of Incorporation',
+    description: '[Description TODO]',
+    defaultValue: {
+      value: '',
+    },
+    form: {
+      value: {
+        extensions: ['PDF'],
+        maxFilesizeMB: 10,
+        input: 'fileupload',
+      },
+    },
+    completeOnSet: true,
+    schema: schemas.basicAny,
+  },
   TRIAL_BALANCE: {
     name: 'Upload the Trial Balance',
     description: '[Description TODO]',
