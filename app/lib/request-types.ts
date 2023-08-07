@@ -12,24 +12,28 @@ export type RequestTypeConfig = {
   schema: ZodTypeAny;
   completeOnSet: boolean;
 };
-export interface FileUploadInputConfig {
+interface BaseInputConfig {
+  label: string;
+  description?: string;
+}
+export interface FileUploadInputConfig extends BaseInputConfig {
   input: 'fileupload';
   extensions: string[];
   maxFilesizeMB: number;
 }
-export interface CheckboxInputConfig {
+export interface CheckboxInputConfig extends BaseInputConfig {
   input: 'checkbox';
   items: {
     [key: string]: { name: string; description: string };
   };
 }
-export interface TextInputConfig {
+export interface TextInputConfig extends BaseInputConfig {
   input: 'text';
 }
-export interface TextareaInputConfig {
+export interface TextareaInputConfig extends BaseInputConfig {
   input: 'textarea';
 }
-export interface DateInputConfig {
+export interface DateInputConfig extends BaseInputConfig {
   input: 'date';
 }
 export type InputConfig =
@@ -113,6 +117,8 @@ export const requestTypes = {
       description: {
         input: 'textarea',
         label: 'Description of the business',
+        description:
+          'Provide a high-level overview of the business so anyone who reads the audited financials can easily understand how your business description fits into your financial statements. This can best be summarized as your "elevator pitch" if you were to sell someone about your business for the first time.',
       },
       chiefDecisionMaker: {
         input: 'text',
