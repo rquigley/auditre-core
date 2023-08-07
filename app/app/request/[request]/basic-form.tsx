@@ -52,7 +52,8 @@ export default function BasicForm({ request, data, saveData }: Props) {
     await saveData(data);
 
     // prevent documents from being created multiple times
-    reset();
+    // UNDONE because it breaks inputs reflecting the current value
+    //reset();
 
     // reload activity feed
     router.refresh();
