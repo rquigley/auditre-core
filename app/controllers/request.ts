@@ -67,6 +67,7 @@ export function getById(id: RequestId): Promise<Request> {
   return db
     .selectFrom('request')
     .where('id', '=', id)
+    .where('isDeleted', '=', false)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
@@ -75,6 +76,7 @@ export function getByExternalId(externalId: string): Promise<Request> {
   return db
     .selectFrom('request')
     .where('externalId', '=', externalId)
+    .where('isDeleted', '=', false)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
@@ -83,6 +85,7 @@ export function getAllByAuditId(auditId: AuditId): Promise<Request[]> {
   return db
     .selectFrom('request')
     .where('auditId', '=', auditId)
+    .where('isDeleted', '=', false)
     .orderBy('createdAt')
     .selectAll()
     .execute();
