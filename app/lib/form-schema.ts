@@ -2,9 +2,9 @@ import * as z from 'zod';
 import { businessModelTypes } from './request-types';
 
 export const basicInfo = z.object({
-  businessName: z.string().min(2).max(128),
-  description: z.string().min(2).max(1024),
-  chiefDecisionMaker: z.string().min(2).max(128),
+  businessName: z.string().max(128),
+  description: z.string().max(10 * 1024),
+  chiefDecisionMaker: z.string().max(128),
 });
 export const auditInfo = z.object({
   year: z.coerce
