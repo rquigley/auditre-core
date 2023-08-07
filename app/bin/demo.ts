@@ -44,13 +44,13 @@ async function setupAudit(orgId: OrgId) {
     name: 'Our First Audit',
     year: 2023,
   });
-  await upsertDefault(audit1.id);
+  await upsertDefault({ auditId: audit1.id, orgId: orgId });
   const audit2 = await createAudit({
     orgId,
     name: 'Old Audit',
     year: 2022,
   });
-  await upsertDefault(audit2.id);
+  await upsertDefault({ auditId: audit2.id, orgId: orgId });
 }
 
 async function main() {
