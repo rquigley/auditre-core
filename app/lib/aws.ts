@@ -7,10 +7,36 @@ import { fromIni, fromSSO } from '@aws-sdk/credential-providers';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { parseUrl } from '@aws-sdk/url-parser';
 import { z } from 'zod';
+const { writeFile } = require('node:fs/promises');
 
 const region = 'us-east-2';
 
 const keySchema = z.string().min(4).max(120);
+
+export async function getFile({
+  bucket,
+  key,
+  outputFilename,
+}: {
+  bucket: string;
+  key: string;
+  outputFilename: string;
+}) {
+  keySchema.parse(key);
+
+  const credentials = await fromSSO({ profile: process.env.AWS_PROFILE })();
+  //   const credentials = fromIni({
+  //     profile: process.env.AWS_PROFILE,
+  //   });
+  const client = new S3Client({
+    credentials,
+    region,
+  });
+  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+  const { Body } = await client.send(command);
+
+  await writeFile(outputFilename, Body);
+}
 
 export async function getPresignedUrl({
   bucket,
