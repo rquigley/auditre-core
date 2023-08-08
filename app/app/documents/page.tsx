@@ -100,7 +100,7 @@ function Grid({ documents }: { documents: Document[] }) {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {documents.map((document) => (
-                  <RequestRow document={document} />
+                  <RequestRow document={document} key={document.id} />
                 ))}
               </tbody>
             </table>
