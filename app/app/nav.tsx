@@ -1,7 +1,7 @@
 import Navbar from '@/components/navbar';
 //import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import type { ClientSafeUser } from '@/types';
+import type { ClientSafeUser, ClientSafeAudit } from '@/types';
 import { getServerSession } from 'next-auth/next';
 import { getCurrentUser } from '@/controllers/user';
 import { clientSafe, omit } from '@/lib/util';
@@ -21,7 +21,7 @@ export default async function Nav() {
   return (
     <Navbar
       user={clientSafe(user) as ClientSafeUser}
-      audits={clientSafe(audits)}
+      audits={clientSafe(audits) as ClientSafeAudit[]}
     />
   );
 }
