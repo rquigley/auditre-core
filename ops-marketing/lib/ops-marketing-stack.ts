@@ -9,6 +9,8 @@ import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 //import * as patterns from 'aws-cdk-lib/aws-route53-patterns';
+import { GithubActionsRole } from 'aws-cdk-github-oidc';
+import { GithubActionsIdentityProvider } from 'aws-cdk-github-oidc';
 
 const domainName = 'auditre.co';
 
@@ -105,18 +107,32 @@ export class OpsMarketingStack extends cdk.Stack {
       zone: zone,
     });
 
-    // new patterns.HttpsRedirect(this, 'Redirect', {
-    //   recordNames: [domainNameWithWWW],
-    //   targetDomain: domainName,
-    //   zone,
-    // });
+    const provider = GithubActionsIdentityProvider.fromAccount(
+      this,
+      'GithubProvider',
+    );
+
+    const uploadRole = new GithubActionsRole(this, 'UploadRole', {
+      roleName: 'MarketingSiteUploadRole',
+      provider: provider,
+      owner: 'auditrehq',
+      repo: 'marketing-site',
+      filter: '*',
+      //filter: "ref:refs/tags/v*", // JWT sub suffix filter, defaults to '*'
+    });
+
+    siteBucket.grantReadWrite(uploadRole);
+
+    new cdk.CfnOutput(this, 'Github Actions Upload Role', {
+      value: uploadRole.roleArn,
+    });
 
     // TODO: remove this once the site is deployed
-    new s3deploy.BucketDeployment(this, 'DeployWithInvalidation', {
-      sources: [s3deploy.Source.asset('./site-contents')],
-      destinationBucket: siteBucket,
-      distribution,
-      distributionPaths: ['/*'],
-    });
+    // new s3deploy.BucketDeployment(this, 'DeployWithInvalidation', {
+    //   sources: [s3deploy.Source.asset('./site-contents')],
+    //   destinationBucket: siteBucket,
+    //   distribution,
+    //   distributionPaths: ['/*'],
+    // });
   }
 }
