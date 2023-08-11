@@ -3,9 +3,13 @@
 import dayjs from 'dayjs';
 import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 
-import type { Document } from '@/types';
+import type { ClientSafeDocument } from '@/types';
 
-export default function RequestRow({ document }: { document: Document }) {
+export default function RequestRow({
+  document,
+}: {
+  document: ClientSafeDocument;
+}) {
   return (
     <tr
       key={document.externalId}

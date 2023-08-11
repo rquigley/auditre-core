@@ -97,7 +97,7 @@ export default async function AuditPage({
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {clientSafeRequests.map((request) => (
-                  <RequestRow request={request} key={request.id} />
+                  <RequestRow request={request} key={request.externalId} />
                 ))}
               </tbody>
             </table>
