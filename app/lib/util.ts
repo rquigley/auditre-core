@@ -30,7 +30,7 @@ export function delay(ms: number): Promise<void> {
 }
 
 export function deepCopy<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
+  return JSON.parse(JSON.stringify(obj)) as T;
 }
 type AnyObject = {
   [key: string]: any;
