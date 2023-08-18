@@ -1,42 +1,21 @@
 import { notFound, redirect } from 'next/navigation';
 import { getAllByAuditId } from '@/controllers/request';
-import { getCurrentUser } from '@/controllers/user';
 import { getByExternalId } from '@/controllers/audit';
 import type { ClientSafeRequest } from '@/types';
-import { Fragment } from 'react';
-import {
-  BriefcaseIcon,
-  CalendarIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  CurrencyDollarIcon,
-  LinkIcon,
-  MapPinIcon,
-  PencilIcon,
-} from '@heroicons/react/20/solid';
-import { Menu, Transition } from '@headlessui/react';
 import Header from '@/components/header';
 import { clientSafe } from '@/lib/util';
-
+import { getCurrent } from '@/controllers/session-user';
 import RequestRow from './request-row';
-
-async function getUser() {
-  try {
-    const user = await getCurrentUser();
-    return user;
-  } catch (err) {
-    redirect(`/login?next=/requests`);
-  }
-}
 
 export default async function AuditPage({
   params: { audit: externalId },
 }: {
   params: { audit: string };
 }) {
-  const user = await getUser();
-
+  const user = await getCurrent();
+  if (!user) {
+    redirect(`/login?next=/audit/${externalId}`);
+  }
   const audit = await getByExternalId(externalId);
 
   // TODO, how do we better enforce this across routes

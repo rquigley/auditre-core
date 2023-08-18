@@ -41,6 +41,7 @@ export function omit(
   keysToOmit: string[],
 ): AnyObject[] | AnyObject {
   if (Array.isArray(obj)) {
+    //@ts-ignore
     return obj.map((item) => omit(item, keysToOmit));
   } else if (typeof obj === 'object' && obj !== null) {
     const newObj: AnyObject = {};

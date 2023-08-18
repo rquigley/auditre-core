@@ -2,7 +2,6 @@
 
 import { db } from '@/lib/db';
 import type { UserUpdate, User, NewUser } from '@/types';
-import { getServerSession } from 'next-auth/next';
 import { nanoid } from 'nanoid';
 
 export function create(user: Omit<NewUser, 'externalId'>): Promise<User> {
@@ -17,6 +16,14 @@ export function getById(id: number): Promise<User> {
   return db
     .selectFrom('user')
     .where('id', '=', id)
+    .selectAll()
+    .executeTakeFirstOrThrow();
+}
+
+export function getByExternalId(externalId: string): Promise<User> {
+  return db
+    .selectFrom('user')
+    .where('externalId', '=', externalId)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
@@ -41,38 +48,36 @@ export function getByAccountProviderAndProviderId(
     .selectAll('user')
     .executeTakeFirst();
 }
-export function getBySessionToken(
-  sessionToken: string,
-): Promise<User | undefined> {
-  return db
-    .selectFrom('user')
-    .innerJoin('session', 'session.userId', 'user.id')
-    .where('session.sessionToken', '=', sessionToken)
-    .selectAll('user')
+
+export async function getBySessionToken(sessionTokenArg: string) {
+  const res = await db
+    .selectFrom('session')
+    .innerJoin('user', 'user.id', 'session.userId')
+    .select([
+      'user.externalId as id',
+      'user.name',
+      'user.email',
+      'user.image',
+      'user.emailVerified',
+    ])
+    .select([
+      'session.id as sessionId',
+      'session.userId',
+      'session.sessionToken',
+      'session.expires',
+    ])
+    .where('session.sessionToken', '=', sessionTokenArg)
     .executeTakeFirst();
+  if (!res) {
+    return null;
+  }
+  const { sessionId, userId, sessionToken, expires, ...user } = res;
+  return {
+    user: { ...user },
+    session: { id: sessionId, userId: user.id, sessionToken, expires },
+  };
 }
 
 export async function update(id: number, updateWith: UserUpdate) {
   return db.updateTable('user').set(updateWith).where('id', '=', id).execute();
-}
-
-export async function getCurrentUser(): Promise<User> {
-  const session = await getServerSession();
-  if (!session) {
-    throw new Error('Session does not exist');
-  }
-  // Hijack the email attribute on the session to store our
-  // db-persisted session token. Next-auth – rightly - wants
-  // to dissuade you from using password based authentication
-  // but we don't have anything sufficiently better/usable.
-  // Storing additional data doesn't seem currently possible.
-  const sessionToken = session?.user?.email;
-  if (!sessionToken) {
-    throw new Error('Session token does not exist');
-  }
-  const user = await getBySessionToken(sessionToken);
-  if (!user) {
-    throw new Error('Session does not exist for this user');
-  }
-  return user;
 }

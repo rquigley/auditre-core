@@ -16,7 +16,7 @@ export function create(user: NewVerificationToken): Promise<VerificationToken> {
 }
 
 export function deleteVerificationToken(
-  identifier: number,
+  identifier: string,
 ): Promise<VerificationToken | undefined> {
   return db
     .deleteFrom('verificationToken')
@@ -25,7 +25,7 @@ export function deleteVerificationToken(
     .executeTakeFirst();
 }
 export function getByIdentifier(
-  identifier: number,
+  identifier: string,
 ): Promise<VerificationToken> {
   return db
     .selectFrom('verificationToken')
@@ -35,7 +35,7 @@ export function getByIdentifier(
 }
 
 export function update(
-  identifier: number,
+  identifier: string,
   updateWith: VerificationTokenUpdate,
 ) {
   return db

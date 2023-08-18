@@ -1,28 +1,17 @@
 import { redirect, notFound } from 'next/navigation';
-import { Fragment, useState } from 'react';
-
-//import { auth } from '@/auth';
-// import { Suspense } from 'react';
-// import { redirect } from 'next/navigation';
 import Nav from '@/app/nav';
 import { getAllByOrgId } from '@/controllers/document';
-import { getCurrentUser } from '@/controllers/user';
 import { getByExternalId } from '@/controllers/request';
 import type { Document, ClientSafeDocument } from '@/types';
 import { clientSafe } from '@/lib/util';
 import RequestRow from './request-row';
-
-async function getUser() {
-  try {
-    const user = await getCurrentUser();
-    return user;
-  } catch (err) {
-    redirect(`/login?next=/requests`);
-  }
-}
+import { getCurrent } from '@/controllers/session-user';
 
 export default async function DocumentsPage() {
-  const user = await getUser();
+  const user = await getCurrent();
+  if (!user) {
+    redirect(`/login?next=/documents`);
+  }
 
   const documents = await getAllByOrgId(user.orgId);
   const clientSafeDocuments = clientSafe(documents) as ClientSafeDocument[];

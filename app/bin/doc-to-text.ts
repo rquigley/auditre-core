@@ -20,6 +20,7 @@ async function main(documentId: string, question: string) {
   // });
   const document = await extractContent(parseInt(documentId));
   //console.log(document.extracted.data[0].content);
+  //@ts-ignore
   const data = document.extracted.data[0].content;
 
   // const out = await summarize(JSON.stringify(data));

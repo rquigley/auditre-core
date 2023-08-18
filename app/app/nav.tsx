@@ -1,22 +1,14 @@
 import Navbar from '@/components/navbar';
-//import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
 import type { ClientSafeUser, ClientSafeAudit } from '@/types';
-import { getServerSession } from 'next-auth/next';
-import { getCurrentUser } from '@/controllers/user';
+import { getCurrent } from '@/controllers/session-user';
 import { clientSafe, omit } from '@/lib/util';
 import { getAllByOrgId } from '@/controllers/audit';
 
-async function getUser() {
-  try {
-    return await getCurrentUser();
-  } catch (err) {
-    redirect(`/login?next=/`);
-  }
-}
-
 export default async function Nav() {
-  const user = await getUser();
+  const user = await getCurrent();
+  if (!user) {
+    return null;
+  }
   const audits = await getAllByOrgId(user.orgId);
   return (
     <Navbar

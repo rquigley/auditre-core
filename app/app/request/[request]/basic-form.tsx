@@ -33,6 +33,7 @@ export default function BasicForm({ request, data, saveData }: Props) {
 
   let defaultValues = {};
   for (const key of Object.keys(config.defaultValue)) {
+    //@ts-ignore
     defaultValues[key] = data[key];
   }
 
@@ -49,6 +50,7 @@ export default function BasicForm({ request, data, saveData }: Props) {
   });
 
   async function onSubmit(data: z.infer<typeof config.schema>) {
+    //@ts-ignore
     await saveData(data);
 
     // prevent documents from being created multiple times
@@ -75,6 +77,7 @@ export default function BasicForm({ request, data, saveData }: Props) {
           )}
           <div className=" grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             {Object.keys(config.form).map((field) => {
+              //@ts-ignore
               const fieldConfig: InputConfig = config.form[field];
 
               return (
@@ -98,6 +101,7 @@ export default function BasicForm({ request, data, saveData }: Props) {
                         errors={errors}
                         config={fieldConfig}
                         request={request}
+                        //@ts-ignore
                         setValue={setValue}
                         getValues={getValues}
                         setUploading={setUploading}

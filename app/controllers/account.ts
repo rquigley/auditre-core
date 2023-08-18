@@ -21,7 +21,7 @@ export function deleteAccount(
     .returningAll()
     .executeTakeFirst();
 }
-export function getById(id: number): Promise<Account> {
+export function getById(id: string): Promise<Account> {
   return db
     .selectFrom('account')
     .where('id', '=', id)
@@ -37,7 +37,7 @@ export function TEMPgetByUserId(id: number): Promise<Account> {
     .executeTakeFirstOrThrow();
 }
 
-export function update(id: number, updateWith: AccountUpdate) {
+export function update(id: string, updateWith: AccountUpdate) {
   return db
     .updateTable('account')
     .set(updateWith)

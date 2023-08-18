@@ -1,130 +1,198 @@
-//import { db } from '@/lib/db';
 import type {
   Adapter,
   AdapterAccount,
   AdapterSession,
   AdapterUser,
   VerificationToken,
-} from "@auth/core/adapters";
-import { Kysely } from "kysely";
-import { Database } from "@/types";
-import * as userController from "@/controllers/user";
-import * as accountController from "@/controllers/account";
-import * as sessionController from "@/controllers/session";
-import * as Types from "@/types";
+} from '@auth/core/adapters';
+import * as userController from '@/controllers/user';
+import * as accountController from '@/controllers/account';
+import * as sessionController from '@/controllers/session';
+import * as verificationTokenController from '@/controllers/verification-token';
+import {
+  getByEmail as getInviteByEmail,
+  update as updateInvite,
+} from '@/controllers/invitation';
+import type { User } from '@/types';
 
-function isDate(date: any) {
-  return (
-    new Date(date).toString() !== "Invalid Date" && !isNaN(Date.parse(date))
-  );
+function userToAdapterUser(user: User) {
+  return {
+    id: user.externalId,
+    name: user.name,
+    email: user.email,
+    image: user.image,
+    emailVerified: user.emailVerified,
+  };
 }
 
-export function format<T>(obj: Record<string, any>): T {
-  for (const [key, value] of Object.entries(obj)) {
-    if (value === null) {
-      delete obj[key];
-    }
-
-    if (isDate(value)) {
-      obj[key] = new Date(value);
-    }
-  }
-
-  return obj as T;
-}
-
-//export function AuthAdapter(p: Kysely<Database>): Adapter {
 export function AuthAdapter(): Adapter {
   return {
     createUser: async (data) => {
-      const user = userController.create({
+      const invite = await getInviteByEmail(data.email);
+      if (!invite) {
+        throw new Error('No invite found for email');
+      }
+      await updateInvite(invite.id, {
+        isUsed: true,
+      });
+      const user = await userController.create({
+        orgId: invite.orgId,
         name: data.name,
         email: data.email,
         image: data.image,
         emailVerified: data.emailVerified,
       });
-      return format<AdapterUser>(user);
+      return userToAdapterUser(user) as AdapterUser;
     },
 
-    getUser: async (id: string) => {
-      const data = userController.getById(Number(id));
-      if (!data) {
+    getUser: async (externalId: string) => {
+      const user = await userController.getByExternalId(externalId);
+      if (!user) {
         return null;
       }
-      return format<AdapterUser>(data);
+      return userToAdapterUser(user) as AdapterUser;
     },
 
     getUserByEmail: async (email: string) => {
-      const data = userController.getByEmail(email);
-      if (!data) {
+      const user = await userController.getByEmail(email);
+      if (!user) {
         return null;
       }
-      return format<AdapterUser>(data);
+
+      return userToAdapterUser(user) as AdapterUser;
     },
 
     getUserByAccount: async ({ provider, providerAccountId }) => {
-      const data = await userController.getByAccountProviderAndProviderId(
+      const user = await userController.getByAccountProviderAndProviderId(
         provider,
-        providerAccountId
+        providerAccountId,
       );
-      if (!data) {
+      if (!user) {
         return null;
       }
-      return format<AdapterUser>(data);
+
+      return userToAdapterUser(user) as AdapterUser;
     },
 
-    updateUser: ({ id, ...data }) =>
-      userController.update(Number(id), { data }),
+    updateUser: async ({ id, ...data }) => {
+      // id is externalId
+      const user = await userController.getByExternalId(id);
 
-    deleteUser: {},
-    ///////////////
-    linkAccount: (data) =>
-      accountController.create({ data }) as unknown as AdapterAccount,
-
-    unlinkAccount: ({ provider, providerAccountId }) =>
-      accountController.deleteAccount(
-        provider,
-        providerAccountId
-      ) as unknown as AdapterAccount,
-
-    ///////////////
-    async getSessionAndUser(sessionToken) {
-      const userAndSession = await p.session.findUnique({
-        where: { sessionToken },
-        include: { user: true },
+      await userController.update(user.id, {
+        name: data.name,
+        email: data.email,
+        emailVerified: data.emailVerified,
+        image: data.image,
       });
-      if (!userAndSession) return null;
-      const { user, ...session } = userAndSession;
-      return { user, session };
-    },
-    createSession: (data) => sessionController.create({ data }),
-    updateSession: (data) =>
-      sessionController.updateBySessionToken(data.sessionToken, data),
-    deleteSession: (sessionToken) =>
-      sessionController.deleteBySessionToken(sessionToken),
+      const user2 = await userController.getByExternalId(id);
 
-    ///////////////
-    async createVerificationToken(data) {
-      const verificationToken = await p.verificationToken.create({ data });
-      // @ts-expect-errors // MongoDB needs an ID, but we don't
-      if (verificationToken.id) delete verificationToken.id;
-      return verificationToken;
+      return userToAdapterUser(user2) as AdapterUser;
     },
-    async useVerificationToken(identifier_token) {
-      try {
-        const verificationToken = await p.verificationToken.delete({
-          where: { identifier_token },
-        });
-        // @ts-expect-errors // MongoDB needs an ID, but we don't
-        if (verificationToken.id) delete verificationToken.id;
-        return verificationToken;
-      } catch (error) {
-        // If token already used/deleted, just return null
-        // https://www.prisma.io/docs/reference/api-reference/error-reference#p2025
-        if ((error as Prisma.PrismaClientKnownRequestError).code === "P2025")
-          return null;
-        throw error;
+
+    deleteUser: async (id) => {
+      // id is externalId
+      const user = await userController.getByExternalId(id);
+      await userController.update(user.id, {
+        isDeleted: true,
+      });
+    },
+
+    linkAccount: async (account) => {
+      // https://github.com/nextauthjs/next-auth/discussions/1601
+      const {
+        type,
+        provider,
+        providerAccountId,
+        access_token: accessToken,
+        expires_at: expiresAt,
+        token_type: tokenType,
+        scope,
+        id_token: idToken,
+        userId,
+      } = account;
+      const user = await userController.getByExternalId(userId);
+      return accountController.create({
+        userId: user.id,
+        type,
+        provider,
+        providerAccountId,
+        accessToken,
+        expiresAt,
+        tokenType,
+        scope,
+        idToken,
+      }) as unknown as AdapterAccount;
+    },
+
+    unlinkAccount: ({ provider, providerAccountId }) => {
+      return accountController.deleteAccount(
+        provider,
+        providerAccountId,
+      ) as unknown as AdapterAccount;
+    },
+
+    getSessionAndUser: async (sessionToken) => {
+      const userAndSession =
+        await userController.getBySessionToken(sessionToken);
+      if (!userAndSession) {
+        return null;
       }
+      const { user, session } = userAndSession;
+      return {
+        user: user as AdapterUser,
+        session: session as AdapterSession,
+      };
+    },
+
+    createSession: async (data) => {
+      const user = await userController.getByExternalId(data.userId);
+      const session = await sessionController.create({
+        sessionToken: data.sessionToken,
+        userId: user.id,
+        expires: data.expires,
+      });
+      return {
+        sessionToken: session.sessionToken,
+        userId: user.externalId,
+        expires: session.expires,
+      } as AdapterSession;
+    },
+
+    updateSession: async (data) => {
+      const session = await sessionController.updateBySessionToken(
+        data.sessionToken,
+        { expires: data.expires },
+      );
+
+      return {
+        sessionToken: data.sessionToken,
+        userId: data.userId,
+        expires: data.expires,
+      } as AdapterSession;
+    },
+
+    deleteSession: async (sessionToken) => {
+      await sessionController.deleteBySessionToken(sessionToken);
+    },
+
+    createVerificationToken: async (data) => {
+      const verificationToken = await verificationTokenController.create({
+        expires: data.expires,
+        token: data.token,
+      });
+
+      return verificationToken as VerificationToken;
+    },
+
+    useVerificationToken: async ({ identifier, token }) => {
+      const verificationToken =
+        await verificationTokenController.getByIdentifier(identifier);
+      if (verificationToken && verificationToken.token === token) {
+        await verificationTokenController.deleteVerificationToken(identifier);
+      } else {
+        return null;
+      }
+      return verificationToken;
     },
   };
 }

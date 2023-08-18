@@ -1,6 +1,7 @@
 import {
   Kysely,
   Generated,
+  GeneratedAlways,
   ColumnType,
   Selectable,
   Insertable,
@@ -46,6 +47,23 @@ export type NewUser = Insertable<UserTable>;
 export type User = Selectable<UserTable>;
 export type ClientSafeUser = Omit<Selectable<UserTable>, ClientSafeOmitTypes>;
 
+export interface InvitationTable {
+  id: GeneratedAlways<string>;
+  orgId: OrgId;
+  email: string;
+  createdAt: ColumnType<Date, string | undefined, never>;
+  expiresAt: ColumnType<Date, string | undefined, never>;
+  isUsed: ColumnType<Boolean, never, Boolean>;
+}
+
+export type InvitationUpdate = Updateable<InvitationTable>;
+export type NewInvitation = Insertable<InvitationTable>;
+export type Invitation = Selectable<InvitationTable>;
+export type ClientSafeInvitation = Omit<
+  Selectable<InvitationTable>,
+  ClientSafeOmitTypes
+>;
+
 export interface PasswordTable {
   id: Generated<number>;
   userId: UserId;
@@ -57,7 +75,7 @@ export type NewPassword = Insertable<PasswordTable>;
 export type Password = Selectable<PasswordTable>;
 
 export interface AccountTable {
-  id: Generated<number>;
+  id: GeneratedAlways<string>;
   userId: UserId;
   type: string;
   provider: string;
@@ -76,7 +94,7 @@ export type NewAccount = Insertable<AccountTable>;
 export type Account = Selectable<AccountTable>;
 
 export interface SessionTable {
-  id: Generated<number>;
+  id: GeneratedAlways<string>;
   sessionToken: ColumnType<string, string | undefined, never>;
   userId: UserId;
   expires: Date;
@@ -86,7 +104,7 @@ export type NewSession = Insertable<SessionTable>;
 export type Session = Selectable<SessionTable>;
 
 export interface VerificationTokenTable {
-  identifier: Generated<number>;
+  identifier: GeneratedAlways<string>;
   token: string;
   expires: Date;
 }
@@ -214,6 +232,7 @@ export interface Database extends Kysely<Database> {
   account: AccountTable;
   audit: AuditTable;
   document: DocumentTable;
+  invitation: InvitationTable;
   org: OrgTable;
   request: RequestTable;
   requestChange: RequestChangeTable;

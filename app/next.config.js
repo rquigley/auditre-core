@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   experimental: {
     serverActions: true,
   },
@@ -9,6 +10,15 @@ const nextConfig = {
     config,
     { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack },
   ) => {
+    // Avoid AWS SDK Node.js require issue
+    if (isServer && nextRuntime === 'nodejs') {
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /^(aws-crt|@aws-sdk\/signature-v4-crt)$/,
+        }),
+      );
+    }
+
     config.resolve.alias = {
       ...config.resolve.alias,
       //

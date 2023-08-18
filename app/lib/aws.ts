@@ -5,7 +5,6 @@ import {
 } from '@aws-sdk/client-s3';
 import { fromIni, fromSSO } from '@aws-sdk/credential-providers';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { parseUrl } from '@aws-sdk/url-parser';
 import { z } from 'zod';
 const { writeFile } = require('node:fs/promises');
 
@@ -51,7 +50,6 @@ export async function getPresignedUrl({
     throw new Error('Missing bucket');
   }
   keySchema.parse(key);
-  const url = parseUrl(`https://${bucket}.s3.${region}.amazonaws.com/${key}`);
 
   const credentials = await fromSSO({ profile: process.env.AWS_PROFILE })();
   //   const credentials = fromIni({
