@@ -1,6 +1,8 @@
 import Image from 'next/image';
+import { Suspense } from 'react';
 import Link from 'next/link';
-import LoginForm from './login-form';
+//import LoginForm from './login-form';
+import LoginButton from './login-button';
 
 export default function Login() {
   return (
@@ -15,7 +17,15 @@ export default function Login() {
             Use your email and password to sign in
           </p>
         </div>
-        <LoginForm />
+        {/* <LoginForm /> */}
+        <Suspense
+          fallback={
+            <div className="my-2 h-10 w-full rounded-md border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />
+          }
+        >
+          {/* <LoginButton service="github" /> */}
+          <LoginButton service="google" />
+        </Suspense>
       </div>
     </div>
   );

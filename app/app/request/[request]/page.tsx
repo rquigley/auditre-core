@@ -5,7 +5,7 @@ import { classNames } from '@/lib/util';
 
 import { PaperClipIcon } from '@heroicons/react/20/solid';
 import Header from '@/components/header';
-import { getCurrentUser } from '@/controllers/user';
+import { getCurrent } from '@/controllers/session-user';
 import { getByExternalId, getChangesById } from '@/controllers/request';
 import { getById as getAuditById } from '@/controllers/audit';
 
@@ -14,21 +14,15 @@ import FormContainer from './form-container';
 
 dayjs.extend(relativeTime);
 
-async function getUser() {
-  try {
-    const user = await getCurrentUser();
-    return user;
-  } catch (err) {
-    redirect(`/login?next=/requests`);
-  }
-}
-
 export default async function RequestPage({
   params: { request: externalId },
 }: {
   params: { request: string };
 }) {
-  const user = await getUser();
+  const user = await getCurrent();
+  if (!user) {
+    redirect(`/login?next=/request/${externalId}`);
+  }
   const request = await getByExternalId(externalId);
   const audit = await getAuditById(request.auditId);
   if (audit.orgId !== user.orgId) {
@@ -72,63 +66,81 @@ export default async function RequestPage({
                   >
                     <div className="w-px bg-gray-200" />
                   </div>
-                  {change.type === 'commented' ? (
-                    <>
-                      <img
-                        src={change.actor.imageUrl}
-                        alt=""
-                        className="relative mt-3 h-6 w-6 flex-none rounded-full bg-gray-50"
-                      />
-                      <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-gray-200">
-                        <div className="flex justify-between gap-x-4">
-                          <div className="py-0.5 text-xs leading-5 text-gray-500">
-                            <span className="font-medium text-gray-900">
-                              {change.actor.name}
-                            </span>{' '}
-                            commented
+                  {
+                    //@ts-ignore
+                    change.type === 'commented' ? (
+                      <>
+                        <img
+                          src={
+                            //@ts-ignore
+                            change.actor.imageUrl
+                          }
+                          alt=""
+                          className="relative mt-3 h-6 w-6 flex-none rounded-full bg-gray-50"
+                        />
+                        <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-gray-200">
+                          <div className="flex justify-between gap-x-4">
+                            <div className="py-0.5 text-xs leading-5 text-gray-500">
+                              <span className="font-medium text-gray-900">
+                                {
+                                  //@ts-ignore
+                                  change.actor.name
+                                }
+                              </span>{' '}
+                              commented
+                            </div>
+                            <time
+                              dateTime={dayjs(change.createdAt).format(
+                                'MM/DD/YYYY HH:mm',
+                              )}
+                              className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                            >
+                              {String(change.createdAt)}
+                            </time>
                           </div>
-                          <time
-                            dateTime={dayjs(change.createdAt).format(
-                              'MM/DD/YYYY HH:mm',
-                            )}
-                            className="flex-none py-0.5 text-xs leading-5 text-gray-500"
-                          >
-                            {String(change.createdAt)}
-                          </time>
+                          <p className="text-sm leading-6 text-gray-500">
+                            {
+                              //@ts-ignore
+                              change.comment
+                            }
+                          </p>
                         </div>
-                        <p className="text-sm leading-6 text-gray-500">
-                          {change.comment}
+                      </>
+                    ) : (
+                      <>
+                        <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-white">
+                          {
+                            //@ts-ignore
+                            change.type === 'paid' ? (
+                              <CheckCircleIcon
+                                className="h-6 w-6 text-indigo-600"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
+                            )
+                          }
+                        </div>
+                        <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
+                          <span className="font-medium text-gray-900">
+                            {
+                              //@ts-ignore
+                              change.actor.name
+                            }
+                          </span>{' '}
+                          {change.type} the request.
                         </p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-white">
-                        {change.type === 'paid' ? (
-                          <CheckCircleIcon
-                            className="h-6 w-6 text-indigo-600"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
-                        )}
-                      </div>
-                      <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
-                        <span className="font-medium text-gray-900">
-                          {change.actor.name}
-                        </span>{' '}
-                        {change.type} the request.
-                      </p>
-                      <time
-                        dateTime={dayjs(change.createdAt).format(
-                          'MM/DD/YYYY HH:mm',
-                        )}
-                        className="flex-none py-0.5 text-xs leading-5 text-gray-500"
-                      >
-                        {dayjs(change.createdAt).fromNow()}
-                      </time>
-                    </>
-                  )}
+                        <time
+                          dateTime={dayjs(change.createdAt).format(
+                            'MM/DD/YYYY HH:mm',
+                          )}
+                          className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                        >
+                          {dayjs(change.createdAt).fromNow()}
+                        </time>
+                      </>
+                    )
+                  }
                 </li>
               ))}
             </ul>

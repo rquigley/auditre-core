@@ -1,19 +1,9 @@
 import { NextResponse } from 'next/server';
 import { redirect, notFound } from 'next/navigation';
-import { getCurrentUser } from '@/controllers/user';
+import { getCurrent } from '@/controllers/session-user';
 import { getByExternalId } from '@/controllers/document';
 import { streamFile } from '@/lib/aws';
 
-async function getUser() {
-  try {
-    const user = await getCurrentUser();
-    return user;
-  } catch (err) {
-    redirect(`/login?next=/requests`);
-  }
-}
-
-// export an async GET function. This is a convention in NextJS
 export async function GET(
   req: Request,
   {
@@ -22,7 +12,10 @@ export async function GET(
     params: { document: string };
   },
 ) {
-  const user = await getUser();
+  const user = await getCurrent();
+  if (!user) {
+    redirect(`/login?next=/document/${externalId}/download`);
+  }
   const document = await getByExternalId(externalId);
   if (document.orgId !== user.orgId) {
     return notFound();

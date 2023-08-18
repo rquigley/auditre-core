@@ -1,17 +1,12 @@
 // import 'server-only';
 
 import { db } from '@/lib/db';
-import { sql } from 'kysely';
 import type { SessionUpdate, Session, NewSession } from '@/types';
 
 export function create(session: NewSession): Promise<Session> {
   return db
     .insertInto('session')
-    .values({
-      userId: session.userId,
-      expires: session.expires,
-      sessionToken: sql`gen_random_uuid()`,
-    })
+    .values({ ...session })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
@@ -26,7 +21,7 @@ export function deleteBySessionToken(
     .executeTakeFirst();
 }
 
-export function getById(id: number): Promise<Session> {
+export function getById(id: string): Promise<Session> {
   return db
     .selectFrom('session')
     .where('id', '=', id)

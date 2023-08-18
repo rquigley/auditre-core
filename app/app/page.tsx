@@ -1,17 +1,13 @@
-import Image from 'next/image';
 import Nav from './nav';
 import { Suspense } from 'react';
-//import { auth } from '@/auth';
-import { getServerSession } from 'next-auth/next';
-
+import { getCurrent } from '@/controllers/session-user';
 import { redirect } from 'next/navigation';
 
 export default async function Home() {
-  //const session = await auth();
-  const session = await getServerSession();
-
-  if (!session?.user) {
-    redirect(`/login?next=/requests`);
+  const user = await getCurrent();
+  console.log('HEY yo', user);
+  if (!user) {
+    redirect(`/login?next=/`);
   }
   return (
     <Suspense fallback="...">

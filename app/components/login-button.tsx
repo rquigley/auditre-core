@@ -6,7 +6,7 @@ import { signIn } from 'next-auth/react';
 //import { cn } from '@/lib/utils';
 //import { Button, type ButtonProps } from '@/components/ui/button';
 //import { IconGitHub, IconSpinner } from '@/components/ui/icons';
-
+//@ts-ignore
 interface LoginButtonProps extends ButtonProps {
   showGithubIcon?: boolean;
   text?: string;
@@ -15,6 +15,7 @@ interface LoginButtonProps extends ButtonProps {
 export function LoginButton({
   text = 'Login with GitHub',
   showGithubIcon = true,
+  //@ts-ignore
   className,
   ...props
 }: LoginButtonProps) {

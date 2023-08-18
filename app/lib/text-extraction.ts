@@ -1,3 +1,4 @@
+//@ts-ignore
 import { getDocument } from 'pdfjs-dist/build/pdf.js';
 import { basename } from 'path';
 import fs from 'fs';
@@ -49,6 +50,7 @@ export async function extractTextFromPDF(pdfPath: string) {
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
     const content = await page.getTextContent();
+    //@ts-ignore
     const strings = content.items.map((item) => item.str);
     data.push({
       page: pageNum,

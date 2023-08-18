@@ -57,10 +57,13 @@ export async function extractContent(id: number): Promise<Document> {
   });
   //console.log(data);
 
-  return db
-    .updateTable('document')
-    .set({ extracted: { data } })
-    .where('id', '=', id)
-    .returningAll()
-    .executeTakeFirstOrThrow();
+  return (
+    db
+      .updateTable('document')
+      //@ts-ignore
+      .set({ extracted: { data } })
+      .where('id', '=', id)
+      .returningAll()
+      .executeTakeFirstOrThrow()
+  );
 }

@@ -26,6 +26,17 @@ export async function up(db: Kysely<any>): Promise<void> {
     `.execute(db);
 
   await sql`
+    CREATE TABLE "invitation" (
+      "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      "org_id" integer NOT NULL REFERENCES "org" ("id"),
+      "email" varchar UNIQUE,
+      "created_at" timestamp DEFAULT now() NOT NULL,
+      "expires_at" timestamp DEFAULT (now() + INTERVAL '7 days') NOT NULL,
+      "is_used" boolean NOT NULL DEFAULT FALSE
+    );
+    `.execute(db);
+
+  await sql`
     CREATE TABLE "password" (
       "id" serial PRIMARY KEY,
       "user_id" integer NOT NULL REFERENCES "user" ("id"),
@@ -36,6 +47,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 
   await sql`
     CREATE TABLE "account" (
+      "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
       "user_id" integer NOT NULL REFERENCES "user" ("id"),
       "type" varchar NOT NULL,
       "provider" varchar NOT NULL,
@@ -47,14 +59,13 @@ export async function up(db: Kysely<any>): Promise<void> {
       "scope" varchar,
       "id_token" varchar,
       "session_state" varchar,
-      "created_at" timestamp DEFAULT now() NOT NULL,
-      PRIMARY KEY (provider, provider_account_id)
+      "created_at" timestamp DEFAULT now() NOT NULL
     );
     `.execute(db);
 
   await sql`
     CREATE TABLE "session" (
-      "id" serial PRIMARY KEY,
+      "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
       "session_token" varchar NOT NULL UNIQUE,
       "user_id" integer NOT NULL REFERENCES "user" ("id"),
       "expires" timestamp without time zone NOT NULL
@@ -63,7 +74,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 
   await sql`
     CREATE TABLE "verification_token" (
-      "identifier" serial PRIMARY KEY,
+      "identifier" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
       "token" varchar NOT NULL UNIQUE,
       "session_token" varchar NOT NULL UNIQUE,
       "expires" timestamp without time zone NOT NULL

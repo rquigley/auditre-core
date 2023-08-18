@@ -35,10 +35,16 @@ export default async function BusinessName({ request, user, audit }: Props) {
     for (const [key, field] of Object.entries(requestConfig.form)) {
       if (
         field.input === 'fileupload' &&
+        //@ts-ignore
+
         data[key] &&
         // data[key].key indicates that a new file has been uploaded
+        //@ts-ignore
+
         data[key].key
       ) {
+        //@ts-ignore
+
         const file: S3File = data[key];
         const doc = await createDocument({
           key: file.key,
@@ -49,6 +55,7 @@ export default async function BusinessName({ request, user, audit }: Props) {
           lastModified: new Date(file.lastModified),
           orgId: audit.orgId,
         });
+        //@ts-ignore
         data[key] = {
           documentExternalId: doc.externalId,
         };
@@ -57,6 +64,8 @@ export default async function BusinessName({ request, user, audit }: Props) {
 
     await updateData({
       id: request.id,
+      //@ts-ignore
+
       data,
       actor: {
         type: 'USER',
@@ -68,8 +77,10 @@ export default async function BusinessName({ request, user, audit }: Props) {
 
   return (
     <FormCmp
+      //@ts-ignore
       request={clientSafe(request)}
       data={request.data}
+      //@ts-ignore
       saveData={saveData}
     />
   );

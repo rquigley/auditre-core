@@ -1,11 +1,10 @@
 import { program } from 'commander';
 //import prompts from 'prompts';
 import { loadEnvConfig } from '@next/env';
-import { create as createUser } from '@/controllers/user';
-import { create as createPassword } from '@/controllers/password';
 import { create as createOrg } from '@/controllers/org';
 import { create as createAudit } from '@/controllers/audit';
-import { create as createRequest, upsertDefault } from '@/controllers/request';
+import { create as createInvitation } from '@/controllers/invitation';
+import { upsertDefault } from '@/controllers/request';
 import { db } from '@/lib/db';
 import type { OrgId } from '@/types';
 
@@ -15,25 +14,30 @@ loadEnvConfig(process.cwd(), dev, { info: () => null, error: console.error });
 async function setupAccount(): Promise<OrgId> {
   const org = await createOrg({ name: 'Test Org' });
   // TODO come up with something more secure than this for demo accounts.
-  const testUserEmail = `demo${Date.now()
-    .toString()
-    .substring(6, 10)}@auditrehq.com`;
+  // const testUserEmail = `demo${Date.now()
+  //   .toString()
+  //   .substring(6, 10)}@auditrehq.com`;
+  const testUserEmail = 'ryan@auditre.co';
   const password = '7777';
 
-  const user = await createUser({
+  // const user = await createUser({
+  //   orgId: org.id,
+  //   email: testUserEmail,
+  //   name: 'Demo User',
+  // });
+  const invitation = await createInvitation({
     orgId: org.id,
     email: testUserEmail,
-    name: 'Demo User',
   });
 
-  await createPassword({
-    userId: user.id,
-    value: password,
-  });
-  console.log(
-    `Created User with\nID: ${user.id}\nEmail: ${testUserEmail}\nPassword: ${password}`,
-  );
-  console.log('COME UP WITH SOMETHING MORE SECURE FOR DEMO ACCOUNTS');
+  // await createPassword({
+  //   userId: user.id,
+  //   value: password,
+  // });
+  // console.log(
+  //   `Created User with\nID: ${user.id}\nEmail: ${testUserEmail}\nPassword: ${password}`,
+  // );
+  console.log(`Created User with\nEmail: ${testUserEmail}`);
 
   return org.id;
 }

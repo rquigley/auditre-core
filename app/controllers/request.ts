@@ -139,7 +139,7 @@ export async function updateData({
   const parsed = schema.parse(data);
 
   const status = requestTypes[type].completeOnSet ? 'complete' : undefined;
-
+  //@ts-ignore
   return await update(id, { data: parsed, status }, actor);
 }
 
@@ -195,6 +195,7 @@ export async function getChangesById(requestId: RequestId): Promise<Change[]> {
       ret.push({
         type: 'CREATED',
         createdAt: change.createdAt,
+        //@ts-ignore
         actor,
       });
     } else {
@@ -202,6 +203,7 @@ export async function getChangesById(requestId: RequestId): Promise<Change[]> {
         ret.push({
           type: 'VALUE',
           createdAt: change.createdAt,
+          //@ts-ignore
           actor,
         });
       }
