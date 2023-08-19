@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import { GithubActionsIdentityProvider } from "aws-cdk-github-oidc";
 
 const domainName = 'auditre.co';
 
@@ -29,5 +30,6 @@ export class OpsCertificateStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'CertificateDomainName', { value: domainName });
     new cdk.CfnOutput(this, 'CertificateArn', { value: cert.certificateArn });
 
+    const provider = new GithubActionsIdentityProvider(this, "GithubProvider");
   }
 }
