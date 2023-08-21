@@ -3,11 +3,9 @@ on:
   push:
     branches:
       - main
-      - production
   pull_request:
     branches:
       - main
-      - production
 
 jobs:
   build-and-deploy:
@@ -55,7 +53,7 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: nodejs-app
+          ECR_REPOSITORY: auditre-fargate-app
           IMAGE_TAG: latest
         working-directory: ./app
         run: |
