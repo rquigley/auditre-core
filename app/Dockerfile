@@ -1,4 +1,4 @@
-FROM node:18-alpine AS base
+FROM --platform=linux/amd64 node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -52,9 +52,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-EXPOSE 80
+EXPOSE 3000
 
-ENV PORT 80
+ENV PORT 3000
 ENV HOSTNAME localhost
 
 CMD ["node", "server.js"]
