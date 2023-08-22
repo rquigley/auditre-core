@@ -1,36 +1,48 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfront_origins from 'aws-cdk-lib/aws-cloudfront-origins';
-import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
+//import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
-//import * as patterns from 'aws-cdk-lib/aws-route53-patterns';
-import { GithubActionsRole } from 'aws-cdk-github-oidc';
-import { GithubActionsIdentityProvider } from 'aws-cdk-github-oidc';
+import { SSMParameterReader } from './ssm-parameter-reader';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
+import {
+  GithubActionsRole,
+  GithubActionsIdentityProvider,
+} from 'aws-cdk-github-oidc';
 
 const domainName = 'auditre.co';
-
-// Get this value from core/ops-certificate stack
-const certificateArn =
-  'arn:aws:acm:us-east-1:857535158880:certificate/f91cba71-a2da-41c7-ac3c-2bad93028383';
+// See ops-certificate-stack
+const SSM_PARENT_ZONE_ID = 'auditre-parent-zone-id';
 
 export class OpsMarketingStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    props?: cdk.StackProps & { certificateArn: string },
+  ) {
     super(scope, id, props);
 
-    const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-      domainName: domainName,
+    const parentZoneIdReader = new SSMParameterReader(
+      this,
+      'ParentZoneIdSSMReader',
+      {
+        parameterName: SSM_PARENT_ZONE_ID,
+        region: 'us-east-1',
+      },
+    );
+    new cdk.CfnOutput(this, 'parentZoneId', {
+      value: parentZoneIdReader.getParameterValue(),
     });
 
-    const certificate = acm.Certificate.fromCertificateArn(
-      this,
-      'Certificate',
-      certificateArn,
-    );
+    const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'Zone', {
+      hostedZoneId: parentZoneIdReader.getParameterValue(),
+      zoneName: 'auditre.co',
+    });
+    new cdk.CfnOutput(this, 'zone', { value: zone.zoneName });
 
     const domainNameWithWWW = `www.${domainName}`;
 
@@ -51,7 +63,7 @@ export class OpsMarketingStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
       autoDeleteObjects: true, // NOT recommended for production code
     });
-    const bucket = new s3.Bucket(this, 'MyRedirectedBucket', {
+    new s3.Bucket(this, 'MyRedirectedBucket', {
       websiteRedirect: { hostName: 'www.example.com' },
     });
 
@@ -63,6 +75,13 @@ export class OpsMarketingStack extends cdk.Stack {
       },
     );
 
+    // Output from ssl-cert-stack
+    const certificateArn = props?.certificateArn || '';
+    const certificate = acm.Certificate.fromCertificateArn(
+      this,
+      'Certificate',
+      certificateArn,
+    );
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       certificate: certificate,
       defaultRootObject: 'index.html',
@@ -96,7 +115,7 @@ export class OpsMarketingStack extends cdk.Stack {
       target: route53.RecordTarget.fromAlias(
         new targets.CloudFrontTarget(distribution),
       ),
-      zone: zone,
+      zone,
     });
 
     new route53.ARecord(this, 'WWWSiteAliasRecord', {
@@ -104,7 +123,7 @@ export class OpsMarketingStack extends cdk.Stack {
       target: route53.RecordTarget.fromAlias(
         new targets.CloudFrontTarget(distribution),
       ),
-      zone: zone,
+      zone,
     });
 
     const provider = GithubActionsIdentityProvider.fromAccount(
