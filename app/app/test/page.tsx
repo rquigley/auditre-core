@@ -4,6 +4,8 @@ export default async function Home() {
   const headersList = headers();
   const other = {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+
     referer: headersList.get('referer'),
     host: headersList.get('host'),
     Host: headersList.get('Host'),
@@ -15,7 +17,6 @@ export default async function Home() {
 
   return (
     <div>
-      <pre>{JSON.stringify({ headers: headersList.entries() }, null, 2)}</pre>n
       <pre>{JSON.stringify({ other }, null, 2)}</pre>
     </div>
   );
