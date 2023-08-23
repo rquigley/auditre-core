@@ -22,6 +22,7 @@ import {
   GithubActionsRole,
   GithubActionsIdentityProvider,
 } from 'aws-cdk-github-oidc';
+import { PostgresCluster } from './postgres-cluster';
 
 export class OpsAppStack extends cdk.Stack {
   constructor(
@@ -130,12 +131,17 @@ export class OpsAppStack extends cdk.Stack {
           name: 'application',
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
+        {
+          cidrMask: 28,
+          name: 'rds',
+          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
+        },
       ],
     });
 
     const loadbalancer = new ApplicationLoadBalancer(this, 'lb', {
       vpc,
-      internetFacing: true, // change this to false when fixed
+      internetFacing: true, // TODO: false for prod
       vpcSubnets: vpc.selectSubnets({
         subnetType: ec2.SubnetType.PUBLIC,
       }),
@@ -144,6 +150,20 @@ export class OpsAppStack extends cdk.Stack {
     const cluster = new ecs.Cluster(this, 'Cluster', {
       vpc,
       clusterName: 'fargate-node-cluster',
+    });
+
+    const db = new PostgresCluster(this, 'PostgresCluster', {
+      vpc,
+      instanceIdentifier: 'auditre-app-psql',
+    });
+    db.cluster.connections.allowDefaultPortFrom(cluster);
+    new cdk.CfnOutput(this, 'dbEndpoint', {
+      value: db.cluster.instanceEndpoint.hostname,
+    });
+
+    new cdk.CfnOutput(this, 'secretName', {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+      value: db.cluster.secret?.secretName!,
     });
 
     // const repo = new ecr.Repository(this, 'Repo', {

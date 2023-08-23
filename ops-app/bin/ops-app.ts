@@ -7,8 +7,8 @@ import { DevAppSSLCertStack } from '../lib/dev-app-ssl-cert-stack';
 const app = new cdk.App();
 
 const devAppSSLCertStack = new DevAppSSLCertStack(app, 'DevAppSSLCertStack', {
-  env: { account: '258343757818', region: 'us-east-1' },
   crossRegionReferences: true,
+  env: { account: '258343757818', region: 'us-east-1' },
 });
 
 new OpsAppStack(app, 'OpsAppStack', {
