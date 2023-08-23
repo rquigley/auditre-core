@@ -10,6 +10,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 7 # AWS Timeouts can keep GA jobs alive
     permissions:
       id-token: write # needed to interact with GitHub's OIDC Token endpoint.
       contents: read
@@ -77,7 +78,8 @@ jobs:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: fargate-node-service
           cluster: fargate-node-cluster
-          wait-for-service-stability: true
+          # TODO: use AWS alerting rather than GitHub actions
+          # wait-for-service-stability: true
 
 
 #  uses: actions/cache@v3
