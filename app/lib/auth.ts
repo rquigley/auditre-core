@@ -47,24 +47,34 @@ export const {
     //error: '/login', // Error code passed in query string as ?error=
   },
   adapter: AuthAdapter(),
-  // cookies: {
-  //   sessionToken: {
-  //     name: `${
-  //       process.env.ENVIRONMENT !== 'development' ? '__Secure-' : ''
-  //     }next-auth.session-token`,
-  //     options: {
-  //       httpOnly: true,
-  //       sameSite: 'lax',
-  //       path: '/',
-  //       // When working on localhost, the cookie domain must be omitted entirely (https://stackoverflow.com/a/1188145)
-  //       domain:
-  //         process.env.ENVIRONMENT !== 'development'
-  //           ? `.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
-  //           : undefined,
-  //       secure: process.env.ENVIRONMENT !== 'development',
-  //     },
-  //   },
-  // },
+  cookies: {
+    sessionToken: {
+      name: `${
+        process.env.ENVIRONMENT !== 'development' ? '__Secure-' : ''
+      }next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        // When working on localhost, the cookie domain must be omitted entirely (https://stackoverflow.com/a/1188145)
+        domain:
+          process.env.ENVIRONMENT !== 'development'
+            ? `.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
+            : undefined,
+        secure: process.env.ENVIRONMENT !== 'development',
+      },
+    },
+    pkceCodeVerifier: {
+      name: 'next-auth.pkce.code_verifier',
+      options: {
+        httpOnly: true,
+        //sameSite: 'none',
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.ENVIRONMENT !== 'development',
+      },
+    },
+  },
   callbacks: {
     // https://next-auth.js.org/configuration/callbacks#jwt-callback
     // NOT INVOKED IF USING DB SESSIONS
