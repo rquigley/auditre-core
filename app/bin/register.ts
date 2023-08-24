@@ -1,10 +1,8 @@
 import { program } from 'commander';
-import prompts from 'prompts';
 import { loadEnvConfig } from '@next/env';
 import { create as createInvitation } from '@/controllers/invitation';
 import { create as createOrg } from '@/controllers/org';
 import { db } from '@/lib/db';
-import type { OrgId } from '@/types';
 
 const dev = process.env.NODE_ENV !== 'production';
 loadEnvConfig(process.cwd(), dev, { info: () => null, error: console.error });
@@ -27,9 +25,7 @@ program
   .argument('<orgId>', 'Organization ID')
   .argument('<email>', 'user email')
   .action(async (orgId, email, opts) => {
-    let password;
-
-    const invitation = await createInvitation({
+    await createInvitation({
       orgId: orgId,
       email,
     });
