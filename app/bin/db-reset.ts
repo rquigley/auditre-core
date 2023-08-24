@@ -1,10 +1,11 @@
-import { program } from 'commander';
 import { loadEnvConfig } from '@next/env';
 import { Client } from 'pg';
 import { migrateToLatest } from './db-migrate';
 
 const dev = process.env.NODE_ENV !== 'production';
 loadEnvConfig(process.cwd(), dev, { info: () => null, error: console.error });
+
+const IS_RUN_FROM_CLI = require.main === module;
 
 async function reCreateDb() {
   const client = new Client({
@@ -26,14 +27,14 @@ async function reCreateDb() {
   await client.end();
 }
 
-async function run() {
-  program.description('Resets DB and runs migrations').parse(process.argv);
-  const opts = program.opts();
+export async function run() {
   await reCreateDb();
   await migrateToLatest();
 }
 
-run().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+if (IS_RUN_FROM_CLI) {
+  run().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}
