@@ -1,9 +1,10 @@
 import { headers, cookies } from 'next/headers';
 
-export default async function Home() {
+export default function Home() {
   async function testCookie() {
     'use server';
     cookies().set('yep', 'nope');
+    return false;
   }
 
   const headersList = headers();
