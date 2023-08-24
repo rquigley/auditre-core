@@ -1,4 +1,4 @@
-import {
+import type {
   Kysely,
   Generated,
   GeneratedAlways,
@@ -7,7 +7,7 @@ import {
   Insertable,
   Updateable,
 } from 'kysely';
-import { RequestType } from './lib/request-types';
+import type { RequestType } from './lib/request-types';
 
 export type OrgId = number;
 export type UserId = number;
