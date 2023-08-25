@@ -1,7 +1,5 @@
-import { Client } from 'pg';
-import { migrateToLatest } from './db-migrate';
-
-const IS_RUN_FROM_CLI = require.main === module;
+const { Client } = require('pg');
+const { migrateToLatest } = require('./db-migrate');
 
 async function reCreateDb() {
   const client = new Client({
@@ -23,11 +21,12 @@ async function reCreateDb() {
   await client.end();
 }
 
-export async function run() {
+async function run() {
   await reCreateDb();
   await migrateToLatest();
 }
 
+const IS_RUN_FROM_CLI = require.main === module;
 if (IS_RUN_FROM_CLI) {
   run().catch((e) => {
     console.error(e);
