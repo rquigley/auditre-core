@@ -9,30 +9,13 @@ import type { OrgId } from '@/types';
 
 async function setupAccount(): Promise<OrgId> {
   const org = await createOrg({ name: 'Test Org' });
-  // TODO come up with something more secure than this for demo accounts.
-  // const testUserEmail = `demo${Date.now()
-  //   .toString()
-  //   .substring(6, 10)}@auditrehq.com`;
   const testUserEmail = 'ryan@auditre.co';
-  const password = '7777';
 
-  // const user = await createUser({
-  //   orgId: org.id,
-  //   email: testUserEmail,
-  //   name: 'Demo User',
-  // });
   const invitation = await createInvitation({
     orgId: org.id,
     email: testUserEmail,
   });
 
-  // await createPassword({
-  //   userId: user.id,
-  //   value: password,
-  // });
-  // console.log(
-  //   `Created User with\nID: ${user.id}\nEmail: ${testUserEmail}\nPassword: ${password}`,
-  // );
   console.log(`Created User with\nEmail: ${testUserEmail}`);
 
   return org.id;
