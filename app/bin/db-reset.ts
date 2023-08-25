@@ -1,9 +1,5 @@
-import { loadEnvConfig } from '@next/env';
 import { Client } from 'pg';
 import { migrateToLatest } from './db-migrate';
-
-const dev = process.env.NODE_ENV !== 'production';
-loadEnvConfig(process.cwd(), dev, { info: () => null, error: console.error });
 
 const IS_RUN_FROM_CLI = require.main === module;
 

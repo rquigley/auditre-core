@@ -1,15 +1,11 @@
 import { program } from 'commander';
 //import prompts from 'prompts';
-import { loadEnvConfig } from '@next/env';
 import { create as createOrg } from '@/controllers/org';
 import { create as createAudit } from '@/controllers/audit';
 import { create as createInvitation } from '@/controllers/invitation';
 import { upsertDefault } from '@/controllers/request';
 import { db } from '@/lib/db';
 import type { OrgId } from '@/types';
-
-const dev = process.env.NODE_ENV !== 'production';
-loadEnvConfig(process.cwd(), dev, { info: () => null, error: console.error });
 
 async function setupAccount(): Promise<OrgId> {
   const org = await createOrg({ name: 'Test Org' });

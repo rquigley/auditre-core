@@ -1,11 +1,7 @@
 import { program } from 'commander';
-import { loadEnvConfig } from '@next/env';
 import { create as createInvitation } from '@/controllers/invitation';
 import { create as createOrg } from '@/controllers/org';
 import { db } from '@/lib/db';
-
-const dev = process.env.NODE_ENV !== 'production';
-loadEnvConfig(process.cwd(), dev, { info: () => null, error: console.error });
 
 program
   .command('org')

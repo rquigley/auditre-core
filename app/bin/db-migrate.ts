@@ -1,18 +1,8 @@
 import * as path from 'path';
-import { Pool } from 'pg';
 import { promises as fs } from 'fs';
-import { loadEnvConfig } from '@next/env';
-import {
-  Kysely,
-  Migrator,
-  PostgresDialect,
-  FileMigrationProvider,
-} from 'kysely';
+import { Migrator, FileMigrationProvider } from 'kysely';
 
-import { db } from '@/lib/db';
-
-const dev = process.env.NODE_ENV !== 'production';
-loadEnvConfig(process.cwd(), dev, { info: () => null, error: console.error });
+import { db } from '../lib/db';
 
 export const MIGRATIONS_PATH: string = path.resolve(__dirname, '../migrations');
 

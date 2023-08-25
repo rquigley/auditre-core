@@ -1,5 +1,4 @@
 import { program } from 'commander';
-import { loadEnvConfig } from '@next/env';
 import { getById, extractContent } from '@/controllers/document';
 import { getFile } from '@/lib/aws';
 import { db } from '@/lib/db';
@@ -7,9 +6,6 @@ import { basename } from 'path';
 import { existsSync } from 'fs';
 import { extractData } from '@/lib/text-extraction';
 import { askQuestion, summarize } from '@/lib/ai';
-
-const dev = process.env.NODE_ENV !== 'production';
-loadEnvConfig(process.cwd(), dev, { info: () => null, error: console.error });
 
 async function main(documentId: string, question: string) {
   // const document = await getById(parseInt(documentId));
