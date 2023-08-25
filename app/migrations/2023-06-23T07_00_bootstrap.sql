@@ -1,0 +1,130 @@
+CREATE TABLE "org" (
+  "id" serial PRIMARY KEY,
+  "external_id" varchar NOT NULL UNIQUE,
+  "name" varchar,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "is_deleted" boolean DEFAULT FALSE
+);
+
+CREATE TABLE "user" (
+  "id" serial PRIMARY KEY,
+  "org_id" integer NOT NULL REFERENCES "org" ("id"),
+  "external_id" varchar NOT NULL UNIQUE,
+  "name" varchar,
+  "email" varchar UNIQUE,
+  "email_verified" varchar,
+  "image" varchar,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "is_deleted" boolean NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE "invitation" (
+  "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  "org_id" integer NOT NULL REFERENCES "org" ("id"),
+  "email" varchar UNIQUE,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "expires_at" timestamp DEFAULT (now() + INTERVAL '7 days') NOT NULL,
+  "is_used" boolean NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE "account" (
+  "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  "user_id" integer NOT NULL REFERENCES "user" ("id"),
+  "type" varchar NOT NULL,
+  "provider" varchar NOT NULL,
+  "provider_account_id" varchar NOT NULL,
+  "refresh_token" varchar,
+  "access_token" varchar,
+  "expires_at" integer,
+  "token_type" varchar,
+  "scope" varchar,
+  "id_token" varchar,
+  "session_state" varchar,
+  "created_at" timestamp DEFAULT now() NOT NULL
+);
+
+CREATE TABLE "session" (
+  "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  "session_token" varchar NOT NULL UNIQUE,
+  "user_id" integer NOT NULL REFERENCES "user" ("id"),
+  "expires" timestamp without time zone NOT NULL
+);
+
+CREATE TABLE "verification_token" (
+  "identifier" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  "token" varchar NOT NULL UNIQUE,
+  "session_token" varchar NOT NULL UNIQUE,
+  "expires" timestamp without time zone NOT NULL
+);
+
+CREATE TABLE "documents" (
+  "id" serial PRIMARY KEY,
+  "org_id" integer NOT NULL REFERENCES "org" ("id"),
+  "s3_key" varchar NOT NULL UNIQUE,
+  "filename" varchar NOT NULL,
+  "type" varchar NOT NULL,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "is_deleted" boolean NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE "audit" (
+  "id" serial PRIMARY KEY,
+  "external_id" varchar NOT NULL UNIQUE,
+  "org_id" integer NOT NULL REFERENCES "org" ("id"),
+  "name" varchar,
+  "year" numeric(4,0),
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "is_deleted" boolean NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE "request" (
+  "id" serial PRIMARY KEY,
+  "external_id" varchar NOT NULL UNIQUE,
+  "audit_id" integer NOT NULL REFERENCES "audit" ("id"),
+  "org_id" integer NOT NULL REFERENCES "org" ("id"),
+  "name" varchar,
+  "type" varchar,
+  "description" varchar,
+  "status" varchar,
+  "requestee" integer REFERENCES "user" ("id"),
+  "data" jsonb,
+  "due_date" date,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "is_deleted" boolean NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE "request_change" (
+  "id" serial PRIMARY KEY,
+  "request_id" integer NOT NULL REFERENCES "request" ("id"),
+  "external_id" varchar NOT NULL UNIQUE, -- TODO: IS THIS NEEDED?
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "audit_id" integer NOT NULL REFERENCES "audit" ("id"),
+  "actor" jsonb,
+  "new_data" JSONB
+);
+
+CREATE TABLE "document" (
+  "id" serial PRIMARY KEY,
+  "external_id" varchar NOT NULL UNIQUE,
+  "key" varchar NOT NULL UNIQUE,
+  "bucket" varchar NOT NULL,
+  "name" varchar,
+  "size" integer NOT NULL,
+  "type" varchar,
+  "last_modified" timestamp NOT NULL,
+  "org_id" integer NOT NULL REFERENCES "org" ("id"),
+  "extracted" jsonb,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "is_deleted" boolean NOT NULL DEFAULT FALSE
+);
+
+-- CREATE TABLE "log" (
+--   "id" serial PRIMARY KEY,
+--   "org_id" integer NOT NULL REFERENCES "org" ("id"),
+--   "action" varchar,
+--   "actor_id" integer,
+--   "actor_type" varchar,
+--   "context_ip" varchar,
+--   "context_user_agent" varchar,
+--   "created_at" timestamp DEFAULT now() NOT NULL
+-- );
