@@ -37,15 +37,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     `.execute(db);
 
   await sql`
-    CREATE TABLE "password" (
-      "id" serial PRIMARY KEY,
-      "user_id" integer NOT NULL REFERENCES "user" ("id"),
-      "value" varchar NOT NULL,
-      "created_at" timestamp DEFAULT now() NOT NULL
-    );
-    `.execute(db);
-
-  await sql`
     CREATE TABLE "account" (
       "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
       "user_id" integer NOT NULL REFERENCES "user" ("id"),

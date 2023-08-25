@@ -64,16 +64,6 @@ export type ClientSafeInvitation = Omit<
   ClientSafeOmitTypes
 >;
 
-export interface PasswordTable {
-  id: Generated<number>;
-  userId: UserId;
-  value: string;
-  createdAt: ColumnType<Date, string | undefined, never>;
-}
-export type PasswordUpdate = Updateable<PasswordTable>;
-export type NewPassword = Insertable<PasswordTable>;
-export type Password = Selectable<PasswordTable>;
-
 export interface AccountTable {
   id: GeneratedAlways<string>;
   userId: UserId;
@@ -236,7 +226,6 @@ export interface Database extends Kysely<Database> {
   org: OrgTable;
   request: RequestTable;
   requestChange: RequestChangeTable;
-  password: PasswordTable;
   session: SessionTable;
   user: UserTable;
   verificationToken: VerificationTokenTable;
