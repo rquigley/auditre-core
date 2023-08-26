@@ -23,7 +23,10 @@ const dialect = new PostgresDialect({
     let config;
     if (process.env.AWS_RDS_DB_CREDS) {
       // AWS creds come from an encrypted rds.DatabaseSecret
-      const creds = JSON.parse(process.env.AWS_RDS_DB_CREDS) as z.infer<
+      const credRaw = process.env.AWS_RDS_DB_CREDS as unknown as {
+        secretString: string;
+      };
+      const creds = JSON.parse(credRaw.secretString) as z.infer<
         typeof dBConfig
       >;
       config = {
