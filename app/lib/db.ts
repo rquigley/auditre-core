@@ -11,20 +11,37 @@ import {
 import { z } from 'zod';
 import type { Database } from '../types';
 const dBConfig = z.object({
-  database: z.string().min(3).max(40),
-  host: z.string().min(3).max(128),
-  user: z.string().min(3).max(40),
-  password: z.string().min(3).max(255),
+  database: z.string().min(3),
+  host: z.string().min(3),
+  password: z.string().min(3),
+  port: z.number(),
+  user: z.string().min(3),
 });
 
 const dialect = new PostgresDialect({
   pool: async () => {
-    const config = {
-      database: process.env.DB_DATABASE,
-      host: process.env.DB_HOSTNAME,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-    };
+    let config;
+    if (process.env.AWS_RDS_DB_CREDS) {
+      // AWS creds come from an encrypted rds.DatabaseSecret
+      const creds = JSON.parse(process.env.AWS_RDS_DB_CREDS) as z.infer<
+        typeof dBConfig
+      >;
+      config = {
+        database: creds.database,
+        host: creds.host,
+        password: creds.password,
+        port: creds.port,
+        user: creds.user,
+      };
+    } else {
+      config = {
+        database: process.env.DB_DATABASE,
+        host: process.env.DB_HOSTNAME,
+        password: process.env.DB_PASSWORD,
+        port: 3306,
+        user: process.env.DB_USER,
+      };
+    }
     try {
       dBConfig.parse(config);
     } catch (err: unknown) {
@@ -34,7 +51,12 @@ const dialect = new PostgresDialect({
       process.exit(1);
     }
 
-    return new Pool(config);
+    return new Pool({
+      ...config,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    });
   },
 });
 
