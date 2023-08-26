@@ -14,6 +14,7 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import {
   ApplicationLoadBalancer,
   ApplicationProtocol,
@@ -145,6 +146,7 @@ export class OpsAppStack extends cdk.Stack {
       vpcSubnets: vpc.selectSubnets({
         subnetType: ec2.SubnetType.PUBLIC,
       }),
+      idleTimeout: cdk.Duration.seconds(5),
     });
 
     const cluster = new ecs.Cluster(this, 'Cluster', {
@@ -155,6 +157,9 @@ export class OpsAppStack extends cdk.Stack {
     const db = new PostgresCluster(this, 'PostgresCluster', {
       vpc,
       instanceIdentifier: 'auditre-app-psql',
+      dbName: 'auditre',
+      dbUsername: 'arroot',
+      isProd: false,
     });
     db.cluster.connections.allowDefaultPortFrom(cluster);
     new cdk.CfnOutput(this, 'dbEndpoint', {
@@ -201,10 +206,35 @@ export class OpsAppStack extends cdk.Stack {
         //   containerPort: 3000,
         //   executionRole,
         // },
+
         taskImageOptions: {
-          image: ecs.ContainerImage.fromAsset(
-            path.dirname('../app/Dockerfile'),
-          ),
+          // image: ecs.ContainerImage.fromAsset(
+          //   path.dirname('../app/Dockerfile'),
+          // ),
+          image: ecs.ContainerImage.fromEcrRepository(repo, 'latest'),
+          environment: {
+            DB_DATABASE: db.dbName,
+            DB_HOSTNAME: db.cluster.instanceEndpoint.hostname,
+            DB_USER: db.dbUsername,
+
+            NEXT_PUBLIC_ROOT_DOMAIN: 'https://app.ci.auditre.co',
+            NEXTAUTH_URL: 'https://app.ci.auditre.co',
+            NEXTAUTH_SECRET:
+              '263dfdaa81588b662f576fa193e3f8f36c92096eae99814f0d9fc1b3907afa77',
+            foo: 'fdshfdshfds',
+
+            GOOGLE_CLIENT_ID:
+              '274008686939-oejqk1po6q1qd8krlcqsgk3brih10qgm.apps.googleusercontent.com',
+            GOOGLE_CLIENT_SECRET: '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',
+            AWS_PROFILE: 'auditre-dev',
+            AWS_S3_BUCKET: 'com-auditrehq-org-files-dev',
+            OPENAI_API_KEY:
+              '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',
+            ENVIRONMENT: 'production',
+          },
+          secrets: {
+            DB_PASSWORD: ecs.Secret.fromSecretsManager(db.creds),
+          },
           containerName: 'nodejs-app-container',
           family: 'fargate-node-task-defn',
           containerPort: 3000,
@@ -223,23 +253,28 @@ export class OpsAppStack extends cdk.Stack {
         // certificate,
       },
     );
+    // appService.grantConnectionsToSecurityGroups(db.cluster.connections);
     appService.targetGroup.configureHealthCheck({
       path: '/api/app-cont-health',
+      healthyThresholdCount: 2,
     });
+    appService.targetGroup.setAttribute(
+      'deregistration_delay.timeout_seconds',
+      '10',
+    );
 
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       certificate: certificate,
-      //defaultRootObject: 'index.html',
       domainNames: ['ci.auditre.co', 'app.ci.auditre.co'],
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
-      errorResponses: [
-        {
-          httpStatus: 403,
-          responseHttpStatus: 403,
-          responsePagePath: '/error.html',
-          ttl: cdk.Duration.minutes(30),
-        },
-      ],
+      // errorResponses: [
+      //   {
+      //     httpStatus: 403,
+      //     responseHttpStatus: 403,
+      //     responsePagePath: '/error.html',
+      //     ttl: cdk.Duration.minutes(30),
+      //   },
+      // ],
       defaultBehavior: {
         origin: new cloudfrontOrigins.LoadBalancerV2Origin(loadbalancer, {
           // TODO: Switch back to HTTPS
@@ -248,6 +283,26 @@ export class OpsAppStack extends cdk.Stack {
         compress: true,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        cachePolicy: new cloudfront.CachePolicy(this, 'AppCachePolicy', {
+          headerBehavior: cloudfront.CacheHeaderBehavior.allowList('Host'),
+          cookieBehavior: cloudfront.CacheCookieBehavior.all(),
+          queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
+          defaultTtl: cdk.Duration.seconds(5),
+          minTtl: cdk.Duration.seconds(5),
+          maxTtl: cdk.Duration.seconds(5),
+          enableAcceptEncodingBrotli: true,
+          enableAcceptEncodingGzip: true,
+        }),
+        originRequestPolicy: new cloudfront.OriginRequestPolicy(
+          this,
+          'AppOriginPolicy',
+          {
+            headerBehavior: cloudfront.OriginRequestHeaderBehavior.all(),
+            queryStringBehavior:
+              cloudfront.OriginRequestQueryStringBehavior.all(),
+            cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
+          },
+        ),
       },
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
     });
