@@ -23,18 +23,19 @@ const dialect = new PostgresDialect({
     let config;
     if (process.env.AWS_RDS_DB_CREDS) {
       // AWS creds come from an encrypted rds.DatabaseSecret
-      console.log('HERE1');
-      const creds = JSON.parse(process.env.AWS_RDS_DB_CREDS) as z.infer<
-        typeof dBConfig
-      >;
-      console.log('HERE2');
-      console.log(creds);
+      const creds = JSON.parse(process.env.AWS_RDS_DB_CREDS) as {
+        dbname: string;
+        host: string;
+        password: string;
+        port: number;
+        username: string;
+      };
       config = {
-        database: creds.database,
+        database: creds.dbname,
         host: creds.host,
         password: creds.password,
         port: creds.port,
-        user: creds.user,
+        user: creds.username,
       };
     } else {
       config = {
