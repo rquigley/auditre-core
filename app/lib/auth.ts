@@ -117,15 +117,16 @@ export const {
       email?: any;
       credentials?: any;
     }) => {
-      // console.log({
-      //   label: 'signIn callback2',
-      //   user,
-      //   account,
-      //   profile,
-      //   email,
-      //   credentials,
-      // });
-
+      console.log({
+        label: 'signIn callback2',
+        user,
+        account,
+        profile,
+        email,
+        credentials,
+      });
+      // TEMP TEST
+      return true;
       if (user) {
         try {
           // console.log('this might be an oauth google user id', user.id);
