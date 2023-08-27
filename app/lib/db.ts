@@ -36,13 +36,16 @@ const dialect = new PostgresDialect({
         password: creds.password,
         port: creds.port,
         user: creds.username,
+        ssl: {
+          rejectUnauthorized: false,
+        },
       };
     } else {
       config = {
         database: process.env.DB_DATABASE,
         host: process.env.DB_HOSTNAME,
         password: process.env.DB_PASSWORD,
-        port: 3306,
+        port: 5432,
         user: process.env.DB_USER,
       };
     }
@@ -55,12 +58,7 @@ const dialect = new PostgresDialect({
       process.exit(1);
     }
 
-    return new Pool({
-      ...config,
-      ssl: {
-        rejectUnauthorized: false,
-      },
-    });
+    return new Pool(config);
   },
 });
 

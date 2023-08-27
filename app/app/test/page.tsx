@@ -1,10 +1,34 @@
 import { headers, cookies } from 'next/headers';
+import Form from './form';
+import { create as createOrg } from '@/controllers/org';
+import { create as createAudit } from '@/controllers/audit';
+import { create as createInvitation } from '@/controllers/invitation';
+import { upsertDefault } from '@/controllers/request';
 
 export default function Home() {
-  async function testCookie() {
+  async function setupDemo() {
     'use server';
-    cookies().set('yep', 'nope');
-    return false;
+    try {
+      const org = await createOrg({ name: 'Test Org2' });
+
+      const audit1 = await createAudit({
+        orgId: org.id,
+        name: 'Our First Audit',
+        year: 2023,
+      });
+      await upsertDefault({ auditId: audit1.id, orgId: org.id });
+
+      await createInvitation({
+        orgId: org.id,
+        email: 'ryan@auditre.co',
+      });
+      await createInvitation({
+        orgId: org.id,
+        email: 'jason@auditre.co',
+      });
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   const headersList = headers();
@@ -23,9 +47,7 @@ export default function Home() {
   return (
     <div>
       <pre>{JSON.stringify({ other }, null, 2)}</pre>
-      <form action={testCookie}>
-        <button type="submit">Add to Cart</button>
-      </form>
+      <Form setupDemo={setupDemo} />
     </div>
   );
 }
