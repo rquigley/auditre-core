@@ -31,12 +31,12 @@ export default function Navbar({
   user: ClientSafeUser;
   audits: ClientSafeAudit[];
 }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   if (!pathname) {
     return null;
   }
   const rootPathname = `/${pathname.split('/')[1]}`;
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const selectedAuditExternalId = audits[0]?.id ?? '';
   const requestHref = selectedAuditExternalId
     ? `/audit/${selectedAuditExternalId}`
