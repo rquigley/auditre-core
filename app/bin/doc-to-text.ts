@@ -14,7 +14,7 @@ async function main(documentId: string, question: string) {
   //   bucket: document.bucket,
   //   mimeType: document.type,
   // });
-  const document = await extractContent(parseInt(documentId));
+  const document = await extractContent(documentId);
   //console.log(document.extracted.data[0].content);
   //@ts-ignore
   const data = document.extracted.data[0].content;
