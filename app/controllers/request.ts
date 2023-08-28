@@ -14,11 +14,10 @@ import type {
   RequestChange,
   NewRequestChange,
 } from '@/types';
-import { nanoid } from 'nanoid';
 import { getById as getUserById } from '@/controllers/user';
 import { requestTypes, RequestType } from '@/lib/request-types';
 
-type CreateRequest = Omit<NewRequest, 'externalId' | 'value'> & {
+type CreateRequest = Omit<NewRequest, 'value'> & {
   data: any;
 };
 
@@ -28,7 +27,7 @@ export async function create(
 ): Promise<Request> {
   const res = await db
     .insertInto('request')
-    .values({ ...request, externalId: nanoid(), data: json(request.data) })
+    .values({ ...request, data: json(request.data) })
     .returningAll()
     .executeTakeFirstOrThrow();
 
@@ -79,15 +78,6 @@ export function getById(id: RequestId): Promise<Request> {
     .executeTakeFirstOrThrow();
 }
 
-export function getByExternalId(externalId: string): Promise<Request> {
-  return db
-    .selectFrom('request')
-    .where('externalId', '=', externalId)
-    .where('isDeleted', '=', false)
-    .selectAll()
-    .executeTakeFirstOrThrow();
-}
-
 export function getAllByAuditId(auditId: AuditId): Promise<Request[]> {
   return db
     .selectFrom('request')
@@ -99,7 +89,7 @@ export function getAllByAuditId(auditId: AuditId): Promise<Request[]> {
 }
 
 export async function update(
-  id: number,
+  id: RequestId,
   updateWith: RequestUpdate,
   actor: Actor,
 ) {
@@ -158,7 +148,6 @@ export function logChange({
     .insertInto('requestChange')
     .values({
       requestId,
-      externalId: nanoid(),
       auditId,
       actor,
       newData,

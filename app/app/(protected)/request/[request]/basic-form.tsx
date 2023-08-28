@@ -318,7 +318,7 @@ function FileUpload({
 
     const signedUrl = await getPresignedUploadUrl({
       filename,
-      requestExternalId: request.externalId,
+      requestId: request.id,
       contentType: file.type,
     });
 

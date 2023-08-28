@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
 import { redirect, notFound } from 'next/navigation';
 import { getCurrent } from '@/controllers/session-user';
-import { getByExternalId } from '@/controllers/document';
+import { getById } from '@/controllers/document';
 import { streamFile } from '@/lib/aws';
 
 export async function GET(
   req: Request,
   {
-    params: { document: externalId },
+    params: { document: id },
   }: {
     params: { document: string };
   },
 ) {
   const user = await getCurrent();
-  const document = await getByExternalId(externalId);
+  const document = await getById(id);
   if (document.orgId !== user.orgId) {
     return notFound();
   }

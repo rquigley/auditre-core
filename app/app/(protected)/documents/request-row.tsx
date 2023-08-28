@@ -12,13 +12,13 @@ export default function RequestRow({
 }) {
   return (
     <tr
-      key={document.externalId}
+      key={document.id}
       className="hover:bg-gray-100"
       onClick={() => console.log('sdfsdf')}
     >
       <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
         <a
-          href={`/document/${document.externalId}/download`}
+          href={`/document/${document.id}/download`}
           className="flex items-center gap-x-1"
         >
           <DocumentArrowDownIcon

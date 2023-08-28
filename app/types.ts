@@ -9,16 +9,16 @@ import type {
 } from 'kysely';
 import type { RequestType } from './lib/request-types';
 
-export type OrgId = number;
-export type UserId = number;
-export type AuditId = number;
-export type RequestId = number;
+export type OrgId = string;
+export type DocumentId = string;
+export type UserId = string;
+export type AuditId = string;
+export type RequestId = string;
 
-type ClientSafeOmitTypes = 'id' | 'orgId';
+type ClientSafeOmitTypes = 'orgId';
 
 export interface OrgTable {
-  id: Generated<OrgId>;
-  externalId: ColumnType<string, string, never>;
+  id: GeneratedAlways<string>;
   name: string | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<Boolean, never, Boolean>;
@@ -31,8 +31,7 @@ export type Org = Selectable<OrgTable>;
 export type Actor = { userId: UserId; type: 'USER' } | { type: 'SYSTEM' };
 
 export interface UserTable {
-  id: Generated<UserId>;
-  externalId: ColumnType<string, string, never>;
+  id: GeneratedAlways<string>;
   orgId: OrgId;
   name: string | null;
   email: string | null;
@@ -103,8 +102,7 @@ export type NewVerificationToken = Insertable<VerificationTokenTable>;
 export type VerificationToken = Selectable<VerificationTokenTable>;
 
 export interface AuditTable {
-  id: Generated<AuditId>;
-  externalId: ColumnType<string, string, never>;
+  id: GeneratedAlways<AuditId>;
   orgId: OrgId;
   name: string | null;
   year: number | null;
@@ -142,7 +140,6 @@ export type RequestData =
 export type RequestStatus = 'requested' | 'complete' | 'overdue';
 export interface RequestTable {
   id: Generated<RequestId>;
-  externalId: string;
   auditId: AuditId;
   orgId: OrgId;
   name: string | null;
@@ -172,7 +169,6 @@ export type RequestChangeValue = RequestData & {
 export interface RequestChangeTable {
   id: Generated<number>;
   requestId: RequestId;
-  externalId: string;
   auditId: AuditId;
   actor: Actor;
   newData: RequestChangeValue;
@@ -188,8 +184,7 @@ export type ClientSafeRequestChange = Omit<
 >;
 
 export interface DocumentTable {
-  id: Generated<number>;
-  externalId: Generated<string>;
+  id: GeneratedAlways<string>;
   key: Generated<string>;
   bucket: string;
   name: string;

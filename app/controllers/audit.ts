@@ -1,12 +1,10 @@
-// import 'server-only';
 import { db } from '@/lib/db';
-import type { AuditUpdate, Audit, NewAudit, OrgId } from '@/types';
-import { nanoid } from 'nanoid';
+import type { AuditId, AuditUpdate, Audit, NewAudit, OrgId } from '@/types';
 
-export function create(audit: Omit<NewAudit, 'externalId'>): Promise<Audit> {
+export function create(audit: NewAudit): Promise<Audit> {
   return db
     .insertInto('audit')
-    .values({ ...audit, externalId: nanoid() })
+    .values({ ...audit })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
@@ -15,15 +13,6 @@ export function getById(id: OrgId): Promise<Audit> {
   return db
     .selectFrom('audit')
     .where('id', '=', id)
-    .selectAll()
-    .executeTakeFirstOrThrow();
-}
-
-export function getByExternalId(externalId: string): Promise<Audit> {
-  return db
-    .selectFrom('audit')
-    .where('externalId', '=', externalId)
-    .where('isDeleted', '=', false)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
@@ -41,6 +30,6 @@ export function getAll(): Promise<Audit[]> {
   return db.selectFrom('audit').selectAll().execute();
 }
 
-export async function update(id: number, updateWith: AuditUpdate) {
+export async function update(id: AuditId, updateWith: AuditUpdate) {
   return db.updateTable('audit').set(updateWith).where('id', '=', id).execute();
 }
