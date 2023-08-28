@@ -9,14 +9,14 @@ import type { OrgId } from '@/types';
 
 async function setupAccount(): Promise<OrgId> {
   const org = await createOrg({ name: 'Test Org' });
-  const testUserEmail = 'ryan@auditre.co';
 
-  const invitation = await createInvitation({
-    orgId: org.id,
-    email: testUserEmail,
-  });
-
-  console.log(`Created User with\nEmail: ${testUserEmail}`);
+  for (let email of ['ryan@auditre.co', 'jason@auditre.co']) {
+    await createInvitation({
+      orgId: org.id,
+      email,
+    });
+    console.log(`Created invite for: ${email}`);
+  }
 
   return org.id;
 }
