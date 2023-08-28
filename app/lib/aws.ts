@@ -3,7 +3,11 @@ import {
   PutObjectCommand,
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
-import { fromIni, fromSSO } from '@aws-sdk/credential-providers';
+import {
+  fromIni,
+  fromSSO,
+  fromContainerMetadata,
+} from '@aws-sdk/credential-providers';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { z } from 'zod';
 const { writeFile } = require('node:fs/promises');
@@ -23,7 +27,12 @@ export async function getFile({
 }) {
   keySchema.parse(key);
 
-  const credentials = await fromSSO({ profile: process.env.AWS_PROFILE })();
+  let credentials;
+  if (process.env.NODE_ENV === 'production') {
+    credentials = await fromContainerMetadata();
+  } else {
+    credentials = await fromSSO({ profile: process.env.AWS_PROFILE })();
+  }
   //   const credentials = fromIni({
   //     profile: process.env.AWS_PROFILE,
   //   });
