@@ -1,5 +1,5 @@
 import { getAllByOrgId } from '@/controllers/document';
-import { getByExternalId } from '@/controllers/request';
+import { getById } from '@/controllers/request';
 import type { Document, ClientSafeDocument } from '@/types';
 import { clientSafe } from '@/lib/util';
 import RequestRow from './request-row';
@@ -58,7 +58,7 @@ export default async function DocumentsPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {clientSafeDocuments.map((document) => (
-                  <RequestRow document={document} key={document.externalId} />
+                  <RequestRow document={document} key={document.id} />
                 ))}
               </tbody>
             </table>

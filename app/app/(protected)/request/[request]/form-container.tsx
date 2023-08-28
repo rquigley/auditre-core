@@ -57,7 +57,7 @@ export default async function BusinessName({ request, user, audit }: Props) {
         });
         //@ts-ignore
         data[key] = {
-          documentExternalId: doc.externalId,
+          documentExternalId: doc.id,
         };
       }
     }

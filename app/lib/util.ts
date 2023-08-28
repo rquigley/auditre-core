@@ -55,7 +55,7 @@ export function omit(
   return obj;
 }
 
-const unsafeDbAttrs = ['id', 'orgId'];
+const unsafeDbAttrs = ['orgId'];
 export function clientSafe(
   obj: AnyObject[] | AnyObject,
   keys = unsafeDbAttrs,

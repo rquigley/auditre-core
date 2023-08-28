@@ -14,7 +14,7 @@ export async function getCurrent(): Promise<User> {
     throw new Error('No session found');
   }
 
-  // TODO: we _should_ use sesion.user?.id here (externalId), but
+  // TODO: we _should_ use sesion.user?.id here, but
   // the next-auth type is currently only set for client-side methods
   // which does not include the id. Use email for now.
   const email = session.user?.email;
@@ -33,7 +33,7 @@ export async function getCurrentOrNone() {
     return false;
   }
 
-  // TODO: we _should_ use sesion.user?.id here (externalId), but
+  // TODO: we _should_ use sesion.user?.id here, but
   // the next-auth type is currently only set for client-side methods
   // which does not include the id. Use email for now.
   const email = session.user?.email;

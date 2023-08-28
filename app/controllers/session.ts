@@ -1,7 +1,7 @@
 // import 'server-only';
 
 import { db } from '@/lib/db';
-import type { SessionUpdate, Session, NewSession } from '@/types';
+import type { SessionUpdate, Session, NewSession, UserId } from '@/types';
 
 export function create(session: NewSession): Promise<Session> {
   return db
@@ -37,7 +37,7 @@ export function getBySessionToken(sessionToken: string): Promise<Session> {
     .executeTakeFirstOrThrow();
 }
 
-export function getAllByUserId(userId: number): Promise<Session[]> {
+export function getAllByUserId(userId: UserId): Promise<Session[]> {
   return db
     .selectFrom('session')
     .where('userId', '=', userId)

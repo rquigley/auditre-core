@@ -1,28 +1,24 @@
 // import 'server-only';
 
 import { db } from '@/lib/db';
-import type { DocumentUpdate, Document, NewDocument, OrgId } from '@/types';
-import { nanoid } from 'nanoid';
+import type {
+  DocumentUpdate,
+  Document,
+  DocumentId,
+  NewDocument,
+  OrgId,
+} from '@/types';
 import { extractData } from '@/lib/text-extraction';
 
 export function create(document: NewDocument): Promise<Document> {
   return db
     .insertInto('document')
-    .values({ ...document, externalId: nanoid() })
+    .values({ ...document })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getByExternalId(externalId: string): Promise<Document> {
-  return db
-    .selectFrom('document')
-    .where('externalId', '=', externalId)
-    .where('isDeleted', '=', false)
-    .selectAll()
-    .executeTakeFirstOrThrow();
-}
-
-export function getById(id: number): Promise<Document> {
+export function getById(id: DocumentId): Promise<Document> {
   return db
     .selectFrom('document')
     .where('id', '=', id)
@@ -40,7 +36,7 @@ export function getAllByOrgId(orgId: OrgId): Promise<Document[]> {
     .execute();
 }
 
-export function update(id: number, updateWith: DocumentUpdate) {
+export function update(id: DocumentId, updateWith: DocumentUpdate) {
   return db
     .updateTable('document')
     .set(updateWith)
@@ -48,7 +44,7 @@ export function update(id: number, updateWith: DocumentUpdate) {
     .execute();
 }
 
-export async function extractContent(id: number): Promise<Document> {
+export async function extractContent(id: DocumentId): Promise<Document> {
   const document = await getById(id);
   const data = await extractData({
     key: document.key,

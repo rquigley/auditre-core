@@ -41,10 +41,10 @@ export default function RequestRow({
   const router = useRouter();
 
   return (
-    <tr key={request.externalId} className="hover:bg-gray-100">
+    <tr key={request.id} className="hover:bg-gray-100">
       <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-sm font-medium sm:pr-0">
         {/* <Link
-          href={`/request/${request.externalId}`}
+          href={`/request/${request.id}`}
           className="text-indigo-600 hover:text-indigo-900"
         >
           View<span className="sr-only">, {request.name}</span>
@@ -53,7 +53,7 @@ export default function RequestRow({
       <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
         <div className="text-gray-900 font-semibold">
           <Link
-            href={`/request/${request.externalId}`}
+            href={`/request/${request.id}`}
             className="hover:underline hover:text-blue-500"
           >
             {request.name}

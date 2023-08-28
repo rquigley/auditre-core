@@ -17,7 +17,7 @@ import type { User } from '@/types';
 
 function userToAdapterUser(user: User) {
   return {
-    id: user.externalId,
+    id: user.id,
     name: user.name,
     email: user.email,
     image: user.image,
@@ -45,8 +45,8 @@ export function AuthAdapter(): Adapter {
       return userToAdapterUser(user) as AdapterUser;
     },
 
-    getUser: async (externalId: string) => {
-      const user = await userController.getByExternalId(externalId);
+    getUser: async (id: string) => {
+      const user = await userController.getById(id);
       if (!user) {
         return null;
       }
@@ -75,8 +75,7 @@ export function AuthAdapter(): Adapter {
     },
 
     updateUser: async ({ id, ...data }) => {
-      // id is externalId
-      const user = await userController.getByExternalId(id);
+      const user = await userController.getById(id);
 
       await userController.update(user.id, {
         name: data.name,
@@ -84,14 +83,13 @@ export function AuthAdapter(): Adapter {
         emailVerified: data.emailVerified,
         image: data.image,
       });
-      const user2 = await userController.getByExternalId(id);
+      const user2 = await userController.getById(id);
 
       return userToAdapterUser(user2) as AdapterUser;
     },
 
     deleteUser: async (id) => {
-      // id is externalId
-      const user = await userController.getByExternalId(id);
+      const user = await userController.getById(id);
       await userController.update(user.id, {
         isDeleted: true,
       });
@@ -110,7 +108,7 @@ export function AuthAdapter(): Adapter {
         id_token: idToken,
         userId,
       } = account;
-      const user = await userController.getByExternalId(userId);
+      const user = await userController.getById(userId);
       return accountController.create({
         userId: user.id,
         type,
@@ -145,7 +143,7 @@ export function AuthAdapter(): Adapter {
     },
 
     createSession: async (data) => {
-      const user = await userController.getByExternalId(data.userId);
+      const user = await userController.getById(data.userId);
       const session = await sessionController.create({
         sessionToken: data.sessionToken,
         userId: user.id,
@@ -153,7 +151,7 @@ export function AuthAdapter(): Adapter {
       });
       return {
         sessionToken: session.sessionToken,
-        userId: user.externalId,
+        userId: user.id,
         expires: session.expires,
       } as AdapterSession;
     },

@@ -1,29 +1,20 @@
 // import 'server-only';
 
 import { db } from '@/lib/db';
-import type { UserUpdate, User, NewUser } from '@/types';
-import { nanoid } from 'nanoid';
+import type { UserUpdate, User, NewUser, UserId } from '@/types';
 
-export function create(user: Omit<NewUser, 'externalId'>): Promise<User> {
+export function create(user: NewUser): Promise<User> {
   return db
     .insertInto('user')
-    .values({ ...user, externalId: nanoid() })
+    .values({ ...user })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getById(id: number): Promise<User> {
+export function getById(id: UserId): Promise<User> {
   return db
     .selectFrom('user')
     .where('id', '=', id)
-    .selectAll()
-    .executeTakeFirstOrThrow();
-}
-
-export function getByExternalId(externalId: string): Promise<User> {
-  return db
-    .selectFrom('user')
-    .where('externalId', '=', externalId)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
@@ -54,7 +45,7 @@ export async function getBySessionToken(sessionTokenArg: string) {
     .selectFrom('session')
     .innerJoin('user', 'user.id', 'session.userId')
     .select([
-      'user.externalId as id',
+      'user.id',
       'user.name',
       'user.email',
       'user.image',
@@ -78,6 +69,6 @@ export async function getBySessionToken(sessionTokenArg: string) {
   };
 }
 
-export async function update(id: number, updateWith: UserUpdate) {
+export async function update(id: UserId, updateWith: UserUpdate) {
   return db.updateTable('user').set(updateWith).where('id', '=', id).execute();
 }

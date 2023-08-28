@@ -1,4 +1,3 @@
-// import 'server-only';
 import { db } from '@/lib/db';
 import type { AccountUpdate, Account, NewAccount } from '@/types';
 
@@ -25,14 +24,6 @@ export function getById(id: string): Promise<Account> {
   return db
     .selectFrom('account')
     .where('id', '=', id)
-    .selectAll()
-    .executeTakeFirstOrThrow();
-}
-
-export function TEMPgetByUserId(id: number): Promise<Account> {
-  return db
-    .selectFrom('account')
-    .where('userId', '=', id)
     .selectAll()
     .executeTakeFirstOrThrow();
 }

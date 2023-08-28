@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getAllByAuditId } from '@/controllers/request';
-import { getByExternalId } from '@/controllers/audit';
+import { getById } from '@/controllers/audit';
 import type { ClientSafeRequest } from '@/types';
 import Header from '@/components/header';
 import { clientSafe } from '@/lib/util';
@@ -8,12 +8,12 @@ import { getCurrent } from '@/controllers/session-user';
 import RequestRow from './request-row';
 
 export default async function AuditPage({
-  params: { audit: externalId },
+  params: { audit: id },
 }: {
   params: { audit: string };
 }) {
   const user = await getCurrent();
-  const audit = await getByExternalId(externalId);
+  const audit = await getById(id);
 
   // TODO, how do we better enforce this across routes
   if (audit.orgId !== user.orgId) {
@@ -73,7 +73,7 @@ export default async function AuditPage({
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {clientSafeRequests.map((request) => (
-                  <RequestRow request={request} key={request.externalId} />
+                  <RequestRow request={request} key={request.id} />
                 ))}
               </tbody>
             </table>

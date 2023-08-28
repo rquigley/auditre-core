@@ -6,7 +6,10 @@ import { classNames } from '@/lib/util';
 import { PaperClipIcon } from '@heroicons/react/20/solid';
 import Header from '@/components/header';
 import { getCurrent } from '@/controllers/session-user';
-import { getByExternalId, getChangesById } from '@/controllers/request';
+import {
+  getById as getRequestById,
+  getChangesById,
+} from '@/controllers/request';
 import { getById as getAuditById } from '@/controllers/audit';
 
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
@@ -15,12 +18,12 @@ import FormContainer from './form-container';
 dayjs.extend(relativeTime);
 
 export default async function RequestPage({
-  params: { request: externalId },
+  params: { request: id },
 }: {
   params: { request: string };
 }) {
   const user = await getCurrent();
-  const request = await getByExternalId(externalId);
+  const request = await getRequestById(id);
   const audit = await getAuditById(request.auditId);
   if (audit.orgId !== user.orgId) {
     return notFound();
@@ -31,7 +34,7 @@ export default async function RequestPage({
     { name: 'Audits', href: '/audits' },
     {
       name: `${audit.name} (${audit.year})`,
-      href: `/audit/${audit.externalId}`,
+      href: `/audit/${audit.id}`,
     },
   ];
   return (
