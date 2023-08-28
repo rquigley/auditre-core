@@ -60,10 +60,12 @@ export async function getPresignedUrl({
   }
   keySchema.parse(key);
 
-  const credentials = await fromSSO({ profile: process.env.AWS_PROFILE })();
-  //   const credentials = fromIni({
-  //     profile: process.env.AWS_PROFILE,
-  //   });
+  let credentials;
+  if (process.env.NODE_ENV === 'production') {
+    credentials = await fromContainerMetadata();
+  } else {
+    credentials = await fromSSO({ profile: process.env.AWS_PROFILE })();
+  }
   const client = new S3Client({
     credentials,
     region,
@@ -84,7 +86,12 @@ export async function streamFile({
   bucket: string;
   key: string;
 }) {
-  const credentials = await fromSSO({ profile: process.env.AWS_PROFILE })();
+  let credentials;
+  if (process.env.NODE_ENV === 'production') {
+    credentials = await fromContainerMetadata();
+  } else {
+    credentials = await fromSSO({ profile: process.env.AWS_PROFILE })();
+  }
 
   const client = new S3Client({ credentials, region });
   const command = new GetObjectCommand({ Bucket: bucket, Key: key });
