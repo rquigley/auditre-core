@@ -14,7 +14,7 @@ const { writeFile } = require('node:fs/promises');
 
 const region = 'us-east-2';
 
-const keySchema = z.string().min(4).max(120);
+const keySchema = z.string().min(1);
 
 export async function getFile({
   bucket,
