@@ -39,15 +39,17 @@ export default function Header({ title, subtitle, breadcrumbs }: Props) {
         <h2 className="mt-2 text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
           {title}
         </h2>
-        <div className="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
-          <div className="mt-2 flex items-center text-sm text-gray-500">
-            <CalendarIcon
-              className="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400"
-              aria-hidden="true"
-            />
-            {subtitle}
+        {subtitle && (
+          <div className="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
+            <div className="mt-2 flex items-center text-sm text-gray-500">
+              <CalendarIcon
+                className="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400"
+                aria-hidden="true"
+              />
+              {subtitle}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -13,9 +13,6 @@ export async function GET(
   },
 ) {
   const user = await getCurrent();
-  if (!user) {
-    redirect(`/login?next=/document/${externalId}/download`);
-  }
   const document = await getByExternalId(externalId);
   if (document.orgId !== user.orgId) {
     return notFound();
