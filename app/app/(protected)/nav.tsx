@@ -1,14 +1,10 @@
 import Navbar from '@/components/navbar';
 import type { ClientSafeUser, ClientSafeAudit } from '@/types';
-import { getCurrent } from '@/controllers/session-user';
-import { clientSafe, omit } from '@/lib/util';
+import { clientSafe } from '@/lib/util';
 import { getAllByOrgId } from '@/controllers/audit';
+import type { User } from '@/types';
 
-export default async function Nav() {
-  const user = await getCurrent();
-  if (!user) {
-    return null;
-  }
+export default async function Nav({ user }: { user: User }) {
   const audits = await getAllByOrgId(user.orgId);
   return (
     <Navbar

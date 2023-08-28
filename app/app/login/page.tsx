@@ -1,10 +1,16 @@
-import Image from 'next/image';
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
-//import LoginForm from './login-form';
 import LoginButton from './login-button';
+import { getCurrentOrNone } from '@/controllers/session-user';
+import Redirector from './redirector';
+import { getPostAuthUrl } from '@/lib/actions';
 
-export default function Login() {
+export default async function Login() {
+  const user = await getCurrentOrNone();
+  if (user) {
+    redirect(await getPostAuthUrl());
+  }
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
       <div className="z-10 w-full max-w-md overflow-hidden rounded-2xl border border-gray-100 shadow-xl">
@@ -25,6 +31,7 @@ export default function Login() {
         >
           {/* <LoginButton service="github" /> */}
           <LoginButton service="google" />
+          <Redirector hasUser={!!user} />
         </Suspense>
       </div>
     </div>

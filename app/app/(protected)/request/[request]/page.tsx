@@ -20,9 +20,6 @@ export default async function RequestPage({
   params: { request: string };
 }) {
   const user = await getCurrent();
-  if (!user) {
-    redirect(`/login?next=/request/${externalId}`);
-  }
   const request = await getByExternalId(externalId);
   const audit = await getAuditById(request.auditId);
   if (audit.orgId !== user.orgId) {
@@ -38,7 +35,7 @@ export default async function RequestPage({
     },
   ];
   return (
-    <main className="sm:px-6 lg:px-8 bg-white rounded-sm py-3 px-3">
+    <>
       <Header
         title={request.name || ''}
         subtitle={audit.year ? String(audit.year) : undefined}
@@ -191,6 +188,6 @@ export default async function RequestPage({
           </div>
         </div>
       </div>
-    </main>
+    </>
   );
 }

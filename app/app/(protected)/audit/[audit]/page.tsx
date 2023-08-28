@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { getAllByAuditId } from '@/controllers/request';
 import { getByExternalId } from '@/controllers/audit';
 import type { ClientSafeRequest } from '@/types';
@@ -13,9 +13,6 @@ export default async function AuditPage({
   params: { audit: string };
 }) {
   const user = await getCurrent();
-  if (!user) {
-    redirect(`/login?next=/audit/${externalId}`);
-  }
   const audit = await getByExternalId(externalId);
 
   // TODO, how do we better enforce this across routes
@@ -31,7 +28,7 @@ export default async function AuditPage({
     { name: 'Requests', href: '/audits' },
   ];
   return (
-    <main className="sm:px-6 lg:px-8 bg-white rounded-sm py-3 px-3">
+    <>
       <Header
         title={audit.name || ''}
         subtitle={audit.year ? String(audit.year) : undefined}
@@ -83,6 +80,6 @@ export default async function AuditPage({
           </div>
         </div>
       </div>
-    </main>
+    </>
   );
 }
