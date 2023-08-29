@@ -147,7 +147,7 @@ export const requestTypes = {
     name: 'Audit information',
     description: '[audit info description TODO]',
     defaultValue: {
-      year: null,
+      year: '',
       hasBeenAudited: false,
       fiscalYearEnd: '',
     },
