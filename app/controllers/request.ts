@@ -155,11 +155,13 @@ export function logChange({
     .returningAll()
     .executeTakeFirstOrThrow();
 }
-
+type UserActor = { type: 'USER'; name: string; image: string | null };
+type SystemActor = { type: 'SYSTEM' };
 export type Change = {
-  type: 'CREATED' | 'VALUE';
+  type: 'CREATED' | 'VALUE' | 'COMMENT';
   createdAt: Date;
-  actor: { type: 'USER'; name: string } | { type: 'SYSTEM' };
+  actor: UserActor | SystemActor;
+  comment?: string;
 };
 export async function getChangesById(requestId: RequestId): Promise<Change[]> {
   const changes = await db
@@ -176,15 +178,14 @@ export async function getChangesById(requestId: RequestId): Promise<Change[]> {
     let actor;
     if (change.actor.type === 'USER') {
       const user = await getUserById(change.actor.userId);
-      actor = { type: 'USER', name: user.name };
+      actor = { type: 'USER', name: user.name, image: user.image } as UserActor;
     } else {
-      actor = { type: 'SYSTEM' };
+      actor = { type: 'SYSTEM' } as SystemActor;
     }
     if (n === 0) {
       ret.push({
         type: 'CREATED',
         createdAt: change.createdAt,
-        //@ts-ignore
         actor,
       });
     } else {
@@ -192,9 +193,14 @@ export async function getChangesById(requestId: RequestId): Promise<Change[]> {
         ret.push({
           type: 'VALUE',
           createdAt: change.createdAt,
-          //@ts-ignore
           actor,
         });
+        // ret.push({
+        //   type: 'COMMENT',
+        //   createdAt: change.createdAt,
+        //   actor,
+        //   comment: 'TODO: add comment here',
+        // });
       }
     }
   }
