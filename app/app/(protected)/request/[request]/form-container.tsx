@@ -69,7 +69,6 @@ export default async function FormContainer({ request, user, audit }: Props) {
     <BasicForm
       request={clientSafe(request) as ClientSafeRequest}
       data={request.data}
-      //@ts-ignore
       saveData={saveData}
     />
   );
