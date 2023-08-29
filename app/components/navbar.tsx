@@ -12,17 +12,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import Link from 'next/link';
 import type { ClientSafeUser, ClientSafeAudit, IconProps } from '@/types';
 import { classNames } from '@/lib/util';
-
-const orgNavigation = [
-  {
-    name: 'Organization Settings',
-    href: '#',
-    icon: DocumentDuplicateIcon,
-  },
-  { name: 'Team', href: '#', icon: UsersIcon },
-];
 
 export default function Navbar({
   user,
@@ -55,6 +47,11 @@ export default function Navbar({
       icon: DocumentDuplicateIcon,
     },
     { name: 'Reports', href: '/reports', icon: ChartPieIcon },
+    {
+      name: 'Organization Settings',
+      href: '/organization-settings',
+      icon: UsersIcon,
+    },
   ];
 
   return (
@@ -129,20 +126,6 @@ export default function Navbar({
                           ))}
                         </ul>
                       </li>
-                      <li>
-                        <div className="text-xs font-semibold leading-6 text-gray-400">
-                          Your Organization2
-                        </div>
-                        <ul role="list" className="-mx-2 mt-2 space-y-1">
-                          {orgNavigation.map((item) => (
-                            <NavItem
-                              key={item.name}
-                              item={item}
-                              rootPathname={rootPathname}
-                            />
-                          ))}
-                        </ul>
-                      </li>
                     </ul>
                   </nav>
                 </div>
@@ -164,20 +147,6 @@ export default function Navbar({
               <li>
                 <ul role="list" className="-mx-2 space-y-1">
                   {navigation.map((item) => (
-                    <NavItem
-                      key={item.name}
-                      item={item}
-                      rootPathname={rootPathname}
-                    />
-                  ))}
-                </ul>
-              </li>
-              <li>
-                <div className="text-xs font-semibold leading-6 text-gray-400">
-                  Your teams
-                </div>
-                <ul role="list" className="-mx-2 mt-2 space-y-1">
-                  {orgNavigation.map((item) => (
                     <NavItem
                       key={item.name}
                       item={item}
@@ -251,28 +220,28 @@ function AccountMenuItems() {
         <div className="py-1">
           <Menu.Item>
             {({ active }) => (
-              <a
-                href="#"
+              <Link
+                href="/settings"
                 className={classNames(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                   'block px-4 py-2 text-sm',
                 )}
               >
                 Account settings
-              </a>
+              </Link>
             )}
           </Menu.Item>
           <Menu.Item>
             {({ active }) => (
-              <a
-                href="#"
+              <Link
+                href="/support"
                 className={classNames(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                   'block px-4 py-2 text-sm',
                 )}
               >
                 Support
-              </a>
+              </Link>
             )}
           </Menu.Item>
           <Menu.Item>
@@ -315,7 +284,7 @@ function NavItem({
 
   return (
     <li key={item.name}>
-      <a
+      <Link
         href={item.href}
         className={classNames(
           isSelected
@@ -334,7 +303,7 @@ function NavItem({
           aria-hidden="true"
         />
         {item.name}
-      </a>
+      </Link>
     </li>
   );
 }
