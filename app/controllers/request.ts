@@ -163,6 +163,7 @@ export type Change = {
   actor: UserActor | SystemActor;
   comment?: string;
 };
+
 export async function getChangesById(requestId: RequestId): Promise<Change[]> {
   const changes = await db
     .selectFrom('requestChange')
