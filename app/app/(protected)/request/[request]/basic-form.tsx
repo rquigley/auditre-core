@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useForm, UseFormRegister } from 'react-hook-form';
 import { PhotoIcon } from '@heroicons/react/24/solid';
+
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,14 +11,18 @@ import { getPresignedUploadUrl } from '@/lib/actions';
 import {
   requestTypes,
   DateInputConfig,
+  BooleanInputConfig,
   TextInputConfig,
   FileUploadInputConfig,
   InputConfig,
+  YearInputConfig,
   CheckboxInputConfig,
   TextareaInputConfig,
 } from '@/lib/request-types';
 import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import type { RequestData, ClientSafeRequest, S3File } from '@/types';
+import Calendar from '@/components/calendar';
+import { Switch } from '@headlessui/react';
 
 type Props = {
   request: ClientSafeRequest;
@@ -113,6 +118,16 @@ export default function BasicForm({ request, data, saveData }: Props) {
                         errors={errors}
                         config={fieldConfig}
                       />
+                    ) : fieldConfig.input === 'boolean' ? (
+                      <BooleanField
+                        field={field}
+                        //@ts-ignore
+                        getValues={getValues}
+                        //@ts-ignore
+                        setValue={setValue}
+                        errors={errors}
+                        config={fieldConfig}
+                      />
                     ) : fieldConfig.input === 'textarea' ? (
                       <Textarea
                         field={field}
@@ -121,7 +136,18 @@ export default function BasicForm({ request, data, saveData }: Props) {
                         config={fieldConfig}
                       />
                     ) : fieldConfig.input === 'date' ? (
-                      <Date
+                      <DateField
+                        field={field}
+                        //@ts-ignore
+                        getValues={getValues}
+                        //@ts-ignore
+                        setValue={setValue}
+                        register={register}
+                        errors={errors}
+                        config={fieldConfig}
+                      />
+                    ) : fieldConfig.input === 'year' ? (
+                      <Year
                         field={field}
                         register={register}
                         errors={errors}
@@ -223,15 +249,29 @@ function Textarea({
   );
 }
 
-function Date({
+function DateField({
   field,
   register,
+  getValues,
+  setValue,
   errors,
   config,
-}: FormFieldProps & { config: DateInputConfig }) {
+}: FormFieldProps & {
+  config: DateInputConfig;
+  getValues: (key: string) => any;
+  setValue: (key: string, val: any) => void;
+}) {
+  const [currentDate, setCurrentDate] = useState(getValues(field));
   return (
     <>
-      <input
+      <Calendar
+        value={currentDate}
+        onChange={(val) => {
+          setCurrentDate(val);
+          setValue(field, val);
+        }}
+      />
+      {/* <input
         {...register(field)}
         autoComplete="off"
         className={classNames(
@@ -240,7 +280,39 @@ function Date({
             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600',
           'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
         )}
-      />
+      /> */}
+      <p className="mt-2 text-sm text-red-600" id="email-error">
+        {errors[field]?.message}
+      </p>
+    </>
+  );
+}
+
+function Year({
+  field,
+  register,
+  errors,
+  config,
+}: FormFieldProps & { config: YearInputConfig }) {
+  const nextYear = new Date().getFullYear() + 1;
+  const years = Array.from({ length: 10 }, (_, i) => nextYear - i);
+  return (
+    <>
+      <select
+        {...register(field, {
+          setValueAs: (v: string) => parseInt(v),
+        })}
+        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+      >
+        <option key={0} value="">
+          -
+        </option>
+        {years.map((year) => (
+          <option key={year} value={year}>
+            {year}
+          </option>
+        ))}
+      </select>
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
         {errors[field]?.message}
@@ -289,6 +361,49 @@ function Checkbox({
     </>
   );
 }
+
+function BooleanField({
+  field,
+  getValues,
+  setValue,
+  errors,
+  config,
+}: FormFieldProps & {
+  config: BooleanInputConfig;
+  getValues: (field: string) => any;
+  setValue: (key: string, val: any) => void;
+}) {
+  const [enabled, setEnabled] = useState(getValues(field));
+  return (
+    <>
+      <Switch
+        checked={enabled}
+        onChange={(val) => {
+          setValue(field, val);
+          setEnabled(val);
+        }}
+        className={classNames(
+          enabled ? 'bg-indigo-600' : 'bg-gray-200',
+          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2',
+        )}
+      >
+        <span className="sr-only">{config.label}</span>
+        <span
+          aria-hidden="true"
+          className={classNames(
+            enabled ? 'translate-x-5' : 'translate-x-0',
+            'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+          )}
+        />
+      </Switch>
+
+      <p className="mt-2 text-sm text-red-600" id="email-error">
+        {errors[field]?.message}
+      </p>
+    </>
+  );
+}
+
 function FileUpload({
   field,
   register,

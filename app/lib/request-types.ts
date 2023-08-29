@@ -36,10 +36,18 @@ export interface TextareaInputConfig extends BaseInputConfig {
 export interface DateInputConfig extends BaseInputConfig {
   input: 'date';
 }
+export interface YearInputConfig extends BaseInputConfig {
+  input: 'year';
+}
+export interface BooleanInputConfig extends BaseInputConfig {
+  input: 'boolean';
+}
 export type InputConfig =
+  | BooleanInputConfig
   | TextInputConfig
   | TextareaInputConfig
   | DateInputConfig
+  | YearInputConfig
   | CheckboxInputConfig
   | FileUploadInputConfig;
 
@@ -139,17 +147,17 @@ export const requestTypes = {
     name: 'Audit information',
     description: '[audit info description TODO]',
     defaultValue: {
-      year: '',
+      year: null,
       hasBeenAudited: false,
       fiscalYearEnd: '',
     },
     form: {
       year: {
-        input: 'text',
+        input: 'year',
         label: 'What year is being audited?',
       },
       hasBeenAudited: {
-        input: 'text',
+        input: 'boolean',
         label: 'Has the company been audted before?',
       },
       fiscalYearEnd: {
