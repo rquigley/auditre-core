@@ -20,7 +20,7 @@ const formComponents = {
   USER_REQUESTED: BasicForm,
 } as const;
 
-export default async function BusinessName({ request, user, audit }: Props) {
+export default async function FormContainer({ request, user, audit }: Props) {
   // if (!formComponents.hasOwnProperty(request.type)) {
   //   throw new Error(`Invalid request type ${request.type}`);
   // }
