@@ -5,6 +5,7 @@ import BasicForm from './basic-form';
 import { requestTypes } from '@/lib/request-types';
 import type { Request, User, Audit, S3File } from '@/types';
 import { clientSafe } from '@/lib/util';
+import { revalidatePath } from 'next/cache';
 
 type Props = {
   request: Request;
@@ -73,6 +74,8 @@ export default async function FormContainer({ request, user, audit }: Props) {
       },
       type: request.type,
     });
+
+    revalidatePath(`/request/${request.id}`);
   }
 
   return (

@@ -11,6 +11,7 @@ import {
   getChangesById,
   Change,
 } from '@/controllers/request';
+import type { User } from '@/types';
 import { getById as getAuditById } from '@/controllers/audit';
 
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
@@ -52,7 +53,7 @@ export default async function RequestPage({
             <FormContainer request={request} user={user} audit={audit} />
           </div>
           <div className="lg:col-start-3">
-            <Activity changes={changes} />
+            <Activity changes={changes} user={user} />
           </div>
         </div>
       </div>
@@ -60,7 +61,7 @@ export default async function RequestPage({
   );
 }
 
-function Activity({ changes }: { changes: Change[] }) {
+function Activity({ changes, user }: { changes: Change[]; user: User }) {
   return (
     <>
       <h2 className="text-sm font-semibold leading-6 text-gray-900">
@@ -79,16 +80,15 @@ function Activity({ changes }: { changes: Change[] }) {
             </div>
             {
               //@ts-ignore
-              change.type === 'commented' ? (
+              change.type === 'COMMENT' ? (
                 <>
-                  <img
-                    src={
-                      //@ts-ignore
-                      change.actor.imageUrl
-                    }
-                    alt=""
-                    className="relative mt-3 h-6 w-6 flex-none rounded-full bg-gray-50"
-                  />
+                  {change.actor.type === 'USER' && change.actor.image && (
+                    <img
+                      src={change.actor.image}
+                      alt=""
+                      className="relative mt-3 h-6 w-6 flex-none rounded-full bg-gray-50"
+                    />
+                  )}
                   <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-gray-200">
                     <div className="flex justify-between gap-x-4">
                       <div className="py-0.5 text-xs leading-5 text-gray-500">
@@ -106,14 +106,11 @@ function Activity({ changes }: { changes: Change[] }) {
                         )}
                         className="flex-none py-0.5 text-xs leading-5 text-gray-500"
                       >
-                        {String(change.createdAt)}
+                        {dayjs(change.createdAt).fromNow()}
                       </time>
                     </div>
                     <p className="text-sm leading-6 text-gray-500">
-                      {
-                        //@ts-ignore
-                        change.comment
-                      }
+                      {change.comment}
                     </p>
                   </div>
                 </>
@@ -158,11 +155,13 @@ function Activity({ changes }: { changes: Change[] }) {
 
       {/* New comment form */}
       <div className="mt-6 flex gap-x-3">
-        <img
-          src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-          alt=""
-          className="h-6 w-6 flex-none rounded-full bg-gray-50"
-        />
+        {user.image && (
+          <img
+            src={user.image}
+            alt=""
+            className="h-6 w-6 flex-none rounded-full bg-gray-50"
+          />
+        )}
         <form action="#" className="relative flex-auto">
           <div className="overflow-hidden rounded-lg pb-12 shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-indigo-600">
             <label htmlFor="comment" className="sr-only">
