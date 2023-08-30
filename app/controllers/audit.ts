@@ -13,6 +13,7 @@ export function getById(id: OrgId): Promise<Audit> {
   return db
     .selectFrom('audit')
     .where('id', '=', id)
+    .where('isDeleted', '=', false)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
