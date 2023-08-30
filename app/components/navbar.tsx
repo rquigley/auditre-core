@@ -156,7 +156,7 @@ export default function Navbar({
                 </ul>
               </li>
               <li className="-mx-6 mt-auto">
-                <Menu as="div" className="flex relative inline-block text-left">
+                <Menu as="div" className="flex relative text-left">
                   <div>
                     <Menu.Button className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900 hover:bg-gray-50">
                       {user.image && (
