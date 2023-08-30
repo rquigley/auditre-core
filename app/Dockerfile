@@ -30,11 +30,6 @@ COPY --link . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
-ARG SENTRY_AUTH_TOKEN
-ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
-ENV SENTRY_ORG=auditre-f7d93af81
-ENV SENTRY_PROJECT=app
-
 RUN npm run build
 
 # If using npm comment out above and use below instead
@@ -57,6 +52,8 @@ COPY --link --from=builder /app/public ./public
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --link --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --link --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+COPY --link --from=deps /app/.sentryclirc ./
 
 USER nextjs
 
