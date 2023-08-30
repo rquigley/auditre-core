@@ -16,6 +16,7 @@ import type {
 } from '@/types';
 import { getById as getUserById } from '@/controllers/user';
 import { requestTypes, RequestType } from '@/lib/request-types';
+import { userLoader } from '@/controllers/user';
 
 type CreateRequest = Omit<NewRequest, 'value'> & {
   data: any;
@@ -178,7 +179,7 @@ export async function getChangesById(requestId: RequestId): Promise<Change[]> {
     let change = changes[n];
     let actor;
     if (change.actor.type === 'USER') {
-      const user = await getUserById(change.actor.userId);
+      const user = await userLoader.load(change.actor.userId);
       actor = { type: 'USER', name: user.name, image: user.image } as UserActor;
     } else {
       actor = { type: 'SYSTEM' } as SystemActor;

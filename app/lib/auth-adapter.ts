@@ -131,7 +131,7 @@ export function AuthAdapter(): Adapter {
 
     getSessionAndUser: async (sessionToken) => {
       const userAndSession =
-        await userController.getBySessionToken(sessionToken);
+        await userController.sessionUserLoader.load(sessionToken);
       if (!userAndSession) {
         return null;
       }

@@ -2,6 +2,7 @@
 
 import { db } from '@/lib/db';
 import type { UserUpdate, User, NewUser, UserId } from '@/types';
+import DataLoader from 'dataloader';
 
 export function create(user: NewUser): Promise<User> {
   return db
@@ -18,6 +19,13 @@ export function getById(id: UserId): Promise<User> {
     .selectAll()
     .executeTakeFirstOrThrow();
 }
+
+export function getMultipleById(ids: UserId[]): Promise<User[]> {
+  return db.selectFrom('user').where('id', 'in', ids).selectAll().execute();
+}
+export const userLoader = new DataLoader((userIds) =>
+  getMultipleById(userIds as UserId[]),
+);
 
 export function getByEmail(email: string): Promise<User | undefined> {
   return db
@@ -38,6 +46,42 @@ export function getByAccountProviderAndProviderId(
     .where('account.providerAccountId', '=', providerAccountId)
     .selectAll('user')
     .executeTakeFirst();
+}
+
+export const sessionUserLoader = new DataLoader((sessionTokenArgs) =>
+  getBySessionTokens(sessionTokenArgs as string[]),
+);
+async function getBySessionTokens(sessionTokenArgs: string[]) {
+  const res = await db
+    .selectFrom('session')
+    .innerJoin('user', 'user.id', 'session.userId')
+    .select([
+      'user.id',
+      'user.name',
+      'user.email',
+      'user.image',
+      'user.emailVerified',
+    ])
+    .select([
+      'session.id as sessionId',
+      'session.userId',
+      'session.sessionToken',
+      'session.expires',
+    ])
+    .where('session.sessionToken', 'in', sessionTokenArgs)
+    .execute();
+  const ret = sessionTokenArgs.map((sessionTokenArg) => {
+    const res2 = res.find((r) => r.sessionToken === sessionTokenArg);
+    if (!res2) {
+      return null;
+    }
+    const { sessionId, userId, sessionToken, expires, ...user } = res2;
+    return {
+      user: { ...user },
+      session: { id: sessionId, userId: user.id, sessionToken, expires },
+    };
+  });
+  return ret;
 }
 
 export async function getBySessionToken(sessionTokenArg: string) {
