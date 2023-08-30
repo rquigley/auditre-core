@@ -28,9 +28,15 @@ type Props = {
   request: ClientSafeRequest;
   data: RequestData;
   saveData: (data: RequestData) => void;
+  createDocument: (file: S3File) => Promise<string>;
 };
 
-export default function BasicForm({ request, data, saveData }: Props) {
+export default function BasicForm({
+  request,
+  data,
+  saveData,
+  createDocument,
+}: Props) {
   const router = useRouter();
   const config = requestTypes[request.type];
 
@@ -43,6 +49,7 @@ export default function BasicForm({ request, data, saveData }: Props) {
   }
 
   const {
+    formState: { isDirty, dirtyFields },
     register,
     setValue,
     getValues,
@@ -110,6 +117,8 @@ export default function BasicForm({ request, data, saveData }: Props) {
                         setValue={setValue}
                         getValues={getValues}
                         setUploading={setUploading}
+                        createDocument={createDocument}
+                        isDirty={isDirty}
                       />
                     ) : fieldConfig.input === 'checkbox' ? (
                       <Checkbox
@@ -170,18 +179,23 @@ export default function BasicForm({ request, data, saveData }: Props) {
       </div>
 
       <div className="mt-6 flex items-center justify-end gap-x-6">
-        <button
-          type="button"
-          className="text-sm font-semibold leading-6 text-gray-900"
-        >
-          Cancel
-        </button>
+        {isDirty && (
+          <button
+            type="button"
+            className="text-sm font-semibold leading-6 text-gray-900"
+            onClick={() => reset()}
+          >
+            Cancel
+          </button>
+        )}
         <button
           type="submit"
-          disabled={uploading}
+          disabled={uploading || !isDirty}
           className={classNames(
-            uploading ? 'bg-gray-400' : 'bg-indigo-600',
-            'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600',
+            uploading || !isDirty
+              ? 'bg-gray-400'
+              : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600',
+            'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm',
           )}
         >
           {uploading ? 'Uploading' : 'Save'}
@@ -413,12 +427,14 @@ function FileUpload({
   config,
   request,
   setUploading,
+  createDocument,
 }: FormFieldProps & {
   config: FileUploadInputConfig;
   request: ClientSafeRequest;
-  setValue: (key: string, val: any) => void;
+  setValue: (key: string, val: any, opts: any) => void;
   getValues: () => any;
   setUploading: (val: boolean) => void;
+  createDocument: (file: S3File) => Promise<string>;
 }) {
   async function uploadDocument(
     e: React.ChangeEvent<HTMLInputElement>,
@@ -451,12 +467,15 @@ function FileUpload({
     };
     if (resp.ok) {
       // TODO: show progress
-      setValue(field, toSave);
+      const docId = await createDocument(toSave);
+
+      setValue(field, docId, { shouldDirty: true, shouldTouch: true });
       console.log('SUCCESS', resp.ok, toSave);
     } else {
       // TODO: handle
       console.log('ERROR', resp.ok);
     }
+
     // Clear out the file input
     //el.value = '';
     setUploading(false);
@@ -502,7 +521,7 @@ function FileUpload({
             </p>
           </div>
         )}
-        {value && value.documentExternalId && (
+        {value && (
           <div className="mt-2">
             <p className="text-xs leading-5 text-gray-600">
               <a
