@@ -15,45 +15,15 @@ type Props = {
 
 export default async function FormContainer({ request, user, audit }: Props) {
   const requestConfig = requestTypes[request.type];
+  const formSchema = requestConfig.schema;
 
   async function saveData(data: z.infer<typeof formSchema>) {
     'use server';
-    const formSchema = requestTypes[request.type].schema;
-
-    for (const [key, field] of Object.entries(requestConfig.form)) {
-      if (!data.hasOwnProperty(key)) {
-        continue;
-      }
-      if (
-        field.input === 'fileupload' &&
-        //@ts-ignore
-        data[key] &&
-        // data[key].key indicates that a new file has been uploaded
-        //@ts-ignore
-        data[key].key
-      ) {
-        //@ts-ignore
-        const file: S3File = data[key];
-        const doc = await createDocument({
-          key: file.key,
-          bucket: file.bucket,
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          lastModified: new Date(file.lastModified),
-          orgId: audit.orgId,
-        });
-        //@ts-ignore
-        data[key] = {
-          documentExternalId: doc.id,
-        };
-      }
-    }
 
     await updateData({
       id: request.id,
-      //@ts-ignore
 
+      // @ts-ignore
       data,
       actor: {
         type: 'USER',
@@ -65,12 +35,27 @@ export default async function FormContainer({ request, user, audit }: Props) {
     revalidatePath(`/request/${request.id}`);
   }
 
+  async function createDoc(file: S3File) {
+    'use server';
+    const doc = await createDocument({
+      key: file.key,
+      bucket: file.bucket,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: new Date(file.lastModified),
+      orgId: audit.orgId,
+    });
+    return doc.id;
+  }
+
   return (
     <BasicForm
       request={clientSafe(request) as ClientSafeRequest}
       data={request.data}
       // @ts-ignore
       saveData={saveData}
+      createDocument={createDoc}
     />
   );
 }
