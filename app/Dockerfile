@@ -53,7 +53,7 @@ COPY --link --from=builder /app/public ./public
 COPY --link --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --link --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-COPY --link --from=deps /app/.sentryclirc ./
+COPY --link --from=builder /app/.sentryclirc ./
 
 USER nextjs
 
