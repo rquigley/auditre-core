@@ -45,7 +45,7 @@ module.exports = withSentryConfig(
     silent: true,
 
     org: 'auditre-f7d93af81',
-    project: 'javascript-nextjs',
+    project: 'app',
     enabled: process.env.NODE_ENV !== 'development',
   },
   {
