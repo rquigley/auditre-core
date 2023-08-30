@@ -17,7 +17,7 @@ export default function Redirector({
         console.log('redirecting to login', pathname);
       });
     }
-  }, [pathname]);
+  }, [pathname, setPostAuthUrl]);
 
   if (redirectUrl) {
     redirect('/login');
