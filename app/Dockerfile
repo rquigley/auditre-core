@@ -1,9 +1,13 @@
-FROM --platform=linux/amd64 node:18-alpine AS base
+FROM node:20-alpine AS base
+
+# If you need to build directly for AWS Fargate, you can use the following base image instead
+#FROM --platform=linux/amd64 node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
+# Attempting to skip libc6-compat --RQ (30 Aug 2023 13:02:59)
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+# RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
@@ -14,7 +18,6 @@ RUN \
   elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
   else echo "Lockfile not found." && exit 1; \
   fi
-
 
 # Rebuild the source code only when needed
 FROM base AS builder
