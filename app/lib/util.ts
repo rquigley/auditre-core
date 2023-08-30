@@ -26,7 +26,8 @@ export function generatePassword(
 }
 
 export function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  // eslint-disable-next-line no-promise-executor-return
+  return new Promise((_) => setTimeout(_, ms));
 }
 
 export function deepCopy<T>(obj: T): T {
