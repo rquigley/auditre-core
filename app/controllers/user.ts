@@ -16,12 +16,18 @@ export function getById(id: UserId): Promise<User> {
   return db
     .selectFrom('user')
     .where('id', '=', id)
+    .where('isDeleted', '=', false)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
 
 export function getMultipleById(ids: UserId[]): Promise<User[]> {
-  return db.selectFrom('user').where('id', 'in', ids).selectAll().execute();
+  return db
+    .selectFrom('user')
+    .where('id', 'in', ids)
+    .where('isDeleted', '=', false)
+    .selectAll()
+    .execute();
 }
 export const userLoader = new DataLoader((userIds) =>
   getMultipleById(userIds as UserId[]),
@@ -31,6 +37,7 @@ export function getByEmail(email: string): Promise<User | undefined> {
   return db
     .selectFrom('user')
     .where('email', '=', email)
+    .where('isDeleted', '=', false)
     .selectAll()
     .executeTakeFirst();
 }
@@ -69,6 +76,7 @@ async function getBySessionTokens(sessionTokenArgs: string[]) {
       'session.expires',
     ])
     .where('session.sessionToken', 'in', sessionTokenArgs)
+    .where('user.isDeleted', '=', false)
     .execute();
   const ret = sessionTokenArgs.map((sessionTokenArg) => {
     const res2 = res.find((r) => r.sessionToken === sessionTokenArg);
@@ -102,6 +110,7 @@ export async function getBySessionToken(sessionTokenArg: string) {
       'session.expires',
     ])
     .where('session.sessionToken', '=', sessionTokenArg)
+    .where('user.isDeleted', '=', false)
     .executeTakeFirst();
   if (!res) {
     return null;
