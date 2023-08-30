@@ -6,6 +6,7 @@ import {
   PostgresDialect,
   CamelCasePlugin,
   RawBuilder,
+  LogConfig,
   sql,
 } from 'kysely';
 import { z } from 'zod';
@@ -66,7 +67,14 @@ export function json<T>(value: T): RawBuilder<T> {
   return sql`CAST(${JSON.stringify(value)} AS JSONB)`;
 }
 
+let log: LogConfig;
+if (process.env.LOG_QUERIES) {
+  log = ['query', 'error'];
+} else {
+  log = [];
+}
 export const db = new Kysely<Database>({
   dialect,
   plugins: [new CamelCasePlugin()],
+  log,
 });
