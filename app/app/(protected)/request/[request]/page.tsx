@@ -1,4 +1,4 @@
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { classNames } from '@/lib/util';
