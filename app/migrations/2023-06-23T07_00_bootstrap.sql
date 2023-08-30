@@ -1,6 +1,6 @@
 CREATE TABLE "org" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  "name" varchar,
+  "name" text,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean DEFAULT FALSE
 );
@@ -8,10 +8,10 @@ CREATE TABLE "org" (
 CREATE TABLE "user" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "name" varchar,
-  "email" varchar UNIQUE,
-  "email_verified" varchar,
-  "image" varchar,
+  "name" text,
+  "email" text UNIQUE,
+  "email_verified" text,
+  "image" text,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
@@ -19,7 +19,7 @@ CREATE TABLE "user" (
 CREATE TABLE "invitation" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "email" varchar UNIQUE,
+  "email" text UNIQUE,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "expires_at" timestamp DEFAULT (now() + INTERVAL '7 days') NOT NULL,
   "is_used" boolean NOT NULL DEFAULT FALSE
@@ -28,39 +28,39 @@ CREATE TABLE "invitation" (
 CREATE TABLE "account" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "user_id" uuid NOT NULL REFERENCES "user" ("id"),
-  "type" varchar NOT NULL,
-  "provider" varchar NOT NULL,
-  "provider_account_id" varchar NOT NULL,
-  "refresh_token" varchar,
-  "access_token" varchar,
+  "type" text NOT NULL,
+  "provider" text NOT NULL,
+  "provider_account_id" text NOT NULL,
+  "refresh_token" text,
+  "access_token" text,
   "expires_at" integer,
-  "token_type" varchar,
-  "scope" varchar,
-  "id_token" varchar,
-  "session_state" varchar,
+  "token_type" text,
+  "scope" text,
+  "id_token" text,
+  "session_state" text,
   "created_at" timestamp DEFAULT now() NOT NULL
 );
 
 CREATE TABLE "session" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  "session_token" varchar NOT NULL UNIQUE,
+  "session_token" text NOT NULL UNIQUE,
   "user_id" uuid NOT NULL REFERENCES "user" ("id"),
   "expires" timestamp without time zone NOT NULL
 );
 
 CREATE TABLE "verification_token" (
   "identifier" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  "token" varchar NOT NULL UNIQUE,
-  "session_token" varchar NOT NULL UNIQUE,
+  "token" text NOT NULL UNIQUE,
+  "session_token" text NOT NULL UNIQUE,
   "expires" timestamp without time zone NOT NULL
 );
 
 CREATE TABLE "documents" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "s3_key" varchar NOT NULL UNIQUE,
-  "filename" varchar NOT NULL,
-  "type" varchar NOT NULL,
+  "s3_key" text NOT NULL UNIQUE,
+  "filename" text NOT NULL,
+  "type" text NOT NULL,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
@@ -68,7 +68,7 @@ CREATE TABLE "documents" (
 CREATE TABLE "audit" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "name" varchar,
+  "name" text,
   "year" numeric(4,0),
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
@@ -78,10 +78,10 @@ CREATE TABLE "request" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "name" varchar,
-  "type" varchar,
-  "description" varchar,
-  "status" varchar,
+  "name" text,
+  "type" text,
+  "description" text,
+  "status" text,
   -- "requestee" uuid REFERENCES "user" ("id"),
   "data" jsonb,
   "due_date" date,
@@ -100,11 +100,11 @@ CREATE TABLE "request_change" (
 
 CREATE TABLE "document" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  "key" varchar NOT NULL UNIQUE,
-  "bucket" varchar NOT NULL,
-  "name" varchar,
+  "key" text NOT NULL UNIQUE,
+  "bucket" text NOT NULL,
+  "name" text,
   "size" integer NOT NULL,
-  "type" varchar,
+  "type" text,
   "last_modified" timestamp NOT NULL,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "extracted" jsonb,
@@ -115,10 +115,10 @@ CREATE TABLE "document" (
 -- CREATE TABLE "log" (
 --   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
 --   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
---   "action" varchar,
+--   "action" text,
 --   "actor_id" integer,
---   "actor_type" varchar,
---   "context_ip" varchar,
---   "context_user_agent" varchar,
+--   "actor_type" text,
+--   "context_ip" text,
+--   "context_user_agent" text,
 --   "created_at" timestamp DEFAULT now() NOT NULL
 -- );
