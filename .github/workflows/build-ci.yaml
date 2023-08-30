@@ -33,6 +33,15 @@ jobs:
           echo AWS_S3_BUCKET=${{ secrets.CI_AWS_S3_BUCKET }} >> .env.local
           echo OPENAI_API_KEY=${{ secrets.CI_OPENAI_API_KEY }} >> .env.local
 
+      - name: Create .sentryclirc
+        working-directory: ./app
+        run: |
+          touch .sentryclirc
+          echo [auth] >> .sentryclirc
+          echo token=${{ secrets.SENTRY_AUTH_TOKEN }} >> .sentryclirc
+          echo [defaults] >> .sentryclirc
+          echo org=${{ vars.SENTRY_ORG }} >> .sentryclirc
+          echo project=app >> .sentryclirc
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@master
@@ -59,7 +68,7 @@ jobs:
           IMAGE_TAG: latest
         working-directory: ./app
         run: |
-          docker build --build-arg SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
@@ -71,6 +80,9 @@ jobs:
           container-name: nodejs-app-container
           image: ${{ steps.build-image.outputs.image }}
 
+      # upload db migrations to s3
+      # run db migration lambda task
+  
       - name: Deploy AWS ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
@@ -79,6 +91,30 @@ jobs:
           cluster: fargate-node-cluster
           # TODO: use AWS alerting rather than GitHub actions
           # wait-for-service-stability: true
+
+      - name: Post to a Slack channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          # Slack channel id, channel name, or user id to post message.
+          # See also: https://api.slack.com/methods/chat.postMessage#channels
+          channel-id: 'deploys'
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
 
 #  uses: actions/cache@v3
