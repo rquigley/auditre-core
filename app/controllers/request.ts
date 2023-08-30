@@ -50,24 +50,29 @@ export async function upsertDefault({
   orgId: OrgId;
 }) {
   const currentReqs = await getAllByAuditId(auditId);
+  const createPromises = [];
   for (let type in requestTypes) {
     if (type === 'USER_REQUESTED' || currentReqs.find((r) => r.type === type)) {
       // TODO: check for different value shape here.
       continue;
     }
     const request = requestTypes[type as RequestType];
-    await create(
-      {
-        auditId,
-        orgId,
-        type: type as RequestType,
-        name: request.name,
-        status: 'requested',
-        data: request.defaultValue,
-      },
-      { type: 'SYSTEM' },
+    createPromises.push(
+      create(
+        {
+          auditId,
+          orgId,
+          type: type as RequestType,
+          name: request.name,
+          status: 'requested',
+          data: request.defaultValue,
+        },
+        { type: 'SYSTEM' },
+      ),
     );
   }
+  await Promise.allSettled(createPromises);
+  await Promise.all(createPromises); // throw if any fail
 }
 
 export function getById(id: RequestId): Promise<Request> {
