@@ -40,7 +40,7 @@
     "openai": "3.3.0",
     "pdfjs-dist": "3.9.179",
     "pg": "8.11.3",
-    "postcss": "8.4.28",
+    "postcss": "8.4.29",
     "prettier": "3.0.3",
     "prompts": "2.4.2",
     "react": "18.2.0",
