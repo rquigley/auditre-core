@@ -100,6 +100,7 @@ CREATE TABLE "request_change" (
 
 CREATE TABLE "document" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "request_id" uuid REFERENCES "request" ("id"),
   "key" text NOT NULL UNIQUE,
   "bucket" text NOT NULL,
   "name" text,
@@ -111,6 +112,7 @@ CREATE TABLE "document" (
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
+
 
 -- CREATE TABLE "log" (
 --   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

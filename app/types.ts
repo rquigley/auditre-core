@@ -192,6 +192,7 @@ export interface DocumentTable {
   type: string;
   lastModified: Date;
   orgId: OrgId;
+  requestId: RequestId | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<Boolean, never, Boolean>;
 }

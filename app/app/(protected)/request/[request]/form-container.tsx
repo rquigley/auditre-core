@@ -45,6 +45,7 @@ export default async function FormContainer({ request, user, audit }: Props) {
       type: file.type,
       lastModified: new Date(file.lastModified),
       orgId: audit.orgId,
+      requestId: request.id,
     });
     return doc.id;
   }
