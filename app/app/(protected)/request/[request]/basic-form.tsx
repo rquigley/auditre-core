@@ -59,6 +59,8 @@ export default function BasicForm({
   } = useForm<z.infer<typeof config.schema>>({
     resolver: zodResolver(config.schema),
     defaultValues,
+    // @ts-ignore
+    values: data,
   });
 
   async function onSubmit(data: z.infer<typeof config.schema>) {
@@ -70,7 +72,7 @@ export default function BasicForm({
     //reset();
 
     // reload activity feed
-    router.refresh();
+    //router.refresh();
   }
 
   return (
@@ -273,7 +275,7 @@ function DateField({
 }: FormFieldProps & {
   config: DateInputConfig;
   getValues: (key: string) => any;
-  setValue: (key: string, val: any) => void;
+  setValue: (key: string, val: any, opts: any) => void;
 }) {
   const [currentDate, setCurrentDate] = useState(getValues(field));
   return (
@@ -282,7 +284,7 @@ function DateField({
         value={currentDate}
         onChange={(val) => {
           setCurrentDate(val);
-          setValue(field, val);
+          setValue(field, val, { shouldDirty: true, shouldTouch: true });
         }}
       />
       {/* <input
@@ -385,7 +387,7 @@ function BooleanField({
 }: FormFieldProps & {
   config: BooleanInputConfig;
   getValues: (field: string) => any;
-  setValue: (key: string, val: any) => void;
+  setValue: (key: string, val: any, opts: any) => void;
 }) {
   const [enabled, setEnabled] = useState(getValues(field));
   return (
@@ -393,7 +395,7 @@ function BooleanField({
       <Switch
         checked={enabled}
         onChange={(val) => {
-          setValue(field, val);
+          setValue(field, val, { shouldDirty: true, shouldTouch: true });
           setEnabled(val);
         }}
         className={classNames(
