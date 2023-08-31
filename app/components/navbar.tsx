@@ -26,9 +26,6 @@ export default function Navbar({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  if (!pathname) {
-    return null;
-  }
   const rootPathname = `/${pathname.split('/')[1]}`;
 
   const navigation = [
