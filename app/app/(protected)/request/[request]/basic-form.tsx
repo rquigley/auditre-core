@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useForm, UseFormRegister } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { PhotoIcon } from '@heroicons/react/24/solid';
 
 import { useRouter } from 'next/navigation';
@@ -23,6 +23,7 @@ import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import type { RequestData, ClientSafeRequest, S3File } from '@/types';
 import Calendar from '@/components/calendar';
 import { Switch } from '@headlessui/react';
+import { SaveNotice } from '@/components/save-notice';
 
 type Props = {
   request: ClientSafeRequest;
@@ -41,6 +42,7 @@ export default function BasicForm({
   const config = requestTypes[request.type];
 
   const [uploading, setUploading] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
 
   const {
     formState: { isDirty, dirtyFields },
@@ -59,9 +61,10 @@ export default function BasicForm({
   });
 
   async function onSubmit(data: z.infer<typeof config.schema>) {
+    setHasSaved(false);
     //@ts-ignore
     await saveData(data);
-
+    setHasSaved(true);
     // prevent documents from being created multiple times
     // UNDONE because it breaks inputs reflecting the current value
     //reset();
@@ -176,6 +179,11 @@ export default function BasicForm({
       </div>
 
       <div className="mt-6 flex items-center justify-end gap-x-6">
+        {!uploading && !isDirty && hasSaved && (
+          <div className="flex-grow">
+            <SaveNotice />
+          </div>
+        )}
         {isDirty && (
           <button
             type="button"
