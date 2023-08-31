@@ -42,12 +42,6 @@ export default function BasicForm({
 
   const [uploading, setUploading] = useState(false);
 
-  let defaultValues = {};
-  for (const key of Object.keys(config.defaultValue)) {
-    //@ts-ignore
-    defaultValues[key] = data[key];
-  }
-
   const {
     formState: { isDirty, dirtyFields },
     register,
@@ -58,7 +52,8 @@ export default function BasicForm({
     formState: { errors },
   } = useForm<z.infer<typeof config.schema>>({
     resolver: zodResolver(config.schema),
-    defaultValues,
+    // @ts-ignore
+    defaultValues: data,
     // @ts-ignore
     values: data,
   });
@@ -355,13 +350,17 @@ function Checkbox({
             <input
               {...register(field)}
               value={model.type}
+              id={`checkbox-${model.type}`}
               aria-describedby={`${model.type}-description`}
               type="checkbox"
               className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
             />
           </div>
           <div className="ml-3 text-sm leading-6">
-            <label htmlFor={model.type} className="font-medium text-gray-900">
+            <label
+              htmlFor={`checkbox-${model.type}`}
+              className="font-medium text-gray-900"
+            >
               {model.name}
             </label>
             <p id={`${model.type}-description`} className="text-gray-500">
