@@ -1,19 +1,38 @@
 import { getAllByOrgId } from '@/controllers/document';
-import { getById } from '@/controllers/request';
+import { getById as getRequestById } from '@/controllers/request';
+import { getById as getAuditById } from '@/controllers/audit';
 import type { Document, ClientSafeDocument } from '@/types';
 import { clientSafe } from '@/lib/util';
 import RequestRow from './request-row';
 import { getCurrent } from '@/controllers/session-user';
 import Header from '@/components/header';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 export default async function DocumentsPage() {
   const user = await getCurrent();
   const documents = await getAllByOrgId(user.orgId);
-  const clientSafeDocuments = clientSafe(documents) as ClientSafeDocument[];
 
-  // for (const document of documents) {
-  //   document.request = await getByExternalId(document.requestId);
-  // }
+  for (const document of documents) {
+    if (document.requestId) {
+      const request = await getRequestById(document.requestId);
+      const audit = await getAuditById(request.auditId);
+      // @ts-ignore
+      document.auditName = audit.name;
+      // @ts-ignore
+      document.requestName = request.name;
+    }
+    // TODO: look into FF and dayjs date handling.
+    // @ts-ignore
+    document.createdAt = document.createdAt.toString();
+  }
+  const clientSafeDocuments = clientSafe(documents) as ClientSafeDocument[] &
+    {
+      auditName?: string;
+      requestName?: string;
+    }[];
 
   return (
     <>
@@ -34,14 +53,14 @@ export default async function DocumentsPage() {
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                   >
-                    Uploaded
+                    Created
                   </th>
-                  <th
+                  {/* <th
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                   >
                     Last modified
-                  </th>
+                  </th> */}
                   <th
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
