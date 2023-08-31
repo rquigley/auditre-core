@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { getCurrentOrNone } from '@/controllers/session-user';
 import Redirector from './redirector';
 import { setPostAuthUrl } from '@/lib/actions';
-import Nav from '@/app/(protected)/nav';
+import Navbar from '@/components/navbar';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
@@ -32,7 +32,7 @@ export default async function RootLayout({
     <html lang="en" className={inter.className}>
       <body className="h-full bg-slate-100">
         <Suspense fallback="">
-          <Nav user={user} />
+          <Navbar userName={user.name} userImage={user.image} />
         </Suspense>
         <div className="py-10 lg:pl-80 px-4 sm:px-6 bg-slate-100">
           <div className="bg-white rounded-sm p-5">

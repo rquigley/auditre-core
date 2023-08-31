@@ -4,6 +4,7 @@ import { Fragment, useState } from 'react';
 import { Dialog, Menu, Transition } from '@headlessui/react';
 import {
   Bars3Icon,
+  BuildingLibraryIcon,
   ChartPieIcon,
   DocumentDuplicateIcon,
   HomeIcon,
@@ -13,15 +14,15 @@ import {
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
-import type { ClientSafeUser, ClientSafeAudit, IconProps } from '@/types';
+import type { IconProps } from '@/types';
 import { classNames } from '@/lib/util';
 
 export default function Navbar({
-  user,
-  audits,
+  userName,
+  userImage,
 }: {
-  user: ClientSafeUser;
-  audits: ClientSafeAudit[];
+  userName: string | null;
+  userImage: string | null;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
@@ -29,17 +30,18 @@ export default function Navbar({
     return null;
   }
   const rootPathname = `/${pathname.split('/')[1]}`;
-  const selectedAuditExternalId = audits[0]?.id ?? '';
-  const requestHref = selectedAuditExternalId
-    ? `/audit/${selectedAuditExternalId}`
-    : '/audits';
 
   const navigation = [
     {
-      name: 'Requests',
-      href: requestHref,
-      altRoots: ['/request'],
+      name: 'Dashboard',
+      href: '/',
       icon: HomeIcon,
+    },
+    {
+      name: 'Audits',
+      href: '/audits',
+      altRoots: ['/request', '/audit'],
+      icon: BuildingLibraryIcon,
     },
     {
       name: 'Documents',
@@ -159,15 +161,16 @@ export default function Navbar({
                 <Menu as="div" className="flex relative text-left">
                   <div>
                     <Menu.Button className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900 hover:bg-gray-50">
-                      {user.image && (
+                      {userImage && (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           className="h-8 w-8 rounded-full bg-gray-50"
-                          src={user.image}
-                          alt=""
+                          src={userImage}
+                          alt={userName || ''}
                         />
                       )}
                       <span className="sr-only">Your profile</span>
-                      <span aria-hidden="true">{user.name}</span>
+                      <span aria-hidden="true">{userName || ''}</span>
                     </Menu.Button>
                   </div>
                   <AccountMenuItems />
@@ -192,11 +195,12 @@ export default function Navbar({
         </div>
         <a href="#">
           <span className="sr-only">Your profile</span>
-          {user.image && (
+          {userImage && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               className="h-8 w-8 rounded-full bg-gray-50"
-              src={user.image}
-              alt=""
+              src={userImage}
+              alt={userName || ''}
             />
           )}
         </a>
