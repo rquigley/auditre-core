@@ -35,7 +35,7 @@ export default function Calendar({
   let { locale } = useLocale();
   let state = useCalendarState({
     value: parsedValue,
-    visibleDuration: { months: 2 },
+    visibleDuration: { months: 1 },
     locale,
     createCalendar,
     onChange: (value) => {
@@ -62,7 +62,6 @@ export default function Calendar({
       />
       <div className="flex gap-8">
         <CalendarGrid state={state} />
-        <CalendarGrid state={state} offset={{ months: 1 }} />
       </div>
     </div>
   );
@@ -240,14 +239,14 @@ export function CalendarHeader({
           state.visibleRange.start.toDate(state.timeZone),
         )}
       </h2>
-      <h2
+      {/* <h2
         aria-hidden
         className="flex-1 align-center font-bold text-xl text-center"
       >
         {monthDateFormatter.format(
           state.visibleRange.start.add({ months: 1 }).toDate(state.timeZone),
         )}
-      </h2>
+      </h2> */}
       <Button {...nextButtonProps}>
         <ChevronRightIcon className="h-6 w-6" />
       </Button>
