@@ -78,6 +78,7 @@ function Activity({ changes, user }: { changes: Change[]; user: User }) {
               change.type === 'COMMENT' ? (
                 <>
                   {change.actor.type === 'USER' && change.actor.image && (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={change.actor.image}
                       alt=""
@@ -143,6 +144,7 @@ function Activity({ changes, user }: { changes: Change[]; user: User }) {
       {/* New comment form */}
       <div className="mt-6 flex gap-x-3">
         {user.image && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={user.image}
             alt=""
