@@ -6,10 +6,6 @@ import { clientSafe } from '@/lib/util';
 import RequestRow from './request-row';
 import { getCurrent } from '@/controllers/session-user';
 import Header from '@/components/header';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-
-dayjs.extend(relativeTime);
 
 export default async function DocumentsPage() {
   const user = await getCurrent();
