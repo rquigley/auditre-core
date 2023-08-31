@@ -1,10 +1,8 @@
 import { notFound } from 'next/navigation';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
 import { classNames } from '@/lib/util';
-
 import { PaperClipIcon } from '@heroicons/react/20/solid';
 import Header from '@/components/header';
+import Datetime from '@/components/datetime';
 import { getCurrent } from '@/controllers/session-user';
 import {
   getById as getRequestById,
@@ -13,11 +11,8 @@ import {
 } from '@/controllers/request';
 import type { User } from '@/types';
 import { getById as getAuditById } from '@/controllers/audit';
-
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import FormContainer from './form-container';
-
-dayjs.extend(relativeTime);
 
 export default async function RequestPage({
   params: { request: id },
@@ -100,14 +95,10 @@ function Activity({ changes, user }: { changes: Change[]; user: User }) {
                         </span>{' '}
                         commented
                       </div>
-                      <time
-                        dateTime={dayjs(change.createdAt).format(
-                          'MM/DD/YYYY HH:mm',
-                        )}
+                      <Datetime
                         className="flex-none py-0.5 text-xs leading-5 text-gray-500"
-                      >
-                        {dayjs(change.createdAt).fromNow()}
-                      </time>
+                        dateTime={change.createdAt}
+                      />
                     </div>
                     <p className="text-sm leading-6 text-gray-500">
                       {change.comment}
@@ -138,14 +129,10 @@ function Activity({ changes, user }: { changes: Change[]; user: User }) {
                     </span>{' '}
                     {change.type} the request.
                   </p>
-                  <time
-                    dateTime={dayjs(change.createdAt).format(
-                      'MM/DD/YYYY HH:mm',
-                    )}
+                  <Datetime
                     className="flex-none py-0.5 text-xs leading-5 text-gray-500"
-                  >
-                    {dayjs(change.createdAt).fromNow()}
-                  </time>
+                    dateTime={change.createdAt}
+                  />
                 </>
               )
             }
