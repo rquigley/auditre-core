@@ -14,7 +14,14 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as eventsTarget from 'aws-cdk-lib/aws-events-targets';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+
 import {
   ApplicationLoadBalancer,
   ApplicationProtocol,
@@ -29,9 +36,10 @@ export class OpsAppStack extends cdk.Stack {
   constructor(
     scope: Construct,
     id: string,
-    props?: cdk.StackProps & { certificateArn: string },
+    props?: cdk.StackProps & { certificateArn: string; isProd: boolean },
   ) {
     super(scope, id, props);
+    const isProd = props?.isProd || false;
 
     // const repo = new ecr.Repository(this, 'Repo', {
     //   repositoryName: 'auditre-fargate-app',
@@ -91,12 +99,27 @@ export class OpsAppStack extends cdk.Stack {
       value: deployRole.roleArn,
     });
 
-    new s3.Bucket(this, 's3', {
-      bucketName: 'auditre-app-org-files',
+    let removalPolicy;
+    let allowedOrigins;
+    let autoDeleteObjects;
+    let objectLockEnabled;
+    if (isProd) {
+      removalPolicy = cdk.RemovalPolicy.RETAIN;
+      allowedOrigins = ['https://app.auditre.co'];
+      autoDeleteObjects = false;
+      objectLockEnabled = true;
+    } else {
+      removalPolicy = cdk.RemovalPolicy.DESTROY;
+      allowedOrigins = ['http://localhost:3000', 'https://app.ci.auditre.co'];
+      autoDeleteObjects = true;
+      objectLockEnabled = false;
+    }
+    const s3Bucket = new s3.Bucket(this, 's3', {
+      bucketName: `auditre-app-org-files-${isProd ? 'prod' : 'dev'}`,
       publicReadAccess: false,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // should be RETAINED for prod
+      removalPolicy,
       enforceSSL: true,
-      versioned: false, // should be true for prod
+      versioned: isProd, // should be true for prod
       cors: [
         {
           allowedMethods: [
@@ -104,16 +127,55 @@ export class OpsAppStack extends cdk.Stack {
             s3.HttpMethods.POST,
             s3.HttpMethods.PUT,
           ],
-          allowedOrigins: ['http://localhost:3000', 'https://ci.auditre.co'],
+          allowedOrigins,
           allowedHeaders: ['*'],
         },
       ],
-      /**
-       * For sample purposes only, if you create an S3 bucket then populate it, stack destruction fails.  This
-       * setting will enable full cleanup of the demo.
-       */
-      autoDeleteObjects: true, // NOT recommended for production code
-      //objectLockEnabled: true, // should be true for prod
+      autoDeleteObjects,
+      objectLockEnabled,
+    });
+
+    const lxmlLayer = new lambda.LayerVersion(this, 'LXMLLayer', {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../packages/lxml-layer/layer311.zip'),
+      ),
+      compatibleArchitectures: [lambda.Architecture.ARM_64],
+      compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
+    });
+    const s3DocToMDLambda = new lambda.Function(this, 'S3DocToMDLambda', {
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../packages/s3-doc-to-md'),
+        {
+          bundling: {
+            image: lambda.Runtime.PYTHON_3_11.bundlingImage,
+            command: [
+              'bash',
+              '-c',
+              'pip install -r requirements.txt -t /asset-output && cp -au . /asset-output',
+            ],
+          },
+        },
+      ),
+      runtime: lambda.Runtime.PYTHON_3_11,
+      architecture: lambda.Architecture.ARM_64,
+      memorySize: 128,
+      timeout: cdk.Duration.seconds(30),
+      // vpc: vpc,
+      // vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
+      handler: 'lambda_function.handler', // optional, defaults to 'handler'
+      layers: [lxmlLayer],
+    });
+    s3Bucket.grantReadWrite(s3DocToMDLambda);
+    const s3nDest = new s3n.LambdaDestination(s3DocToMDLambda);
+    s3Bucket.addEventNotification(s3.EventType.OBJECT_CREATED, s3nDest, {
+      suffix: '.pdf',
+    });
+    s3Bucket.addEventNotification(s3.EventType.OBJECT_CREATED, s3nDest, {
+      suffix: '.doc',
+    });
+    s3Bucket.addEventNotification(s3.EventType.OBJECT_CREATED, s3nDest, {
+      suffix: '.docx',
     });
 
     // https://www.cloudtechsimplified.com/ci-cd-pipeline-aws-fargate-github-actions-nodejs/
@@ -156,19 +218,14 @@ export class OpsAppStack extends cdk.Stack {
 
     const db = new PostgresCluster(this, 'PostgresCluster', {
       vpc,
-      instanceIdentifier: 'auditre-app-psql',
+      instanceIdentifier: 'app-psql',
       dbName: 'auditre',
       dbUsername: 'arroot',
-      isProd: false,
+      isProd,
     });
-    db.cluster.connections.allowDefaultPortFrom(cluster);
+    db.instance.connections.allowDefaultPortFrom(cluster);
     new cdk.CfnOutput(this, 'dbEndpoint', {
-      value: db.cluster.instanceEndpoint.hostname,
-    });
-
-    new cdk.CfnOutput(this, 'secretName', {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-      value: db.cluster.secret?.secretName!,
+      value: db.instance.instanceEndpoint.hostname,
     });
 
     // const repo = new ecr.Repository(this, 'Repo', {
@@ -213,27 +270,26 @@ export class OpsAppStack extends cdk.Stack {
           // ),
           image: ecs.ContainerImage.fromEcrRepository(repo, 'latest'),
           environment: {
-            DB_DATABASE: db.dbName,
-            DB_HOSTNAME: db.cluster.instanceEndpoint.hostname,
-            DB_USER: db.dbUsername,
-
-            NEXT_PUBLIC_ROOT_DOMAIN: 'https://app.ci.auditre.co',
+            NEXT_PUBLIC_ROOT_DOMAIN: 'app.ci.auditre.co',
             NEXTAUTH_URL: 'https://app.ci.auditre.co',
-            NEXTAUTH_SECRET:
-              '263dfdaa81588b662f576fa193e3f8f36c92096eae99814f0d9fc1b3907afa77',
-            foo: 'fdshfdshfds',
-
             GOOGLE_CLIENT_ID:
               '274008686939-oejqk1po6q1qd8krlcqsgk3brih10qgm.apps.googleusercontent.com',
+            AWS_S3_BUCKET: s3Bucket.bucketName,
+            ENVIRONMENT: 'production',
+            NODE_ENV: 'production',
+
+            // move to secrets
+            NEXTAUTH_SECRET:
+              '263dfdaa81588b662f576fa193e3f8f36c92096eae99814f0d9fc1b3907afa77',
             GOOGLE_CLIENT_SECRET: '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',
-            AWS_PROFILE: 'auditre-dev',
-            AWS_S3_BUCKET: 'com-auditrehq-org-files-dev',
             OPENAI_API_KEY:
               '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',
-            ENVIRONMENT: 'production',
           },
           secrets: {
-            DB_PASSWORD: ecs.Secret.fromSecretsManager(db.creds),
+            AWS_RDS_DB_CREDS: ecs.Secret.fromSecretsManager(db.creds),
+            //NEXTAUTH_SECRET: ecs.Secret.fromSecretsManager(),
+            //GOOGLE_CLIENT_SECRET: ecs.Secret.fromSecretsManager(),
+            //OPENAI_API_KEY: ecs.Secret.fromSecretsManager(),
           },
           containerName: 'nodejs-app-container',
           family: 'fargate-node-task-defn',
@@ -247,13 +303,35 @@ export class OpsAppStack extends cdk.Stack {
         taskSubnets: vpc.selectSubnets({
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         }),
+        //securityGroups: [db.instance.connections.securityGroups[0]],
         loadBalancer: loadbalancer,
         // TODO: Switch back to HTTPS
         // protocol: ApplicationProtocol.HTTPS,
         // certificate,
       },
     );
-    // appService.grantConnectionsToSecurityGroups(db.cluster.connections);
+
+    s3Bucket.grantReadWrite(appService.taskDefinition.taskRole);
+
+    // Notify Slack on deploys
+    const rule = new events.Rule(this, 'FargateDeployRule', {
+      eventPattern: {
+        source: ['aws.ecs'],
+        detailType: ['AWS API Call via CloudTrail'],
+        detail: {
+          eventName: ['CreateTaskSet', 'UpdateService'],
+        },
+      },
+    });
+    const topic = new sns.Topic(this, 'FargateDeployTopic');
+    rule.addTarget(new eventsTarget.SnsTopic(topic));
+    topic.addSubscription(
+      new subscriptions.UrlSubscription(
+        'https://hooks.slack.com/services/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',
+      ),
+    );
+
+    // appService.grantConnectionsToSecurityGroups(db.instance.connections);
     appService.targetGroup.configureHealthCheck({
       path: '/api/app-cont-health',
       healthyThresholdCount: 2,
