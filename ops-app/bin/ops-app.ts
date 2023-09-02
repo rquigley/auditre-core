@@ -27,4 +27,5 @@ new OpsAppStack(app, 'OpsAppStack', {
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
   crossRegionReferences: true,
   certificateArn: devAppSSLCertStack.certificateArn,
+  isProd: false,
 });
