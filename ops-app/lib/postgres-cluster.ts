@@ -24,7 +24,7 @@ export interface PostgresClusterProps {
 }
 
 export class PostgresCluster extends Construct {
-  cluster: rds.DatabaseInstance;
+  instance: rds.DatabaseInstance;
   dbName: string;
   dbUsername: string;
   creds: rds.DatabaseSecret;
@@ -36,28 +36,35 @@ export class PostgresCluster extends Construct {
     this.dbUsername = props.dbUsername;
 
     let multiAz;
+
     let removalPolicy;
-    let instanceType;
-    let deleteAutomatedBackups;
     let deletionProtection;
+    let deleteAutomatedBackups;
     let backupRetention;
+
+    let instanceType;
     let postgresVersion;
+
     if (props.isProd) {
       multiAz = true;
+
       removalPolicy = cdk.RemovalPolicy.RETAIN;
-      instanceType = InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO);
-      deleteAutomatedBackups = false;
       deletionProtection = true;
+      deleteAutomatedBackups = false;
       backupRetention = cdk.Duration.days(365);
-      postgresVersion = rds.PostgresEngineVersion.VER_15_3;
+
+      instanceType = InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO);
+      postgresVersion = rds.PostgresEngineVersion.VER_15_4;
     } else {
       multiAz = false;
+
       removalPolicy = cdk.RemovalPolicy.DESTROY;
-      instanceType = InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO);
-      deleteAutomatedBackups = true;
       deletionProtection = false;
+      deleteAutomatedBackups = true;
       backupRetention = cdk.Duration.days(0);
-      postgresVersion = rds.PostgresEngineVersion.VER_15_3;
+
+      instanceType = InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO);
+      postgresVersion = rds.PostgresEngineVersion.VER_15_4;
     }
 
     const credsSecretName =
@@ -82,7 +89,21 @@ export class PostgresCluster extends Construct {
       'Allow Postgres Communication',
     );
 
-    this.cluster = new rds.DatabaseInstance(this, 'PostgresRdsInstance', {
+    const parameterGroup = new rds.ParameterGroup(
+      this,
+      'PostgresRdsParameterGroup',
+      {
+        engine: rds.DatabaseInstanceEngine.postgres({
+          version: postgresVersion,
+        }),
+        parameters: {
+          statement_timeout: '30000',
+          log_min_duration_statement: '1000',
+        },
+      },
+    );
+    this.instance = new rds.DatabaseInstance(this, 'PostgresRdsInstance', {
+      // vpcSubnets might not be necessary, but until we recreate I can't remove them
       vpcSubnets: {
         onePerAz: true,
         subnetType: SubnetType.PRIVATE_ISOLATED,
@@ -90,7 +111,6 @@ export class PostgresCluster extends Construct {
       credentials: rds.Credentials.fromSecret(this.creds),
       vpc: props.vpc,
       multiAz,
-      port: 3306,
       databaseName: this.dbName,
       allocatedStorage: 20,
       instanceIdentifier: props.instanceIdentifier,
@@ -105,7 +125,11 @@ export class PostgresCluster extends Construct {
       removalPolicy,
       deletionProtection,
       publiclyAccessible: false,
+      parameterGroup,
       securityGroups: [securityGroup],
+      caCertificate: rds.CaCertificate.RDS_CA_RDS2048_G1,
+      // storageEncrypted: true,
+      // storageEncryptionKey:
     });
 
     const lambdaRole = new iam.Role(this, 'LambdaExecutionRole', {
@@ -130,6 +154,11 @@ export class PostgresCluster extends Construct {
               actions: ['secretsmanager:GetSecretValue', 'kms:Decrypt'],
               resources: [this.creds.secretArn],
             }),
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ['rds-db:connect'],
+              resources: [this.instance.instanceArn],
+            }),
           ],
         }),
       },
@@ -149,11 +178,11 @@ export class PostgresCluster extends Construct {
         runtime: lambda.Runtime.NODEJS_18_X,
         architecture: lambda.Architecture.ARM_64,
         memorySize: 256,
-        timeout: cdk.Duration.seconds(5),
+        timeout: cdk.Duration.minutes(10),
         handler: 'handler',
         bundling: {
           externalModules: ['@aws-sdk/*'],
-          nodeModules: ['pg'],
+          nodeModules: ['pg', '@sentry/serverless'],
           minify: false,
           commandHooks: {
             afterBundling(inputDir: string, outputDir: string): string[] {
@@ -174,13 +203,15 @@ export class PostgresCluster extends Construct {
         ),
         projectRoot: path.resolve(__dirname, '../packages/db-migration'),
         environment: {
-          DEBUG_LOGGING_ENABLED: 'true',
-          PARAMETERS_SECRETS_EXTENSION_LOG_LEVEL: 'debug',
+          // DEBUG_LOGGING_ENABLED: 'true',
+          // PARAMETERS_SECRETS_EXTENSION_LOG_LEVEL: 'debug',
           DB_CREDS_SECRET_ID: credsSecretName,
           PARAMETERS_SECRETS_EXTENSION_HTTP_PORT: '2773',
         },
         vpc: props.vpc,
+        vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
         role: lambdaRole,
+        //securityGroups: [securityGroup],
         layers: [
           lambda.LayerVersion.fromLayerVersionArn(
             this,
@@ -190,6 +221,6 @@ export class PostgresCluster extends Construct {
         ],
       },
     );
-    this.cluster.grantConnect(migrationLambda);
+    this.instance.grantConnect(migrationLambda);
   }
 }
