@@ -168,14 +168,11 @@ export class OpsAppStack extends cdk.Stack {
     });
     s3Bucket.grantReadWrite(s3DocToMDLambda);
     const s3nDest = new s3n.LambdaDestination(s3DocToMDLambda);
-    s3Bucket.addEventNotification(s3.EventType.OBJECT_CREATED, s3nDest, {
-      suffix: '.pdf',
-    });
-    s3Bucket.addEventNotification(s3.EventType.OBJECT_CREATED, s3nDest, {
-      suffix: '.doc',
-    });
-    s3Bucket.addEventNotification(s3.EventType.OBJECT_CREATED, s3nDest, {
-      suffix: '.docx',
+    const extensionsToConvert = ['.doc', '.docx', '.pdf', 'xlsx', 'xls'];
+    extensionsToConvert.forEach((suffix) => {
+      s3Bucket.addEventNotification(s3.EventType.OBJECT_CREATED, s3nDest, {
+        suffix,
+      });
     });
 
     // https://www.cloudtechsimplified.com/ci-cd-pipeline-aws-fargate-github-actions-nodejs/
