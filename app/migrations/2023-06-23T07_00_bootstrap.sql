@@ -108,7 +108,7 @@ CREATE TABLE "document" (
   "type" text,
   "last_modified" timestamp NOT NULL,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "extracted" jsonb,
+  "extracted" text,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
