@@ -20,17 +20,30 @@ export default function RequestRow({
       onClick={() => console.log('sdfsdf')}
     >
       <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
-        <a
-          href={`/document/${document.id}/download`}
-          className="flex items-center gap-x-1"
-        >
-          <DocumentArrowDownIcon
-            className="h-4 w-4 text-green-700"
-            aria-hidden="true"
-          />
-
+        <Link href={`/document/${document.id}`}>
           <span className="text-gray-900 font-semibold">{document.name}</span>
-        </a>
+        </Link>
+        <div>
+          <a
+            href={`/document/${document.id}/download`}
+            className="flex items-center gap-x-1"
+          >
+            <DocumentArrowDownIcon
+              className="h-4 w-4 text-green-700"
+              aria-hidden="true"
+            />
+
+            <span className="text-gray-900">Download</span>
+          </a>
+          <a
+            href="#"
+            onClick={() => {
+              navigator.clipboard.writeText(document.id);
+            }}
+          >
+            Copy Id to clipboard
+          </a>
+        </div>
       </td>
       <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
         <Datetime

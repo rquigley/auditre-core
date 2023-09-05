@@ -113,6 +113,15 @@ CREATE TABLE "document" (
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
 
+CREATE TABLE "document_query" (
+  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "document_id" uuid REFERENCES "document" ("id"),
+  "model" text,
+  "query" text,
+  "result" JSONB,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "is_deleted" boolean NOT NULL DEFAULT FALSE
+);
 
 -- CREATE TABLE "log" (
 --   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

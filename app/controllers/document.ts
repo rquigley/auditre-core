@@ -11,7 +11,6 @@ import type {
 import { getExtractedContent } from '@/lib/aws';
 
 export function create(document: NewDocument): Promise<Document> {
-  console.log(document);
   return db
     .insertInto('document')
     .values({ ...document })

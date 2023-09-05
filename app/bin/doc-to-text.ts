@@ -1,11 +1,9 @@
 import { program } from 'commander';
-import { getById, extractContent } from '@/controllers/document';
-import { getFile } from '@/lib/aws';
-import { db } from '@/lib/db';
-import { basename } from 'path';
-import { existsSync } from 'fs';
-import { extractData } from '@/lib/text-extraction';
+import { getById } from '@/controllers/document';
+import { create as createDocumentQuery } from '@/controllers/document-query';
 import { askQuestion, summarize } from '@/lib/ai';
+import { db } from '@/lib/db';
+import type { DocumentQueryResult } from '@/types';
 
 async function main(documentId: string, question: string) {
   // const document = await getById(parseInt(documentId));
@@ -14,15 +12,21 @@ async function main(documentId: string, question: string) {
   //   bucket: document.bucket,
   //   mimeType: document.type,
   // });
-  const document = await extractContent(documentId);
+  const document = await getById(documentId);
   //console.log(document.extracted.data[0].content);
   //@ts-ignore
-  const data = document.extracted.data[0].content;
 
   // const out = await summarize(JSON.stringify(data));
   // console.log(out);
-  const out = await askQuestion(question, JSON.stringify(data));
-  console.log(out);
+  const response = await askQuestion(question, document.extracted);
+  await createDocumentQuery({
+    documentId: documentId,
+    model: 'gpt-3.5-turbo',
+    query: question,
+    result: response as DocumentQueryResult,
+  });
+
+  console.log(response);
 
   await db.destroy();
 }
