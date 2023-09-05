@@ -1,4 +1,4 @@
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 import { z } from 'zod';
 
 const openaiConfig = z.string().min(3).max(255);
@@ -26,11 +26,9 @@ type Message = {
 };
 async function call(messages: Message[]) {
   const apiKey = openaiConfig.parse(process.env.OPENAI_API_KEY);
-  const configuration = new Configuration({
-    apiKey,
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
   });
-
-  const openai = new OpenAIApi(configuration);
 
   let model;
   // TODO: better estimate
@@ -40,13 +38,13 @@ async function call(messages: Message[]) {
     model = 'gpt-3.5-turbo';
   }
 
-  const chatCompletion = await openai.createChatCompletion({
+  const chatCompletion = await openai.chat.completions.create({
     model,
     // model: 'gpt-3.5-turbo-16k',
     // messages: [{ role: 'user', content: 'Hello world' }],
     messages,
   });
   //console.log(chatCompletion.data);
-  return chatCompletion.data.choices[0].message;
+  return chatCompletion.choices[0].message;
   //console.log(chatCompletion.data.choices[0].message);
 }
