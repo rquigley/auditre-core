@@ -43,9 +43,15 @@ export default function Navbar({
     {
       name: 'Documents',
       href: '/documents',
+      altRoots: ['/document'],
       icon: DocumentDuplicateIcon,
     },
-    { name: 'Reports', href: '/reports', icon: ChartPieIcon },
+    {
+      name: 'Reports',
+      href: '/reports',
+      altRoots: ['/report'],
+      icon: ChartPieIcon,
+    },
     {
       name: 'Organization Settings',
       href: '/organization-settings',
