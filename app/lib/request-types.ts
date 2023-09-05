@@ -170,7 +170,7 @@ export const requestTypes = {
   },
   ARTICLES_OF_INCORPORATION: {
     name: 'Upload the Articles of Incorporation',
-    description: '[Description TODO]',
+    description: '',
     defaultValue: {
       value: '',
     },
@@ -186,7 +186,7 @@ export const requestTypes = {
   },
   TRIAL_BALANCE: {
     name: 'Upload the Trial Balance',
-    description: '[Description TODO]',
+    description: '',
     defaultValue: {
       value: '',
     },
@@ -202,7 +202,7 @@ export const requestTypes = {
   },
   CHART_OF_ACCOUNTS: {
     name: 'Upload the Chart of Accounts',
-    description: '[Description TODO]',
+    description: '',
     defaultValue: {
       value: '',
     },
@@ -218,55 +218,60 @@ export const requestTypes = {
   },
   MULTIPLE_BUSINESS_LINES: {
     name: 'Multiple lines',
-    description: '[Description of the business lines TODO]',
+    description: '',
     defaultValue: {
-      value: '',
+      value: false,
     },
     form: {
       value: {
-        input: 'textarea',
+        input: 'boolean',
+        label: 'Does the Business have multiple business lines?',
       },
     },
     completeOnSet: true,
     schema: schemas.businessModelSchema,
   },
   LEASES: {
-    name: 'Does the company have any leases?',
-    description: '[Description TODO]',
+    name: 'Leases',
+    description: '',
     defaultValue: {
-      value: '',
+      value: false,
     },
     form: {
       value: {
-        input: 'date',
+        input: 'boolean',
+        label: 'Does the company have any leases?',
       },
     },
     completeOnSet: true,
     schema: schemas.businessModelSchema,
   },
   STOCK_OPTIONS: {
-    name: 'Does the company issue stock to employees?',
-    description: '[Description TODO]',
+    name: 'Stock option plan and ammendments',
+    description: '',
     defaultValue: {
-      value: '',
+      value: false,
     },
     form: {
       value: {
-        input: 'date',
+        input: 'boolean',
+        label: 'Does the company issue stock to employees?',
       },
     },
     completeOnSet: true,
     schema: schemas.businessModelSchema,
   },
   MATERIAL_CHANGES_POST_AUDIT: {
-    name: 'Have there been any material changes to the operations of the business following the period being audited?',
-    description: '[Description TODO]',
+    name: 'Post-audit changes',
+    description: '',
     defaultValue: {
-      value: '',
+      value: false,
     },
     form: {
       value: {
-        input: 'date',
+        input: 'boolean',
+        label:
+          'Have there been any material changes to the operations of the business following the period being audited?',
       },
     },
     completeOnSet: true,
