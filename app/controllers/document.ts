@@ -8,8 +8,6 @@ import type {
   NewDocument,
   OrgId,
 } from '@/types';
-import { extractData } from '@/lib/text-extraction';
-import { poll, delay } from '@/lib/util';
 import { getExtractedContent } from '@/lib/aws';
 
 export function create(document: NewDocument): Promise<Document> {
