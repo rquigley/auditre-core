@@ -184,12 +184,13 @@ export type ClientSafeRequestChange = Omit<
 >;
 
 export interface DocumentTable {
-  id: GeneratedAlways<string>;
+  id: Generated<string>;
   key: Generated<string>;
   bucket: string;
   name: string;
   size: number;
   type: string;
+  extracted: string | null;
   lastModified: Date;
   orgId: OrgId;
   requestId: RequestId | null;
@@ -206,6 +207,7 @@ export type ClientSafeDocument = Omit<
 >;
 
 export type S3File = {
+  documentId: string;
   key: string;
   bucket: string;
   name: string;

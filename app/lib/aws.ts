@@ -3,14 +3,11 @@ import {
   PutObjectCommand,
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
-import {
-  fromIni,
-  fromSSO,
-  fromContainerMetadata,
-} from '@aws-sdk/credential-providers';
+import { fromSSO, fromContainerMetadata } from '@aws-sdk/credential-providers';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { z } from 'zod';
-const { writeFile } = require('node:fs/promises');
+import { writeFile } from 'node:fs/promises';
+import type { Readable } from 'stream';
 
 const region = 'us-east-2';
 
@@ -25,25 +22,33 @@ export async function getFile({
   key: string;
   outputFilename: string;
 }) {
-  keySchema.parse(key);
-
-  let credentials;
-  if (process.env.NODE_ENV === 'production') {
-    credentials = await fromContainerMetadata();
-  } else {
-    credentials = await fromSSO({ profile: process.env.AWS_PROFILE })();
-  }
-  //   const credentials = fromIni({
-  //     profile: process.env.AWS_PROFILE,
-  //   });
   const client = new S3Client({
-    credentials,
+    credentials: await getCredentials(),
     region,
   });
   const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-  const { Body } = await client.send(command);
+  const response = await client.send(command);
+  const stream = response.Body as Readable;
+  await writeFile(outputFilename, stream);
+}
 
-  await writeFile(outputFilename, Body);
+export async function getExtractedContent({
+  bucket,
+  key,
+}: {
+  bucket: string;
+  key: string;
+}) {
+  const extractedKey = `${key}.extracted`;
+  const client = new S3Client({
+    credentials: await getCredentials(),
+    region,
+  });
+  const command = new GetObjectCommand({ Bucket: bucket, Key: extractedKey });
+  const response = await client.send(command);
+  const stream = response.Body as Readable;
+  const content = Buffer.concat(await stream.toArray()).toString();
+  return content;
 }
 
 export async function getPresignedUrl({
@@ -60,14 +65,8 @@ export async function getPresignedUrl({
   }
   keySchema.parse(key);
 
-  let credentials;
-  if (process.env.NODE_ENV === 'production') {
-    credentials = await fromContainerMetadata();
-  } else {
-    credentials = await fromSSO({ profile: process.env.AWS_PROFILE })();
-  }
   const client = new S3Client({
-    credentials,
+    credentials: await getCredentials(),
     region,
   });
 
@@ -86,17 +85,21 @@ export async function streamFile({
   bucket: string;
   key: string;
 }) {
-  let credentials;
-  if (process.env.NODE_ENV === 'production') {
-    credentials = await fromContainerMetadata();
-  } else {
-    credentials = await fromSSO({ profile: process.env.AWS_PROFILE })();
-  }
-
-  const client = new S3Client({ credentials, region });
+  const client = new S3Client({ credentials: await getCredentials(), region });
   const command = new GetObjectCommand({ Bucket: bucket, Key: key });
   const resp = await client.send(command);
   const readStream = resp.Body!;
   const webStream = readStream.transformToWebStream();
   return webStream;
+}
+
+async function getCredentials() {
+  if (process.env.NODE_ENV === 'production') {
+    return await fromContainerMetadata();
+  } else {
+    if (!process.env.AWS_PROFILE) {
+      throw new Error('Missing AWS_PROFILE');
+    }
+    return await fromSSO({ profile: process.env.AWS_PROFILE })();
+  }
 }

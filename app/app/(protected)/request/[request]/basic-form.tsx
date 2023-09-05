@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { classNames } from '@/lib/util';
-import { getPresignedUploadUrl } from '@/lib/actions';
 import {
   requestTypes,
   DateInputConfig,
@@ -30,6 +29,15 @@ type Props = {
   data: RequestData;
   saveData: (data: RequestData) => void;
   createDocument: (file: S3File) => Promise<string>;
+  getPresignedUploadUrl: (opts: {
+    filename: string;
+    contentType: string;
+  }) => Promise<{
+    documentId: string;
+    url: string;
+    key: string;
+    bucket: string;
+  }>;
 };
 
 export default function BasicForm({
@@ -37,6 +45,7 @@ export default function BasicForm({
   data,
   saveData,
   createDocument,
+  getPresignedUploadUrl,
 }: Props) {
   const router = useRouter();
   const config = requestTypes[request.type];
@@ -118,6 +127,7 @@ export default function BasicForm({
                         getValues={getValues}
                         setUploading={setUploading}
                         createDocument={createDocument}
+                        getPresignedUploadUrl={getPresignedUploadUrl}
                         isDirty={isDirty}
                       />
                     ) : fieldConfig.input === 'checkbox' ? (
@@ -437,6 +447,7 @@ function FileUpload({
   request,
   setUploading,
   createDocument,
+  getPresignedUploadUrl,
 }: FormFieldProps & {
   config: FileUploadInputConfig;
   request: ClientSafeRequest;
@@ -444,6 +455,16 @@ function FileUpload({
   getValues: () => any;
   setUploading: (val: boolean) => void;
   createDocument: (file: S3File) => Promise<string>;
+  //getPresignedUploadUrl: Pick<Props, 'getPresignedUploadUrl'>;
+  getPresignedUploadUrl: (opts: {
+    filename: string;
+    contentType: string;
+  }) => Promise<{
+    documentId: string;
+    url: string;
+    key: string;
+    bucket: string;
+  }>;
 }) {
   async function uploadDocument(
     e: React.ChangeEvent<HTMLInputElement>,
@@ -458,7 +479,6 @@ function FileUpload({
 
     const signedUrl = await getPresignedUploadUrl({
       filename,
-      requestId: request.id,
       contentType: file.type,
     });
 
@@ -467,6 +487,7 @@ function FileUpload({
       body: file,
     });
     const toSave: S3File = {
+      documentId: signedUrl.documentId,
       key: signedUrl.key,
       bucket: signedUrl.bucket,
       name: file.name,

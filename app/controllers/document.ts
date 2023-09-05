@@ -9,8 +9,11 @@ import type {
   OrgId,
 } from '@/types';
 import { extractData } from '@/lib/text-extraction';
+import { poll, delay } from '@/lib/util';
+import { getExtractedContent } from '@/lib/aws';
 
 export function create(document: NewDocument): Promise<Document> {
+  console.log(document);
   return db
     .insertInto('document')
     .values({ ...document })
@@ -44,22 +47,17 @@ export function update(id: DocumentId, updateWith: DocumentUpdate) {
     .execute();
 }
 
-export async function extractContent(id: DocumentId): Promise<Document> {
+export async function updateWithExtractedData(
+  id: DocumentId,
+): Promise<Document> {
   const document = await getById(id);
-  const data = await extractData({
-    key: document.key,
+  const content = await getExtractedContent({
     bucket: document.bucket,
-    mimeType: document.type,
+    key: document.key,
   });
-  //console.log(data);
-
-  return (
-    db
-      .updateTable('document')
-      //@ts-ignore
-      .set({ extracted: { data } })
-      .where('id', '=', id)
-      .returningAll()
-      .executeTakeFirstOrThrow()
-  );
+  if (!content) {
+    throw new Error('No data found');
+  }
+  await update(id, { extracted: content });
+  return getById(id);
 }
