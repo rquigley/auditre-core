@@ -143,31 +143,36 @@ export class OpsAppStack extends cdk.Stack {
       compatibleArchitectures: [lambda.Architecture.ARM_64],
       compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
     });
-    const s3DocToMDLambda = new lambda.Function(this, 'S3DocToMDLambda', {
-      code: lambda.Code.fromAsset(
-        path.join(__dirname, '../packages/s3-doc-to-md'),
-        {
-          bundling: {
-            image: lambda.Runtime.PYTHON_3_11.bundlingImage,
-            command: [
-              'bash',
-              '-c',
-              'pip install -r requirements.txt -t /asset-output && cp -au . /asset-output',
-            ],
+    const extractContentLambda = new lambda.Function(
+      this,
+      'ExtractContentLambda',
+      {
+        //functionName: `extract-content`,
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, '../packages/extract-content-lambda'),
+          {
+            bundling: {
+              image: lambda.Runtime.PYTHON_3_11.bundlingImage,
+              command: [
+                'bash',
+                '-c',
+                'pip install -r requirements.txt -t /asset-output && cp -au . /asset-output',
+              ],
+            },
           },
-        },
-      ),
-      runtime: lambda.Runtime.PYTHON_3_11,
-      architecture: lambda.Architecture.ARM_64,
-      memorySize: 128,
-      timeout: cdk.Duration.seconds(30),
-      // vpc: vpc,
-      // vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
-      handler: 'lambda_function.handler', // optional, defaults to 'handler'
-      layers: [lxmlLayer],
-    });
-    s3Bucket.grantReadWrite(s3DocToMDLambda);
-    const s3nDest = new s3n.LambdaDestination(s3DocToMDLambda);
+        ),
+        runtime: lambda.Runtime.PYTHON_3_11,
+        architecture: lambda.Architecture.ARM_64,
+        memorySize: 128,
+        timeout: cdk.Duration.seconds(30),
+        // vpc: vpc,
+        // vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
+        handler: 'lambda_function.handler',
+        layers: [lxmlLayer],
+      },
+    );
+    s3Bucket.grantReadWrite(extractContentLambda);
+    const s3nDest = new s3n.LambdaDestination(extractContentLambda);
     const extensionsToConvert = ['.doc', '.docx', '.pdf', 'xlsx', 'xls'];
     extensionsToConvert.forEach((suffix) => {
       s3Bucket.addEventNotification(s3.EventType.OBJECT_CREATED, s3nDest, {
