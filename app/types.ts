@@ -11,6 +11,7 @@ import type { RequestType } from './lib/request-types';
 
 export type OrgId = string;
 export type DocumentId = string;
+export type DocumentQueryId = string;
 export type UserId = string;
 export type AuditId = string;
 export type RequestId = string;
@@ -206,6 +207,28 @@ export type ClientSafeDocument = Omit<
   ClientSafeOmitTypes
 >;
 
+export type DocumentQueryResult = {
+  role: 'assistant';
+  content: string;
+};
+export interface DocumentQueryTable {
+  id: GeneratedAlways<string>;
+  documentId: DocumentId;
+  model: 'gpt-3.5-turbo' | 'gpt-4';
+  query: string;
+  result: DocumentQueryResult | null;
+  createdAt: ColumnType<Date, string | undefined, never>;
+  isDeleted: ColumnType<Boolean, never, Boolean>;
+}
+
+export type DocumentQueryUpdate = Updateable<DocumentQueryTable>;
+export type NewDocumentQuery = Insertable<DocumentQueryTable>;
+export type DocumentQuery = Selectable<DocumentQueryTable>;
+export type ClientSafeDocumentQuery = Omit<
+  Selectable<DocumentQueryTable>,
+  ClientSafeOmitTypes
+>;
+
 export type S3File = {
   documentId: string;
   key: string;
@@ -220,6 +243,7 @@ export interface Database extends Kysely<Database> {
   account: AccountTable;
   audit: AuditTable;
   document: DocumentTable;
+  documentQuery: DocumentQueryTable;
   invitation: InvitationTable;
   org: OrgTable;
   request: RequestTable;
