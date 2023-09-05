@@ -113,7 +113,7 @@ function Activity({ changes, user }: { changes: Change[]; user: User }) {
                       //@ts-ignore
                       change.type === 'paid' ? (
                         <CheckCircleIcon
-                          className="h-6 w-6 text-indigo-600"
+                          className="h-6 w-6 text-sky-700"
                           aria-hidden="true"
                         />
                       ) : (
@@ -152,7 +152,7 @@ function Activity({ changes, user }: { changes: Change[]; user: User }) {
           />
         )}
         <form action="#" className="relative flex-auto">
-          <div className="overflow-hidden rounded-lg pb-12 shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-indigo-600">
+          <div className="overflow-hidden rounded-lg pb-12 shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-sky-700">
             <label htmlFor="comment" className="sr-only">
               Add your comment
             </label>

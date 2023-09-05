@@ -50,7 +50,7 @@ export default function RequestRow({
               <br />
               <Link
                 href={`/request/${document.requestId}`}
-                className="text-indigo-600 hover:text-indigo-900"
+                className="text-sky-700 hover:text-sky-700"
               >
                 {document.requestName}
               </Link>
