@@ -122,21 +122,21 @@ export function CalendarCell({ state, date, currentMonth }) {
           } ${
             // Focus ring, visible while the cell has keyboard focus.
             isFocusVisible
-              ? 'ring-2 group-focus:z-2 ring-violet-600 ring-offset-2'
+              ? 'ring-2 group-focus:z-2 ring-sky-700 ring-offset-2'
               : ''
           } ${
             // Darker selection background for the start and end.
             isSelectionStart || isSelectionEnd
-              ? 'bg-violet-600 text-white hover:bg-violet-700'
+              ? 'bg-sky-700 text-white hover:bg-sky-700'
               : ''
           } ${
             // Hover state for cells in the middle of the range.
             isSelected && !(isSelectionStart || isSelectionEnd)
-              ? 'hover:bg-violet-400'
+              ? 'hover:bg-sky-700'
               : ''
           } ${
             // Hover state for non-selected cells.
-            !isSelected && !isDisabled ? 'hover:bg-violet-100' : ''
+            !isSelected && !isDisabled ? 'hover:bg-sky-100' : ''
           } cursor-default`}
         >
           {formattedDate}

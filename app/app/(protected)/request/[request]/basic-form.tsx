@@ -199,7 +199,7 @@ export default function BasicForm({
           className={classNames(
             uploading || !isDirty
               ? 'bg-gray-400'
-              : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600',
+              : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
             'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm',
           )}
         >
@@ -230,7 +230,7 @@ function Text({
         className={classNames(
           errors[field]
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
-            : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600',
+            : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
           'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
         )}
       />
@@ -256,7 +256,7 @@ function Textarea({
         className={classNames(
           errors[field]
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
-            : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600',
+            : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
           'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
         )}
       />
@@ -296,7 +296,7 @@ function DateField({
         className={classNames(
           errors[field]
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
-            : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-indigo-600',
+            : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
           'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
         )}
       /> */}
@@ -361,7 +361,7 @@ function Checkbox({
               id={`checkbox-${model.type}`}
               aria-describedby={`${model.type}-description`}
               type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+              className="h-4 w-4 rounded border-gray-300 text-sky-700 focus:ring-sky-700"
             />
           </div>
           <div className="ml-3 text-sm leading-6">
@@ -406,8 +406,8 @@ function BooleanField({
           setEnabled(val);
         }}
         className={classNames(
-          enabled ? 'bg-indigo-600' : 'bg-gray-200',
-          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2',
+          enabled ? 'bg-sky-700' : 'bg-gray-200',
+          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-700 focus:ring-offset-2',
         )}
       >
         <span className="sr-only">{config.label}</span>
@@ -501,7 +501,7 @@ function FileUpload({
         <div className="mt-4 flex text-sm leading-6 text-gray-600">
           <label
             htmlFor={`${field}-file`}
-            className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
+            className="relative cursor-pointer rounded-md bg-white font-semibold text-sky-700 focus-within:outline-none focus-within:ring-2 focus-within:ring-sky-700 focus-within:ring-offset-2 hover:text-sky-700"
           >
             <span>Upload a document</span>
             <input {...register(field, { required: true })} type="hidden" />
