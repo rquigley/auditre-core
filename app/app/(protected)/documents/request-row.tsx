@@ -14,11 +14,7 @@ export default function RequestRow({
   };
 }) {
   return (
-    <tr
-      key={document.id}
-      className="hover:bg-gray-100"
-      onClick={() => console.log('sdfsdf')}
-    >
+    <tr key={document.id} className="hover:bg-gray-100">
       <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
         <Link href={`/document/${document.id}`}>
           <span className="text-gray-900 font-semibold">{document.name}</span>

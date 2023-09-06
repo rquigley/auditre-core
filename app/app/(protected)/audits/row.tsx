@@ -7,11 +7,7 @@ import type { Audit } from '@/types';
 
 export default function Row({ audit }: { audit: Audit }) {
   return (
-    <tr
-      key={audit.id}
-      className="hover:bg-gray-100"
-      onClick={() => console.log('sdfsdf')}
-    >
+    <tr key={audit.id} className="hover:bg-gray-100">
       <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
         <a href={`/audit/${audit.id}`} className="flex items-center gap-x-1">
           <span className="text-gray-900 font-semibold">{audit.name}</span>
