@@ -31,7 +31,6 @@
     "next": "13.4.19",
     "next-auth": "0.0.0-manual.ffd05533",
     "openai": "4.4.0",
-    "pdfjs-dist": "3.9.179",
     "pg": "8.11.3",
     "postcss": "8.4.29",
     "prompts": "2.4.2",
