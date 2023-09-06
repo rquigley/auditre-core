@@ -37,7 +37,6 @@ export default function AI({
   });
 
   async function onSubmit(data: z.infer<typeof schema>) {
-    console.log(data, 'YEAH');
     setHasSaved(false);
     //@ts-ignore
     await saveData(data);
