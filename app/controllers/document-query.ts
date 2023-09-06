@@ -3,9 +3,12 @@ import type {
   DocumentQueryUpdate,
   DocumentQuery,
   DocumentQueryId,
+  DocumentQueryResult,
   NewDocumentQuery,
   DocumentId,
+  Document,
 } from '@/types';
+import { askQuestion as OpenAIAskQuestion } from '@/lib/ai';
 
 export function create(
   documentQuery: NewDocumentQuery,
@@ -43,4 +46,24 @@ export function update(id: DocumentQueryId, updateWith: DocumentQueryUpdate) {
     .set(updateWith)
     .where('id', '=', id)
     .execute();
+}
+
+export async function askQuestion(
+  document: Document,
+  question: string,
+): Promise<DocumentQuery> {
+  if (!document.extracted) {
+    throw new Error('Document not extracted yet');
+  }
+
+  const { message, model } = await OpenAIAskQuestion({
+    question,
+    content: document.extracted,
+  });
+  return await create({
+    documentId: document.id,
+    model,
+    query: question,
+    result: message as DocumentQueryResult,
+  });
 }

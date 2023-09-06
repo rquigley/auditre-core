@@ -11,13 +11,13 @@ import {
 } from '@/controllers/request';
 import type { User } from '@/types';
 import { getById } from '@/controllers/document';
-import { getAllByDocumentId as getQueriesByDocumentId } from '@/controllers/document-query';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import {
   DocumentArrowDownIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import { Document } from '@/types';
+import AI from '@/components/ai';
 
 //import FormContainer from './form-container';
 
@@ -42,7 +42,7 @@ export default async function DocumentPage({
         <div className=" grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
           <div className="-mx-4 px-4 py-8 shadow-sm ring-1 ring-gray-900/5 sm:mx-0 sm:rounded-lg sm:px-8 sm:pb-14 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:px-16 xl:pb-20 xl:pt-16">
             <div className="text-med leading-6 text-gray-500">Raw Content</div>
-            <div className="text-xs h-96 overflow-y-auto">
+            <div className="text-xs h-48 overflow-y-scroll p-4 rounded-lg shadow-sm ring-1 ring-inset ring-gray-300">
               {document.extracted}
             </div>
             <AI document={document} />
@@ -54,29 +54,6 @@ export default async function DocumentPage({
         </div>
       </div>
     </>
-  );
-}
-
-async function AI({ document }: { document: Document }) {
-  const queries = await getQueriesByDocumentId(document.id);
-  console.log(queries);
-
-  return (
-    <div className="">
-      <div className="text-med leading-6 text-gray-500">AI</div>
-      <div className="text-xs h-96 overflow-y-auto">
-        {queries.map((query) => (
-          <div key={query.id} className="flex flex-row">
-            <div className="flex flex-col">
-              <div className="text-xs text-gray-500">{query.query}</div>
-              <div className="text-xs text-gray-500">
-                {JSON.stringify(query.result)}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 
