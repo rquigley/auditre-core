@@ -1,20 +1,17 @@
 // import 'server-only';
 
-import { db, json } from '@/lib/db';
+import { db } from '@/lib/db';
 import type {
   RequestUpdate,
   Actor,
   Request,
-  RequestData,
   RequestChangeValue,
   NewRequest,
   OrgId,
   AuditId,
   RequestId,
   RequestChange,
-  NewRequestChange,
 } from '@/types';
-import { getById as getUserById } from '@/controllers/user';
 import { requestTypes, RequestType } from '@/lib/request-types';
 import { userLoader } from '@/controllers/user';
 
@@ -28,7 +25,7 @@ export async function create(
 ): Promise<Request> {
   const res = await db
     .insertInto('request')
-    .values({ ...request, data: json(request.data) })
+    .values({ ...request })
     .returningAll()
     .executeTakeFirstOrThrow();
 
