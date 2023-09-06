@@ -18,15 +18,15 @@ async function main(documentId: string, question: string) {
 
   // const out = await summarize(JSON.stringify(data));
   // console.log(out);
-  const response = await askQuestion(question, document.extracted);
+  const { message, model } = await askQuestion(question, document.extracted);
   await createDocumentQuery({
     documentId: documentId,
-    model: 'gpt-3.5-turbo',
+    model,
     query: question,
-    result: response as DocumentQueryResult,
+    result: message as DocumentQueryResult,
   });
 
-  console.log(response);
+  console.log(message);
 
   await db.destroy();
 }
