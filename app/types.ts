@@ -207,14 +207,17 @@ export type ClientSafeDocument = Omit<
   ClientSafeOmitTypes
 >;
 
+export type OpenAIModel = 'gpt-3.5-turbo' | 'gpt-3.5-turbo-16k' | 'gpt-4';
+
 export type DocumentQueryResult = {
   role: 'assistant';
   content: string;
 };
+
 export interface DocumentQueryTable {
   id: GeneratedAlways<string>;
   documentId: DocumentId;
-  model: 'gpt-3.5-turbo' | 'gpt-4';
+  model: OpenAIModel;
   query: string;
   result: DocumentQueryResult | null;
   createdAt: ColumnType<Date, string | undefined, never>;

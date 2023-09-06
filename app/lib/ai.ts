@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { OpenAIModel } from '@/types';
 
 const openaiConfig = z.string().min(3).max(255);
 
@@ -10,41 +11,57 @@ export async function summarize(content: string) {
   ]);
 }
 
-export async function askQuestion(question: string, content: string) {
-  return await call([
+export async function askQuestion({
+  question,
+  content,
+  model,
+}: {
+  question: string;
+  content: string;
+  model?: OpenAIModel;
+}) {
+  return await call(
+    [
+      {
+        role: 'system',
+        content: question,
+      },
+      { role: 'user', content },
+    ],
     {
-      role: 'system',
-      content: question,
+      model,
     },
-    { role: 'user', content },
-  ]);
+  );
 }
 
 type Message = {
   role: 'user' | 'system';
   content: string;
 };
-async function call(messages: Message[]) {
+async function call(
+  messages: Message[],
+  { model }: { model?: OpenAIModel } = {},
+) {
   const apiKey = openaiConfig.parse(process.env.OPENAI_API_KEY);
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  let model;
-  // TODO: better estimate
-  if (JSON.stringify(messages).length > 4000) {
-    model = 'gpt-3.5-turbo-16k';
-  } else {
-    model = 'gpt-3.5-turbo';
+  if (!model) {
+    // TODO: better estimate
+    if (JSON.stringify(messages).length > 4000) {
+      model = 'gpt-3.5-turbo-16k';
+    } else {
+      model = 'gpt-3.5-turbo';
+    }
   }
 
   const chatCompletion = await openai.chat.completions.create({
     model,
-    // model: 'gpt-3.5-turbo-16k',
-    // messages: [{ role: 'user', content: 'Hello world' }],
     messages,
   });
-  //console.log(chatCompletion.data);
-  return chatCompletion.choices[0].message;
-  //console.log(chatCompletion.data.choices[0].message);
+  return {
+    message: chatCompletion.choices[0].message,
+    model,
+  };
 }
