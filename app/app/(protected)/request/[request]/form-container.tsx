@@ -85,9 +85,12 @@ export default async function FormContainer({ request, user, audit }: Props) {
       orgId: audit.orgId,
       requestId: request.id,
     });
-    const ha = await retry(async (bail) => {
-      return await updateWithExtractedData(doc.id);
-    });
+    await retry(
+      async (bail) => {
+        return await updateWithExtractedData(doc.id);
+      },
+      { minTimeout: 700 },
+    );
 
     return doc.id;
   }
