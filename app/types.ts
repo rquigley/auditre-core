@@ -118,6 +118,9 @@ export type ClientSafeAudit = Omit<Selectable<AuditTable>, ClientSafeOmitTypes>;
 
 export type RequestData =
   | {
+      value: boolean;
+    }
+  | {
       value: string;
     }
   | {
