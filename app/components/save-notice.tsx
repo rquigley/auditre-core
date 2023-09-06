@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircleIcon } from '@heroicons/react/20/solid';
 
-export function SaveNotice() {
+export default function SaveNotice() {
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {

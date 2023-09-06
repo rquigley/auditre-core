@@ -22,7 +22,7 @@ import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import type { RequestData, ClientSafeRequest, S3File } from '@/types';
 import Calendar from '@/components/calendar';
 import { Switch } from '@headlessui/react';
-import { SaveNotice } from '@/components/save-notice';
+import SaveNotice from '@/components/save-notice';
 
 type Props = {
   request: ClientSafeRequest;
@@ -104,7 +104,7 @@ export default function BasicForm({
               return (
                 <div className="sm:col-span-8" key={field}>
                   <label
-                    htmlFor="username"
+                    htmlFor={field}
                     className="block text-sm font-medium leading-6 text-gray-900"
                   >
                     {fieldConfig.label}
