@@ -1,5 +1,8 @@
 FROM node:20-alpine AS base
 
+# Use best practices from https://github.com/vercel/next.js/blob/canary/examples/with-docker/Dockerfile
+# We retain --link for the COPY commands for performance reasons. Vercel removed it for Google Cloud compatibility.
+
 # If you need to build directly for AWS Fargate, you can use the following base image instead
 #FROM --platform=linux/amd64 node:18-alpine AS base
 
@@ -49,6 +52,10 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 COPY --link --from=builder /app/public ./public
+
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
