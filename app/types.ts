@@ -10,6 +10,7 @@ import type {
 import type { RequestType } from './lib/request-types';
 
 export type OrgId = string;
+export type CommentId = string;
 export type DocumentId = string;
 export type DocumentQueryId = string;
 export type UserId = string;
@@ -245,9 +246,29 @@ export type S3File = {
   type: string;
 };
 
+export interface CommentTable {
+  id: GeneratedAlways<string>;
+  orgId: OrgId;
+  userId: UserId;
+  requestId: RequestId | null;
+  documentId: DocumentId | null;
+  comment: string;
+  createdAt: ColumnType<Date, string | undefined, never>;
+  isDeleted: ColumnType<Boolean, never, Boolean>;
+}
+
+export type CommentUpdate = Updateable<CommentTable>;
+export type NewComment = Insertable<CommentTable>;
+export type Comment = Selectable<CommentTable>;
+export type ClientSafeComment = Omit<
+  Selectable<DocumentTable>,
+  ClientSafeOmitTypes
+>;
+
 export interface Database extends Kysely<Database> {
   account: AccountTable;
   audit: AuditTable;
+  comment: CommentTable;
   document: DocumentTable;
   documentQuery: DocumentQueryTable;
   invitation: InvitationTable;

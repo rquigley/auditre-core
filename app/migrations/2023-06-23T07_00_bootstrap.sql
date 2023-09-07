@@ -123,6 +123,17 @@ CREATE TABLE "document_query" (
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
 
+CREATE TABLE "comment" {
+  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
+  "request_id" uuid REFERENCES "request" ("id"),
+  "document_id" uuid REFERENCES "document" ("id"),
+  "user_id" uuid NOT NULL REFERENCES "user" ("id"),
+  "comment" text,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "is_deleted" boolean NOT NULL DEFAULT FALSE
+}
+
 -- CREATE TABLE "log" (
 --   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
 --   "org_id" uuid NOT NULL REFERENCES "org" ("id"),

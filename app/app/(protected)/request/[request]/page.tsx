@@ -1,18 +1,24 @@
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { classNames } from '@/lib/util';
-import { PaperClipIcon } from '@heroicons/react/20/solid';
 import Header from '@/components/header';
 import Datetime from '@/components/datetime';
 import { getCurrent } from '@/controllers/session-user';
 import {
   getById as getRequestById,
   getChangesById,
-  Change,
 } from '@/controllers/request';
-import type { User } from '@/types';
+import { getAllByRequestId as getAllCommentsByRequestId } from '@/controllers/comment';
+import type { User, Request } from '@/types';
 import { getById as getAuditById } from '@/controllers/audit';
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
+
 import FormContainer from './form-container';
+import { userLoader } from '@/controllers/user';
+import CommentForm from './comment-form';
+import { revalidatePath } from 'next/cache';
+
+import { create as createComment } from '@/controllers/comment';
+import z from 'zod';
 
 export default async function RequestPage({
   params: { request: id },
@@ -25,7 +31,6 @@ export default async function RequestPage({
   if (audit.orgId !== user.orgId) {
     return notFound();
   }
-  const changes = await getChangesById(request.id);
 
   const breadcrumbs = [
     { name: 'Audits', href: '/audits' },
@@ -48,7 +53,12 @@ export default async function RequestPage({
             <FormContainer request={request} user={user} audit={audit} />
           </div>
           <div className="lg:col-start-3">
-            <Activity changes={changes} user={user} />
+            <h2 className="text-sm font-semibold leading-6 text-gray-900">
+              Activity
+            </h2>
+            <Suspense fallback={<div></div>}>
+              <Activity request={request} user={user} />
+            </Suspense>
           </div>
         </div>
       </div>
@@ -56,87 +66,94 @@ export default async function RequestPage({
   );
 }
 
-function Activity({ changes, user }: { changes: Change[]; user: User }) {
+const schema = z.object({
+  comment: z.string().max(500),
+});
+
+async function Activity({ request, user }: { request: Request; user: User }) {
+  const feed = await getFeed(request);
+
+  async function saveData(data: z.infer<typeof schema>) {
+    'use server';
+
+    await createComment({
+      orgId: user.orgId,
+      requestId: request.id,
+      comment: data.comment,
+      userId: user.id,
+    });
+    revalidatePath(`/request/${request.id}`);
+  }
+
   return (
     <>
-      <h2 className="text-sm font-semibold leading-6 text-gray-900">
-        Activity
-      </h2>
       <ul role="list" className="mt-6 space-y-6">
-        {changes.map((change, idx) => (
+        {feed.map((item, idx) => (
           <li key={idx} className="relative flex gap-x-4">
             <div
               className={classNames(
-                idx === changes.length - 1 ? 'h-6' : '-bottom-6',
+                idx === feed.length - 1 ? 'h-6' : '-bottom-6',
                 'absolute left-0 top-0 flex w-6 justify-center',
               )}
             >
               <div className="w-px bg-gray-200" />
             </div>
-            {
-              //@ts-ignore
-              change.type === 'COMMENT' ? (
-                <>
-                  {change.actor.type === 'USER' && change.actor.image && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={change.actor.image}
-                      alt=""
-                      className="relative mt-3 h-6 w-6 flex-none rounded-full bg-gray-50"
-                    />
-                  )}
-                  <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-gray-200">
-                    <div className="flex justify-between gap-x-4">
-                      <div className="py-0.5 text-xs leading-5 text-gray-500">
-                        <span className="font-medium text-gray-900">
-                          {
-                            //@ts-ignore
-                            change.actor.name
-                          }
-                        </span>{' '}
-                        commented
-                      </div>
-                      <Datetime
-                        className="flex-none py-0.5 text-xs leading-5 text-gray-500"
-                        dateTime={change.createdAt}
-                      />
-                    </div>
-                    <p className="text-sm leading-6 text-gray-500">
-                      {change.comment}
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-white">
-                    {
-                      //@ts-ignore
-                      change.type === 'paid' ? (
-                        <CheckCircleIcon
-                          className="h-6 w-6 text-sky-700"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
-                      )
-                    }
-                  </div>
-                  <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
-                    <span className="font-medium text-gray-900">
-                      {
-                        //@ts-ignore
-                        change.actor.name
-                      }
-                    </span>{' '}
-                    {change.type} the request.
-                  </p>
-                  <Datetime
-                    className="flex-none py-0.5 text-xs leading-5 text-gray-500"
-                    dateTime={change.createdAt}
+            {item.type === 'COMMENT' ? (
+              <>
+                {item.actor.type === 'USER' && item.actor.image && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.actor.image}
+                    alt=""
+                    className="relative mt-3 h-6 w-6 flex-none rounded-full bg-gray-50"
                   />
-                </>
-              )
-            }
+                )}
+                <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-lime-500">
+                  <div className="flex justify-between gap-x-4">
+                    <div className="py-0.5 text-xs leading-5 text-gray-500">
+                      <span className="font-medium text-gray-900">
+                        {item.actor.type === 'USER' && item.actor.name}
+                      </span>{' '}
+                      commented
+                    </div>
+                    <Datetime
+                      className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                      dateTime={item.createdAt}
+                    />
+                  </div>
+                  <p className="text-sm leading-6 text-gray-500">
+                    {item.comment}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-white">
+                  {/* {
+                    item.type === 'paid' ? (
+                      <InformationCircleIcon
+                        className="h-6 w-6 text-sky-700"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
+                    )
+                  } */}
+                  <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
+                </div>
+                <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
+                  <span className="font-medium text-gray-900">
+                    {item.actor.type === 'USER' && item.actor.name}
+                  </span>{' '}
+                  {(item.type === 'CREATED' && 'created the request') ||
+                    'updated the request'}
+                </p>
+                <Datetime
+                  className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                  dateTime={item.createdAt}
+                />
+              </>
+            )}
           </li>
         ))}
       </ul>
@@ -151,42 +168,71 @@ function Activity({ changes, user }: { changes: Change[]; user: User }) {
             className="h-6 w-6 flex-none rounded-full bg-gray-50"
           />
         )}
-        <form action="#" className="relative flex-auto">
-          <div className="overflow-hidden rounded-lg pb-12 shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-sky-700">
-            <label htmlFor="comment" className="sr-only">
-              Add your comment
-            </label>
-            <textarea
-              rows={2}
-              name="comment"
-              id="comment"
-              className="block w-full resize-none border-0 bg-transparent py-1.5 px-2 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
-              placeholder="Add your comment..."
-              defaultValue={''}
-            />
-          </div>
-
-          <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
-            <div className="flex items-center space-x-5">
-              <div className="flex items-center">
-                <button
-                  type="button"
-                  className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-                >
-                  <PaperClipIcon className="h-5 w-5" aria-hidden="true" />
-                  <span className="sr-only">Attach a file</span>
-                </button>
-              </div>
-            </div>
-            <button
-              type="submit"
-              className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-            >
-              Comment
-            </button>
-          </div>
-        </form>
+        <CommentForm saveData={saveData} />
       </div>
     </>
   );
+}
+
+type UserActor = { type: 'USER'; name: string; image: string | null };
+type SystemActor = { type: 'SYSTEM' };
+export type Change = {
+  type: 'CREATED' | 'VALUE' | 'COMMENT';
+  createdAt: Date;
+  actor: UserActor | SystemActor;
+  comment?: string;
+};
+
+async function getFeed(request: Request) {
+  const rawChanges = await getChangesById(request.id);
+  const rawComments = await getAllCommentsByRequestId(request.id);
+
+  let ret: Change[] = [];
+
+  for (let n = 0; n < rawChanges.length; n++) {
+    let change = rawChanges[n];
+    let actor;
+    if (change.actor.type === 'USER') {
+      const user = await userLoader.load(change.actor.userId);
+      actor = { type: 'USER', name: user.name, image: user.image } as UserActor;
+    } else {
+      actor = { type: 'SYSTEM' } as SystemActor;
+    }
+    if (n === 0) {
+      ret.push({
+        type: 'CREATED',
+        createdAt: change.createdAt,
+        actor,
+      });
+    } else {
+      if (rawChanges[n - 1].newData !== change.newData) {
+        ret.push({
+          type: 'VALUE',
+          createdAt: change.createdAt,
+          actor,
+        });
+      }
+    }
+  }
+  for (let n = 0; n < rawComments.length; n++) {
+    let comment = rawComments[n];
+    let actor;
+    const user = await userLoader.load(comment.userId);
+    actor = { type: 'USER', name: user.name, image: user.image } as UserActor;
+
+    ret.push({
+      type: 'COMMENT',
+      createdAt: comment.createdAt,
+      actor,
+      comment: comment.comment,
+    });
+  }
+  return ret.sort(sortByCreatedAt);
+}
+
+function sortByCreatedAt(
+  a: { createdAt: Date },
+  b: { createdAt: Date },
+): number {
+  return a.createdAt.getTime() - b.createdAt.getTime();
 }
