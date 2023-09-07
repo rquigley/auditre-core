@@ -13,7 +13,6 @@ import type {
   RequestChange,
 } from '@/types';
 import { requestTypes, RequestType } from '@/lib/request-types';
-import { userLoader } from '@/controllers/user';
 
 type CreateRequest = Omit<NewRequest, 'value'> & {
   data: any;
@@ -158,55 +157,14 @@ export function logChange({
     .returningAll()
     .executeTakeFirstOrThrow();
 }
-type UserActor = { type: 'USER'; name: string; image: string | null };
-type SystemActor = { type: 'SYSTEM' };
-export type Change = {
-  type: 'CREATED' | 'VALUE' | 'COMMENT';
-  createdAt: Date;
-  actor: UserActor | SystemActor;
-  comment?: string;
-};
 
-export async function getChangesById(requestId: RequestId): Promise<Change[]> {
-  const changes = await db
+export async function getChangesById(
+  requestId: RequestId,
+): Promise<RequestChange[]> {
+  return await db
     .selectFrom('requestChange')
     .where('requestId', '=', requestId)
     .orderBy('createdAt')
     .selectAll()
     .execute();
-
-  let ret: Change[] = [];
-
-  for (let n = 0; n < changes.length; n++) {
-    let change = changes[n];
-    let actor;
-    if (change.actor.type === 'USER') {
-      const user = await userLoader.load(change.actor.userId);
-      actor = { type: 'USER', name: user.name, image: user.image } as UserActor;
-    } else {
-      actor = { type: 'SYSTEM' } as SystemActor;
-    }
-    if (n === 0) {
-      ret.push({
-        type: 'CREATED',
-        createdAt: change.createdAt,
-        actor,
-      });
-    } else {
-      if (changes[n - 1].newData !== change.newData) {
-        ret.push({
-          type: 'VALUE',
-          createdAt: change.createdAt,
-          actor,
-        });
-        // ret.push({
-        //   type: 'COMMENT',
-        //   createdAt: change.createdAt,
-        //   actor,
-        //   comment: 'TODO: add comment here',
-        // });
-      }
-    }
-  }
-  return ret;
 }
