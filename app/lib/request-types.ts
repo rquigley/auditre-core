@@ -216,21 +216,6 @@ export const requestTypes = {
     completeOnSet: true,
     schema: schemas.basicAny,
   },
-  MULTIPLE_BUSINESS_LINES: {
-    name: 'Multiple lines',
-    description: '',
-    defaultValue: {
-      value: false,
-    },
-    form: {
-      value: {
-        input: 'boolean',
-        label: 'Does the Business have multiple business lines?',
-      },
-    },
-    completeOnSet: true,
-    schema: schemas.businessModelSchema,
-  },
   LEASES: {
     name: 'Leases',
     description: '',
