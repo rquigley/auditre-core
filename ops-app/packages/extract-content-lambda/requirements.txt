@@ -1,6 +1,5 @@
-boto3==1.28.40
-botocore==1.31.40
-pypdf==3.15.4
+boto3==1.28.44
+pypdf==3.15.5
 openpyxl==3.1.2
 # python-docx==0.8.11 # in lxml-layer
 sentry-sdk==1.30.0
