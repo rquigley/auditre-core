@@ -1,23 +1,19 @@
 'use client';
-import { useState } from 'react';
+import { useState, KeyboardEvent } from 'react';
 import { useForm } from 'react-hook-form';
-import type { DocumentQuery } from '@/types';
 import { classNames } from '@/lib/util';
 import { zodResolver } from '@hookform/resolvers/zod';
-import SaveNotice from '@/components/save-notice';
-
 import z from 'zod';
 
 const schema = z.object({
-  query: z.string().max(500),
+  query: z.string().max(1000),
 });
 export default function AI({
   saveData,
 }: {
   saveData: (data: z.infer<typeof schema>) => void;
 }) {
-  const [hasSaved, setHasSaved] = useState(false);
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     formState: { isDirty, dirtyFields },
     register,
@@ -32,20 +28,20 @@ export default function AI({
     defaultValues: {
       query: '',
     },
-
-    //values: data,
   });
 
   async function onSubmit(data: z.infer<typeof schema>) {
-    setHasSaved(false);
-    //@ts-ignore
+    setIsSubmitting(true);
+    reset();
     await saveData(data);
-    setHasSaved(true);
-    // prevent documents from being created multiple times
-    // UNDONE because it breaks inputs reflecting the current value
-    //reset();
-    // reload activity feed
-    //router.refresh();
+    setIsSubmitting(false);
+  }
+
+  function handleKeyDown(ev: KeyboardEvent<HTMLTextAreaElement>) {
+    if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
+      ev.preventDefault();
+      onSubmit(getValues());
+    }
   }
 
   return (
@@ -60,14 +56,11 @@ export default function AI({
               : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
             'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
           )}
+          onKeyDown={handleKeyDown}
         />
       </div>
       <div className="mt-4 flex items-center justify-end gap-x-6">
-        {!isDirty && hasSaved && (
-          <div className="flex-grow">
-            <SaveNotice />
-          </div>
-        )}
+        <div className="flex-grow">{isSubmitting && <div>Working...</div>}</div>
         {isDirty && (
           <button
             type="button"
