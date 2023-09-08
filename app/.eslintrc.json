@@ -2,7 +2,6 @@
   "extends": ["next/core-web-vitals", "prettier"],
   "rules": {
     "no-async-promise-executor": 1,
-    "no-await-in-loop": 1,
     "no-promise-executor-return": 1,
     "require-atomic-updates": 1
   }
