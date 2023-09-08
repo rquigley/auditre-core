@@ -1,5 +1,5 @@
 'use client';
-
+import type { KeyboardEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { classNames } from '@/lib/util';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,6 +18,7 @@ export default function CommentForm({
     register,
     handleSubmit,
     reset,
+    getValues,
     formState: { errors },
   } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -30,6 +31,13 @@ export default function CommentForm({
   async function onSubmit(data: z.infer<typeof schema>) {
     await saveData(data);
     reset();
+  }
+
+  function handleKeyDown(ev: KeyboardEvent<HTMLTextAreaElement>) {
+    if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
+      ev.preventDefault();
+      onSubmit(getValues());
+    }
   }
 
   return (
@@ -48,6 +56,7 @@ export default function CommentForm({
             'block w-full resize-none border-0 bg-transparent py-1.5 px-2 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6',
           )}
           placeholder="Add your comment..."
+          onKeyDown={handleKeyDown}
         />
       </div>
 
