@@ -698,7 +698,7 @@ function Documents({
                   )}
                 >
                   <Datetime
-                    className="py-0.5 text-sm text-gray-500"
+                    className="py-0.5 text-xs text-gray-500"
                     dateTime={document.createdAt}
                   />
                 </td>
@@ -750,7 +750,7 @@ function Settings() {
                     'block px-3 py-1 text-sm leading-6 text-gray-900',
                   )}
                 >
-                  Download
+                  Select
                 </a>
               )}
             </Menu.Item>
@@ -763,7 +763,7 @@ function Settings() {
                     'block px-3 py-1 text-sm leading-6 text-gray-900',
                   )}
                 >
-                  View
+                  Download
                 </a>
               )}
             </Menu.Item>
@@ -789,13 +789,22 @@ function Settings() {
 
 function Queries({ queries }: { queries: DocumentQuery[] }) {
   return (
-    <div className="mt-1 flex flex-col text-gray-500 sm:block text-xs">
+    <div className="mt-1 flex flex-col text-slate-400 sm:block text-xs">
       {queries.map((query) => (
         <div key={query.id}>
-          <span className="font-medium">{query.identifier}</span>:{' '}
+          <span className="">{humanCase(query.identifier)}</span>:{' '}
           {query.result?.content}
         </div>
       ))}
     </div>
   );
+}
+
+function humanCase(input: string): string {
+  const words = input.toLowerCase().split('_');
+  return words
+    .map((word, index) =>
+      index === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word,
+    )
+    .join(' ');
 }
