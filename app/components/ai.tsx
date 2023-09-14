@@ -28,14 +28,14 @@ export default async function AI({ document }: { document: Document }) {
           <div key={query.id} className="flex flex-row">
             <div className="flex flex-col my-2">
               <div className="text-xs text-gray-500">
-                <span className="font-bold">{query.query}</span> ({query.model})
+                <span className="font-bold">{query.query}</span>
               </div>
               <div className="text-xs text-gray-500">
+                ({query.model}, Tokens: {query.usage?.totalTokens} prompt,{' '}
+                {query.usage?.completionTokens} completion)
                 <pre className="w-180 whitespace-normal">
                   {query.result?.content}
                 </pre>
-                (Tokens: {query.usage?.totalTokens} prompt,{' '}
-                {query.usage?.completionTokens} completion)
               </div>
             </div>
           </div>
