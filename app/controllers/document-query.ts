@@ -78,7 +78,11 @@ export async function askQuestion({
     throw new Error('Document not extracted yet');
   }
 
-  const { message, model: usedModel } = await OpenAIAskQuestion({
+  const {
+    message,
+    model: usedModel,
+    usage,
+  } = await OpenAIAskQuestion({
     question,
     content: document.extracted,
     model,
@@ -91,6 +95,7 @@ export async function askQuestion({
     model: usedModel,
     query: question,
     identifier,
+    usage,
     result: message as DocumentQueryResult,
   });
 }
@@ -122,7 +127,8 @@ export async function askDefaultQuestions(document: Document) {
       askQuestion({
         document,
         question: obj.question,
-        //model: obj.model,
+        // @ts-ignore - we don't yet have one defined and it's not typed
+        model: obj.model ? obj.model : undefined,
         identifier: obj.identifier,
       }),
     );

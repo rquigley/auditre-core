@@ -4,13 +4,6 @@ import { OpenAIModel } from '@/types';
 
 const openaiConfig = z.string().min(3).max(255);
 
-export async function summarize(content: string) {
-  return await call([
-    { role: 'system', content: 'Summarize this in under 20 words' },
-    { role: 'user', content },
-  ]);
-}
-
 export async function askQuestion({
   question,
   content,
@@ -49,19 +42,20 @@ async function call(
 
   if (!model) {
     // TODO: better estimate
-    if (JSON.stringify(messages).length > 4000) {
+    if (JSON.stringify(messages).length > 8000) {
       model = 'gpt-3.5-turbo-16k';
     } else {
       model = 'gpt-3.5-turbo';
     }
   }
 
-  const chatCompletion = await openai.chat.completions.create({
+  const resp = await openai.chat.completions.create({
     model,
     messages,
   });
   return {
-    message: chatCompletion.choices[0].message,
+    message: resp.choices[0].message,
     model,
+    usage: resp.usage,
   };
 }
