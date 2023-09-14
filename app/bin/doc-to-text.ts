@@ -24,6 +24,7 @@ async function main(documentId: string, question: string) {
     model,
     query: question,
     result: message as DocumentQueryResult,
+    identifier: 'OTHER',
   });
 
   console.log(message);
