@@ -140,6 +140,7 @@ export default function BasicForm({
                         //@ts-ignore
                         setValue={setValue}
                         getValues={getValues}
+                        uploading={uploading}
                         setUploading={setUploading}
                         createDocument={createDocument}
                         getPresignedUploadUrl={getPresignedUploadUrl}
@@ -461,15 +462,18 @@ function FileUpload({
   errors,
   config,
   request,
+  uploading,
   setUploading,
   createDocument,
   getPresignedUploadUrl,
   documents,
+  isDirty,
 }: FormFieldProps & {
   config: FileUploadInputConfig;
   request: ClientSafeRequest;
   setValue: (key: string, val: any, opts: any) => void;
   getValues: () => any;
+  uploading: boolean;
   setUploading: (val: boolean) => void;
   createDocument: (file: S3File) => Promise<string>;
   //getPresignedUploadUrl: Pick<Props, 'getPresignedUploadUrl'>;
@@ -483,12 +487,17 @@ function FileUpload({
     bucket: string;
   }>;
   documents: Props['documents'];
+  isDirty: boolean;
 }) {
+  const [hasUploaded, setHasUploaded] = useState(false);
+
   async function uploadDocument(
     e: React.ChangeEvent<HTMLInputElement>,
     request: ClientSafeRequest,
   ) {
     setUploading(true);
+    setHasUploaded(false);
+
     //const el = e.target;
 
     const file = e.target.files?.[0]!;
@@ -530,6 +539,7 @@ function FileUpload({
     // Clear out the file input
     //el.value = '';
     setUploading(false);
+    setHasUploaded(true);
   }
   const value = getValues()[field];
 
@@ -548,10 +558,39 @@ function FileUpload({
           //className="cursor-pointer inline-flex items-center gap-x-1.5 rounded-md bg-slate-100 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
           className="cursor-pointer inline-flex items-cente rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white"
         >
-          {value && (
-            <CheckCircleIcon className="-ml-0.5 h-5 w-5" aria-hidden="true" />
+          {uploading && (
+            <svg
+              className="mr-3 h-5 w-5 animate-spin text-green-700"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
           )}
-          Upload document
+          {hasUploaded && isDirty ? (
+            <>
+              <CheckCircleIcon
+                className="-ml-0.5 mr-1 h-5 w-5 text-green-700"
+                aria-hidden="true"
+              />
+              Document uploaded
+            </>
+          ) : (
+            <>Upload document</>
+          )}
         </label>
 
         {/* <p className="text-xs leading-5 text-gray-600">
