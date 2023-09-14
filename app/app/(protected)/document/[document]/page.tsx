@@ -1,18 +1,10 @@
 import { notFound } from 'next/navigation';
-import { classNames } from '@/lib/util';
-import { PaperClipIcon } from '@heroicons/react/20/solid';
 import Header from '@/components/header';
-import Datetime from '@/components/datetime';
 import { getCurrent } from '@/controllers/session-user';
-import { getChangesById } from '@/controllers/request';
-import type { User } from '@/types';
 import { getById } from '@/controllers/document';
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 import { Document } from '@/types';
 import AI from '@/components/ai';
-
-//import FormContainer from './form-container';
 
 export default async function DocumentPage({
   params: { document: id },

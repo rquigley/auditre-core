@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useForm } from 'react-hook-form';
 import { PhotoIcon } from '@heroicons/react/24/solid';
-
+import { Menu, Transition } from '@headlessui/react';
+import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -18,11 +19,23 @@ import {
   CheckboxInputConfig,
   TextareaInputConfig,
 } from '@/lib/request-types';
-import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
-import type { RequestData, ClientSafeRequest, S3File } from '@/types';
+import {
+  DocumentArrowDownIcon,
+  CheckCircleIcon,
+} from '@heroicons/react/24/outline';
+import type {
+  RequestData,
+  ClientSafeRequest,
+  S3File,
+  Document,
+  DocumentQuery,
+} from '@/types';
 import Calendar from '@/components/calendar';
+import Datetime from '@/components/datetime';
 import { Switch } from '@headlessui/react';
 import SaveNotice from '@/components/save-notice';
+import { fetchWithProgress } from '@/lib/fetch-with-progress';
+import FiletypeIcon from '@/components/FiletypeIcon';
 
 type Props = {
   request: ClientSafeRequest;
@@ -38,6 +51,7 @@ type Props = {
     key: string;
     bucket: string;
   }>;
+  documents: Array<Document & { queries: DocumentQuery[] }>;
 };
 
 export default function BasicForm({
@@ -46,6 +60,7 @@ export default function BasicForm({
   saveData,
   createDocument,
   getPresignedUploadUrl,
+  documents,
 }: Props) {
   const router = useRouter();
   const config = requestTypes[request.type];
@@ -128,6 +143,7 @@ export default function BasicForm({
                         setUploading={setUploading}
                         createDocument={createDocument}
                         getPresignedUploadUrl={getPresignedUploadUrl}
+                        documents={documents}
                         isDirty={isDirty}
                       />
                     ) : fieldConfig.input === 'checkbox' ? (
@@ -448,6 +464,7 @@ function FileUpload({
   setUploading,
   createDocument,
   getPresignedUploadUrl,
+  documents,
 }: FormFieldProps & {
   config: FileUploadInputConfig;
   request: ClientSafeRequest;
@@ -465,6 +482,7 @@ function FileUpload({
     key: string;
     bucket: string;
   }>;
+  documents: Props['documents'];
 }) {
   async function uploadDocument(
     e: React.ChangeEvent<HTMLInputElement>,
@@ -482,21 +500,24 @@ function FileUpload({
       contentType: file.type,
     });
 
-    const resp = await fetch(signedUrl.url, {
-      method: 'PUT',
-      body: file,
+    const resp = await fetchWithProgress(signedUrl.url, file, (ev) => {
+      if (ev.lengthComputable) {
+        const percentage = (ev.loaded / ev.total) * 100;
+        console.log('YES', percentage);
+        //uploadProgress.value = percentage;
+      }
     });
-    const toSave: S3File = {
-      documentId: signedUrl.documentId,
-      key: signedUrl.key,
-      bucket: signedUrl.bucket,
-      name: file.name,
-      size: file.size,
-      lastModified: file.lastModified,
-      type: file.type,
-    };
+
     if (resp.ok) {
-      // TODO: show progress
+      const toSave: S3File = {
+        documentId: signedUrl.documentId,
+        key: signedUrl.key,
+        bucket: signedUrl.bucket,
+        name: file.name,
+        size: file.size,
+        lastModified: file.lastModified,
+        type: file.type,
+      };
       const docId = await createDocument(toSave);
 
       setValue(field, docId, { shouldDirty: true, shouldTouch: true });
@@ -513,61 +534,268 @@ function FileUpload({
   const value = getValues()[field];
 
   return (
-    <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
-      <div className="text-center">
-        <PhotoIcon
-          className="mx-auto h-12 w-12 text-gray-300"
-          aria-hidden="true"
-        />
-        <div className="mt-4 flex text-sm leading-6 text-gray-600">
-          <label
-            htmlFor={`${field}-file`}
-            className="relative cursor-pointer rounded-md bg-white font-semibold text-sky-700 focus-within:outline-none focus-within:ring-2 focus-within:ring-sky-700 focus-within:ring-offset-2 hover:text-sky-700"
-          >
-            <span>Upload a document</span>
-            <input {...register(field, { required: true })} type="hidden" />
-            <input
-              id={`${field}-file`}
-              name={`${field}-file`}
-              type="file"
-              className="sr-only"
-              multiple={false}
-              onChange={(e) => uploadDocument(e, request)}
-              // accept="image/png, image/jpeg"
-            />
-          </label>
-          <p className="pl-1">or drag and drop</p>
-        </div>
-        <p className="text-xs leading-5 text-gray-600">
+    <>
+      <div>
+        <Documents documents={documents} currentDocumentId={value} />
+        {/* {documents.map((doc) => (
+          <div key={doc.id}>{doc.id}</div>
+        ))} */}
+      </div>
+
+      <div className=" py-10">
+        <label
+          htmlFor={`${field}-file`}
+          //className="cursor-pointer inline-flex items-center gap-x-1.5 rounded-md bg-slate-100 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
+          className="cursor-pointer inline-flex items-cente rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white"
+        >
+          {value && (
+            <CheckCircleIcon className="-ml-0.5 h-5 w-5" aria-hidden="true" />
+          )}
+          Upload document
+        </label>
+
+        {/* <p className="text-xs leading-5 text-gray-600">
           {config.extensions.join(', ')} up to {config.maxFilesizeMB}MB
-        </p>
+        </p> */}
         <p className="mt-2 text-sm text-red-600" id="email-error">
           {errors[field]?.message}
         </p>
-        {value && value.key && (
+
+        <input {...register(field, { required: true })} type="hidden" />
+        <input
+          id={`${field}-file`}
+          name={`${field}-file`}
+          type="file"
+          className="sr-only"
+          multiple={false}
+          onChange={(e) => uploadDocument(e, request)}
+          // accept="image/png, image/jpeg"
+        />
+        {/* {value && (
           <div className="mt-2">
             <p className="text-xs leading-5 text-gray-600">
               File has been uploaded but not saved
             </p>
           </div>
-        )}
-        {value && (
-          <div className="mt-2">
-            <p className="text-xs leading-5 text-gray-600">
-              <a
-                href={`/document/${value.documentExternalId}/download`}
-                className="flex items-center gap-x-1"
-              >
-                <DocumentArrowDownIcon
-                  className="h-4 w-4 text-green-700"
-                  aria-hidden="true"
-                />
-                Download
-              </a>
-            </p>
-          </div>
-        )}
+        )} */}
       </div>
+
+      {/* <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
+        <div className="text-center">
+          <PhotoIcon
+            className="mx-auto h-12 w-12 text-gray-300"
+            aria-hidden="true"
+          />
+          <div className="mt-4 flex text-sm leading-6 text-gray-600">
+            <label
+              htmlFor={`${field}-file`}
+              className="relative cursor-pointer rounded-md bg-white font-semibold text-sky-700 focus-within:outline-none focus-within:ring-2 focus-within:ring-sky-700 focus-within:ring-offset-2 hover:text-sky-700"
+            >
+              <span>Upload a document</span>
+              <input {...register(field, { required: true })} type="hidden" />
+              <input
+                id={`${field}-file`}
+                name={`${field}-file`}
+                type="file"
+                className="sr-only"
+                multiple={false}
+                onChange={(e) => uploadDocument(e, request)}
+                // accept="image/png, image/jpeg"
+              />
+            </label>
+            <p className="pl-1">or drag and drop</p>
+          </div>
+          <p className="text-xs leading-5 text-gray-600">
+            {config.extensions.join(', ')} up to {config.maxFilesizeMB}MB
+          </p>
+          <p className="mt-2 text-sm text-red-600" id="email-error">
+            {errors[field]?.message}
+          </p>
+          {value && value.key && (
+            <div className="mt-2">
+              <p className="text-xs leading-5 text-gray-600">
+                File has been uploaded but not saved
+              </p>
+            </div>
+          )}
+        </div>
+      </div> */}
+    </>
+  );
+}
+
+function Documents({
+  documents,
+  currentDocumentId,
+}: {
+  documents: Props['documents'];
+  currentDocumentId: string;
+}) {
+  return (
+    <div className="">
+      <div className="-mx-4 mt-10 ring-1 ring-gray-300 sm:mx-0 sm:rounded-lg">
+        <table className="min-w-full divide-y divide-gray-300">
+          <thead>
+            <tr>
+              <th
+                scope="col"
+                className="relative py-3.5 pl-3 pr-4 sm:pr-6"
+              ></th>
+              <th
+                scope="col"
+                className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-4"
+              >
+                File
+              </th>
+              <th
+                scope="col"
+                className="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
+              >
+                Uploaded
+              </th>
+              <th
+                scope="col"
+                className="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
+              ></th>
+            </tr>
+          </thead>
+          <tbody>
+            {documents.map((document, documentIdx) => (
+              <tr key={document.id}>
+                <td
+                  className={classNames(
+                    documentIdx === 0 ? '' : 'border-t border-transparent',
+                    'relative py-4 pl-4 pr-3 text-sm sm:pl-6',
+                  )}
+                >
+                  <FiletypeIcon filename={document.key} />
+                  {documentIdx !== 0 ? (
+                    <div className="absolute -top-px left-6 right-0 h-px bg-gray-200" />
+                  ) : null}
+                </td>
+                <td
+                  className={classNames(
+                    documentIdx === 0 ? '' : 'border-t border-gray-200',
+                    'hidden px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
+                  )}
+                >
+                  <div className="font-medium text-gray-900">
+                    {currentDocumentId === document.id && (
+                      <div>
+                        <div className="inline-flex items-center rounded-full bg-green-50 -ml-2 mb-1 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                          Selected
+                        </div>
+                      </div>
+                    )}
+                    {document.name}
+                    {document.queries && <Queries queries={document.queries} />}
+                  </div>
+                </td>
+                <td
+                  className={classNames(
+                    documentIdx === 0 ? '' : 'border-t border-gray-200',
+                    'hidden px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
+                  )}
+                >
+                  <Datetime
+                    className="py-0.5 text-sm text-gray-500"
+                    dateTime={document.createdAt}
+                  />
+                </td>
+
+                <td
+                  className={classNames(
+                    documentIdx === 0 ? '' : 'border-t border-transparent',
+                    'relative py-3.5 pl-3 pr-4 sm:pr-6',
+                  )}
+                >
+                  <Settings />
+                  {documentIdx !== 0 ? (
+                    <div className="absolute -top-px left-0 right-6 h-px bg-gray-200" />
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Settings() {
+  return (
+    <div className="flex flex-none items-center gap-x-4">
+      <Menu as="div" className="relative flex-none">
+        <Menu.Button className="-m-2.5 block p-2.5 text-gray-500 hover:text-gray-900">
+          <span className="sr-only">Open options</span>
+          <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
+        </Menu.Button>
+        <Transition
+          as={Fragment}
+          enter="transition ease-out duration-100"
+          enterFrom="transform opacity-0 scale-95"
+          enterTo="transform opacity-100 scale-100"
+          leave="transition ease-in duration-75"
+          leaveFrom="transform opacity-100 scale-100"
+          leaveTo="transform opacity-0 scale-95"
+        >
+          <Menu.Items className="absolute right-0 z-10 mt-2 w-18 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+            <Menu.Item>
+              {({ active }) => (
+                <a
+                  href="#"
+                  className={classNames(
+                    active ? 'bg-gray-50' : '',
+                    'block px-3 py-1 text-sm leading-6 text-gray-900',
+                  )}
+                >
+                  Download
+                </a>
+              )}
+            </Menu.Item>
+            <Menu.Item>
+              {({ active }) => (
+                <a
+                  href="#"
+                  className={classNames(
+                    active ? 'bg-gray-50' : '',
+                    'block px-3 py-1 text-sm leading-6 text-gray-900',
+                  )}
+                >
+                  View
+                </a>
+              )}
+            </Menu.Item>
+            <Menu.Item>
+              {({ active }) => (
+                <a
+                  href="#"
+                  className={classNames(
+                    active ? 'bg-gray-50' : '',
+                    'block px-3 py-1 text-sm leading-6 text-gray-900',
+                  )}
+                >
+                  Delete
+                </a>
+              )}
+            </Menu.Item>
+          </Menu.Items>
+        </Transition>
+      </Menu>
+    </div>
+  );
+}
+
+function Queries({ queries }: { queries: DocumentQuery[] }) {
+  return (
+    <div className="mt-1 flex flex-col text-gray-500 sm:block text-xs">
+      {queries.map((query) => (
+        <div key={query.id}>
+          <span className="font-medium">{query.identifier}</span>:{' '}
+          {query.result?.content}
+        </div>
+      ))}
     </div>
   );
 }

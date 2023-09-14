@@ -2,17 +2,26 @@ import * as z from 'zod';
 import { updateData } from '@/controllers/request';
 import {
   create as createDocument,
-  updateWithExtractedData,
+  getAllByRequestId,
+  process as processDocument,
+  getStatus,
 } from '@/controllers/document';
+import { getAllByDocumentId } from '@/controllers/document-query';
 import BasicForm from './basic-form';
 import { requestTypes } from '@/lib/request-types';
-import type { Request, User, Audit, S3File, ClientSafeRequest } from '@/types';
+import type {
+  DocumentId,
+  Request,
+  User,
+  Audit,
+  S3File,
+  ClientSafeRequest,
+} from '@/types';
 import { clientSafe } from '@/lib/util';
 import { revalidatePath } from 'next/cache';
 import { extname } from 'path';
 import { getPresignedUrl } from '@/lib/aws';
 import { randomUUID } from 'node:crypto';
-import retry from 'async-retry';
 
 const bucketSchema = z.string();
 const filenameSchema = z.string().min(4).max(128);
@@ -27,6 +36,8 @@ type Props = {
 export default async function FormContainer({ request, user, audit }: Props) {
   const requestConfig = requestTypes[request.type];
   const formSchema = requestConfig.schema;
+
+  const documents = await getAllByRequestId(request.id);
 
   async function saveData(data: z.infer<typeof formSchema>) {
     'use server';
@@ -85,15 +96,27 @@ export default async function FormContainer({ request, user, audit }: Props) {
       orgId: audit.orgId,
       requestId: request.id,
     });
-    await retry(
-      async (bail) => {
-        return await updateWithExtractedData(doc.id);
-      },
-      { minTimeout: 700 },
-    );
+
+    // Do not await this.
+    processDocument(doc.id);
 
     return doc.id;
   }
+
+  async function getDocumentStatus(documentId: DocumentId) {
+    'use server';
+    return await getStatus(documentId);
+  }
+
+  const documentWithQueries = await Promise.all(
+    documents.map(async (document) => {
+      const queries = await getAllByDocumentId(document.id);
+      return {
+        ...document,
+        queries,
+      };
+    }),
+  );
 
   return (
     <BasicForm
@@ -102,7 +125,9 @@ export default async function FormContainer({ request, user, audit }: Props) {
       // @ts-ignore
       saveData={saveData}
       createDocument={createDoc}
+      getDocumentStatus={getDocumentStatus}
       getPresignedUploadUrl={getPresignedUploadUrl}
+      documents={documentWithQueries}
     />
   );
 }
