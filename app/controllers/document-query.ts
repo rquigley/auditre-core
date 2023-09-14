@@ -111,7 +111,7 @@ export async function askDefaultQuestions(document: Document) {
   - Articles of Incorporation: ARTICLES_OF_INCORPORATION
   - Company Bylaws (but NOT the Board Approval): BYLAWS
   - Trial Balance: TRIAL_BALANCE
-  - Chart of Accounts: CHART_OF_ACCOUNTS
+  - The complete listing, by category, of every account in the general ledger of a company: CHART_OF_ACCOUNTS
   - Stock Option Plan & Amendments: STOCK_PLAN
 
   For the following content, attempt to identify it as one of the listed types. Return the [identifier] e.g.
