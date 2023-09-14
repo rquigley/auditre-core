@@ -11,7 +11,7 @@ export default async function AI({ document }: { document: Document }) {
   async function saveData({ query }: { query: string }) {
     'use server';
 
-    const result = await askQuestion(document, query);
+    const result = await askQuestion({ document, question: query });
 
     revalidatePath(`/document/${document.id}`);
   }
