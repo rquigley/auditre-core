@@ -42,13 +42,8 @@ export default function RequestRow({
 
   return (
     <tr key={request.id} className="hover:bg-gray-100">
-      <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-sm font-medium sm:pr-0">
-        {/* <Link
-          href={`/request/${request.id}`}
-          className="text-sky-700 hover:text-sky-700"
-        >
-          View<span className="sr-only">, {request.name}</span>
-        </Link> */}
+      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
+        <StatusBadge status={request.status} />
       </td>
       <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
         <div className="text-gray-900 font-semibold">
@@ -61,14 +56,6 @@ export default function RequestRow({
         </div>
 
         <div className="text-gray-900">{request.description}</div>
-      </td>
-      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-        <StatusBadge status={request.status} />
-      </td>
-      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-        <div className="text-gray-900">
-          {request.dueDate ? dayjs(request.dueDate).format('MM/DD/YYYY') : null}
-        </div>
       </td>
 
       <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
