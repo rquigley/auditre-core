@@ -106,8 +106,9 @@ CREATE TABLE "document" (
   "name" text,
   "size" integer NOT NULL,
   "type" text,
-  "last_modified" timestamp NOT NULL,
+  "last_modified" timestamp NOT NULL, -- This is for the file, not the record
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
+  "is_processed" boolean NOT NULL DEFAULT FALSE,
   "extracted" text,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
@@ -117,10 +118,19 @@ CREATE TABLE "document_query" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "document_id" uuid REFERENCES "document" ("id"),
   "model" text,
+  "identifier" text,
   "query" text,
   "result" JSONB,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE "document_queue" (
+  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "document_id" uuid REFERENCES "document" ("id"),
+  "status" text NOT NULL,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "payload" text
 );
 
 CREATE TABLE "comment" (
