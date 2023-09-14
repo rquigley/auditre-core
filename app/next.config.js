@@ -6,22 +6,10 @@ const nextConfig = {
   },
   // The webpack config below is to allow pdfjs to work. It otherwise kills the server
   // saying canvas is not found.
-  webpack: (
-    config,
-    { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack },
-  ) => {
-    // Avoid AWS SDK Node.js require issue
-    if (isServer && nextRuntime === 'nodejs') {
-      config.plugins.push(
-        new webpack.IgnorePlugin({
-          resourceRegExp: /^(aws-crt|@aws-sdk\/signature-v4-crt)$/,
-        }),
-      );
-    }
-
+  webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      //
+
       canvas: false,
       //encoding: false,
     };
