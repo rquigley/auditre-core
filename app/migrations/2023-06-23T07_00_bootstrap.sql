@@ -121,6 +121,7 @@ CREATE TABLE "document_query" (
   "identifier" text,
   "query" text,
   "result" JSONB,
+  "usage" JSONB,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );

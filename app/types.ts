@@ -237,6 +237,11 @@ export type DocumentQueryResult = {
   role: 'assistant';
   content: string;
 };
+export type DocumentQueryUsage = {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+};
 
 export interface DocumentQueryTable {
   id: GeneratedAlways<string>;
@@ -245,6 +250,7 @@ export interface DocumentQueryTable {
   identifier: string;
   query: string;
   result: DocumentQueryResult | null;
+  usage: DocumentQueryUsage | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<Boolean, never, Boolean>;
 }
