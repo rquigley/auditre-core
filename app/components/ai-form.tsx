@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import z from 'zod';
 
 const schema = z.object({
-  query: z.string().max(1000),
+  query: z.string(),
   model: z.string(),
 });
 export default function AI({
