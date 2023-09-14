@@ -237,10 +237,11 @@ export type DocumentQueryResult = {
   role: 'assistant';
   content: string;
 };
+
 export type DocumentQueryUsage = {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
 };
 
 export interface DocumentQueryTable {

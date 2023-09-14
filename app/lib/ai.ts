@@ -53,9 +53,14 @@ async function call(
     model,
     messages,
   });
+  const usage = {
+    promptTokens: resp.usage?.prompt_tokens || 0,
+    completionTokens: resp.usage?.completion_tokens || 0,
+    totalTokens: resp.usage?.total_tokens || 0,
+  };
   return {
     message: resp.choices[0].message,
     model,
-    usage: resp.usage,
+    usage,
   };
 }
