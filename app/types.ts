@@ -13,6 +13,7 @@ export type OrgId = string;
 export type CommentId = string;
 export type DocumentId = string;
 export type DocumentQueryId = string;
+export type DocumentQueueId = string;
 export type UserId = string;
 export type AuditId = string;
 export type RequestId = string;
@@ -127,9 +128,9 @@ export type RequestData =
   | {
       value: string[];
     }
-  | {
-      value: S3File;
-    }
+  // | {
+  //     value: S3File;
+  //   }
   | {
       businessName: string;
       description: string;
@@ -196,6 +197,7 @@ export interface DocumentTable {
   size: number;
   type: string;
   extracted: string | null;
+  isProcessed: ColumnType<Boolean, never, Boolean>;
   lastModified: Date;
   orgId: OrgId;
   requestId: RequestId | null;
@@ -211,6 +213,24 @@ export type ClientSafeDocument = Omit<
   ClientSafeOmitTypes
 >;
 
+export type DocumentStatus =
+  | 'TO_EXTRACT'
+  | 'START_EXTRACT'
+  | 'TO_ASK_DEFAULT_QUESTIONS'
+  | 'START_ASK_DEFAULT_QUESTIONS'
+  | 'ERROR';
+export interface DocumentQueueTable {
+  id: GeneratedAlways<string>;
+  documentId: DocumentId;
+  status: DocumentStatus;
+  createdAt: ColumnType<Date, string | undefined, never>;
+  //lastModifiedAt: ColumnType<Date, Date | undefined, Date>;
+}
+
+export type DocumentQueueUpdate = Updateable<DocumentQueueTable>;
+export type NewDocumentQueue = Insertable<DocumentQueueTable>;
+export type DocumentQueue = Selectable<DocumentQueueTable>;
+
 export type OpenAIModel = 'gpt-3.5-turbo' | 'gpt-3.5-turbo-16k' | 'gpt-4';
 
 export type DocumentQueryResult = {
@@ -222,6 +242,7 @@ export interface DocumentQueryTable {
   id: GeneratedAlways<string>;
   documentId: DocumentId;
   model: OpenAIModel;
+  identifier: string;
   query: string;
   result: DocumentQueryResult | null;
   createdAt: ColumnType<Date, string | undefined, never>;
@@ -231,10 +252,6 @@ export interface DocumentQueryTable {
 export type DocumentQueryUpdate = Updateable<DocumentQueryTable>;
 export type NewDocumentQuery = Insertable<DocumentQueryTable>;
 export type DocumentQuery = Selectable<DocumentQueryTable>;
-export type ClientSafeDocumentQuery = Omit<
-  Selectable<DocumentQueryTable>,
-  ClientSafeOmitTypes
->;
 
 export type S3File = {
   documentId: string;
@@ -270,6 +287,7 @@ export interface Database extends Kysely<Database> {
   audit: AuditTable;
   comment: CommentTable;
   document: DocumentTable;
+  documentQueue: DocumentQueueTable;
   documentQuery: DocumentQueryTable;
   invitation: InvitationTable;
   org: OrgTable;

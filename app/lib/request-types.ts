@@ -1,6 +1,7 @@
 import * as schemas from '@/lib/form-schema';
 import type { ZodTypeAny } from 'zod';
 import type { RequestData } from '@/types';
+import { stripIndent } from 'common-tags';
 
 export type RequestTypeConfig = {
   name: string;
@@ -179,6 +180,46 @@ export const requestTypes = {
         extensions: ['PDF'],
         maxFilesizeMB: 10,
         input: 'fileupload',
+        qualifyingQuestion:
+          'Does this look like the Articles of Incorporation for an organization? Answer only with "yes" or "no"',
+        extractionQuestions: [
+          {
+            identifier: 'INCORPORATION_DATE',
+            question: `What date was the company incorporated? Return only the date in the format of YYYY-MM-DD. If you don't find this date, return "-"`,
+            // model: 'gpt-4',
+          },
+          {
+            identifier: 'NUMBER_OF_SHARES',
+            question:
+              'How many shares does the company have the ability to offer? Return only the number without commas. If there are no numbers in your answer, return "-"',
+            // model: 'gpt-4',
+          },
+          {
+            identifier: 'PAR_VALUE_PER_SHARE',
+            question:
+              'What is the par value per share? Return only the number without commas. If there are no numbers in your answer, return "-"',
+            // process: (val: string) => val,
+            // validate: (val: string) => true,
+            //model: 'gpt-4',
+          },
+          {
+            identifier: 'INCORPORATION_JURISDICTION',
+            question:
+              'What is the jurisdiction of incorporation? Answer only with the jurisdiction',
+            //model: 'gpt-4',
+          },
+          // {
+          //   identifier: 'TEST_QUESTION',
+          //   question: stripIndent`Answer the following questions. The questions are in the format "[IDENTIFIER]: [QUESTION]" with each one on a new line.
+          //     Respond in the format "[IDENTIFIER]: [ANSWER]" with each one on a new line. Only answer with the information requested.
+          //     INCORPORATION_DATE: What date was the company incorporated? Answer only with the date in the format of YYYY-MM-DD
+          //     NUMBER_OF_SHARES: How many shares does the company have the ability to offer? Answer only with the number
+          //     PAR_VALUE_PER_SHARE: What is the par value per share? Answer only with the number without commas
+          //     INCORPORATION_JURISDICTION: What is the jurisdiction of incorporation? Answer only with the jurisdiction
+          //     `,
+          //   model: 'gpt-4',
+          // },
+        ],
       },
     },
     completeOnSet: true,
