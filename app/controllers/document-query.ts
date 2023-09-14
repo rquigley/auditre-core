@@ -122,7 +122,7 @@ export async function askDefaultQuestions(document: Document) {
       askQuestion({
         document,
         question: obj.question,
-        model: obj.model,
+        //model: obj.model,
         identifier: obj.identifier,
       }),
     );
