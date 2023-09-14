@@ -7,6 +7,7 @@ import z from 'zod';
 
 const schema = z.object({
   query: z.string().max(1000),
+  model: z.string(),
 });
 export default function AI({
   saveData,
@@ -27,6 +28,7 @@ export default function AI({
 
     defaultValues: {
       query: '',
+      model: 'gpt-3.5-turbo',
     },
   });
 
@@ -43,7 +45,7 @@ export default function AI({
       onSubmit(getValues());
     }
   }
-
+  const models = ['gpt-3.5-turbo', 'gpt-3.5-turbo-16k', 'gpt-4'];
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-12">
@@ -60,7 +62,21 @@ export default function AI({
         />
       </div>
       <div className="mt-4 flex items-center justify-end gap-x-6">
-        <div className="flex-grow">{isSubmitting && <div>Working...</div>}</div>
+        <div className="flex-grow">
+          <div className="w-40">
+            <select
+              {...register('model')}
+              className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 bg-white text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-sky-600 sm:text-sm sm:leading-6"
+            >
+              <option disabled>AI Model</option>
+              {models.map((model) => (
+                <option key={model}>{model}</option>
+              ))}
+            </select>
+          </div>
+
+          {isSubmitting && <div>Working...</div>}
+        </div>
         {isDirty && (
           <button
             type="button"

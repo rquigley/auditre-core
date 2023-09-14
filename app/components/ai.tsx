@@ -1,17 +1,21 @@
-import type { DocumentQuery, Document } from '@/types';
-import { classNames } from '@/lib/util';
+import type { Document } from '@/types';
 import { getAllByDocumentId } from '@/controllers/document-query';
 import AIForm from './ai-form';
 import { askQuestion } from '@/controllers/document-query';
 import { revalidatePath } from 'next/cache';
+import { OpenAIModel } from '@/types';
 
 export default async function AI({ document }: { document: Document }) {
   const queries = await getAllByDocumentId(document.id);
 
-  async function saveData({ query }: { query: string }) {
+  async function saveData({ query, model }: { query: string; model: string }) {
     'use server';
-
-    const result = await askQuestion({ document, question: query });
+    const typedModel = model as OpenAIModel;
+    const result = await askQuestion({
+      document,
+      question: query,
+      model: typedModel,
+    });
 
     revalidatePath(`/document/${document.id}`);
   }
@@ -23,11 +27,15 @@ export default async function AI({ document }: { document: Document }) {
         {queries.map((query) => (
           <div key={query.id} className="flex flex-row">
             <div className="flex flex-col my-2">
-              <div className="text-xs text-gray-500 font-bold">
-                {query.query}
+              <div className="text-xs text-gray-500">
+                <span className="font-bold">{query.query}</span> ({query.model})
               </div>
               <div className="text-xs text-gray-500">
-                {query.result?.content}
+                <pre className="w-180 whitespace-normal">
+                  {query.result?.content}
+                </pre>
+                (Tokens: {query.usage?.totalTokens} prompt,{' '}
+                {query.usage?.completionTokens} completion)
               </div>
             </div>
           </div>
