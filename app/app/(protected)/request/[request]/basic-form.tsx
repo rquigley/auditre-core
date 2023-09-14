@@ -579,47 +579,6 @@ function FileUpload({
           </div>
         )} */}
       </div>
-
-      {/* <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
-        <div className="text-center">
-          <PhotoIcon
-            className="mx-auto h-12 w-12 text-gray-300"
-            aria-hidden="true"
-          />
-          <div className="mt-4 flex text-sm leading-6 text-gray-600">
-            <label
-              htmlFor={`${field}-file`}
-              className="relative cursor-pointer rounded-md bg-white font-semibold text-sky-700 focus-within:outline-none focus-within:ring-2 focus-within:ring-sky-700 focus-within:ring-offset-2 hover:text-sky-700"
-            >
-              <span>Upload a document</span>
-              <input {...register(field, { required: true })} type="hidden" />
-              <input
-                id={`${field}-file`}
-                name={`${field}-file`}
-                type="file"
-                className="sr-only"
-                multiple={false}
-                onChange={(e) => uploadDocument(e, request)}
-                // accept="image/png, image/jpeg"
-              />
-            </label>
-            <p className="pl-1">or drag and drop</p>
-          </div>
-          <p className="text-xs leading-5 text-gray-600">
-            {config.extensions.join(', ')} up to {config.maxFilesizeMB}MB
-          </p>
-          <p className="mt-2 text-sm text-red-600" id="email-error">
-            {errors[field]?.message}
-          </p>
-          {value && value.key && (
-            <div className="mt-2">
-              <p className="text-xs leading-5 text-gray-600">
-                File has been uploaded but not saved
-              </p>
-            </div>
-          )}
-        </div>
-      </div> */}
     </>
   );
 }
