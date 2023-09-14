@@ -36,6 +36,7 @@ import { Switch } from '@headlessui/react';
 import SaveNotice from '@/components/save-notice';
 import { fetchWithProgress } from '@/lib/fetch-with-progress';
 import FiletypeIcon from '@/components/FiletypeIcon';
+import Link from 'next/link';
 
 type Props = {
   request: ClientSafeRequest;
@@ -685,7 +686,9 @@ function Documents({
                         </div>
                       </div>
                     )}
-                    {document.name}
+                    <Link href={`/document/${document.id}`}>
+                      {document.name}
+                    </Link>
                     {document.queries && <Queries queries={document.queries} />}
                   </div>
                 </td>
