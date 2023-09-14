@@ -9,6 +9,7 @@ import type {
   Document,
   OpenAIModel,
 } from '@/types';
+import { stripIndent } from 'common-tags';
 import { askQuestion as OpenAIAskQuestion } from '@/lib/ai';
 import { requestTypes } from '@/lib/request-types';
 
@@ -106,17 +107,19 @@ export async function askDefaultQuestions(document: Document) {
   }
   const typeQuestion = await askQuestion({
     document,
-    question: `Here are a number of types of content along with an identifier string in the format of
-  [type of content]: [identifer]:
-  - Articles of Incorporation: ARTICLES_OF_INCORPORATION
-  - Company Bylaws (but NOT the Board Approval): BYLAWS
-  - Trial Balance: TRIAL_BALANCE
-  - The complete listing, by category, of every account in the general ledger of a company: CHART_OF_ACCOUNTS
-  - Stock Option Plan & Amendments: STOCK_PLAN
+    question: stripIndent`
+  You are an auditer, CPA, or lawyer. You are tasked with looking at some content and classifying it as a type of document. To help you, I'm providing types along with a description of each type of document
+    - [identifier]: [type of content along with a description]
+  
+  Here are the document types:
+    - ARTICLES_OF_INCORPORATION: Articles of Incorporation
+    - BYLAWS: Company Bylaws (but NOT the Board Approval)
+    - TRIAL_BALANCE: Trial Balance
+    - CHART_OF_ACCOUNTS: Chart of Accounts aka a complete listing, by category, of every account in the general ledger of a company. It can include an account name, identifier, account type, additional description, and sometimes the total balance for that account.
+    - STOCK_PLAN: Stock Option Plan & Amendments. This might include the issuance of stock to founders, employees, or investors.
 
-  For the following content, attempt to identify it as one of the listed types. Return the [identifier] e.g.
-  if the content can be identified as "Stock Option Plan & Amendments" return "STOCK_PLAN"
-  If it cannot be identifed with confidence, return UNKNOWN
+    For the following content to classify, attempt to identify it as one of the listed types. Return the [identifier] e.g. if the content can be identified as "Stock Option Plan & Amendments" return "STOCK_PLAN"
+    If it cannot be identifed with confidence, return UNKNOWN
   `,
     identifier: 'DOCUMENT_TYPE',
   });
