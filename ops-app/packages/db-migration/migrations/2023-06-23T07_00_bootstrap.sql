@@ -106,8 +106,9 @@ CREATE TABLE "document" (
   "name" text,
   "size" integer NOT NULL,
   "type" text,
-  "last_modified" timestamp NOT NULL,
+  "last_modified" timestamp NOT NULL, -- This is for the file, not the record
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
+  "is_processed" boolean NOT NULL DEFAULT FALSE,
   "extracted" text,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
@@ -117,10 +118,19 @@ CREATE TABLE "document_query" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "document_id" uuid REFERENCES "document" ("id"),
   "model" text,
+  "identifier" text,
   "query" text,
   "result" JSONB,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE "document_queue" (
+  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "document_id" uuid REFERENCES "document" ("id"),
+  "status" text NOT NULL,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "payload" text
 );
 
 CREATE TABLE "comment" (
@@ -157,7 +167,7 @@ CREATE TABLE "comment" (
 -- Data for Name: org; Type: TABLE DATA; Schema: public; Owner: ryan
 --
 
-INSERT INTO public.org (id, name, created_at, is_deleted) VALUES ('e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Test Org', '2023-09-06 14:47:53.173976', false);
+INSERT INTO public.org (id, name, created_at, is_deleted) VALUES ('c687b62a-f3ac-4506-875e-2b6eb2851355', 'Test Org', '2023-09-14 09:05:09.940849', false);
 
 
 --
@@ -176,32 +186,30 @@ INSERT INTO public.org (id, name, created_at, is_deleted) VALUES ('e7eabc44-1a63
 -- Data for Name: audit; Type: TABLE DATA; Schema: public; Owner: ryan
 --
 
-INSERT INTO public.audit (id, org_id, name, year, created_at, is_deleted) VALUES ('16e91efc-604e-4658-8a0e-6a0674579273', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Our First Audit', 2023, '2023-09-06 14:47:53.181495', false);
-INSERT INTO public.audit (id, org_id, name, year, created_at, is_deleted) VALUES ('a9f551a9-46e2-4421-a7b5-44ad675d6e3f', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Old Audit', 2022, '2023-09-06 14:47:53.213223', false);
+INSERT INTO public.audit (id, org_id, name, year, created_at, is_deleted) VALUES ('35d11c3a-1269-4657-9d04-740a2576c3e7', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Our First Audit', 2023, '2023-09-14 09:05:09.948681', false);
+INSERT INTO public.audit (id, org_id, name, year, created_at, is_deleted) VALUES ('28a43b01-6a41-4d6e-9ddb-9a99d42569cc', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Old Audit', 2022, '2023-09-14 09:05:10.020954', false);
 
 
 --
 -- Data for Name: request; Type: TABLE DATA; Schema: public; Owner: ryan
 --
 
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('7dd24c8b-5a1b-4fd9-953f-7aea76061984', '16e91efc-604e-4658-8a0e-6a0674579273', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Basic information', 'BASIC_INFO', NULL, 'requested', '{"description": "", "businessName": "", "businessModels": [], "chiefDecisionMaker": ""}', NULL, '2023-09-06 14:47:53.188118', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('7c468037-e091-49e4-8f76-7298e2cf4208', '16e91efc-604e-4658-8a0e-6a0674579273', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Audit information', 'AUDIT_INFO', NULL, 'requested', '{"year": "", "fiscalYearEnd": "", "hasBeenAudited": false}', NULL, '2023-09-06 14:47:53.194217', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('a6bd1b15-9149-4828-8bfd-aa11d4778934', '16e91efc-604e-4658-8a0e-6a0674579273', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Upload the Articles of Incorporation', 'ARTICLES_OF_INCORPORATION', NULL, 'requested', '{"value": ""}', NULL, '2023-09-06 14:47:53.196248', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('2ab7b339-48b5-4378-afdf-4d366787ff02', '16e91efc-604e-4658-8a0e-6a0674579273', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Upload the Trial Balance', 'TRIAL_BALANCE', NULL, 'requested', '{"value": ""}', NULL, '2023-09-06 14:47:53.200234', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('7d7f6fd5-4432-4209-a259-8c486f1c99e9', '16e91efc-604e-4658-8a0e-6a0674579273', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Upload the Chart of Accounts', 'CHART_OF_ACCOUNTS', NULL, 'requested', '{"value": ""}', NULL, '2023-09-06 14:47:53.207674', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('267a5eaa-cc1b-4fc4-996e-20f491227ca8', '16e91efc-604e-4658-8a0e-6a0674579273', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Multiple lines', 'MULTIPLE_BUSINESS_LINES', NULL, 'requested', '{"value": false}', NULL, '2023-09-06 14:47:53.208487', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('52c66c61-c314-4631-864f-532e814e56a5', '16e91efc-604e-4658-8a0e-6a0674579273', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Leases', 'LEASES', NULL, 'requested', '{"value": false}', NULL, '2023-09-06 14:47:53.210986', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('f8b79807-7902-49ab-82d1-7dd144b76aaf', '16e91efc-604e-4658-8a0e-6a0674579273', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Stock option plan and ammendments', 'STOCK_OPTIONS', NULL, 'requested', '{"value": false}', NULL, '2023-09-06 14:47:53.211083', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('5c76bae3-df3f-49bb-9f46-f0f582c931d0', '16e91efc-604e-4658-8a0e-6a0674579273', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Post-audit changes', 'MATERIAL_CHANGES_POST_AUDIT', NULL, 'requested', '{"value": false}', NULL, '2023-09-06 14:47:53.211612', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('82632e7a-8dda-42d6-93b3-ba9f8454a3ba', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Basic information', 'BASIC_INFO', NULL, 'requested', '{"description": "", "businessName": "", "businessModels": [], "chiefDecisionMaker": ""}', NULL, '2023-09-06 14:47:53.214423', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('58c29e48-4f38-48a1-abad-817e8d1cf16f', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Audit information', 'AUDIT_INFO', NULL, 'requested', '{"year": "", "fiscalYearEnd": "", "hasBeenAudited": false}', NULL, '2023-09-06 14:47:53.214462', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('807575ad-3bf5-402a-9cb2-1ec8e830f96a', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Upload the Articles of Incorporation', 'ARTICLES_OF_INCORPORATION', NULL, 'requested', '{"value": ""}', NULL, '2023-09-06 14:47:53.214527', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('e93ee536-e082-4c1c-88d5-fc242ce605cc', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Upload the Trial Balance', 'TRIAL_BALANCE', NULL, 'requested', '{"value": ""}', NULL, '2023-09-06 14:47:53.214603', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('15693386-54c8-47a5-8498-ad6f263967e8', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Upload the Chart of Accounts', 'CHART_OF_ACCOUNTS', NULL, 'requested', '{"value": ""}', NULL, '2023-09-06 14:47:53.21465', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('9bf88bf7-1712-46f0-8514-7811a4978088', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Multiple lines', 'MULTIPLE_BUSINESS_LINES', NULL, 'requested', '{"value": false}', NULL, '2023-09-06 14:47:53.214687', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('d845dc2c-b0d1-487e-8b44-1d32172403a7', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Leases', 'LEASES', NULL, 'requested', '{"value": false}', NULL, '2023-09-06 14:47:53.214783', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('cfcc8e1b-e9fe-432a-833e-080e5df0bee9', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Stock option plan and ammendments', 'STOCK_OPTIONS', NULL, 'requested', '{"value": false}', NULL, '2023-09-06 14:47:53.214846', false);
-INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('70947450-73ed-4515-b15b-b881d3e1ac98', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'Post-audit changes', 'MATERIAL_CHANGES_POST_AUDIT', NULL, 'requested', '{"value": false}', NULL, '2023-09-06 14:47:53.214906', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('0df8e43b-e7aa-4f5e-a182-504bc862536c', '35d11c3a-1269-4657-9d04-740a2576c3e7', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Basic information', 'BASIC_INFO', NULL, 'requested', '{"description": "", "businessName": "", "businessModels": [], "chiefDecisionMaker": ""}', NULL, '2023-09-14 09:05:09.953891', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('e8e620ca-2f61-40bb-b590-ed8383ac2826', '35d11c3a-1269-4657-9d04-740a2576c3e7', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Upload the Articles of Incorporation', 'ARTICLES_OF_INCORPORATION', NULL, 'requested', '{"value": ""}', NULL, '2023-09-14 09:05:09.97486', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('894d1e85-633a-49ef-b8cf-03ced0734095', '35d11c3a-1269-4657-9d04-740a2576c3e7', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Audit information', 'AUDIT_INFO', NULL, 'requested', '{"year": "", "fiscalYearEnd": "", "hasBeenAudited": false}', NULL, '2023-09-14 09:05:09.986344', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('829a668f-7d81-4c85-bae1-7123120fee4b', '35d11c3a-1269-4657-9d04-740a2576c3e7', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Upload the Trial Balance', 'TRIAL_BALANCE', NULL, 'requested', '{"value": ""}', NULL, '2023-09-14 09:05:09.988985', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('dd6a2045-e1b3-41e3-b1ed-310bdf591080', '35d11c3a-1269-4657-9d04-740a2576c3e7', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Upload the Chart of Accounts', 'CHART_OF_ACCOUNTS', NULL, 'requested', '{"value": ""}', NULL, '2023-09-14 09:05:09.992314', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('04f1f585-f08d-449c-82bf-c777eee79108', '35d11c3a-1269-4657-9d04-740a2576c3e7', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Stock option plan and ammendments', 'STOCK_OPTIONS', NULL, 'requested', '{"value": false}', NULL, '2023-09-14 09:05:09.999689', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('a59bdc79-b4c9-436c-94af-d27b90fdf88e', '35d11c3a-1269-4657-9d04-740a2576c3e7', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Leases', 'LEASES', NULL, 'requested', '{"value": false}', NULL, '2023-09-14 09:05:10.017015', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('5ecf40ee-bbee-4d4e-acce-75a5141da7ed', '35d11c3a-1269-4657-9d04-740a2576c3e7', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Post-audit changes', 'MATERIAL_CHANGES_POST_AUDIT', NULL, 'requested', '{"value": false}', NULL, '2023-09-14 09:05:10.017441', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('b0b02cb7-6dce-42f6-bf4f-8c799f884f87', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Basic information', 'BASIC_INFO', NULL, 'requested', '{"description": "", "businessName": "", "businessModels": [], "chiefDecisionMaker": ""}', NULL, '2023-09-14 09:05:10.022305', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('3debf549-ab7f-4343-a4f1-4239d1fb6267', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Audit information', 'AUDIT_INFO', NULL, 'requested', '{"year": "", "fiscalYearEnd": "", "hasBeenAudited": false}', NULL, '2023-09-14 09:05:10.022672', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('37ae9172-715d-44d8-bc48-8917c1cb2c6d', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Upload the Articles of Incorporation', 'ARTICLES_OF_INCORPORATION', NULL, 'requested', '{"value": ""}', NULL, '2023-09-14 09:05:10.022741', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('2e5617c0-b763-44d4-a0e3-a383027fee31', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Upload the Trial Balance', 'TRIAL_BALANCE', NULL, 'requested', '{"value": ""}', NULL, '2023-09-14 09:05:10.022977', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('745196d5-f1d9-4a93-9c2c-4b5d4ba000c5', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Upload the Chart of Accounts', 'CHART_OF_ACCOUNTS', NULL, 'requested', '{"value": ""}', NULL, '2023-09-14 09:05:10.023142', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('6bb8e9bb-21a6-4c5d-b67c-4252056492c3', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Leases', 'LEASES', NULL, 'requested', '{"value": false}', NULL, '2023-09-14 09:05:10.023356', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('99324104-c07f-4713-afa0-213a79953dc0', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Stock option plan and ammendments', 'STOCK_OPTIONS', NULL, 'requested', '{"value": false}', NULL, '2023-09-14 09:05:10.023511', false);
+INSERT INTO public.request (id, audit_id, org_id, name, type, description, status, data, due_date, created_at, is_deleted) VALUES ('959ece4d-22de-42df-bd74-c239c5b0454f', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'Post-audit changes', 'MATERIAL_CHANGES_POST_AUDIT', NULL, 'requested', '{"value": false}', NULL, '2023-09-14 09:05:10.023852', false);
 
 
 --
@@ -211,7 +219,19 @@ INSERT INTO public.request (id, audit_id, org_id, name, type, description, statu
 
 
 --
+-- Data for Name: comment; Type: TABLE DATA; Schema: public; Owner: ryan
+--
+
+
+
+--
 -- Data for Name: document_query; Type: TABLE DATA; Schema: public; Owner: ryan
+--
+
+
+
+--
+-- Data for Name: document_queue; Type: TABLE DATA; Schema: public; Owner: ryan
 --
 
 
@@ -226,48 +246,28 @@ INSERT INTO public.request (id, audit_id, org_id, name, type, description, statu
 -- Data for Name: invitation; Type: TABLE DATA; Schema: public; Owner: ryan
 --
 
-INSERT INTO public.invitation (id, org_id, email, created_at, expires_at, is_used) VALUES ('3b4b71b6-bac8-4f34-a220-5f75dbb37743', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'ryan@auditre.co', '2023-09-06 14:47:53.178052', '2023-09-13 14:47:53.178052', false);
-INSERT INTO public.invitation (id, org_id, email, created_at, expires_at, is_used) VALUES ('4ffeefcb-1634-43e4-8fd8-4f32aed2b7b3', 'e7eabc44-1a63-437a-8773-51132b7c8aaa', 'jason@auditre.co', '2023-09-06 14:47:53.180664', '2023-09-13 14:47:53.180664', false);
-
-
-
---
--- Data for Name: request_change; Type: TABLE DATA; Schema: public; Owner: ryan
---
-
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('c9b1a8f2-f10c-4d2b-affb-830b0b187f19', '7dd24c8b-5a1b-4fd9-953f-7aea76061984', '16e91efc-604e-4658-8a0e-6a0674579273', '{"type": "SYSTEM"}', '{"description": "", "businessName": "", "businessModels": [], "chiefDecisionMaker": ""}', '2023-09-06 14:47:53.193255');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('08879fbc-845d-4941-bd0d-578a7b54d0f0', '7c468037-e091-49e4-8f76-7298e2cf4208', '16e91efc-604e-4658-8a0e-6a0674579273', '{"type": "SYSTEM"}', '{"year": "", "fiscalYearEnd": "", "hasBeenAudited": false}', '2023-09-06 14:47:53.197864');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('9ec8a8b9-81fa-4e78-ae72-f1de8a1c4058', '2ab7b339-48b5-4378-afdf-4d366787ff02', '16e91efc-604e-4658-8a0e-6a0674579273', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-06 14:47:53.20731');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('12389ee3-d325-44bc-be8d-93a08c52dec9', 'a6bd1b15-9149-4828-8bfd-aa11d4778934', '16e91efc-604e-4658-8a0e-6a0674579273', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-06 14:47:53.208375');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('7c427df3-dbcd-4b44-833e-76aae0cd75d9', '7d7f6fd5-4432-4209-a259-8c486f1c99e9', '16e91efc-604e-4658-8a0e-6a0674579273', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-06 14:47:53.209949');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('0d0b50d4-24b3-4aa5-a7a9-48a3ff63520b', '267a5eaa-cc1b-4fc4-996e-20f491227ca8', '16e91efc-604e-4658-8a0e-6a0674579273', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-06 14:47:53.210254');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('df35eff7-ae03-4076-96ae-09ec3204f2ea', '52c66c61-c314-4631-864f-532e814e56a5', '16e91efc-604e-4658-8a0e-6a0674579273', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-06 14:47:53.212143');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('a9455c13-53da-42a0-9e9e-883afd02fe40', 'f8b79807-7902-49ab-82d1-7dd144b76aaf', '16e91efc-604e-4658-8a0e-6a0674579273', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-06 14:47:53.212467');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('dcd958c5-52d2-4c96-bb19-ece150464543', '5c76bae3-df3f-49bb-9f46-f0f582c931d0', '16e91efc-604e-4658-8a0e-6a0674579273', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-06 14:47:53.212594');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('90e7603b-8468-489a-90c4-ca8f4bf2bdd0', '82632e7a-8dda-42d6-93b3-ba9f8454a3ba', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', '{"type": "SYSTEM"}', '{"description": "", "businessName": "", "businessModels": [], "chiefDecisionMaker": ""}', '2023-09-06 14:47:53.215057');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('d4d547a8-d015-441f-a866-4d4b0319caeb', '58c29e48-4f38-48a1-abad-817e8d1cf16f', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', '{"type": "SYSTEM"}', '{"year": "", "fiscalYearEnd": "", "hasBeenAudited": false}', '2023-09-06 14:47:53.215212');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('3838aa75-70b5-45a1-b654-6ffbd4b930f7', 'e93ee536-e082-4c1c-88d5-fc242ce605cc', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-06 14:47:53.21537');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('ca7aeb87-5620-4268-9b09-72ce1fb22b54', '807575ad-3bf5-402a-9cb2-1ec8e830f96a', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-06 14:47:53.215492');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('e05de1ee-69d5-44b3-99af-c57cb3937e87', '9bf88bf7-1712-46f0-8514-7811a4978088', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-06 14:47:53.215626');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('9068cc43-472b-4abb-87f5-36f1cb8878db', '15693386-54c8-47a5-8498-ad6f263967e8', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-06 14:47:53.215758');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('c2f2dd61-8156-4896-92fd-5d9c5027f6e3', 'd845dc2c-b0d1-487e-8b44-1d32172403a7', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-06 14:47:53.215974');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('a36276db-4c09-4201-bf36-421f02da2ba7', 'cfcc8e1b-e9fe-432a-833e-080e5df0bee9', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-06 14:47:53.216079');
-INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('202617fd-a1d8-41db-8042-6d423e86315f', '70947450-73ed-4515-b15b-b881d3e1ac98', 'a9f551a9-46e2-4421-a7b5-44ad675d6e3f', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-06 14:47:53.216224');
+INSERT INTO public.invitation (id, org_id, email, created_at, expires_at, is_used) VALUES ('b49cd25e-9ae1-4515-a6b3-56a231272e6a', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'ryan@auditre.co', '2023-09-14 09:05:09.945219', '2023-09-21 09:05:09.945219', false);
+INSERT INTO public.invitation (id, org_id, email, created_at, expires_at, is_used) VALUES ('ad5aab4e-1370-4c53-8633-b8b2996fbf3c', 'c687b62a-f3ac-4506-875e-2b6eb2851355', 'jason@auditre.co', '2023-09-14 09:05:09.947587', '2023-09-21 09:05:09.947587', false);
 
 
 --
--- Data for Name: session; Type: TABLE DATA; Schema: public; Owner: ryan
---
+
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('5cafa29d-934c-42b4-9a36-b70d09a8c536', '0df8e43b-e7aa-4f5e-a182-504bc862536c', '35d11c3a-1269-4657-9d04-740a2576c3e7', '{"type": "SYSTEM"}', '{"description": "", "businessName": "", "businessModels": [], "chiefDecisionMaker": ""}', '2023-09-14 09:05:09.958768');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('ffdb5c8b-7846-4104-afe4-9d9d99264b99', 'e8e620ca-2f61-40bb-b590-ed8383ac2826', '35d11c3a-1269-4657-9d04-740a2576c3e7', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-14 09:05:09.985274');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('00a6a541-9ad0-4fb5-8c34-d85a1f862a10', '894d1e85-633a-49ef-b8cf-03ced0734095', '35d11c3a-1269-4657-9d04-740a2576c3e7', '{"type": "SYSTEM"}', '{"year": "", "fiscalYearEnd": "", "hasBeenAudited": false}', '2023-09-14 09:05:09.99127');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('6fb8f164-165a-4b2e-828a-139467d394d0', '829a668f-7d81-4c85-bae1-7123120fee4b', '35d11c3a-1269-4657-9d04-740a2576c3e7', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-14 09:05:09.992916');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('bb2beb6b-605f-4367-b70d-8777f6bdb0ba', 'dd6a2045-e1b3-41e3-b1ed-310bdf591080', '35d11c3a-1269-4657-9d04-740a2576c3e7', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-14 09:05:10.001527');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('1fbd7638-d911-415b-81a0-7005b08c5f42', '04f1f585-f08d-449c-82bf-c777eee79108', '35d11c3a-1269-4657-9d04-740a2576c3e7', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-14 09:05:10.002147');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('be07e5bc-77e1-4477-a781-eb92b403732b', '5ecf40ee-bbee-4d4e-acce-75a5141da7ed', '35d11c3a-1269-4657-9d04-740a2576c3e7', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-14 09:05:10.019748');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('f09d1f86-c724-438f-9da2-04e991639ff5', 'a59bdc79-b4c9-436c-94af-d27b90fdf88e', '35d11c3a-1269-4657-9d04-740a2576c3e7', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-14 09:05:10.019542');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('047f4e54-a746-4a2b-a0e2-917654c29b6d', 'b0b02cb7-6dce-42f6-bf4f-8c799f884f87', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', '{"type": "SYSTEM"}', '{"description": "", "businessName": "", "businessModels": [], "chiefDecisionMaker": ""}', '2023-09-14 09:05:10.023889');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('b52fd29a-6cdb-4cfc-b614-52c92176e31b', '3debf549-ab7f-4343-a4f1-4239d1fb6267', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', '{"type": "SYSTEM"}', '{"year": "", "fiscalYearEnd": "", "hasBeenAudited": false}', '2023-09-14 09:05:10.024166');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('5fe49b80-26d2-432c-ac46-1ae584810341', '37ae9172-715d-44d8-bc48-8917c1cb2c6d', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-14 09:05:10.024286');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('2de0e64f-a437-49dd-a028-837daadcef4c', '2e5617c0-b763-44d4-a0e3-a383027fee31', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-14 09:05:10.024495');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('b7a3839f-77c0-46e3-96d3-91d86a4c014b', '745196d5-f1d9-4a93-9c2c-4b5d4ba000c5', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', '{"type": "SYSTEM"}', '{"value": ""}', '2023-09-14 09:05:10.024604');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('36607479-44d9-4a63-8347-eb3bf012dbef', '959ece4d-22de-42df-bd74-c239c5b0454f', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-14 09:05:10.024881');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('f7362772-4617-42db-9981-58bb8694ac9f', '99324104-c07f-4713-afa0-213a79953dc0', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-14 09:05:10.024826');
+INSERT INTO public.request_change (id, request_id, audit_id, actor, new_data, created_at) VALUES ('bcbde970-49e3-4f65-a2bd-dc431459809e', '6bb8e9bb-21a6-4c5d-b67c-4252056492c3', '28a43b01-6a41-4d6e-9ddb-9a99d42569cc', '{"type": "SYSTEM"}', '{"value": false}', '2023-09-14 09:05:10.025122');
 
 
-
---
--- Data for Name: verification_token; Type: TABLE DATA; Schema: public; Owner: ryan
---
-
-
-
---
--- PostgreSQL database dump complete
---
 
