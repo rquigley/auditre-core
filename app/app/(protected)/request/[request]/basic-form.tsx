@@ -1,7 +1,6 @@
 'use client';
 import { useState, Fragment } from 'react';
 import { useForm } from 'react-hook-form';
-import { PhotoIcon } from '@heroicons/react/24/solid';
 import { Menu, Transition } from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
 import { useRouter } from 'next/navigation';
@@ -19,10 +18,7 @@ import {
   CheckboxInputConfig,
   TextareaInputConfig,
 } from '@/lib/request-types';
-import {
-  DocumentArrowDownIcon,
-  CheckCircleIcon,
-} from '@heroicons/react/24/outline';
+import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import type {
   RequestData,
   ClientSafeRequest,
@@ -37,6 +33,7 @@ import SaveNotice from '@/components/save-notice';
 import { fetchWithProgress } from '@/lib/fetch-with-progress';
 import FiletypeIcon from '@/components/FiletypeIcon';
 import Link from 'next/link';
+//import type { UseFormRegister, FieldErrors } from 'react-hook-form';
 
 type Props = {
   request: ClientSafeRequest;
@@ -476,17 +473,8 @@ function FileUpload({
   getValues: () => any;
   uploading: boolean;
   setUploading: (val: boolean) => void;
-  createDocument: (file: S3File) => Promise<string>;
-  //getPresignedUploadUrl: Pick<Props, 'getPresignedUploadUrl'>;
-  getPresignedUploadUrl: (opts: {
-    filename: string;
-    contentType: string;
-  }) => Promise<{
-    documentId: string;
-    url: string;
-    key: string;
-    bucket: string;
-  }>;
+  createDocument: Props['createDocument'];
+  getPresignedUploadUrl: Props['getPresignedUploadUrl'];
   documents: Props['documents'];
   isDirty: boolean;
 }) {
