@@ -4,17 +4,28 @@ const nextConfig = {
   experimental: {
     serverActions: true,
   },
-  // The webpack config below is to allow pdfjs to work. It otherwise kills the server
-  // saying canvas is not found.
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // https://github.com/aws/aws-sdk-js-v3/issues/5216
+    // https://github.com/aws/aws-sdk-js-v3/pull/5225
+    // https://github.com/aws/aws-sdk-js-v3/issues/5135
+    config.externals.push({
+      '@aws-sdk/signature-v4-multi-region':
+        'commonjs @aws-sdk/signature-v4-multi-region',
+    });
 
-      canvas: false,
-      //encoding: false,
-    };
     return config;
   },
+  // The webpack config below is to allow pdfjs to work. It otherwise kills the server
+  // saying canvas is not found.
+  // webpack: (config) => {
+  //   config.resolve.alias = {
+  //     ...config.resolve.alias,
+
+  //     canvas: false,
+  //     //encoding: false,
+  //   };
+  //   return config;
+  // },
 };
 
 module.exports = nextConfig;
