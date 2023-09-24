@@ -1,6 +1,6 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { usePathname, redirect } from 'next/navigation';
+import { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function Redirector({
   setPostAuthUrl,
@@ -8,19 +8,13 @@ export default function Redirector({
   setPostAuthUrl: (url: string) => Promise<void>;
 }) {
   const pathname = usePathname();
-  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    if (pathname) {
-      setPostAuthUrl(pathname).then(() => {
-        setRedirectUrl(pathname);
-        console.log('redirecting to login', pathname);
-      });
-    }
-  }, [pathname, setPostAuthUrl]);
+    setPostAuthUrl(pathname).then(() => {
+      router.replace(`/login`);
+    });
+  }, [pathname, setPostAuthUrl, router]);
 
-  if (redirectUrl) {
-    redirect('/login');
-  }
   return null;
 }
