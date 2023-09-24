@@ -36,6 +36,7 @@ export async function generate(auditId: AuditId) {
   const audit = await getAuditById(auditId);
   let requests = {};
   (await getAllByAuditId(auditId)).forEach((request: Request) => {
+    // @ts-ignore
     requests[request.type] = request.data;
   });
 
@@ -44,6 +45,7 @@ export async function generate(auditId: AuditId) {
   };
 
   console.log(audit, requests);
+  // @ts-ignore
   const title = `Financial Statement - ${requests.BASIC_INFO.businessName} - ${audit.year}`;
   console.log(title);
 
@@ -199,7 +201,7 @@ export async function generate(auditId: AuditId) {
     fs.writeFileSync(`${title}.docx`, buffer);
   });
 }
-
+// @ts-ignore
 function titlePage(data) {
   const yearEnd = dayjs(data.requests.AUDIT_INFO.fiscalYearEnd).format(
     'MMMM D, YYYY',
@@ -239,7 +241,7 @@ function tableOfContents() {
     ],
   };
 }
-
+// @ts-ignore
 function independentAuditorsReport(data) {
   const t1 = new TextRun({
     text: '[Auditor to add opinion]',
@@ -276,7 +278,25 @@ function independentAuditorsReport(data) {
     ],
   };
 }
-
+// @ts-ignore
+function getBalanceSheetData(data) {
+  return {
+    assets: {
+      currentAssets: {
+        cash: 25979389,
+        other: 873839,
+      },
+      totalCurrentAssets: 26853228,
+      property: 11164032,
+      intangible: 346801,
+      operatingLeaseRightOfUse: 3800326,
+      other: 162656,
+      total: 42327043,
+    },
+    liabilities: [],
+  };
+}
+// @ts-ignore
 function consolidatedFinancialStatements(data) {
   // const t1 = new TextRun({
   //   text: '[Auditor to add opinion]',
