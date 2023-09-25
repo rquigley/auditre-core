@@ -1,7 +1,6 @@
 // import 'server-only';
-
 import { db } from '@/lib/db';
-import type { UserUpdate, User, NewUser, UserId } from '@/types';
+import type { NewUser, OrgId, User, UserId, UserUpdate } from '@/types';
 import DataLoader from 'dataloader';
 
 export function create(user: NewUser): Promise<User> {
@@ -19,6 +18,15 @@ export function getById(id: UserId): Promise<User> {
     .where('isDeleted', '=', false)
     .selectAll()
     .executeTakeFirstOrThrow();
+}
+
+export function getAllByOrgId(orgId: OrgId): Promise<User[]> {
+  return db
+    .selectFrom('user')
+    .where('orgId', '=', orgId)
+    .where('isDeleted', '=', false)
+    .selectAll()
+    .execute();
 }
 
 export function getMultipleById(ids: UserId[]): Promise<User[]> {
