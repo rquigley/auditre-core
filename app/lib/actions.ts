@@ -4,7 +4,10 @@ import { cookies } from 'next/headers';
 
 const POST_AUTH_URL = 'post-login-url';
 export async function setPostAuthUrl(url: string) {
-  cookies().set(POST_AUTH_URL, url);
+  cookies().set(POST_AUTH_URL, url, {
+    httpOnly: true,
+    sameSite: 'strict',
+  });
 }
 
 export async function getPostAuthUrl() {
