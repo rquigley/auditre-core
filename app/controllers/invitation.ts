@@ -1,7 +1,11 @@
 // import 'server-only';
-
 import { db } from '@/lib/db';
-import type { InvitationUpdate, Invitation, NewInvitation } from '@/types';
+import type {
+  Invitation,
+  InvitationUpdate,
+  NewInvitation,
+  OrgId,
+} from '@/types';
 
 export function create(invitation: NewInvitation): Promise<Invitation> {
   return db
@@ -30,10 +34,23 @@ export function getByEmail(email: string): Promise<Invitation | undefined> {
     .executeTakeFirst();
 }
 
+export function getAllByOrgId(orgId: OrgId): Promise<Invitation[]> {
+  return db
+    .selectFrom('invitation')
+    .where('orgId', '=', orgId)
+    .where('isUsed', '=', false)
+    .selectAll()
+    .execute();
+}
+
 export async function update(id: string, updateWith: InvitationUpdate) {
   return db
     .updateTable('invitation')
     .set(updateWith)
     .where('id', '=', id)
     .execute();
+}
+
+export async function deleteInvitation(id: string) {
+  return db.deleteFrom('invitation').where('id', '=', id).execute();
 }
