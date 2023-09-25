@@ -4,5 +4,5 @@ module.exports = {
   singleQuote: true,
   // importOrder: ['^@/(.*)$', '^[./]'],
   // importOrderSeparation: true,
-  // importOrderSortSpecifiers: true,
+  importOrderSortSpecifiers: true,
 };
