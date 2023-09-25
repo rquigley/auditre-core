@@ -32,7 +32,8 @@ export default async function AI({ document }: { document: Document }) {
               </div>
               <div className="text-xs text-gray-500">
                 ({query.model}, Tokens: {query.usage?.totalTokens} prompt,{' '}
-                {query.usage?.completionTokens} completion)
+                {query.usage?.completionTokens} completion, Time:{' '}
+                {(query.usage?.timeMs / 1000).toFixed(2)}s)
                 <pre className="w-180 whitespace-normal">
                   {query.result?.content}
                 </pre>

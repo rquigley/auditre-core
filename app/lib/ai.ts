@@ -49,14 +49,17 @@ async function call(
     }
   }
 
+  const t0 = Date.now();
   const resp = await openai.chat.completions.create({
     model,
     messages,
   });
+  const t1 = Date.now();
   const usage = {
     promptTokens: resp.usage?.prompt_tokens || 0,
     completionTokens: resp.usage?.completion_tokens || 0,
     totalTokens: resp.usage?.total_tokens || 0,
+    timeMs: t1 - t0,
   };
   return {
     message: resp.choices[0].message,
