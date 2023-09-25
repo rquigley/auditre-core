@@ -242,6 +242,7 @@ export type DocumentQueryUsage = {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  timeMs: number;
 };
 
 export interface DocumentQueryTable {
@@ -250,8 +251,8 @@ export interface DocumentQueryTable {
   model: OpenAIModel;
   identifier: string;
   query: string;
-  result: DocumentQueryResult | null;
-  usage: DocumentQueryUsage | null;
+  result: DocumentQueryResult;
+  usage: DocumentQueryUsage;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<Boolean, never, Boolean>;
 }
