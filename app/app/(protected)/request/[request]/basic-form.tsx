@@ -626,10 +626,7 @@ function Documents({
         <table className="min-w-full divide-y divide-gray-300">
           <thead>
             <tr>
-              <th
-                scope="col"
-                className="relative py-3.5 pl-3 pr-4 sm:pr-6"
-              ></th>
+              <th scope="col" className="py-3.5 pl-3"></th>
               <th
                 scope="col"
                 className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-4"
@@ -638,13 +635,13 @@ function Documents({
               </th>
               <th
                 scope="col"
-                className="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
+                className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
               >
                 Uploaded
               </th>
               <th
                 scope="col"
-                className="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
+                className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
               ></th>
             </tr>
           </thead>
@@ -654,10 +651,11 @@ function Documents({
                 <td
                   className={classNames(
                     documentIdx === 0 ? '' : 'border-t border-transparent',
-                    'relative py-4 pl-4 pr-3 text-sm sm:pl-6',
+                    'relative py-4 pl-4',
                   )}
                 >
                   <FiletypeIcon filename={document.key} />
+
                   {documentIdx !== 0 ? (
                     <div className="absolute -top-px left-6 right-0 h-px bg-gray-200" />
                   ) : null}
@@ -665,7 +663,7 @@ function Documents({
                 <td
                   className={classNames(
                     documentIdx === 0 ? '' : 'border-t border-gray-200',
-                    'hidden px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
+                    'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
                   )}
                 >
                   <div className="font-medium text-gray-900">
@@ -685,7 +683,7 @@ function Documents({
                 <td
                   className={classNames(
                     documentIdx === 0 ? '' : 'border-t border-gray-200',
-                    'hidden px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
+                    'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
                   )}
                 >
                   <Datetime
@@ -697,7 +695,7 @@ function Documents({
                 <td
                   className={classNames(
                     documentIdx === 0 ? '' : 'border-t border-transparent',
-                    'relative py-3.5 pl-3 pr-4 sm:pr-6',
+                    'relative py-3.5 pr-4 sm:pr-6',
                   )}
                 >
                   <Settings />
@@ -716,7 +714,7 @@ function Documents({
 
 function Settings() {
   return (
-    <div className="flex flex-none items-center gap-x-4">
+    <div className="flex flex-none items-center gap-x-4 ">
       <Menu as="div" className="relative flex-none">
         <Menu.Button className="-m-2.5 block p-2.5 text-gray-500 hover:text-gray-900">
           <span className="sr-only">Open options</span>
@@ -780,7 +778,7 @@ function Settings() {
 
 function Queries({ queries }: { queries: DocumentQuery[] }) {
   return (
-    <div className="mt-1 flex flex-col text-slate-400 sm:block text-xs">
+    <div className="w-80 h-20 overflow-auto mt-1 flex-col text-slate-400 text-xs hidden sm:block">
       {queries.map((query) => (
         <div key={query.id}>
           <span className="">{humanCase(query.identifier)}</span>:{' '}
