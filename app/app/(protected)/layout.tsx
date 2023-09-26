@@ -31,9 +31,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={inter.className}>
       <body className="h-full bg-slate-100">
-        <Suspense fallback="">
-          <Navbar userName={user.name} userImage={user.image} />
-        </Suspense>
+        <Navbar userName={user.name} userImage={user.image} />
         <div className="py-10 lg:pl-80 px-4 sm:px-6 bg-slate-100">
           <div className="bg-white rounded-sm p-5">
             <Suspense fallback="">{children}</Suspense>
