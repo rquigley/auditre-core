@@ -1,9 +1,10 @@
 'use client';
+
 import Image from 'next/image';
 
 export default function FiletypeIcon({ filename }: { filename: string }) {
   const fileExt = filename.split('.').pop();
-  const dim = 64;
+  const dim = 32;
   switch (fileExt) {
     case 'pdf':
       return (
@@ -11,7 +12,8 @@ export default function FiletypeIcon({ filename }: { filename: string }) {
           src="/icons/filetype/pdf.png"
           width={dim}
           height={dim}
-          alt="PDF"
+          alt={fileExt}
+          className="min-w-fit"
         />
       );
 
@@ -22,7 +24,8 @@ export default function FiletypeIcon({ filename }: { filename: string }) {
           src="/icons/filetype/doc.png"
           width={dim}
           height={dim}
-          alt="PDF"
+          alt={fileExt}
+          className="min-w-fit"
         />
       );
     case 'xls':
@@ -32,7 +35,8 @@ export default function FiletypeIcon({ filename }: { filename: string }) {
           src="/icons/filetype/xls.png"
           width={dim}
           height={dim}
-          alt="PDF"
+          alt={fileExt}
+          className="min-w-fit"
         />
       );
     default:
