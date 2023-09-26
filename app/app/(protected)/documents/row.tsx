@@ -1,11 +1,11 @@
 'use client';
 
-import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
 import Datetime from '@/components/datetime';
 import type { ClientSafeDocument } from '@/types';
+import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 
-export default function RequestRow({
+export default function Row({
   document,
 }: {
   document: ClientSafeDocument & {
