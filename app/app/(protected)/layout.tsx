@@ -1,10 +1,10 @@
 import '../globals.css';
+import Redirector from './redirector';
+import Navbar from '@/components/navbar';
+import { getCurrentOrNone } from '@/controllers/session-user';
+import { setPostAuthUrl } from '@/lib/actions';
 import { Inter } from 'next/font/google';
 import { Suspense } from 'react';
-import { getCurrentOrNone } from '@/controllers/session-user';
-import Redirector from './redirector';
-import { setPostAuthUrl } from '@/lib/actions';
-import Navbar from '@/components/navbar';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
