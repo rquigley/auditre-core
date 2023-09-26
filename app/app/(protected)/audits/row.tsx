@@ -8,7 +8,7 @@ export default function Row({ audit }: { audit: AuditWithRequestCounts }) {
   const pctComplete = (audit.numCompletedRequests / audit.numRequests) * 100;
   return (
     <tr key={audit.id} className="hover:bg-gray-100">
-      <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
+      <td className="py-5 pl-4 sm:pl-2 pr-3 text-sm">
         <Link href={`/audit/${audit.id}`} className="flex items-center gap-x-1">
           <span className="text-gray-900 font-semibold">{audit.name}</span>
         </Link>
@@ -25,7 +25,7 @@ export default function Row({ audit }: { audit: AuditWithRequestCounts }) {
         />
       </td>
 
-      <td className="w-20 whitespace-nowrap items-center flex px-3 py-5 text-sm text-gray-500">
+      <td className="w-20 whitespace-nowrap items-center flex pr-4 sm:pr-2 py-5 text-sm text-gray-500">
         <div className="ml-auto mt-2 h-1 w-20 bg-gray-200">
           <div
             className="h-1 bg-sky-700"

@@ -18,7 +18,7 @@ export default async function AuditsPage() {
                 <tr>
                   <th
                     scope="col"
-                    className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+                    className="py-3.5 pl-4 sm:pl-2 pr-3 text-left text-sm font-semibold text-gray-900"
                   >
                     Name
                   </th>
@@ -37,7 +37,7 @@ export default async function AuditsPage() {
 
                   <th
                     scope="col"
-                    className="w-20 px-3 py-3.5 text-right text-sm font-semibold text-gray-900"
+                    className="w-20 pr-4 sm:pr-2 py-3.5 text-right text-sm font-semibold text-gray-900"
                   >
                     Progress
                   </th>

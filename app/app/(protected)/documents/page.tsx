@@ -41,7 +41,7 @@ export default async function DocumentsPage() {
                 <tr>
                   <th
                     scope="col"
-                    className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+                    className="py-3.5 pl-4 sm:pl-2 pr-3 text-left text-sm font-semibold text-gray-900"
                   >
                     Name
                   </th>
@@ -57,15 +57,10 @@ export default async function DocumentsPage() {
                   >
                     Last modified
                   </th> */}
+
                   <th
                     scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                  >
-                    Added by
-                  </th>
-                  <th
-                    scope="col"
-                    className=" py-3.5 text-right text-sm font-semibold text-gray-900"
+                    className="pr-4 sm:pr-2 py-3.5 text-right text-sm font-semibold text-gray-900"
                   >
                     Uploaded
                   </th>

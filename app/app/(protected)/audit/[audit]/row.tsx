@@ -38,10 +38,10 @@ export default function Row({ request }: { request: ClientSafeRequest }) {
 
   return (
     <tr key={request.id} className="hover:bg-gray-100">
-      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
+      <td className="whitespace-nowrap pl-4 sm:pl-2 py-5 text-sm text-gray-500">
         <StatusBadge status={request.status} />
       </td>
-      <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
+      <td className="py-5 text-sm">
         <div className="text-gray-900 font-semibold">
           <Link
             href={`/request/${request.id}`}
@@ -54,7 +54,7 @@ export default function Row({ request }: { request: ClientSafeRequest }) {
         <div className="text-gray-900">{request.description}</div>
       </td>
 
-      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
+      <td className="whitespace-nowrap pr-4 sm:pr-2 py-5 text-sm text-gray-500">
         {/* {request.owners
           ? request.owners.map((owner: string) => (
               <div key={owner}>{owner}</div>
