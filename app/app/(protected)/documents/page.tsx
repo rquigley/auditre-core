@@ -1,11 +1,11 @@
+import Row from './row';
+import Header from '@/components/header';
+import { getById as getAuditById } from '@/controllers/audit';
 import { getAllByOrgId } from '@/controllers/document';
 import { getById as getRequestById } from '@/controllers/request';
-import { getById as getAuditById } from '@/controllers/audit';
-import type { Document, ClientSafeDocument } from '@/types';
-import { clientSafe } from '@/lib/util';
-import RequestRow from './request-row';
 import { getCurrent } from '@/controllers/session-user';
-import Header from '@/components/header';
+import { clientSafe } from '@/lib/util';
+import type { ClientSafeDocument, Document } from '@/types';
 
 export default async function DocumentsPage() {
   const user = await getCurrent();
@@ -73,7 +73,7 @@ export default async function DocumentsPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {clientSafeDocuments.map((document) => (
-                  <RequestRow document={document} key={document.id} />
+                  <Row document={document} key={document.id} />
                 ))}
               </tbody>
             </table>
