@@ -1,10 +1,10 @@
-import { getById as getRequestById } from '@/controllers/request';
-import { getAllByOrgId } from '@/controllers/audit';
-import type { Document, ClientSafeDocument } from '@/types';
-import { clientSafe } from '@/lib/util';
 import Row from './row';
-import { getCurrent } from '@/controllers/session-user';
 import Header from '@/components/header';
+import { getAllByOrgId } from '@/controllers/audit';
+import { getById as getRequestById } from '@/controllers/request';
+import { getCurrent } from '@/controllers/session-user';
+import { clientSafe } from '@/lib/util';
+import type { ClientSafeDocument, Document } from '@/types';
 
 export default async function AuditsPage() {
   const user = await getCurrent();
@@ -21,7 +21,7 @@ export default async function AuditsPage() {
     // }
     // TODO: look into FF and dayjs date handling.
     // @ts-ignore
-    audit.createdAt = audit.createdAt.toString();
+    //audit.createdAt = audit.createdAt.toString();
   }
   // const clientSafeDocuments = clientSafe(documents) as ClientSafeDocument[] &
   //   {
@@ -59,15 +59,9 @@ export default async function AuditsPage() {
 
                   <th
                     scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    className="w-20 px-3 py-3.5 text-right text-sm font-semibold text-gray-900"
                   >
                     Progress
-                  </th>
-                  <th
-                    scope="col"
-                    className=" py-3.5 text-right text-sm font-semibold text-gray-900"
-                  >
-                    Settings
                   </th>
                 </tr>
               </thead>
