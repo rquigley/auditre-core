@@ -1,33 +1,11 @@
 import Row from './row';
 import Header from '@/components/header';
 import { getAllByOrgId } from '@/controllers/audit';
-import { getById as getRequestById } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
-import { clientSafe } from '@/lib/util';
-import type { ClientSafeDocument, Document } from '@/types';
 
 export default async function AuditsPage() {
   const user = await getCurrent();
   const audits = await getAllByOrgId(user.orgId);
-
-  for (const audit of audits) {
-    // if (document.requestId) {
-    //   const request = await getRequestById(document.requestId);
-    //   const audit = await getAuditById(request.auditId);
-    //   // @ts-ignore
-    //   document.auditName = audit.name;
-    //   // @ts-ignore
-    //   document.requestName = request.name;
-    // }
-    // TODO: look into FF and dayjs date handling.
-    // @ts-ignore
-    //audit.createdAt = audit.createdAt.toString();
-  }
-  // const clientSafeDocuments = clientSafe(documents) as ClientSafeDocument[] &
-  //   {
-  //     auditName?: string;
-  //     requestName?: string;
-  //   }[];
 
   return (
     <>
