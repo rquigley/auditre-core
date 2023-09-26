@@ -1,8 +1,8 @@
 'use client';
+
 import type { ClientSafeRequest } from '@/types';
-import dayjs from 'dayjs';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
@@ -33,11 +33,7 @@ function StatusBadge({ status }: { status: string }) {
   }
 }
 
-export default function RequestRow({
-  request,
-}: {
-  request: ClientSafeRequest;
-}) {
+export default function Row({ request }: { request: ClientSafeRequest }) {
   const router = useRouter();
 
   return (
@@ -59,7 +55,6 @@ export default function RequestRow({
       </td>
 
       <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-        TODO
         {/* {request.owners
           ? request.owners.map((owner: string) => (
               <div key={owner}>{owner}</div>

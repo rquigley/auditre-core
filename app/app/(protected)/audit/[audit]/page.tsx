@@ -1,11 +1,11 @@
-import { notFound } from 'next/navigation';
-import { getAllByAuditId } from '@/controllers/request';
-import { getById } from '@/controllers/audit';
-import type { ClientSafeRequest } from '@/types';
+import Row from './row';
 import Header from '@/components/header';
-import { clientSafe } from '@/lib/util';
+import { getById } from '@/controllers/audit';
+import { getAllByAuditId } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
-import RequestRow from './request-row';
+import { clientSafe } from '@/lib/util';
+import type { ClientSafeRequest } from '@/types';
+import { notFound } from 'next/navigation';
 
 export default async function AuditPage({
   params: { audit: id },
@@ -64,7 +64,7 @@ export default async function AuditPage({
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {clientSafeRequests.map((request) => (
-                  <RequestRow request={request} key={request.id} />
+                  <Row request={request} key={request.id} />
                 ))}
               </tbody>
             </table>
