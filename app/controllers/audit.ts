@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import type { AuditId, AuditUpdate, Audit, NewAudit, OrgId } from '@/types';
+import type { Audit, AuditId, AuditUpdate, NewAudit, OrgId } from '@/types';
 
 export function create(audit: NewAudit): Promise<Audit> {
   return db
@@ -18,12 +18,27 @@ export function getById(id: OrgId): Promise<Audit> {
     .executeTakeFirstOrThrow();
 }
 
-export function getAllByOrgId(orgId: OrgId): Promise<Audit[]> {
+export type AuditWithRequestCounts = Audit & {
+  numCompletedRequests: number;
+  numRequests: number;
+};
+export function getAllByOrgId(orgId: OrgId): Promise<AuditWithRequestCounts[]> {
   return db
     .selectFrom('audit')
-    .where('orgId', '=', orgId)
-    .where('isDeleted', '=', false)
-    .selectAll()
+    .innerJoin('request', 'audit.id', 'request.auditId')
+
+    .where('audit.orgId', '=', orgId)
+    .where('audit.isDeleted', '=', false)
+    .where('request.isDeleted', '=', false)
+    .groupBy('audit.id')
+    .selectAll('audit')
+    .select((eb) =>
+      eb.fn
+        .count<number>('request.id')
+        .filterWhere('request.status', '=', 'complete')
+        .as('numCompletedRequests'),
+    )
+    .select((eb) => eb.fn.count<number>('request.id').as('numRequests'))
     .execute();
 }
 
