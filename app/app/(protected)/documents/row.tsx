@@ -15,12 +15,12 @@ export default function Row({
 }) {
   return (
     <tr key={document.id} className="hover:bg-gray-100">
-      <td className="py-5 pl-4 pr-3 text-sm sm:pl-0">
+      <td className="py-5 pl-4 sm:pl-2 pr-3 text-sm">
         <Link href={`/document/${document.id}`}>
-          <span className="text-gray-900 font-semibold">{document.name}</span>
+          <span className="text-gray-900">{document.name}</span>
         </Link>
         <div>
-          <a
+          {/* <a
             href={`/document/${document.id}/download`}
             className="flex items-center gap-x-1"
           >
@@ -30,15 +30,15 @@ export default function Row({
             />
 
             <span className="text-gray-900">Download</span>
-          </a>
-          <a
+          </a> */}
+          {/* <a
             href="#"
             onClick={() => {
               navigator.clipboard.writeText(document.id);
             }}
           >
             Copy Id to clipboard
-          </a>
+          </a> */}
         </div>
       </td>
       <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
@@ -48,10 +48,7 @@ export default function Row({
         />
       </td>
 
-      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-        [Added by user]
-      </td>
-      <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm sm:pr-0">
+      <td className="relative whitespace-nowrap py-5 pr-4 sm:pr-2 text-right text-sm">
         {document.requestId && (
           <>
             <span className="text-xs">

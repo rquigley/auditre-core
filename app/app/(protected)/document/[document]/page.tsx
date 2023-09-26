@@ -1,10 +1,10 @@
-import { notFound } from 'next/navigation';
-import Header from '@/components/header';
-import { getCurrent } from '@/controllers/session-user';
-import { getById } from '@/controllers/document';
-import { UserCircleIcon } from '@heroicons/react/24/outline';
-import { Document } from '@/types';
 import AI from '@/components/ai';
+import Header from '@/components/header';
+import { getById } from '@/controllers/document';
+import { getCurrent } from '@/controllers/session-user';
+import { Document } from '@/types';
+import { UserCircleIcon } from '@heroicons/react/24/outline';
+import { notFound } from 'next/navigation';
 
 export default async function DocumentPage({
   params: { document: id },
