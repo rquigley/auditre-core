@@ -1,9 +1,11 @@
 'use client';
-import { useState, KeyboardEvent } from 'react';
-import { useForm } from 'react-hook-form';
-import { classNames } from '@/lib/util';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { KeyboardEvent, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import z from 'zod';
+
+import { classNames } from '@/lib/util';
 
 const schema = z.object({
   query: z.string(),
