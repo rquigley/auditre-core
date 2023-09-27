@@ -98,7 +98,7 @@ export default async function FormContainer({ request, user, audit }: Props) {
     });
 
     // Do not await this.
-    processDocument(doc.id);
+    //processDocument(doc.id);
 
     return doc.id;
   }

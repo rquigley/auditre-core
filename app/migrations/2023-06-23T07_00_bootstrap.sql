@@ -145,6 +145,16 @@ CREATE TABLE "comment" (
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
 
+CREATE TABLE "account_mapping" (
+  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "document_id" uuid REFERENCES "document" ("id"),
+  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
+  "account" text NOT NULL,
+  "type" text,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "is_deleted" boolean NOT NULL DEFAULT FALSE
+);
+
 -- CREATE TABLE "log" (
 --   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
 --   "org_id" uuid NOT NULL REFERENCES "org" ("id"),

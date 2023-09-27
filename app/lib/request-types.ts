@@ -3,6 +3,9 @@ import type { ZodTypeAny } from 'zod';
 import type { RequestData } from '@/types';
 import { stripIndent } from 'common-tags';
 
+import { balanceSheetTypes } from './consolidated-balance-sheet';
+const balanceSheetTypeKeys = Object.keys(balanceSheetTypes);
+
 export type RequestTypeConfig = {
   name: string;
   description: string;
@@ -180,8 +183,8 @@ export const requestTypes = {
         extensions: ['PDF'],
         maxFilesizeMB: 10,
         input: 'fileupload',
-        qualifyingQuestion:
-          'Does this look like the Articles of Incorporation for an organization? Answer only with "yes" or "no"',
+        // qualifyingQuestion:
+        //   'Does this look like the Articles of Incorporation for an organization? Answer only with "yes" or "no"',
         extractionQuestions: [
           {
             identifier: 'INCORPORATION_DATE',
@@ -236,6 +239,7 @@ export const requestTypes = {
         extensions: ['XLS', 'XLSX', 'CSV'],
         maxFilesizeMB: 10,
         input: 'fileupload',
+        extractionQuestions: [],
       },
     },
     completeOnSet: true,
@@ -252,6 +256,20 @@ export const requestTypes = {
         extensions: ['XLS', 'XLSX', 'CSV'],
         maxFilesizeMB: 10,
         input: 'fileupload',
+        extractionQuestions: [
+          {
+            identifier: 'ACCOUNT_MAPPING',
+            question: stripIndent`
+              You are an auditor and CPA. Classify Chart of Accounts accounts (in CSV format) into one of the following account types:
+              ${balanceSheetTypeKeys.join('\n')}
+
+              1. Extract the account names
+              2. Looking at the name of the account and any additional data in the row, attempt to classify it as one of the account types. If you can't classify the account, leave the type blank
+              3. Generate a comprehensive list of all account names and types as JSON using the format "[{name: [ACCOUNT_NAME 1], type: [ACCOUNT_TYPE 1]}, etc...]"
+              `,
+            model: 'gpt-3.5-turbo-16k',
+          },
+        ],
       },
     },
     completeOnSet: true,
