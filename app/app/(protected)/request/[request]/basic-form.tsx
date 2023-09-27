@@ -4,6 +4,12 @@ import FiletypeIcon from '@/components/FiletypeIcon';
 import Calendar from '@/components/calendar';
 import Datetime from '@/components/datetime';
 import SaveNotice from '@/components/save-notice';
+import {
+  deleteDocument,
+  processChartOfAccounts,
+  processDocument,
+  selectDocumentForRequest,
+} from '@/lib/actions';
 import { fetchWithProgress } from '@/lib/fetch-with-progress';
 import {
   BooleanInputConfig,
@@ -519,6 +525,8 @@ function FileUpload({
         type: file.type,
       };
       const docId = await createDocument(toSave);
+      // don't await this
+      processDocument(docId);
 
       setValue(field, docId, { shouldDirty: true, shouldTouch: true });
       console.log('SUCCESS', resp.ok, toSave);
@@ -537,7 +545,11 @@ function FileUpload({
   return (
     <>
       <div>
-        <Documents documents={documents} currentDocumentId={value} />
+        <Documents
+          documents={documents}
+          field={field}
+          currentDocumentId={value}
+        />
         {/* {documents.map((doc) => (
           <div key={doc.id}>{doc.id}</div>
         ))} */}
@@ -616,9 +628,11 @@ function FileUpload({
 function Documents({
   documents,
   currentDocumentId,
+  field,
 }: {
   documents: Props['documents'];
   currentDocumentId: string;
+  field: string;
 }) {
   return (
     <div className="">
@@ -698,7 +712,7 @@ function Documents({
                     'relative py-3.5 pr-4 sm:pr-6',
                   )}
                 >
-                  <Settings />
+                  <Settings documentId={document.id} field={field} />
                   {documentIdx !== 0 ? (
                     <div className="absolute -top-px left-0 right-6 h-px bg-gray-200" />
                   ) : null}
@@ -712,7 +726,13 @@ function Documents({
   );
 }
 
-function Settings() {
+function Settings({
+  documentId,
+  field,
+}: {
+  documentId: string;
+  field: string;
+}) {
   return (
     <div className="flex flex-none items-center gap-x-4 ">
       <Menu as="div" className="relative flex-none">
@@ -729,11 +749,46 @@ function Settings() {
           leaveFrom="transform opacity-100 scale-100"
           leaveTo="transform opacity-0 scale-95"
         >
-          <Menu.Items className="absolute right-0 z-10 mt-2 w-18 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+          <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
             <Menu.Item>
               {({ active }) => (
                 <a
                   href="#"
+                  onClick={async (e) => {
+                    processChartOfAccounts(documentId);
+                  }}
+                  className={classNames(
+                    active ? 'bg-gray-50' : '',
+                    'block px-3 py-1 text-sm leading-6 text-gray-900',
+                  )}
+                >
+                  CoA Process
+                </a>
+              )}
+            </Menu.Item>
+            <Menu.Item>
+              {({ active }) => (
+                <a
+                  href="#"
+                  onClick={async (e) => {
+                    processDocument(documentId);
+                  }}
+                  className={classNames(
+                    active ? 'bg-gray-50' : '',
+                    'block px-3 py-1 text-sm leading-6 text-gray-900',
+                  )}
+                >
+                  Re-process
+                </a>
+              )}
+            </Menu.Item>
+            <Menu.Item>
+              {({ active }) => (
+                <a
+                  href="#"
+                  onClick={async (e) => {
+                    await selectDocumentForRequest(documentId, field);
+                  }}
                   className={classNames(
                     active ? 'bg-gray-50' : '',
                     'block px-3 py-1 text-sm leading-6 text-gray-900',
@@ -760,6 +815,9 @@ function Settings() {
               {({ active }) => (
                 <a
                   href="#"
+                  onClick={async (e) => {
+                    await deleteDocument(documentId);
+                  }}
                   className={classNames(
                     active ? 'bg-gray-50' : '',
                     'block px-3 py-1 text-sm leading-6 text-gray-900',

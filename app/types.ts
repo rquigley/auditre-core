@@ -16,6 +16,7 @@ export type DocumentQueryId = string;
 export type DocumentQueueId = string;
 export type UserId = string;
 export type AuditId = string;
+export type AccountMappingId = string;
 export type RequestId = string;
 
 type ClientSafeOmitTypes = 'orgId';
@@ -285,14 +286,48 @@ export interface CommentTable {
 export type CommentUpdate = Updateable<CommentTable>;
 export type NewComment = Insertable<CommentTable>;
 export type Comment = Selectable<CommentTable>;
-export type ClientSafeComment = Omit<
-  Selectable<DocumentTable>,
-  ClientSafeOmitTypes
->;
+
+export type AccountType =
+  // Asset
+  | 'ASSET_CASH'
+  | 'ASSET_PREPAID_EXPENSES'
+  | 'ASSET_PROPERTY_AND_EQUIPMENT'
+  | 'ASSET_INTANGIBLE_ASSETS'
+  | 'ASSET_OPERATING_LEASE_RIGHT_OF_USE'
+  | 'ASSET_OTHER'
+
+  // Liability
+  | 'LIABILITY_ACCOUNTS_PAYABLE'
+  | 'LIABILITY_ACCRUED_EXPENSES'
+  | 'LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT'
+  | 'LIABILITY_ACCRUED_INTEREST'
+  | 'LIABILITY_CONVERTIBLE_NOTES_PAYABLE'
+  | 'LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION'
+
+  // Equity
+  | 'EQUITY_PREFERRED_STOCK'
+  | 'EQUITY_COMMON_STOCK'
+  | 'EQUITY_PAID_IN_CAPITAL'
+  | 'EQUITY_ACCUMULATED_DEFICIT';
+
+export interface AccountMappingTable {
+  id: GeneratedAlways<string>;
+  documentId: DocumentId;
+  orgId: OrgId;
+  account: string;
+  type: AccountType | null;
+  createdAt: ColumnType<Date, string | undefined, never>;
+  isDeleted: ColumnType<Boolean, never, Boolean>;
+}
+
+export type AccountMappingUpdate = Updateable<AccountMappingTable>;
+export type NewAccountMapping = Insertable<AccountMappingTable>;
+export type AccountMapping = Selectable<AccountMappingTable>;
 
 export interface Database extends Kysely<Database> {
   account: AccountTable;
   audit: AuditTable;
+  accountMapping: AccountMappingTable;
   comment: CommentTable;
   document: DocumentTable;
   documentQueue: DocumentQueueTable;

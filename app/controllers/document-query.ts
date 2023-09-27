@@ -1,17 +1,17 @@
+import { askQuestion as OpenAIAskQuestion } from '@/lib/ai';
 import { db } from '@/lib/db';
+import { requestTypes } from '@/lib/request-types';
 import type {
-  DocumentQueryUpdate,
+  Document,
+  DocumentId,
   DocumentQuery,
   DocumentQueryId,
   DocumentQueryResult,
+  DocumentQueryUpdate,
   NewDocumentQuery,
-  DocumentId,
-  Document,
   OpenAIModel,
 } from '@/types';
 import { stripIndent } from 'common-tags';
-import { askQuestion as OpenAIAskQuestion } from '@/lib/ai';
-import { requestTypes } from '@/lib/request-types';
 
 export function create(
   documentQuery: NewDocumentQuery,
@@ -32,18 +32,22 @@ export function getById(id: DocumentQueryId): Promise<DocumentQuery> {
     .executeTakeFirstOrThrow();
 }
 
-// export function getByDocumentIdAndIdentifier(
-//   documentId: DocumentId,
-//   identifier: string,
-// ): Promise<DocumentQuery> {
-//   return db
-//     .selectFrom('documentQuery')
-//     .where('documentId', '=', documentId)
-//     .where('identifier', '=', identifier)
-//     .where('isDeleted', '=', false)
-//     .selectAll()
-//     .executeTakeFirstOrThrow();
-// }
+export function getByDocumentIdAndIdentifier(
+  documentId: DocumentId,
+  identifier: string,
+): Promise<DocumentQuery | undefined> {
+  return (
+    db
+      .selectFrom('documentQuery')
+      .where('documentId', '=', documentId)
+      .where('identifier', '=', identifier)
+      .where('isDeleted', '=', false)
+      // We only want the most recent classification
+      .orderBy('createdAt', 'desc')
+      .selectAll()
+      .executeTakeFirst()
+  );
+}
 
 export function getAllByDocumentId(
   documentId: DocumentId,
@@ -123,19 +127,29 @@ export async function askDefaultQuestions(document: Document) {
   `,
     identifier: 'DOCUMENT_TYPE',
   });
+  let questions = [];
   if (typeQuestion.result?.content === 'ARTICLES_OF_INCORPORATION') {
-    const questions =
-      requestTypes.ARTICLES_OF_INCORPORATION.form.value.extractionQuestions;
-    const aiPromises = questions.map((obj) =>
-      askQuestion({
-        document,
-        question: obj.question,
-        // @ts-ignore - we don't yet have one defined and it's not typed
-        model: obj.model ? obj.model : undefined,
-        identifier: obj.identifier,
-      }),
+    questions.push(
+      ...requestTypes.ARTICLES_OF_INCORPORATION.form.value.extractionQuestions,
     );
-    await Promise.allSettled(aiPromises);
-    await Promise.all(aiPromises);
+  } else if (typeQuestion.result?.content === 'CHART_OF_ACCOUNTS') {
+    questions.push(
+      ...requestTypes.CHART_OF_ACCOUNTS.form.value.extractionQuestions,
+    );
+  } else if (typeQuestion.result?.content === 'TRIAL_BALANCE') {
+    questions.push(
+      ...requestTypes.TRIAL_BALANCE.form.value.extractionQuestions,
+    );
   }
+  const aiPromises = questions.map((obj) =>
+    askQuestion({
+      document,
+      question: obj.question,
+      // @ts-ignore - we don't yet have one defined and it's not typed
+      model: obj.model ? obj.model : undefined,
+      identifier: obj.identifier,
+    }),
+  );
+  await Promise.allSettled(aiPromises);
+  await Promise.all(aiPromises);
 }
