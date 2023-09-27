@@ -4,7 +4,6 @@ module.exports = {
   singleQuote: true,
   importOrder: [
     '<BUILTIN_MODULES>',
-    '',
     '<THIRD_PARTY_MODULES>',
     '',
     '^@/(.*)$',
