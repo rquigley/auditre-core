@@ -1,5 +1,8 @@
 // import 'server-only';
-import { addJob, completeJob, getAllByDocumentId } from './document-queue';
+import retry from 'async-retry';
+import { inferSchema, initParser } from 'udsv';
+import { string } from 'zod';
+
 import { create as createMapping } from '@/controllers/account-mapping';
 import {
   askDefaultQuestions,
@@ -7,6 +10,8 @@ import {
 } from '@/controllers/document-query';
 import { getExtractedContent } from '@/lib/aws';
 import { db } from '@/lib/db';
+import { addJob, completeJob, getAllByDocumentId } from './document-queue';
+
 import type {
   AccountType,
   AuditId,
@@ -17,7 +22,6 @@ import type {
   OrgId,
   RequestId,
 } from '@/types';
-import retry from 'async-retry';
 
 export function create(document: NewDocument): Promise<Document> {
   return db
@@ -140,7 +144,10 @@ export async function getType(id: DocumentId): Promise<DocumentType> {
   return typeQuery.result.content as unknown as DocumentType;
 }
 
-export async function extractChartOfAccountsMapping(document: Document) {
+export async function extractChartOfAccountsMapping(
+  document: Document,
+  auditId: AuditId,
+) {
   if (!document.extracted) {
     return;
   }
@@ -151,7 +158,21 @@ export async function extractChartOfAccountsMapping(document: Document) {
   if (!mappingQuery || !mappingQuery.result) {
     return;
   }
-  console.log(mappingQuery.result.content);
+
+  // const accountNameColumn = await getByDocumentIdAndIdentifier(
+  //   document.id,
+  //   'ACCOUNT_MAPPING',
+  // );
+  // if (!mappingQuery || !mappingQuery.result) {
+  //   return;
+  // }
+
+  // let schema = inferSchema(document.extracted);
+  // let parser = initParser(schema);
+
+  // let stringArrs = parser.stringArrs(document.extracted);
+
+  // console.log(stringArrs);
 
   let mapping;
   try {
@@ -164,7 +185,7 @@ export async function extractChartOfAccountsMapping(document: Document) {
       throw new Error('Invalid JSON');
     }
   }
-  if (!mapping) {
+  if (!mapping || !mapping.length) {
     return;
   }
 
@@ -172,8 +193,9 @@ export async function extractChartOfAccountsMapping(document: Document) {
     return createMapping({
       documentId: document.id,
       orgId: document.orgId,
-      account: name,
-      type,
+      auditId: auditId,
+      accountId: name,
+      accountMappedTo: type,
     });
   });
 

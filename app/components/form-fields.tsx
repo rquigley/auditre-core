@@ -28,7 +28,13 @@ import {
 import { classNames } from '@/lib/util';
 
 import type { Props as BasicFormProps } from '@/app/(protected)/request/[request]/basic-form';
-import type { ClientSafeRequest, DocumentQuery, S3File } from '@/types';
+import type {
+  AuditId,
+  ClientSafeRequest,
+  DocumentId,
+  DocumentQuery,
+  S3File,
+} from '@/types';
 
 type FormFieldProps = {
   field: string;
@@ -336,6 +342,7 @@ export function FileUpload({
           documents={documents}
           field={field}
           currentDocumentId={value}
+          auditId={request.auditId}
         />
         {/* {documents.map((doc) => (
           <div key={doc.id}>{doc.id}</div>
@@ -415,10 +422,12 @@ export function FileUpload({
 function Documents({
   documents,
   currentDocumentId,
+  auditId,
   field,
 }: {
   documents: BasicFormProps['documents'];
-  currentDocumentId: string;
+  currentDocumentId: DocumentId;
+  auditId: AuditId;
   field: string;
 }) {
   return (
@@ -499,7 +508,11 @@ function Documents({
                     'relative py-3.5 pr-4 sm:pr-6',
                   )}
                 >
-                  <Settings documentId={document.id} field={field} />
+                  <Settings
+                    documentId={document.id}
+                    auditId={auditId}
+                    field={field}
+                  />
                   {documentIdx !== 0 ? (
                     <div className="absolute -top-px left-0 right-6 h-px bg-gray-200" />
                   ) : null}
@@ -515,9 +528,11 @@ function Documents({
 
 function Settings({
   documentId,
+  auditId,
   field,
 }: {
-  documentId: string;
+  documentId: DocumentId;
+  auditId: AuditId;
   field: string;
 }) {
   return (
@@ -542,7 +557,7 @@ function Settings({
                 <a
                   href="#"
                   onClick={async (e) => {
-                    processChartOfAccounts(documentId);
+                    processChartOfAccounts(documentId, auditId);
                   }}
                   className={classNames(
                     active ? 'bg-gray-50' : '',

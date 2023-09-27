@@ -147,13 +147,15 @@ CREATE TABLE "comment" (
 
 CREATE TABLE "account_mapping" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  "document_id" uuid REFERENCES "document" ("id"),
+  "document_id" uuid REFERENCES "document" ("id"), -- only present if coming from a document
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "account" text NOT NULL,
-  "type" text,
+  "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
+  "account_id" text NOT NULL,
+  "account_mapped_to" text,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
+ALTER TABLE "account_mapping" ADD CONSTRAINT uniq_account_id_ UNIQUE (account_id, audit_id, document_id);
 
 -- CREATE TABLE "log" (
 --   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

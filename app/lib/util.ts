@@ -63,3 +63,8 @@ export function clientSafe(
 ): AnyObject[] | AnyObject {
   return omit(obj, keys);
 }
+
+export function head(str: string, numLines: number): string {
+  const lines = str.split('\n');
+  return lines.slice(0, numLines).join('\n');
+}

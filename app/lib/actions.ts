@@ -1,12 +1,13 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+
 import {
+  deleteDocument as _deleteDocument,
   extractChartOfAccountsMapping,
   getById as getDocumentById,
   getType as getDocumentType,
-} from '@/controllers/document';
-import {
-  deleteDocument as _deleteDocument,
   process as processDocument,
 } from '@/controllers/document';
 import {
@@ -14,9 +15,8 @@ import {
   update as updateRequest,
 } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
-import type { DocumentId } from '@/types';
-import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
+
+import type { AuditId, DocumentId } from '@/types';
 
 export { processDocument };
 
@@ -51,7 +51,10 @@ export async function deleteDocument(id: DocumentId) {
   revalidatePath('/');
 }
 
-export async function processChartOfAccounts(id: DocumentId): Promise<void> {
+export async function processChartOfAccounts(
+  id: DocumentId,
+  auditId: AuditId,
+): Promise<void> {
   const user = await getCurrent();
   const document = await getDocumentById(id);
   if (document.orgId !== user.orgId) {
@@ -62,7 +65,7 @@ export async function processChartOfAccounts(id: DocumentId): Promise<void> {
   if (docType !== 'CHART_OF_ACCOUNTS') {
     throw new Error(`Invalid document type for Chart of Accounts: ${docType}`);
   }
-  await extractChartOfAccountsMapping(document);
+  await extractChartOfAccountsMapping(document, auditId);
 }
 
 export async function selectDocumentForRequest(
