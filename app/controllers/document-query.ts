@@ -1,6 +1,9 @@
+import { stripIndent } from 'common-tags';
+
 import { askQuestion as OpenAIAskQuestion } from '@/lib/ai';
 import { db } from '@/lib/db';
 import { requestTypes } from '@/lib/request-types';
+
 import type {
   Document,
   DocumentId,
@@ -11,7 +14,6 @@ import type {
   NewDocumentQuery,
   OpenAIModel,
 } from '@/types';
-import { stripIndent } from 'common-tags';
 
 export function create(
   documentQuery: NewDocumentQuery,
@@ -56,6 +58,7 @@ export function getAllByDocumentId(
     .selectFrom('documentQuery')
     .where('documentId', '=', documentId)
     .where('isDeleted', '=', false)
+    .orderBy('createdAt', 'asc')
     .selectAll()
     .execute();
 }
@@ -73,14 +76,21 @@ export async function askQuestion({
   question,
   identifier,
   model,
+  preProcess,
 }: {
   document: Document;
   question: string;
   identifier?: string;
   model?: OpenAIModel;
+  preProcess?: (content: string) => string;
 }): Promise<DocumentQuery> {
   if (!document.extracted) {
     throw new Error('Document not extracted yet');
+  }
+
+  let content = document.extracted;
+  if (preProcess) {
+    content = preProcess(content);
   }
 
   const {
@@ -89,7 +99,7 @@ export async function askQuestion({
     usage,
   } = await OpenAIAskQuestion({
     question,
-    content: document.extracted,
+    content,
     model,
   });
   if (!identifier) {
@@ -145,9 +155,11 @@ export async function askDefaultQuestions(document: Document) {
     askQuestion({
       document,
       question: obj.question,
-      // @ts-ignore - we don't yet have one defined and it's not typed
+      // @ts-ignore
       model: obj.model ? obj.model : undefined,
       identifier: obj.identifier,
+      // @ts-ignore
+      preProcess: obj.preProcess ? obj.preProcess : undefined,
     }),
   );
   await Promise.allSettled(aiPromises);

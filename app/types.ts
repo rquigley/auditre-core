@@ -1,13 +1,13 @@
+import type { RequestType } from './lib/request-types';
 import type {
-  Kysely,
+  ColumnType,
   Generated,
   GeneratedAlways,
-  ColumnType,
-  Selectable,
   Insertable,
+  Kysely,
+  Selectable,
   Updateable,
 } from 'kysely';
-import type { RequestType } from './lib/request-types';
 
 export type OrgId = string;
 export type CommentId = string;
@@ -312,10 +312,11 @@ export type AccountType =
 
 export interface AccountMappingTable {
   id: GeneratedAlways<string>;
-  documentId: DocumentId;
+  documentId: DocumentId | null;
   orgId: OrgId;
-  account: string;
-  type: AccountType | null;
+  auditId: AuditId;
+  accountId: string;
+  accountMappedTo: AccountType | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<Boolean, never, Boolean>;
 }

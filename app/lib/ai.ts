@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
+
 import { OpenAIModel } from '@/types';
 
 const openaiConfig = z.string().min(3).max(255);

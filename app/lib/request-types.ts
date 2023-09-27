@@ -1,9 +1,12 @@
-import * as schemas from '@/lib/form-schema';
-import type { ZodTypeAny } from 'zod';
-import type { RequestData } from '@/types';
 import { stripIndent } from 'common-tags';
 
+import * as schemas from '@/lib/form-schema';
+import { head } from '@/lib/util';
 import { balanceSheetTypes } from './consolidated-balance-sheet';
+
+import type { RequestData } from '@/types';
+import type { ZodTypeAny } from 'zod';
+
 const balanceSheetTypeKeys = Object.keys(balanceSheetTypes);
 
 export type RequestTypeConfig = {
@@ -257,6 +260,16 @@ export const requestTypes = {
         maxFilesizeMB: 10,
         input: 'fileupload',
         extractionQuestions: [
+          {
+            identifier: 'ACCOUNT_NAME_COLUMN',
+            preProcess: (val: string) => head(val, 10),
+            question: stripIndent`
+              In this CSV content which column number contains account names? Think carefully before answering. 
+              We don't want account types or any other. Return JSON with "columnName" and "columnNum".
+              If you are unsure return "-" for values
+              `,
+            //model: 'gpt-4',
+          },
           {
             identifier: 'ACCOUNT_MAPPING',
             question: stripIndent`
