@@ -1,12 +1,15 @@
+import { writeFile } from 'node:fs/promises';
+import { extname } from 'path';
+
 import {
-  S3Client,
-  PutObjectCommand,
   GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
 } from '@aws-sdk/client-s3';
-import { fromSSO, fromContainerMetadata } from '@aws-sdk/credential-providers';
+import { fromContainerMetadata, fromSSO } from '@aws-sdk/credential-providers';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { z } from 'zod';
-import { writeFile } from 'node:fs/promises';
+
 import type { Readable } from 'stream';
 
 const region = 'us-east-2';
@@ -39,7 +42,13 @@ export async function getExtractedContent({
   bucket: string;
   key: string;
 }) {
-  const extractedKey = `${key}.extracted`;
+  let extractedKey;
+  // The extractor doesn't run on CSVs, so we need to use the original key
+  if (extname(key) === '.csv') {
+    extractedKey = key;
+  } else {
+    extractedKey = `${key}.extracted`;
+  }
   const client = new S3Client({
     credentials: await getCredentials(),
     region,
