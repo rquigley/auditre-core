@@ -1,8 +1,16 @@
 /** @type {import("prettier").Options} */
 module.exports = {
-  plugins: ['@trivago/prettier-plugin-sort-imports'],
+  plugins: ['@ianvs/prettier-plugin-sort-imports'],
   singleQuote: true,
-  // importOrder: ['^@/(.*)$', '^[./]'],
-  // importOrderSeparation: true,
-  importOrderSortSpecifiers: true,
+  importOrder: [
+    '<BUILTIN_MODULES>',
+    '',
+    '<THIRD_PARTY_MODULES>',
+    '',
+    '^@/(.*)$',
+    '^[./]',
+    '',
+    '<TYPES>',
+  ],
+  importOrderTypeScriptVersion: '5.0.0',
 };
