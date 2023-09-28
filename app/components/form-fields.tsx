@@ -27,7 +27,10 @@ import {
 } from '@/lib/request-types';
 import { classNames } from '@/lib/util';
 
-import type { Props as BasicFormProps } from '@/app/(protected)/request/[request]/basic-form';
+import type {
+  Props as BasicFormProps,
+  FormState,
+} from '@/app/(protected)/request/[request]/basic-form';
 import type {
   AuditId,
   ClientSafeRequest,
@@ -261,34 +264,28 @@ export function FileUpload({
   errors,
   config,
   request,
-  uploading,
-  setUploading,
+  formState,
+  setFormState,
   createDocument,
   getPresignedUploadUrl,
   documents,
-  isDirty,
 }: FormFieldProps & {
   config: FileUploadInputConfig;
   request: ClientSafeRequest;
   setValue: (key: string, val: any, opts: any) => void;
   getValues: () => any;
-  uploading: boolean;
-  setUploading: (val: boolean) => void;
+  formState: FormState;
+  setFormState: (val: FormState) => void;
   createDocument: BasicFormProps['createDocument'];
   getPresignedUploadUrl: BasicFormProps['getPresignedUploadUrl'];
   documents: BasicFormProps['documents'];
   isDirty: boolean;
 }) {
-  const [hasUploaded, setHasUploaded] = useState(false);
-
   async function uploadDocument(
     e: React.ChangeEvent<HTMLInputElement>,
     request: ClientSafeRequest,
   ) {
-    setUploading(true);
-    setHasUploaded(false);
-
-    //const el = e.target;
+    setFormState({ type: 'uploading' });
 
     const file = e.target.files?.[0]!;
     const filename = encodeURIComponent(file.name);
@@ -330,8 +327,7 @@ export function FileUpload({
 
     // Clear out the file input
     //el.value = '';
-    setUploading(false);
-    setHasUploaded(true);
+    setFormState({ type: 'uploaded' });
   }
   const value = getValues()[field];
 
@@ -355,7 +351,7 @@ export function FileUpload({
           //className="cursor-pointer inline-flex items-center gap-x-1.5 rounded-md bg-slate-100 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
           className="cursor-pointer inline-flex items-cente rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white"
         >
-          {uploading && (
+          {formState.type === 'uploading' && (
             <svg
               className="mr-3 h-5 w-5 animate-spin text-green-700"
               xmlns="http://www.w3.org/2000/svg"
@@ -377,7 +373,7 @@ export function FileUpload({
               ></path>
             </svg>
           )}
-          {hasUploaded && isDirty ? (
+          {formState.type === 'uploaded' ? (
             <>
               <CheckCircleIcon
                 className="-ml-0.5 mr-1 h-5 w-5 text-green-700"

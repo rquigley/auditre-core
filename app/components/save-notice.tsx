@@ -1,17 +1,6 @@
-import { useEffect, useState } from 'react';
 import { CheckCircleIcon } from '@heroicons/react/20/solid';
 
 export default function SaveNotice() {
-  const [hidden, setHidden] = useState(false);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setHidden(true);
-    }, 5000);
-    return () => clearTimeout(timeout);
-  }, []);
-
-  if (hidden) return null;
   return (
     <div>
       <div className="flex">
