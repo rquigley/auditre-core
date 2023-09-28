@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -46,6 +46,16 @@ export type Props = {
   documents: Array<Document & { queries: DocumentQuery[] }>;
 };
 
+export type FormState =
+  | { type: 'idle' }
+  | {
+      type: 'uploading';
+    }
+  | {
+      type: 'uploaded';
+    }
+  | { type: 'saving' }
+  | { type: 'saved' };
 export default function BasicForm({
   request,
   data,
@@ -54,14 +64,20 @@ export default function BasicForm({
   getPresignedUploadUrl,
   documents,
 }: Props) {
-  const router = useRouter();
   const config = requestTypes[request.type];
 
-  const [uploading, setUploading] = useState(false);
-  const [hasSaved, setHasSaved] = useState(false);
+  const [state, setState] = useState<FormState>({ type: 'idle' });
+  useEffect(() => {
+    if (state.type === 'saved') {
+      const timeout = setTimeout(() => {
+        setState({ type: 'idle' });
+      }, 5000);
+      return () => clearTimeout(timeout);
+    }
+  }, [state.type]);
 
   const {
-    formState: { isDirty, dirtyFields },
+    formState: { isDirty },
     register,
     setValue,
     getValues,
@@ -77,10 +93,10 @@ export default function BasicForm({
   });
 
   async function onSubmit(data: z.infer<typeof config.schema>) {
-    setHasSaved(false);
+    setState({ type: 'saving' });
     //@ts-ignore
     await saveData(data);
-    setHasSaved(true);
+    setState({ type: 'saved' });
     // prevent documents from being created multiple times
     // UNDONE because it breaks inputs reflecting the current value
     //reset();
@@ -132,12 +148,11 @@ export default function BasicForm({
                         //@ts-ignore
                         setValue={setValue}
                         getValues={getValues}
-                        uploading={uploading}
-                        setUploading={setUploading}
+                        formState={state}
+                        setFormState={setState}
                         createDocument={createDocument}
                         getPresignedUploadUrl={getPresignedUploadUrl}
                         documents={documents}
-                        isDirty={isDirty}
                       />
                     ) : fieldConfig.input === 'checkbox' ? (
                       <Checkbox
@@ -198,12 +213,12 @@ export default function BasicForm({
       </div>
 
       <div className="mt-6 flex items-center justify-end gap-x-6">
-        {!uploading && !isDirty && hasSaved && (
+        {!isDirty && state.type === 'saved' && (
           <div className="flex-grow">
             <SaveNotice />
           </div>
         )}
-        {isDirty && (
+        {isDirty && (state.type === 'idle' || state.type === 'saved') && (
           <button
             type="button"
             className="text-sm font-semibold leading-6 text-gray-900"
@@ -214,15 +229,21 @@ export default function BasicForm({
         )}
         <button
           type="submit"
-          disabled={uploading || !isDirty}
+          disabled={
+            !isDirty || state.type === 'uploading' || state.type === 'saving'
+          }
           className={classNames(
-            uploading || !isDirty
+            !isDirty || state.type === 'uploading' || state.type === 'saving'
               ? 'bg-gray-400'
               : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
             'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm',
           )}
         >
-          {uploading ? 'Uploading' : 'Save'}
+          {state.type === 'uploading'
+            ? 'Uploading'
+            : state.type === 'saving'
+            ? 'Saving'
+            : 'Save'}
         </button>
       </div>
     </form>
