@@ -182,7 +182,11 @@ export function Checkbox({
   return (
     <>
       {items.map((model, idx) => (
-        <div key={model.type} className="relative flex items-start">
+        <label
+          htmlFor={`checkbox-${model.type}`}
+          key={model.type}
+          className="relative flex items-start my-2"
+        >
           <div className="flex h-6 items-center">
             <input
               {...register(field)}
@@ -194,17 +198,12 @@ export function Checkbox({
             />
           </div>
           <div className="ml-3 text-sm leading-6">
-            <label
-              htmlFor={`checkbox-${model.type}`}
-              className="font-medium text-gray-900"
-            >
-              {model.name}
-            </label>
+            <span className="font-medium text-gray-900">{model.name}</span>
             <p id={`${model.type}-description`} className="text-gray-500">
               {model.description}
             </p>
           </div>
-        </div>
+        </label>
       ))}
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
