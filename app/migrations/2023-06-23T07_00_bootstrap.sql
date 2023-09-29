@@ -155,7 +155,7 @@ CREATE TABLE "account_mapping" (
   "created_at" timestamp DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
-ALTER TABLE "account_mapping" ADD CONSTRAINT uniq_account_id_ UNIQUE (account_id, audit_id, document_id);
+ALTER TABLE "account_mapping" ADD CONSTRAINT constraint_account_id_audit_id_document_id UNIQUE (account_id, audit_id, document_id);
 
 -- CREATE TABLE "log" (
 --   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
