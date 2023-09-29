@@ -233,7 +233,7 @@ export default function BasicForm({
             <SaveNotice />
           </div>
         )}
-        {isDirty && (
+        {isDirty && state.type !== 'uploading' && state.type !== 'saving' ? (
           <button
             type="button"
             className="text-sm font-semibold leading-6 text-gray-900"
@@ -241,7 +241,7 @@ export default function BasicForm({
           >
             Cancel
           </button>
-        )}
+        ) : null}
         <button
           type="submit"
           disabled={
