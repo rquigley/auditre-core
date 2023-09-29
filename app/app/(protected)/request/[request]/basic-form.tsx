@@ -17,7 +17,7 @@ import {
 } from '@/components/form-fields';
 import SaveNotice from '@/components/save-notice';
 import { InputConfig, requestTypes } from '@/lib/request-types';
-import { classNames } from '@/lib/util';
+import { classNames, delay } from '@/lib/util';
 
 import type {
   ClientSafeRequest,
@@ -48,6 +48,7 @@ export type Props = {
 
 export type FormState =
   | { type: 'idle' }
+  | { type: 'dirty' }
   | {
       type: 'uploading';
     }
@@ -92,11 +93,25 @@ export default function BasicForm({
     values: data,
   });
 
+  useEffect(() => {
+    if (isDirty && state.type === 'idle') {
+      setState({ type: 'dirty' });
+    } else if (!isDirty && state.type === 'dirty') {
+      setState({ type: 'idle' });
+    }
+  }, [isDirty, state.type]);
+
   async function onSubmit(data: z.infer<typeof config.schema>) {
     setState({ type: 'saving' });
-    //@ts-ignore
-    await saveData(data);
+
+    await Promise.all([
+      //@ts-ignore
+      saveData(data),
+      delay(1500),
+    ]);
     setState({ type: 'saved' });
+    // await delay(5000);
+    // setState({ type: 'idle' });
     // prevent documents from being created multiple times
     // UNDONE because it breaks inputs reflecting the current value
     //reset();
@@ -218,7 +233,7 @@ export default function BasicForm({
             <SaveNotice />
           </div>
         )}
-        {isDirty && (state.type === 'idle' || state.type === 'saved') && (
+        {isDirty && (
           <button
             type="button"
             className="text-sm font-semibold leading-6 text-gray-900"
@@ -236,7 +251,7 @@ export default function BasicForm({
             !isDirty || state.type === 'uploading' || state.type === 'saving'
               ? 'bg-gray-400'
               : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
-            'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm',
+            'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm transition',
           )}
         >
           {state.type === 'uploading'
