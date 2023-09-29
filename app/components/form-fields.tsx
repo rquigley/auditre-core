@@ -278,7 +278,6 @@ export function FileUpload({
   createDocument: BasicFormProps['createDocument'];
   getPresignedUploadUrl: BasicFormProps['getPresignedUploadUrl'];
   documents: BasicFormProps['documents'];
-  isDirty: boolean;
 }) {
   async function uploadDocument(
     e: React.ChangeEvent<HTMLInputElement>,
