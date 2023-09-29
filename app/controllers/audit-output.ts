@@ -1,36 +1,44 @@
 import * as fs from 'fs';
-import {
-  File,
-  convertInchesToTwip,
-  Document,
-  HeadingLevel,
-  Packer,
-  PageBreak,
-  Paragraph,
-  StyleLevel,
-  TableOfContents,
-  UnderlineType,
-  LevelFormat,
-  AlignmentType,
-  TextRun,
-  Table,
-  TableRow,
-  TableCell,
-  TextDirection,
-  VerticalAlign,
-  Header,
-  Footer,
-  NumberFormat,
-  WidthType,
-  PageNumber,
-  Border,
-  BorderStyle,
-} from 'docx';
+import dayjs from 'dayjs';
+
 import { getById as getAuditById } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/request';
-import type { AuditId, Request } from '@/types';
+
 import type { RequestType } from '@/lib/request-types';
-import dayjs from 'dayjs';
+import type { AuditId, Request } from '@/types';
+
+const {
+  // import {
+  AlignmentType,
+  Border,
+  BorderStyle,
+  convertInchesToTwip,
+  Document,
+  File,
+  Footer,
+  Header,
+  HeadingLevel,
+  LevelFormat,
+  NumberFormat,
+  Packer,
+  PageBreak,
+  PageNumber,
+  Paragraph,
+  StyleLevel,
+  Table,
+  TableCell,
+  TableOfContents,
+  TableRow,
+  TextDirection,
+  TextRun,
+  UnderlineType,
+  VerticalAlign,
+  WidthType,
+  HeightRule,
+  // } from 'docx';
+} = require('docx');
+
+// } = require('docx');
 
 export async function generate(auditId: AuditId) {
   const audit = await getAuditById(auditId);
@@ -45,11 +53,8 @@ export async function generate(auditId: AuditId) {
   };
 
   console.log(audit, requests);
-  // @ts-ignore
-  const title = `Financial Statement - ${requests.BASIC_INFO.businessName} - ${audit.year}`;
-  console.log(title);
 
-  const doc = new Document({
+  const document = new Document({
     title: 'My Document',
     creator: 'AuditRe',
     features: {
@@ -94,7 +99,7 @@ export async function generate(auditId: AuditId) {
         document: {
           run: {
             size: '11pt',
-            font: 'Calibri',
+            font: 'Time',
           },
           paragraph: {
             alignment: AlignmentType.LEFT,
@@ -196,10 +201,15 @@ export async function generate(auditId: AuditId) {
       independentAuditorsReport(data),
     ],
   });
+  return {
+    document,
+    // @ts-ignore
+    documentName: `Financial Statement - ${requests.BASIC_INFO.businessName} - ${audit.year}`,
+  };
 
-  Packer.toBuffer(doc).then((buffer) => {
-    fs.writeFileSync(`${title}.docx`, buffer);
-  });
+  // Packer.toBuffer(doc).then((buffer) => {
+  //   fs.writeFileSync(`${title}.docx`, buffer);
+  // });
 }
 // @ts-ignore
 function titlePage(data) {
@@ -283,18 +293,36 @@ function getBalanceSheetData(data) {
   return {
     assets: {
       currentAssets: {
-        cash: 25979389,
-        other: 873839,
+        cash: pp(25979389),
+        other: pp(873839),
       },
-      totalCurrentAssets: 26853228,
-      property: 11164032,
-      intangible: 346801,
-      operatingLeaseRightOfUse: 3800326,
-      other: 162656,
-      total: 42327043,
+      totalCurrentAssets: pp(26853228),
+      property: pp(11164032),
+      intangible: pp(346801),
+      operatingLeaseRightOfUse: pp(3800326),
+      other: pp(162656),
+      total: pp(42327043),
     },
-    liabilities: [],
+    liabilities: {
+      current: {
+        accountsPayable: pp(25979389),
+        accrued: pp(873839),
+        operatingLease: pp(873839),
+      },
+      totalCurrent: pp(26853228),
+      accruedInterest: pp(11164032),
+      converableNotes: pp(346801),
+      operatingLease: pp(3800326),
+      total: pp(42327043),
+    },
   };
+}
+
+function pp(num: number) {
+  return num.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  });
 }
 // @ts-ignore
 function consolidatedFinancialStatements(data) {
@@ -302,6 +330,7 @@ function consolidatedFinancialStatements(data) {
   //   text: '[Auditor to add opinion]',
   //   highlight: 'yellow',
   // });
+  const vals = getBalanceSheetData(data);
   const table = new Table({
     borders: {
       top: { style: BorderStyle.NONE },
@@ -319,74 +348,115 @@ function consolidatedFinancialStatements(data) {
     // },
     columnWidths: [7505, 1505],
     rows: [
-      new TableRow({
-        children: [
-          new TableCell({
-            width: {
-              size: 7505,
-              type: WidthType.DXA,
-            },
-            children: [new Paragraph('As of December 31,')],
-            //verticalAlign: VerticalAlign.,
-            borders: {
-              // top: { style: BorderStyle.NONE },
-              // bottom: { style: BorderStyle.NONE },
-              left: { style: BorderStyle.NONE, size: 0 },
-              right: { style: BorderStyle.NONE, size: 0 },
-            },
-          }),
-          new TableCell({
-            width: {
-              size: 1505,
-              type: WidthType.DXA,
-            },
-            children: [new Paragraph('2022')],
-            borders: {
-              top: {
-                style: BorderStyle.NONE,
-                size: 3,
-                color: 'FF0000',
-              },
-              bottom: {
-                style: BorderStyle.NONE,
-                size: 3,
-                color: '0000FF',
-              },
-              left: {
-                style: BorderStyle.NONE,
-                size: 3,
-                color: '00FF00',
-              },
-              right: {
-                style: BorderStyle.NONE,
-                size: 3,
-                color: '#ff8000',
-              },
-            },
-
-            //verticalAlign: VerticalAlign.CENTER,
-          }),
-        ],
+      getRow({
+        name: 'As of December 31,',
+        value: '2022',
+        bold: true,
+        borderBottom: true,
       }),
-      new TableRow({
-        children: [
-          new TableCell({
-            children: [
-              new Paragraph({
-                text: 'Assets',
-                //heading: HeadingLevel.HEADING_1,
-              }),
-            ],
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                text: '',
-              }),
-            ],
-            // verticalAlign: VerticalAlign.CENTER,
-          }),
-        ],
+      getRow({
+        name: 'Assets',
+        bold: true,
+        padTop: true,
+      }),
+      getRow({
+        name: 'Current assets:',
+        padTop: true,
+      }),
+      getRow({
+        name: 'Cash',
+        value: vals.assets.currentAssets.cash,
+        indent: true,
+      }),
+      getRow({
+        name: 'Prepaid expenses and other current assets',
+        value: vals.assets.currentAssets.other,
+        indent: true,
+        borderBottom: true,
+      }),
+      getRow({
+        name: 'Total current assets',
+        value: vals.assets.totalCurrentAssets,
+        borderBottom: true,
+        padTop: true,
+      }),
+      getRow({
+        name: 'Property and equipment, net',
+        value: vals.assets.property,
+      }),
+      getRow({
+        name: 'Intangible assets, net',
+        value: vals.assets.intangible,
+      }),
+      getRow({
+        name: 'Operating lease right-of-use assets',
+        value: vals.assets.operatingLeaseRightOfUse,
+      }),
+      getRow({
+        name: 'Other assets',
+        value: vals.assets.other,
+        borderBottom: true,
+      }),
+      getRow({
+        name: 'Total assets',
+        value: vals.assets.total,
+        bold: true,
+        borderBottom: true,
+        padTop: true,
+      }),
+
+      getRow({
+        name: 'Liabilities and Stockholders’ Deficit',
+        bold: true,
+        padTop: true,
+      }),
+      getRow({
+        name: 'Current liabilities:',
+        padTop: true,
+      }),
+      getRow({
+        name: 'Accounts payable',
+        value: vals.liabilities.current.accountsPayable,
+        indent: true,
+      }),
+      getRow({
+        name: 'Accrued liabilities',
+        value: vals.liabilities.current.accrued,
+        indent: true,
+      }),
+      getRow({
+        name: 'Operating lease liabilities, current',
+        value: vals.liabilities.current.operatingLease,
+        indent: true,
+        borderBottom: true,
+      }),
+      getRow({
+        name: 'Total current liabilities',
+        value: vals.liabilities.totalCurrent,
+        borderBottom: true,
+        padTop: true,
+      }),
+      getRow({
+        name: 'Accrued interest',
+        value: vals.liabilities.accruedInterest,
+        indent: true,
+      }),
+      getRow({
+        name: 'Convertible notes payable',
+        value: vals.liabilities.converableNotes,
+        indent: true,
+      }),
+      getRow({
+        name: 'Operating lease liabilities, net of current portion',
+        value: vals.liabilities.operatingLease,
+        indent: true,
+      }),
+      getRow({
+        name: 'Total liabilities',
+        value: vals.liabilities.total,
+        bold: true,
+        borderBottom: true,
+        padTop: true,
       }),
     ],
   });
@@ -408,6 +478,91 @@ function consolidatedFinancialStatements(data) {
       table,
     ],
   };
+}
+
+function getRow({
+  name,
+  value,
+  bold,
+  indent,
+  borderBottom,
+  padTop,
+}: {
+  name: string;
+  value?: string;
+  bold?: boolean;
+  indent?: boolean;
+  borderBottom?: boolean;
+  padTop?: boolean;
+}) {
+  const borders = {
+    top: {
+      style: BorderStyle.NONE,
+      size: 1,
+      color: '000000',
+    },
+    bottom: {
+      style: borderBottom ? BorderStyle.SINGLE : BorderStyle.NONE,
+      size: 1,
+      color: '000000',
+    },
+    left: {
+      style: BorderStyle.NONE,
+      size: 1,
+      color: '000000',
+    },
+    right: {
+      style: BorderStyle.NONE,
+      size: 1,
+      color: '#000000',
+    },
+  };
+
+  const rowHeight = padTop
+    ? { value: convertInchesToTwip(0.3), type: HeightRule.EXACT }
+    : undefined;
+  return new TableRow({
+    children: [
+      new TableCell({
+        width: {
+          size: 7505,
+          type: WidthType.DXA,
+        },
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `${indent ? '   ' : ''}${name}`,
+                bold,
+              }),
+            ],
+          }),
+        ],
+        verticalAlign: VerticalAlign.BOTTOM,
+        borders,
+      }),
+      new TableCell({
+        width: {
+          size: 1505,
+          type: WidthType.DXA,
+        },
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: value || '',
+                bold,
+              }),
+            ],
+            alignment: AlignmentType.RIGHT,
+          }),
+        ],
+        verticalAlign: VerticalAlign.BOTTOM,
+        borders,
+      }),
+    ],
+    height: rowHeight,
+  });
 }
 
 function getPageProperties() {
