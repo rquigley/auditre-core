@@ -12,6 +12,9 @@ const nextConfig = {
       '@aws-sdk/signature-v4-multi-region':
         'commonjs @aws-sdk/signature-v4-multi-region',
     });
+    config.plugins.push(
+      new webpack.IgnorePlugin({ resourceRegExp: /^aws-crt$/ }),
+    );
 
     return config;
   },
