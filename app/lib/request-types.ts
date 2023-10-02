@@ -116,35 +116,110 @@ export const businessModelTypes = {
   },
 };
 
-export const requestTypes = {
+type InputType =
+  | 'text'
+  | 'textarea'
+  | 'checkbox'
+  | 'year'
+  | 'boolean'
+  | 'date'
+  | 'fileupload';
+
+interface FormFieldBasic {
+  input: InputType;
+  label?: string;
+  defaultValue: string;
+  extractionQuestions?: {};
+}
+
+interface FormFieldBoolean extends Omit<FormFieldBasic, 'defaultValue'> {
+  defaultValue: boolean;
+}
+
+interface FormFieldDescription extends FormFieldBasic {
+  description: string;
+}
+
+interface FormFieldBusinessModel extends Omit<FormFieldBasic, 'defaultValue'> {
+  defaultValue: (keyof typeof businessModelTypes)[];
+  items: typeof businessModelTypes;
+}
+
+interface FormFieldFile extends FormFieldBasic {
+  extensions: string[];
+  maxFilesizeMB: number;
+}
+
+interface BasicInfoForm {
+  businessName: FormFieldBasic;
+  description: FormFieldDescription;
+  businessModels: FormFieldBusinessModel;
+  chiefDecisionMaker: FormFieldBasic;
+}
+
+interface AuditInfoForm {
+  year: FormFieldBasic;
+  hasBeenAudited: FormFieldBoolean;
+  fiscalYearEnd: FormFieldBasic;
+}
+
+interface FileForm {
+  value: FormFieldFile;
+}
+
+interface TextareaForm {
+  value: FormFieldBasic;
+}
+
+interface DateForm {
+  value: FormFieldBasic;
+}
+
+interface RequestType<T> {
+  name: string;
+  description: string;
+  form: T;
+  completeOnSet: boolean;
+  schema: ZodTypeAny;
+}
+
+export const requestTypes: {
+  BASIC_INFO: RequestType<BasicInfoForm>;
+  AUDIT_INFO: RequestType<AuditInfoForm>;
+  ARTICLES_OF_INCORPORATION: RequestType<FileForm>;
+  TRIAL_BALANCE: RequestType<FileForm>;
+  CHART_OF_ACCOUNTS: RequestType<FileForm>;
+  LEASES: RequestType<DateForm>;
+  STOCK_OPTIONS: RequestType<DateForm>;
+  MATERIAL_CHANGES_POST_AUDIT: RequestType<DateForm>;
+  USER_REQUESTED: RequestType<TextareaForm>;
+} = {
   BASIC_INFO: {
     name: 'Basic information',
     description: '',
-    defaultValue: {
-      businessName: '',
-      description: '',
-      businessModels: [],
-      chiefDecisionMaker: '',
-    },
     form: {
       businessName: {
         input: 'text',
         label: 'Legal name of the business',
+        defaultValue: '',
       },
       description: {
         input: 'textarea',
         label: 'Description of the business',
+        defaultValue: '',
         description:
           'Provide a high-level overview of the business so anyone who reads the audited financials can easily understand how your business description fits into your financial statements. This can best be summarized as your "elevator pitch" if you were to sell someone about your business for the first time.',
       },
       businessModels: {
         input: 'checkbox',
         label: 'Business model',
+        defaultValue: [],
         items: businessModelTypes,
       },
       chiefDecisionMaker: {
         input: 'text',
         label: 'Chief decision maker',
+        defaultValue: '',
       },
     },
     completeOnSet: true,
@@ -153,23 +228,21 @@ export const requestTypes = {
   AUDIT_INFO: {
     name: 'Audit information',
     description: '',
-    defaultValue: {
-      year: '',
-      hasBeenAudited: false,
-      fiscalYearEnd: '',
-    },
     form: {
       year: {
         input: 'year',
         label: 'What year is being audited?',
+        defaultValue: '',
       },
       hasBeenAudited: {
         input: 'boolean',
         label: 'Has the company been audted before?',
+        defaultValue: false,
       },
       fiscalYearEnd: {
         input: 'date',
         label: "When does the company's fiscal year end?",
+        defaultValue: '',
       },
     },
     completeOnSet: true,
@@ -178,14 +251,13 @@ export const requestTypes = {
   ARTICLES_OF_INCORPORATION: {
     name: 'Upload the Articles of Incorporation',
     description: '',
-    defaultValue: {
-      value: '',
-    },
     form: {
       value: {
         extensions: ['PDF'],
         maxFilesizeMB: 10,
         input: 'fileupload',
+        defaultValue: '',
+
         // qualifyingQuestion:
         //   'Does this look like the Articles of Incorporation for an organization? Answer only with "yes" or "no"',
         extractionQuestions: [
@@ -234,14 +306,12 @@ export const requestTypes = {
   TRIAL_BALANCE: {
     name: 'Upload the Trial Balance',
     description: '',
-    defaultValue: {
-      value: '',
-    },
     form: {
       value: {
         extensions: ['XLS', 'XLSX', 'CSV'],
         maxFilesizeMB: 10,
         input: 'fileupload',
+        defaultValue: '',
         extractionQuestions: [],
       },
     },
@@ -251,14 +321,12 @@ export const requestTypes = {
   CHART_OF_ACCOUNTS: {
     name: 'Upload the Chart of Accounts',
     description: '',
-    defaultValue: {
-      value: '',
-    },
     form: {
       value: {
         extensions: ['XLS', 'XLSX', 'CSV'],
         maxFilesizeMB: 10,
         input: 'fileupload',
+        defaultValue: '',
         extractionQuestions: [
           {
             identifier: 'ACCOUNT_NAME_COLUMN',
@@ -291,13 +359,11 @@ export const requestTypes = {
   LEASES: {
     name: 'Leases',
     description: '',
-    defaultValue: {
-      value: false,
-    },
     form: {
       value: {
         input: 'boolean',
         label: 'Does the company have any leases?',
+        defaultValue: '',
       },
     },
     completeOnSet: true,
@@ -306,13 +372,11 @@ export const requestTypes = {
   STOCK_OPTIONS: {
     name: 'Stock option plan and ammendments',
     description: '',
-    defaultValue: {
-      value: false,
-    },
     form: {
       value: {
         input: 'boolean',
         label: 'Does the company issue stock to employees?',
+        defaultValue: '',
       },
     },
     completeOnSet: true,
@@ -321,14 +385,12 @@ export const requestTypes = {
   MATERIAL_CHANGES_POST_AUDIT: {
     name: 'Post-audit changes',
     description: '',
-    defaultValue: {
-      value: false,
-    },
     form: {
       value: {
         input: 'boolean',
         label:
           'Have there been any material changes to the operations of the business following the period being audited?',
+        defaultValue: '',
       },
     },
     completeOnSet: true,
@@ -337,12 +399,10 @@ export const requestTypes = {
   USER_REQUESTED: {
     name: '???',
     description: '',
-    defaultValue: {
-      value: '',
-    },
     form: {
       value: {
         input: 'textarea',
+        defaultValue: '',
       },
     },
     completeOnSet: false,
@@ -350,4 +410,4 @@ export const requestTypes = {
   },
 };
 
-export type RequestType = keyof typeof requestTypes;
+export type RequestTypeKey = keyof typeof requestTypes;
