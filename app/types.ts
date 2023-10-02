@@ -1,4 +1,4 @@
-import type { RequestType } from './lib/request-types';
+import type { RequestTypeKey } from './lib/request-types';
 import type {
   ColumnType,
   Generated,
@@ -152,7 +152,7 @@ export interface RequestTable {
   name: string | null;
   description: string | null;
   status: RequestStatus;
-  type: RequestType;
+  type: RequestTypeKey;
   //requestee: UserId | null;
   data: RequestData;
   dueDate: Date | null;

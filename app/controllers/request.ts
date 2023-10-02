@@ -1,18 +1,20 @@
 // import 'server-only';
 
 import { db } from '@/lib/db';
+import { RequestTypeKey, requestTypes } from '@/lib/request-types';
+
 import type {
-  RequestUpdate,
   Actor,
-  Request,
-  RequestChangeValue,
+  AuditId,
   NewRequest,
   OrgId,
-  AuditId,
-  RequestId,
+  Request,
   RequestChange,
+  RequestChangeValue,
+  RequestData,
+  RequestId,
+  RequestUpdate,
 } from '@/types';
-import { requestTypes, RequestType } from '@/lib/request-types';
 
 type CreateRequest = Omit<NewRequest, 'value'> & {
   data: any;
@@ -52,16 +54,21 @@ export async function upsertDefault({
       // TODO: check for different value shape here.
       continue;
     }
-    const request = requestTypes[type as RequestType];
+    const request = requestTypes[type as RequestTypeKey];
+    const defaultValues = {};
+    for (const [key, value] of Object.entries(request.form)) {
+      // @ts-ignore
+      defaultValues[key] = value.defaultValue;
+    }
     createPromises.push(
       create(
         {
           auditId,
           orgId,
-          type: type as RequestType,
+          type: type as RequestTypeKey,
           name: request.name,
           status: 'requested',
-          data: request.defaultValue,
+          data: defaultValues as RequestData,
         },
         { type: 'SYSTEM' },
       ),
@@ -125,13 +132,12 @@ export async function updateData({
   id: RequestId;
   data: string;
   actor: Actor;
-  type: RequestType;
+  type: RequestTypeKey;
 }) {
   const schema = requestTypes[type].schema;
   const parsed = schema.parse(data);
 
   const status = requestTypes[type].completeOnSet ? 'complete' : undefined;
-  //@ts-ignore
   return await update(id, { data: parsed, status }, actor);
 }
 

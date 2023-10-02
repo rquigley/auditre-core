@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { getById as getAuditById } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/request';
 
-import type { RequestType } from '@/lib/request-types';
+import type { RequestTypeKey } from '@/lib/request-types';
 import type { AuditId, Request } from '@/types';
 
 const {
@@ -44,8 +44,8 @@ export async function generate(auditId: AuditId) {
   const audit = await getAuditById(auditId);
   let requests = {};
   (await getAllByAuditId(auditId)).forEach((request: Request) => {
-    // @ts-ignore
-    requests[request.type] = request.data;
+    const t = request.type as RequestTypeKey;
+    requests[t] = request.data;
   });
 
   const data = {
@@ -211,8 +211,8 @@ export async function generate(auditId: AuditId) {
   //   fs.writeFileSync(`${title}.docx`, buffer);
   // });
 }
-// @ts-ignore
-function titlePage(data) {
+
+function titlePage(data: any) {
   const yearEnd = dayjs(data.requests.AUDIT_INFO.fiscalYearEnd).format(
     'MMMM D, YYYY',
   );
@@ -251,8 +251,8 @@ function tableOfContents() {
     ],
   };
 }
-// @ts-ignore
-function independentAuditorsReport(data) {
+
+function independentAuditorsReport(data: any) {
   const t1 = new TextRun({
     text: '[Auditor to add opinion]',
     highlight: 'yellow',
@@ -288,8 +288,8 @@ function independentAuditorsReport(data) {
     ],
   };
 }
-// @ts-ignore
-function getBalanceSheetData(data) {
+
+function getBalanceSheetData(data: any) {
   return {
     assets: {
       currentAssets: {
@@ -324,8 +324,8 @@ function pp(num: number) {
     currency: 'USD',
   });
 }
-// @ts-ignore
-function consolidatedFinancialStatements(data) {
+
+function consolidatedFinancialStatements(data: any) {
   // const t1 = new TextRun({
   //   text: '[Auditor to add opinion]',
   //   highlight: 'yellow',

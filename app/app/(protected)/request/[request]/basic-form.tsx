@@ -87,9 +87,7 @@ export default function BasicForm({
     formState: { errors },
   } = useForm<z.infer<typeof config.schema>>({
     resolver: zodResolver(config.schema),
-    // @ts-ignore
     defaultValues: data,
-    // @ts-ignore
     values: data,
   });
 
@@ -104,11 +102,7 @@ export default function BasicForm({
   async function onSubmit(data: z.infer<typeof config.schema>) {
     setState({ type: 'saving' });
 
-    await Promise.all([
-      //@ts-ignore
-      saveData(data),
-      delay(1500),
-    ]);
+    await Promise.all([saveData(data), delay(1500)]);
     setState({ type: 'saved' });
     // await delay(5000);
     // setState({ type: 'idle' });
@@ -160,7 +154,6 @@ export default function BasicForm({
                         errors={errors}
                         config={fieldConfig}
                         request={request}
-                        //@ts-ignore
                         setValue={setValue}
                         getValues={getValues}
                         formState={state}
@@ -179,9 +172,8 @@ export default function BasicForm({
                     ) : fieldConfig.input === 'boolean' ? (
                       <BooleanField
                         field={field}
-                        //@ts-ignore
+                        register={register}
                         getValues={getValues}
-                        //@ts-ignore
                         setValue={setValue}
                         errors={errors}
                         config={fieldConfig}
@@ -196,9 +188,7 @@ export default function BasicForm({
                     ) : fieldConfig.input === 'date' ? (
                       <DateField
                         field={field}
-                        //@ts-ignore
                         getValues={getValues}
-                        //@ts-ignore
                         setValue={setValue}
                         register={register}
                         errors={errors}

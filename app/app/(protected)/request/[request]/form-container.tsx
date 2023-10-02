@@ -45,8 +45,6 @@ export default async function FormContainer({ request, user, audit }: Props) {
 
     await updateData({
       id: request.id,
-
-      // @ts-ignore
       data,
       actor: {
         type: 'USER',
@@ -123,10 +121,9 @@ export default async function FormContainer({ request, user, audit }: Props) {
     <BasicForm
       request={clientSafe(request) as ClientSafeRequest}
       data={request.data}
-      // @ts-ignore
       saveData={saveData}
       createDocument={createDoc}
-      getDocumentStatus={getDocumentStatus}
+      //getDocumentStatus={getDocumentStatus}
       getPresignedUploadUrl={getPresignedUploadUrl}
       documents={documentWithQueries}
     />
