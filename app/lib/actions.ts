@@ -1,8 +1,11 @@
 'use server';
 
+import 'server-only';
+
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 
+import { generate as _generateFinancialStatement } from '@/controllers/audit-output';
 import {
   deleteDocument as _deleteDocument,
   extractChartOfAccountsMapping,
@@ -92,4 +95,8 @@ export async function selectDocumentForRequest(
     { userId: user.id, type: 'USER' },
   );
   revalidatePath('/');
+}
+
+export async function generateFinancialStatement(auditId: AuditId) {
+  await _generateFinancialStatement(auditId);
 }
