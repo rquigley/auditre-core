@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "build-cli": "tsc -p tsconfig-cli.json",
-    "reset": "tsx bin/db-reset.ts && tsx bin/demo.ts",
+    "reset": "node bin/db-reset.js && bun bin/demo.ts",
     "start": "next start",
     "lint": "next lint",
     "test": "jest"
@@ -65,7 +65,6 @@
     "jest": "29.7.0",
     "jest-environment-jsdom": "29.7.0",
     "prettier": "3.0.3",
-    "tsx": "3.13.0",
     "typescript": "5.2.2"
   }
 }
