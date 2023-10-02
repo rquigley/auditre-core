@@ -1,16 +1,18 @@
 //import 'server-only';
 
-import { Pool } from 'pg';
 import {
-  Kysely,
-  PostgresDialect,
   CamelCasePlugin,
-  RawBuilder,
+  Kysely,
   LogConfig,
+  PostgresDialect,
+  RawBuilder,
   sql,
 } from 'kysely';
+import { Pool } from 'pg';
 import { z } from 'zod';
+
 import type { Database } from '../types';
+
 const dBConfig = z.object({
   database: z.string().min(3),
   host: z.string().min(3),
@@ -18,6 +20,7 @@ const dBConfig = z.object({
   port: z.number(),
   user: z.string().min(3),
 });
+export { sql };
 
 const dialect = new PostgresDialect({
   pool: async () => {
