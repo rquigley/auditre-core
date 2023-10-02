@@ -199,12 +199,13 @@ export async function generate(auditId: AuditId) {
       titlePage(data),
       //tableOfContents(),
       independentAuditorsReport(data),
+      notes(data),
     ],
   });
   return {
     document,
     // @ts-ignore
-    documentName: `Financial Statement - ${requests.BASIC_INFO.businessName} - ${audit.year}`,
+    documentName: `Financial Statement - ${requests.BASIC_INFO.businessName} - ${audit.year}.docx`,
   };
 
   // Packer.toBuffer(doc).then((buffer) => {
@@ -610,5 +611,123 @@ function getPageProperties() {
         ],
       }),
     },
+  };
+}
+
+function formatBodyText(text: string): (typeof TextRun)[] {
+  const textRuns: (typeof TextRun)[] = [];
+  let buffer = '';
+  let insideBracket = false;
+
+  for (const char of text) {
+    if (char === '[') {
+      if (buffer.length > 0) {
+        textRuns.push(new TextRun(buffer));
+      }
+      buffer = char;
+      insideBracket = true;
+    } else if (char === ']') {
+      buffer += char;
+      textRuns.push(new TextRun({ text: buffer, highlight: 'yellow' }));
+      buffer = '';
+      insideBracket = false;
+    } else {
+      buffer += char;
+      if (insideBracket === false && char === ' ') {
+        textRuns.push(new TextRun(buffer));
+        buffer = '';
+      }
+    }
+  }
+
+  // Add any remaining text outside the brackets
+  if (buffer.length > 0) {
+    textRuns.push(new TextRun(buffer));
+  }
+
+  return textRuns;
+}
+function notesSection(title: string, text: string) {
+  const paragraphs = text.split('\n').map((p) => {
+    return new Paragraph({ children: formatBodyText(p) });
+  });
+  return [
+    new Paragraph({
+      text: title,
+      heading: HeadingLevel.HEADING_2,
+    }),
+    ...paragraphs,
+  ];
+}
+
+function notes(data: any) {
+  // const t1 = new TextRun({
+  //   text: '[Auditor to add opinion]',
+  //   highlight: 'yellow',
+  // });
+  return {
+    ...getPageProperties(),
+
+    children: [
+      new Paragraph({
+        text: '1. Organization',
+        heading: HeadingLevel.HEADING_1,
+        pageBreakBefore: true,
+      }),
+
+      ...notesSection(
+        'Description of Business',
+        `
+        [${data.requests.BASIC_INFO.businessName}]. (the “Company”) was incorporated in the [State of Delaware] on [November 18, 2020]. [${data.requests.BASIC_INFO.description}]. [The Company has wholly owned subsidiaries], [SUBSIDIARY 1], [SUBSIDIARY 2]. 
+        `,
+      ),
+      ...notesSection(
+        'Going Concern and Liquidity',
+        `
+      The Company has incurred recurring losses and negative cash flows from operating activities since inception. As of [${dayjs(
+        data.requests.AUDIT_INFO.fiscalYearEnd,
+      ).format(
+        'MMMM D, YYYY',
+      )}], the Company had cash of [number] and an accumulated deficit of [number]. In [March 2023], the Company issued [number] shares of Series B-1 convertible preferred stock for proceeds of approximately [number]. In addition, the convertible notes with aggregate outstanding principal of [number] were converted into [number] shares of Series B-1 convertible preferred stock. In April 2023, the Company closed a subsequent round of Series B-1 convertible preferred stock for additional proceeds of $10,800,000 and issuance of [number] Series B-1 convertible preferred shares. Based on the Company’s forecasts, the Company’s current resources and cash balance are sufficient to enable the Company to continue as a going concern for 12 months from the date these consolidated financial statements are available to be issued.
+
+      The ability to continue as a going concern is dependent upon the Company obtaining necessary financing to meet its obligations and repay its liabilities arising from normal business operations when they come due. The Company may raise additional capital through the issuance of equity securities, debt financings or other sources in order to further implement its business plan. However, if such financing is not available when needed and at adequate levels, the Company will need to reevaluate its operating plan and may be required to delay the development of its products.
+      `,
+      ),
+
+      new Paragraph({
+        text: '2. Summary of Significant Accounting Policies',
+        heading: HeadingLevel.HEADING_1,
+      }),
+      ...notesSection(
+        'Basis of Presentation',
+        `
+        The accompanying consolidated financial statements, which include the accounts of the Company and its wholly owned subsidiaries, have been prepared in conformity with accounting principles generally accepted in the United States of America (“US GAAP”). All significant intercompany transactions and balances have been eliminated in consolidation. 
+      `,
+      ),
+      // new Paragraph({
+      //   text: '1. Organization',
+      //   heading: HeadingLevel.HEADING_1,
+      //   pageBreakBefore: true,
+      // }),
+      // new Paragraph({ children: [t1] }),
+      // new Paragraph({ children: [t1], pageBreakBefore: true }),
+
+      // new Paragraph({
+      //   text: 'Header #2',
+      //   heading: HeadingLevel.HEADING_1,
+      //   pageBreakBefore: true,
+      // }),
+      // new Paragraph("I'm a other text very nicely written.'"),
+      // new Paragraph({
+      //   text: 'Header #2.1',
+      //   heading: HeadingLevel.HEADING_2,
+      // }),
+      // new Paragraph("I'm a another text very nicely written.'"),
+      // new Paragraph({
+      //   text: 'My Spectacular Style #1',
+      //   style: 'MySpectacularStyle',
+      //   pageBreakBefore: true,
+      // }),
+    ],
   };
 }
