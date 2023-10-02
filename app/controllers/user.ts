@@ -1,7 +1,9 @@
 // import 'server-only';
-import { db } from '@/lib/db';
-import type { NewUser, OrgId, User, UserId, UserUpdate } from '@/types';
 import DataLoader from 'dataloader';
+
+import { db, sql } from '@/lib/db';
+
+import type { NewUser, OrgId, User, UserId, UserUpdate } from '@/types';
 
 export function create(user: NewUser): Promise<User> {
   return db
@@ -41,11 +43,22 @@ export const userLoader = new DataLoader((userIds) =>
   getMultipleById(userIds as UserId[]),
 );
 
-export function getByEmail(email: string): Promise<User | undefined> {
+type QueryOpts = {
+  comment?: string;
+};
+export function getByEmail(
+  email: string,
+  queryOpts?: QueryOpts,
+): Promise<User | undefined> {
+  let commentStr = sql.raw('');
+  if (queryOpts?.comment) {
+    commentStr = sql.raw('-- ' + queryOpts.comment);
+  }
   return db
     .selectFrom('user')
     .where('email', '=', email)
     .where('isDeleted', '=', false)
+    .modifyEnd(sql`${commentStr}`)
     .selectAll()
     .executeTakeFirst();
 }
