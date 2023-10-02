@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 
 import { getById as getAuditById } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/request';
+import { requestTypes } from '@/lib/request-types';
 
 import type { RequestTypeKey } from '@/lib/request-types';
 import type { AuditId, Request } from '@/types';
@@ -40,13 +41,22 @@ const {
 
 // } = require('docx');
 
+async function getRequestData(auditId: AuditId) {
+  //let requests: Record<RequestTypeKey, Request> = {};
+  const auditRequests = await getAllByAuditId(auditId);
+  // auditRequests.forEach((request: Request) => {
+  //   const t = request.type as RequestTypeKey;
+  //   requests[t] = request.data;
+  // });
+  let requests = auditRequests.reduce((acc: any, req) => {
+    acc[req.type] = req.data;
+    return acc;
+  }, {}) as unknown as Record<RequestTypeKey, Request>;
+  return requests;
+}
 export async function generate(auditId: AuditId) {
   const audit = await getAuditById(auditId);
-  let requests = {};
-  (await getAllByAuditId(auditId)).forEach((request: Request) => {
-    const t = request.type as RequestTypeKey;
-    requests[t] = request.data;
-  });
+  const requests = await getRequestData(auditId);
 
   const data = {
     requests,
