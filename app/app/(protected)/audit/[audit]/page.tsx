@@ -1,11 +1,13 @@
-import Row from './row';
+import { notFound } from 'next/navigation';
+
 import Header from '@/components/header';
 import { getById } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
 import { clientSafe } from '@/lib/util';
+import Row from './row';
+
 import type { ClientSafeRequest } from '@/types';
-import { notFound } from 'next/navigation';
 
 export default async function AuditPage({
   params: { audit: id },
@@ -68,6 +70,15 @@ export default async function AuditPage({
                 ))}
               </tbody>
             </table>
+            <div className="mt-4">
+              <a
+                type="button"
+                href={`/audit/${audit.id}/generate`}
+                className="rounded-full bg-white px-3.5 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+              >
+                Generate Financial Statement
+              </a>
+            </div>
           </div>
         </div>
       </div>
