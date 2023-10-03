@@ -139,15 +139,24 @@ export async function askDefaultQuestions(document: Document) {
     identifier: 'DOCUMENT_TYPE',
   });
   let questions = [];
-  if (typeQuestion.result?.content === 'ARTICLES_OF_INCORPORATION') {
+  if (
+    typeQuestion.result?.content === 'ARTICLES_OF_INCORPORATION' &&
+    requestTypes.ARTICLES_OF_INCORPORATION.form.value.extractionQuestions
+  ) {
     questions.push(
       ...requestTypes.ARTICLES_OF_INCORPORATION.form.value.extractionQuestions,
     );
-  } else if (typeQuestion.result?.content === 'CHART_OF_ACCOUNTS') {
+  } else if (
+    typeQuestion.result?.content === 'CHART_OF_ACCOUNTS' &&
+    requestTypes.CHART_OF_ACCOUNTS.form.value.extractionQuestions
+  ) {
     questions.push(
       ...requestTypes.CHART_OF_ACCOUNTS.form.value.extractionQuestions,
     );
-  } else if (typeQuestion.result?.content === 'TRIAL_BALANCE') {
+  } else if (
+    typeQuestion.result?.content === 'TRIAL_BALANCE' &&
+    requestTypes.TRIAL_BALANCE.form.value.extractionQuestions
+  ) {
     questions.push(
       ...requestTypes.TRIAL_BALANCE.form.value.extractionQuestions,
     );
