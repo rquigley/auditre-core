@@ -1,7 +1,7 @@
-// import 'server-only';
 import retry from 'async-retry';
-import { inferSchema, initParser } from 'udsv';
-import { string } from 'zod';
+
+// import { inferSchema, initParser } from 'udsv';
+// import { string } from 'zod';
 
 import { create as createMapping } from '@/controllers/account-mapping';
 import {
@@ -23,16 +23,16 @@ import type {
   RequestId,
 } from '@/types';
 
-export function create(document: NewDocument): Promise<Document> {
-  return db
+export async function create(document: NewDocument): Promise<Document> {
+  return await db
     .insertInto('document')
     .values({ ...document })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getById(id: DocumentId): Promise<Document> {
-  return db
+export async function getById(id: DocumentId): Promise<Document> {
+  return await db
     .selectFrom('document')
     .where('id', '=', id)
     .where('isDeleted', '=', false)
@@ -40,8 +40,8 @@ export function getById(id: DocumentId): Promise<Document> {
     .executeTakeFirstOrThrow();
 }
 
-export function getAllByOrgId(orgId: OrgId): Promise<Document[]> {
-  return db
+export async function getAllByOrgId(orgId: OrgId): Promise<Document[]> {
+  return await db
     .selectFrom('document')
     .where('orgId', '=', orgId)
     .where('isDeleted', '=', false)
@@ -49,8 +49,10 @@ export function getAllByOrgId(orgId: OrgId): Promise<Document[]> {
     .execute();
 }
 
-export function getAllByRequestId(requestId: RequestId): Promise<Document[]> {
-  return db
+export async function getAllByRequestId(
+  requestId: RequestId,
+): Promise<Document[]> {
+  return await db
     .selectFrom('document')
     .where('requestId', '=', requestId)
     .where('isDeleted', '=', false)
@@ -58,16 +60,16 @@ export function getAllByRequestId(requestId: RequestId): Promise<Document[]> {
     .execute();
 }
 
-export function update(id: DocumentId, updateWith: DocumentUpdate) {
-  return db
+export async function update(id: DocumentId, updateWith: DocumentUpdate) {
+  return await db
     .updateTable('document')
     .set(updateWith)
     .where('id', '=', id)
     .execute();
 }
 
-export function deleteDocument(id: DocumentId) {
-  return update(id, { isDeleted: true });
+export async function deleteDocument(id: DocumentId) {
+  return await update(id, { isDeleted: true });
 }
 
 export async function extractAndUpdateContent(id: DocumentId) {

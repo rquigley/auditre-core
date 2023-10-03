@@ -1,23 +1,24 @@
 import { db } from '@/lib/db';
+
 import type {
-  DocumentId,
-  CommentId,
   Comment,
+  CommentId,
   CommentUpdate,
+  DocumentId,
   NewComment,
   RequestId,
 } from '@/types';
 
-export function create(comment: NewComment): Promise<Comment> {
-  return db
+export async function create(comment: NewComment): Promise<Comment> {
+  return await db
     .insertInto('comment')
     .values({ ...comment })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getById(id: CommentId): Promise<Comment> {
-  return db
+export async function getById(id: CommentId): Promise<Comment> {
+  return await db
     .selectFrom('comment')
     .where('id', '=', id)
     .where('isDeleted', '=', false)
@@ -25,8 +26,10 @@ export function getById(id: CommentId): Promise<Comment> {
     .executeTakeFirstOrThrow();
 }
 
-export function getAllByDocumentId(documentId: DocumentId): Promise<Comment[]> {
-  return db
+export async function getAllByDocumentId(
+  documentId: DocumentId,
+): Promise<Comment[]> {
+  return await db
     .selectFrom('comment')
     .where('documentId', '=', documentId)
     .where('isDeleted', '=', false)
@@ -34,8 +37,10 @@ export function getAllByDocumentId(documentId: DocumentId): Promise<Comment[]> {
     .execute();
 }
 
-export function getAllByRequestId(requestId: RequestId): Promise<Comment[]> {
-  return db
+export async function getAllByRequestId(
+  requestId: RequestId,
+): Promise<Comment[]> {
+  return await db
     .selectFrom('comment')
     .where('requestId', '=', requestId)
     .where('isDeleted', '=', false)
@@ -43,8 +48,8 @@ export function getAllByRequestId(requestId: RequestId): Promise<Comment[]> {
     .execute();
 }
 
-export function update(id: CommentId, updateWith: CommentUpdate) {
-  return db
+export async function update(id: CommentId, updateWith: CommentUpdate) {
+  return await db
     .updateTable('comment')
     .set(updateWith)
     .where('id', '=', id)

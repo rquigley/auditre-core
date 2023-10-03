@@ -1,5 +1,5 @@
-// import 'server-only';
 import { db } from '@/lib/db';
+
 import type {
   Invitation,
   InvitationUpdate,
@@ -7,16 +7,16 @@ import type {
   OrgId,
 } from '@/types';
 
-export function create(invitation: NewInvitation): Promise<Invitation> {
-  return db
+export async function create(invitation: NewInvitation): Promise<Invitation> {
+  return await db
     .insertInto('invitation')
     .values({ ...invitation })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getById(id: string): Promise<Invitation | undefined> {
-  return db
+export async function getById(id: string): Promise<Invitation | undefined> {
+  return await db
     .selectFrom('invitation')
     .where('id', '=', id)
     .where('expiresAt', '>', new Date())
@@ -24,8 +24,10 @@ export function getById(id: string): Promise<Invitation | undefined> {
     .executeTakeFirst();
 }
 
-export function getByEmail(email: string): Promise<Invitation | undefined> {
-  return db
+export async function getByEmail(
+  email: string,
+): Promise<Invitation | undefined> {
+  return await db
     .selectFrom('invitation')
     .where('email', '=', email)
     .where('isUsed', '=', false)
@@ -34,8 +36,8 @@ export function getByEmail(email: string): Promise<Invitation | undefined> {
     .executeTakeFirst();
 }
 
-export function getAllByOrgId(orgId: OrgId): Promise<Invitation[]> {
-  return db
+export async function getAllByOrgId(orgId: OrgId): Promise<Invitation[]> {
+  return await db
     .selectFrom('invitation')
     .where('orgId', '=', orgId)
     .where('isUsed', '=', false)
@@ -44,7 +46,7 @@ export function getAllByOrgId(orgId: OrgId): Promise<Invitation[]> {
 }
 
 export async function update(id: string, updateWith: InvitationUpdate) {
-  return db
+  return await db
     .updateTable('invitation')
     .set(updateWith)
     .where('id', '=', id)
@@ -52,5 +54,5 @@ export async function update(id: string, updateWith: InvitationUpdate) {
 }
 
 export async function deleteInvitation(id: string) {
-  return db.deleteFrom('invitation').where('id', '=', id).execute();
+  return await db.deleteFrom('invitation').where('id', '=', id).execute();
 }

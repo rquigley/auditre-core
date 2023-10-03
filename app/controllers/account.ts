@@ -1,35 +1,36 @@
 import { db } from '@/lib/db';
-import type { AccountUpdate, Account, NewAccount } from '@/types';
 
-export function create(user: NewAccount): Promise<Account> {
-  return db
+import type { Account, AccountUpdate, NewAccount } from '@/types';
+
+export async function create(user: NewAccount): Promise<Account> {
+  return await db
     .insertInto('account')
     .values(user)
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function deleteAccount(
+export async function deleteAccount(
   provider: string,
   providerAccountId: string,
 ): Promise<Account | undefined> {
-  return db
+  return await db
     .deleteFrom('account')
     .where('provider', '=', provider)
     .where('providerAccountId', '=', providerAccountId)
     .returningAll()
     .executeTakeFirst();
 }
-export function getById(id: string): Promise<Account> {
-  return db
+export async function getById(id: string): Promise<Account> {
+  return await db
     .selectFrom('account')
     .where('id', '=', id)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
 
-export function update(id: string, updateWith: AccountUpdate) {
-  return db
+export async function update(id: string, updateWith: AccountUpdate) {
+  return await db
     .updateTable('account')
     .set(updateWith)
     .where('id', '=', id)
