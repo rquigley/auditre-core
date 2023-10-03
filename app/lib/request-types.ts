@@ -125,11 +125,19 @@ type InputType =
   | 'date'
   | 'fileupload';
 
+type ExtractionQuestion = {
+  question: string;
+  identifier: string;
+  model?: string;
+  preProcess?: (val: string) => string;
+  validate?: (val: string) => boolean;
+};
+
 interface FormFieldBasic {
   input: InputType;
   label?: string;
   defaultValue: string;
-  extractionQuestions?: {};
+  extractionQuestions?: ExtractionQuestion[];
 }
 
 interface FormFieldBoolean extends Omit<FormFieldBasic, 'defaultValue'> {
