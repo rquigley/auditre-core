@@ -1,10 +1,12 @@
 import '../globals.css';
-import Redirector from './redirector';
+
+import { Inter } from 'next/font/google';
+import { Suspense } from 'react';
+
 import Navbar from '@/components/navbar';
 import { getCurrentOrNone } from '@/controllers/session-user';
 import { setPostAuthUrl } from '@/lib/actions';
-import { Inter } from 'next/font/google';
-import { Suspense } from 'react';
+import Redirector from './redirector';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
@@ -32,7 +34,7 @@ export default async function RootLayout({
     <html lang="en" className={inter.className}>
       <body className="h-full bg-slate-100">
         <Navbar userName={user.name} userImage={user.image} />
-        <div className="py-10 lg:pl-80 px-4 sm:px-6 bg-slate-100">
+        <div className="py-10 lg:pl-60 px-4 sm:px-6 bg-slate-100">
           <div className="bg-white rounded-sm p-5">
             <Suspense fallback="">{children}</Suspense>
           </div>

@@ -1,6 +1,5 @@
 'use client';
 
-import { Fragment, useState } from 'react';
 import { Dialog, Menu, Transition } from '@headlessui/react';
 import {
   Bars3Icon,
@@ -11,11 +10,14 @@ import {
   UsersIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
-import type { IconProps } from '@/types';
+import { usePathname } from 'next/navigation';
+import { Fragment, useState } from 'react';
+
 import { classNames } from '@/lib/util';
+
+import type { IconProps } from '@/types';
 
 export default function Navbar({
   userName,
@@ -47,13 +49,7 @@ export default function Navbar({
       icon: DocumentDuplicateIcon,
     },
     {
-      name: 'Reports',
-      href: '/reports',
-      altRoots: ['/report'],
-      icon: ChartPieIcon,
-    },
-    {
-      name: 'Organization Settings',
+      name: 'Organization',
       href: '/organization-settings',
       icon: UsersIcon,
     },
@@ -141,7 +137,7 @@ export default function Navbar({
       </Transition.Root>
 
       {/* Static sidebar for desktop */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-55 lg:flex-col">
         {/* Sidebar component, swap this element with another sidebar if you like */}
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
           <div className="flex h-16 shrink-0 items-center">
@@ -223,7 +219,7 @@ function AccountMenuItems() {
       leaveFrom="transform opacity-100 scale-100"
       leaveTo="transform opacity-0 scale-95"
     >
-      <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right bottom-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+      <Menu.Items className="absolute right-0 z-10 mt-2 w-50 origin-top-right bottom-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
         <div className="py-1">
           <Menu.Item>
             {({ active }) => (
