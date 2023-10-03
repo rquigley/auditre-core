@@ -76,8 +76,7 @@ if (process.env.LOG_QUERIES) {
   log = (event) => {
     if (event.level === 'query' && process.env.LOG_QUERIES) {
       console.log(
-        pc.green(`SQL Query: ${event.query.sql}\n`),
-
+        `SQL Query: ${event.query.sql}\n`,
         `  params: ${event.query.parameters}\n`,
         ` queryMs: ${event.queryDurationMillis}\n`,
         `   stack: ${prettyStack(new Error())}\n`,
