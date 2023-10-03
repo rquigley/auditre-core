@@ -15,7 +15,7 @@ import type {
   OpenAIModel,
 } from '@/types';
 
-export function create(
+export async function create(
   documentQuery: NewDocumentQuery,
 ): Promise<DocumentQuery> {
   return db
@@ -25,8 +25,8 @@ export function create(
     .executeTakeFirstOrThrow();
 }
 
-export function getById(id: DocumentQueryId): Promise<DocumentQuery> {
-  return db
+export async function getById(id: DocumentQueryId): Promise<DocumentQuery> {
+  return await db
     .selectFrom('documentQuery')
     .where('id', '=', id)
     .where('isDeleted', '=', false)
@@ -34,27 +34,25 @@ export function getById(id: DocumentQueryId): Promise<DocumentQuery> {
     .executeTakeFirstOrThrow();
 }
 
-export function getByDocumentIdAndIdentifier(
+export async function getByDocumentIdAndIdentifier(
   documentId: DocumentId,
   identifier: string,
 ): Promise<DocumentQuery | undefined> {
-  return (
-    db
-      .selectFrom('documentQuery')
-      .where('documentId', '=', documentId)
-      .where('identifier', '=', identifier)
-      .where('isDeleted', '=', false)
-      // We only want the most recent classification
-      .orderBy('createdAt', 'desc')
-      .selectAll()
-      .executeTakeFirst()
-  );
+  return await db
+    .selectFrom('documentQuery')
+    .where('documentId', '=', documentId)
+    .where('identifier', '=', identifier)
+    .where('isDeleted', '=', false)
+    // We only want the most recent classification
+    .orderBy('createdAt', 'desc')
+    .selectAll()
+    .executeTakeFirst();
 }
 
-export function getAllByDocumentId(
+export async function getAllByDocumentId(
   documentId: DocumentId,
 ): Promise<DocumentQuery[]> {
-  return db
+  return await db
     .selectFrom('documentQuery')
     .where('documentId', '=', documentId)
     .where('isDeleted', '=', false)
@@ -63,8 +61,11 @@ export function getAllByDocumentId(
     .execute();
 }
 
-export function update(id: DocumentQueryId, updateWith: DocumentQueryUpdate) {
-  return db
+export async function update(
+  id: DocumentQueryId,
+  updateWith: DocumentQueryUpdate,
+) {
+  return await db
     .updateTable('documentQuery')
     .set(updateWith)
     .where('id', '=', id)

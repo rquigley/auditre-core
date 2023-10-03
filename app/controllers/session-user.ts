@@ -1,11 +1,12 @@
-import { auth } from '@/lib/auth';
 import { cache } from 'react';
 
+import { auth } from '@/lib/auth';
 import { getByEmail } from './user';
+
 import type { User } from '@/types';
 
 const getByEmailCached = cache(async (email: string) => {
-  return await getByEmail(email);
+  return await getByEmail(email, { comment: 'getByEmailCached' });
 });
 
 export async function getCurrent(): Promise<User> {

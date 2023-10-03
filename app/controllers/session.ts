@@ -1,55 +1,56 @@
-// import 'server-only';
-
 import { db } from '@/lib/db';
-import type { SessionUpdate, Session, NewSession, UserId } from '@/types';
 
-export function create(session: NewSession): Promise<Session> {
-  return db
+import type { NewSession, Session, SessionUpdate, UserId } from '@/types';
+
+export async function create(session: NewSession): Promise<Session> {
+  return await db
     .insertInto('session')
     .values({ ...session })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function deleteBySessionToken(
+export async function deleteBySessionToken(
   sessionToken: string,
 ): Promise<Session | undefined> {
-  return db
+  return await db
     .deleteFrom('session')
     .where('sessionToken', '=', sessionToken)
     .returningAll()
     .executeTakeFirst();
 }
 
-export function getById(id: string): Promise<Session> {
-  return db
+export async function getById(id: string): Promise<Session> {
+  return await db
     .selectFrom('session')
     .where('id', '=', id)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getBySessionToken(sessionToken: string): Promise<Session> {
-  return db
+export async function getBySessionToken(
+  sessionToken: string,
+): Promise<Session> {
+  return await db
     .selectFrom('session')
     .where('sessionToken', '=', sessionToken)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getAllByUserId(userId: UserId): Promise<Session[]> {
-  return db
+export async function getAllByUserId(userId: UserId): Promise<Session[]> {
+  return await db
     .selectFrom('session')
     .where('userId', '=', userId)
     .selectAll()
     .execute();
 }
 
-export function updateBySessionToken(
+export async function updateBySessionToken(
   sessionToken: string,
   updateWith: SessionUpdate,
 ) {
-  return db
+  return await db
     .updateTable('session')
     .set(updateWith)
     .where('sessionToken', '=', sessionToken)

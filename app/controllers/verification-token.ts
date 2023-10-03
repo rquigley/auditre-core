@@ -1,44 +1,45 @@
-// import 'server-only';
-
 import { db } from '@/lib/db';
+
 import type {
-  VerificationTokenUpdate,
-  VerificationToken,
   NewVerificationToken,
+  VerificationToken,
+  VerificationTokenUpdate,
 } from '@/types';
 
-export function create(user: NewVerificationToken): Promise<VerificationToken> {
-  return db
+export async function create(
+  user: NewVerificationToken,
+): Promise<VerificationToken> {
+  return await db
     .insertInto('verificationToken')
     .values(user)
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function deleteVerificationToken(
+export async function deleteVerificationToken(
   identifier: string,
 ): Promise<VerificationToken | undefined> {
-  return db
+  return await db
     .deleteFrom('verificationToken')
     .where('identifier', '=', identifier)
     .returningAll()
     .executeTakeFirst();
 }
-export function getByIdentifier(
+export async function getByIdentifier(
   identifier: string,
 ): Promise<VerificationToken> {
-  return db
+  return await db
     .selectFrom('verificationToken')
     .where('identifier', '=', identifier)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
 
-export function update(
+export async function update(
   identifier: string,
   updateWith: VerificationTokenUpdate,
 ) {
-  return db
+  return await db
     .updateTable('verificationToken')
     .set(updateWith)
     .where('identifier', '=', identifier)

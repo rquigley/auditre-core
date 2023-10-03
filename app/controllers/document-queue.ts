@@ -1,42 +1,46 @@
 import { db } from '@/lib/db';
+
 import type {
-  DocumentQueueUpdate,
+  DocumentId,
   DocumentQueue,
   DocumentQueueId,
+  DocumentQueueUpdate,
   NewDocumentQueue,
-  DocumentId,
 } from '@/types';
 
-export function addJob(
+export async function addJob(
   documentQueue: NewDocumentQueue,
 ): Promise<DocumentQueue> {
-  return db
+  return await db
     .insertInto('documentQueue')
     .values({ ...documentQueue })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getById(id: DocumentQueueId): Promise<DocumentQueue> {
-  return db
+export async function getById(id: DocumentQueueId): Promise<DocumentQueue> {
+  return await db
     .selectFrom('documentQueue')
     .where('id', '=', id)
     .selectAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getAllByDocumentId(
+export async function getAllByDocumentId(
   documentId: DocumentId,
 ): Promise<DocumentQueue[]> {
-  return db
+  return await db
     .selectFrom('documentQueue')
     .where('documentId', '=', documentId)
     .selectAll()
     .execute();
 }
 
-export function update(id: DocumentQueueId, updateWith: DocumentQueueUpdate) {
-  return db
+export async function update(
+  id: DocumentQueueId,
+  updateWith: DocumentQueueUpdate,
+) {
+  return await db
     .updateTable('documentQueue')
     .set(updateWith)
     .where('id', '=', id)

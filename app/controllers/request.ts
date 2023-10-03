@@ -1,5 +1,3 @@
-// import 'server-only';
-
 import { db } from '@/lib/db';
 import { RequestTypeKey, requestTypes } from '@/lib/request-types';
 
@@ -78,8 +76,8 @@ export async function upsertDefault({
   await Promise.all(createPromises); // throw if any fail
 }
 
-export function getById(id: RequestId): Promise<Request> {
-  return db
+export async function getById(id: RequestId): Promise<Request> {
+  return await db
     .selectFrom('request')
     .where('id', '=', id)
     .where('isDeleted', '=', false)
@@ -87,8 +85,8 @@ export function getById(id: RequestId): Promise<Request> {
     .executeTakeFirstOrThrow();
 }
 
-export function getAllByAuditId(auditId: AuditId): Promise<Request[]> {
-  return db
+export async function getAllByAuditId(auditId: AuditId): Promise<Request[]> {
+  return await db
     .selectFrom('request')
     .where('auditId', '=', auditId)
     .where('isDeleted', '=', false)
@@ -141,7 +139,7 @@ export async function updateData({
   return await update(id, { data: parsed, status }, actor);
 }
 
-export function logChange({
+export async function logChange({
   requestId,
   actor,
   auditId,
@@ -152,7 +150,7 @@ export function logChange({
   auditId: AuditId;
   newData: RequestChangeValue;
 }): Promise<RequestChange> {
-  return db
+  return await db
     .insertInto('requestChange')
     .values({
       requestId,

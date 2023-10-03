@@ -1,16 +1,17 @@
 import { db } from '@/lib/db';
+
 import type { Audit, AuditId, AuditUpdate, NewAudit, OrgId } from '@/types';
 
-export function create(audit: NewAudit): Promise<Audit> {
-  return db
+export async function create(audit: NewAudit): Promise<Audit> {
+  return await db
     .insertInto('audit')
     .values({ ...audit })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getById(id: OrgId): Promise<Audit> {
-  return db
+export async function getById(id: OrgId): Promise<Audit> {
+  return await db
     .selectFrom('audit')
     .where('id', '=', id)
     .where('isDeleted', '=', false)
@@ -22,8 +23,10 @@ export type AuditWithRequestCounts = Audit & {
   numCompletedRequests: number;
   numRequests: number;
 };
-export function getAllByOrgId(orgId: OrgId): Promise<AuditWithRequestCounts[]> {
-  return db
+export async function getAllByOrgId(
+  orgId: OrgId,
+): Promise<AuditWithRequestCounts[]> {
+  return await db
     .selectFrom('audit')
     .innerJoin('request', 'audit.id', 'request.auditId')
 
@@ -42,10 +45,14 @@ export function getAllByOrgId(orgId: OrgId): Promise<AuditWithRequestCounts[]> {
     .execute();
 }
 
-export function getAll(): Promise<Audit[]> {
-  return db.selectFrom('audit').selectAll().execute();
+export async function getAll(): Promise<Audit[]> {
+  return await db.selectFrom('audit').selectAll().execute();
 }
 
 export async function update(id: AuditId, updateWith: AuditUpdate) {
-  return db.updateTable('audit').set(updateWith).where('id', '=', id).execute();
+  return await db
+    .updateTable('audit')
+    .set(updateWith)
+    .where('id', '=', id)
+    .execute();
 }

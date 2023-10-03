@@ -1,20 +1,19 @@
-// import 'server-only';
 import DataLoader from 'dataloader';
 
 import { db, sql } from '@/lib/db';
 
 import type { NewUser, OrgId, User, UserId, UserUpdate } from '@/types';
 
-export function create(user: NewUser): Promise<User> {
-  return db
+export async function create(user: NewUser): Promise<User> {
+  return await db
     .insertInto('user')
     .values({ ...user })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
-export function getById(id: UserId): Promise<User> {
-  return db
+export async function getById(id: UserId): Promise<User> {
+  return await db
     .selectFrom('user')
     .where('id', '=', id)
     .where('isDeleted', '=', false)
@@ -22,8 +21,8 @@ export function getById(id: UserId): Promise<User> {
     .executeTakeFirstOrThrow();
 }
 
-export function getAllByOrgId(orgId: OrgId): Promise<User[]> {
-  return db
+export async function getAllByOrgId(orgId: OrgId): Promise<User[]> {
+  return await db
     .selectFrom('user')
     .where('orgId', '=', orgId)
     .where('isDeleted', '=', false)
@@ -31,8 +30,8 @@ export function getAllByOrgId(orgId: OrgId): Promise<User[]> {
     .execute();
 }
 
-export function getMultipleById(ids: UserId[]): Promise<User[]> {
-  return db
+export async function getMultipleById(ids: UserId[]): Promise<User[]> {
+  return await db
     .selectFrom('user')
     .where('id', 'in', ids)
     .where('isDeleted', '=', false)
@@ -46,7 +45,7 @@ export const userLoader = new DataLoader((userIds) =>
 type QueryOpts = {
   comment?: string;
 };
-export function getByEmail(
+export async function getByEmail(
   email: string,
   queryOpts?: QueryOpts,
 ): Promise<User | undefined> {
@@ -54,7 +53,7 @@ export function getByEmail(
   if (queryOpts?.comment) {
     commentStr = sql.raw('-- ' + queryOpts.comment);
   }
-  return db
+  return await db
     .selectFrom('user')
     .where('email', '=', email)
     .where('isDeleted', '=', false)
@@ -63,11 +62,11 @@ export function getByEmail(
     .executeTakeFirst();
 }
 
-export function getByAccountProviderAndProviderId(
+export async function getByAccountProviderAndProviderId(
   provider: string,
   providerAccountId: string,
 ): Promise<User | undefined> {
-  return db
+  return await db
     .selectFrom('user')
     .innerJoin('account', 'account.userId', 'user.id')
     .where('account.provider', '=', provider)
@@ -144,5 +143,9 @@ export async function getBySessionToken(sessionTokenArg: string) {
 }
 
 export async function update(id: UserId, updateWith: UserUpdate) {
-  return db.updateTable('user').set(updateWith).where('id', '=', id).execute();
+  return await db
+    .updateTable('user')
+    .set(updateWith)
+    .where('id', '=', id)
+    .execute();
 }
