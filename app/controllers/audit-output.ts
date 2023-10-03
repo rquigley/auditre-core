@@ -202,10 +202,10 @@ export async function generate(auditId: AuditId) {
     //   ],
     // },
     sections: [
-      consolidatedFinancialStatements(data),
       titlePage(data),
-      //tableOfContents(),
+      tableOfContents(),
       independentAuditorsReport(data),
+      consolidatedFinancialStatements(data),
       notes(data),
     ],
   });
