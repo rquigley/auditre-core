@@ -9,6 +9,7 @@ import {
   sql,
 } from 'kysely';
 import { Pool } from 'pg';
+import pc from 'picocolors';
 import { z } from 'zod';
 
 import type { Database } from '../types';
@@ -72,12 +73,49 @@ export function json<T>(value: T): RawBuilder<T> {
 
 let log: LogConfig;
 if (process.env.LOG_QUERIES) {
-  log = ['query', 'error'];
+  log = (event) => {
+    if (event.level === 'query' && process.env.LOG_QUERIES) {
+      console.log(
+        pc.green(`SQL Query: ${event.query.sql}\n`),
+
+        `  params: ${event.query.parameters}\n`,
+        ` queryMs: ${event.queryDurationMillis}\n`,
+        `   stack: ${prettyStack(new Error())}\n`,
+      );
+    } else if (event.level === 'error') {
+      console.log(
+        pc.red('ERROR\n'),
+        pc.red(`SQL Query: ${event.query.sql}\n`),
+        // @ts-ignore
+        pc.red(` message: ${event.error?.message}\n`),
+
+        process.env.LOG_QUERIES
+          ? pc.red(`  params: ${event.query.parameters}\n`)
+          : '',
+        pc.red(` queryMs: ${event.queryDurationMillis}\n`),
+        pc.red(`   stack: ${prettyStack(event.error)}\n`),
+      );
+    }
+  };
 } else {
   log = [];
 }
+
 export const db = new Kysely<Database>({
   dialect,
   plugins: [new CamelCasePlugin()],
   log,
 });
+
+function prettyStack(error: any) {
+  const stack = error.stack.split('\n');
+  let lines = [];
+  while (true) {
+    let line: string = stack.pop();
+    if (line.indexOf('node_modules') !== -1) {
+      break;
+    }
+    lines.push(line.trim().replace(/webpack-internal.*\.\//, './'));
+  }
+  return lines.join('\n           ');
+}
