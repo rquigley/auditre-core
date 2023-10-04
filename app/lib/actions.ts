@@ -5,6 +5,7 @@ import 'server-only';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 
+import { create as _createAudit } from '@/controllers/audit';
 import { generate as _generateFinancialStatement } from '@/controllers/audit-output';
 import {
   deleteDocument as _deleteDocument,
@@ -18,6 +19,7 @@ import {
   update as updateRequest,
 } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
+import { newAudit } from '@/lib/form-schema';
 
 import type { AuditId, DocumentId } from '@/types';
 
@@ -41,6 +43,22 @@ export async function getPostAuthUrl() {
 
 export async function deletePostAuthUrl() {
   cookies().delete(POST_AUTH_URL);
+}
+
+export async function createAudit(rawData: { name: string; year: number }) {
+  const user = await getCurrent();
+
+  const data = newAudit.parse(rawData);
+
+  const audit = await _createAudit({
+    name: data.name,
+    year: data.year,
+    orgId: user.orgId,
+  });
+  await upsertDefaultRequests({ auditId: audit.id, orgId: user.orgId });
+
+  revalidatePath('/');
+  return;
 }
 
 export async function deleteDocument(id: DocumentId) {

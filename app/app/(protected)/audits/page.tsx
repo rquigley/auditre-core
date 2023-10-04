@@ -1,9 +1,15 @@
-import Row from './row';
 import Header from '@/components/header';
 import { getAllByOrgId } from '@/controllers/audit';
 import { getCurrent } from '@/controllers/session-user';
+import NewAuditButton from './new-audit-button';
+import NewAuditModal from './new-audit-modal';
+import Row from './row';
 
-export default async function AuditsPage() {
+export default async function AuditsPage({
+  searchParams,
+}: {
+  searchParams: URLSearchParams;
+}) {
   const user = await getCurrent();
   const audits = await getAllByOrgId(user.orgId);
 
@@ -49,8 +55,13 @@ export default async function AuditsPage() {
                 ))}
               </tbody>
             </table>
+            <div className="mt-4">
+              <NewAuditButton />
+            </div>
           </div>
         </div>
+
+        <NewAuditModal />
       </div>
     </>
   );

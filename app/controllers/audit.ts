@@ -42,6 +42,7 @@ export async function getAllByOrgId(
         .as('numCompletedRequests'),
     )
     .select((eb) => eb.fn.count<number>('request.id').as('numRequests'))
+    .orderBy(['audit.year desc', 'audit.name asc'])
     .execute();
 }
 
