@@ -375,7 +375,7 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.businessModelSchema,
+    schema: schemas.basicAny,
   },
   STOCK_OPTIONS: {
     name: 'Stock option plan and ammendments',
@@ -388,7 +388,7 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.businessModelSchema,
+    schema: schemas.basicAny,
   },
   MATERIAL_CHANGES_POST_AUDIT: {
     name: 'Post-audit changes',
@@ -402,7 +402,7 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.businessModelSchema,
+    schema: schemas.basicAny,
   },
   USER_REQUESTED: {
     name: '???',
@@ -414,7 +414,7 @@ export const requestTypes: {
       },
     },
     completeOnSet: false,
-    schema: schemas.businessModelSchema,
+    schema: schemas.basicAny,
   },
 };
 
