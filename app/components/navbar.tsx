@@ -123,6 +123,7 @@ export default function Navbar({
                               key={item.name}
                               item={item}
                               rootPathname={rootPathname}
+                              setSidebarOpen={setSidebarOpen}
                             />
                           ))}
                         </ul>
@@ -152,6 +153,7 @@ export default function Navbar({
                       key={item.name}
                       item={item}
                       rootPathname={rootPathname}
+                      setSidebarOpen={setSidebarOpen}
                     />
                   ))}
                 </ul>
@@ -275,9 +277,11 @@ type NavItemProps = {
 function NavItem({
   item,
   rootPathname,
+  setSidebarOpen,
 }: {
   item: NavItemProps;
   rootPathname: string;
+  setSidebarOpen: (open: boolean) => void;
 }) {
   const matchingPaths = [
     `/${item.href.split('/')[1]}`,
@@ -289,6 +293,7 @@ function NavItem({
     <li key={item.name}>
       <Link
         href={item.href}
+        onClick={() => setSidebarOpen(false)}
         className={classNames(
           isSelected
             ? 'bg-gray-50 text-sky-700'
