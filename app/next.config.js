@@ -4,6 +4,17 @@ const nextConfig = {
   experimental: {
     serverActions: true,
   },
+  images: {
+    remotePatterns: [
+      // OAuth User Profile Images
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+        // port: '',
+        // pathname: '',
+      },
+    ],
+  },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     // https://github.com/aws/aws-sdk-js-v3/issues/5216
     // https://github.com/aws/aws-sdk-js-v3/pull/5225
