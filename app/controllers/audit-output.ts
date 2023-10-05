@@ -2,11 +2,13 @@ import * as fs from 'fs';
 import dayjs from 'dayjs';
 
 import { getById as getAuditById } from '@/controllers/audit';
+import { getAllByDocumentId as getAllQueriesByDocumentId } from '@/controllers/document-query';
 import { getAllByAuditId } from '@/controllers/request';
 import { requestTypes } from '@/lib/request-types';
+import { get as getBalanceSheetData } from './financial-statement/balance-sheet';
 import * as t from './financial-statement/template';
 
-import type { RequestTypeKey } from '@/lib/request-types';
+import type { AuditRequestData, RequestTypeKey } from '@/lib/request-types';
 import type { AuditId, RequestData } from '@/types';
 
 const {
@@ -40,26 +42,45 @@ const {
   // } from 'docx';
 } = require('docx');
 
-// } = require('docx');
-
 async function getRequestData(auditId: AuditId) {
   const auditRequests = await getAllByAuditId(auditId);
-  let requests = auditRequests.reduce((acc: any, req) => {
+
+  for (const req of auditRequests) {
+    // if request form has a document attached, load all documentQuery data for it
+    if ('documentId' in req.data) {
+      const documentQueries = await getAllQueriesByDocumentId(
+        req.data.documentId,
+      );
+      // req.data.documentQueries = documentQueries.reduce((acc: any, req) => {
+      //   acc[req.identifier] = req.result.content;
+      //   return acc;
+      // }, {}) as unknown as Record<string, string>;
+    }
+  }
+
+  let requests: AuditRequestData = auditRequests.reduce((acc: any, req) => {
     acc[req.type] = req.data;
     return acc;
-  }, {}) as unknown as Record<RequestTypeKey, RequestData>;
+  }, {});
   return requests;
 }
+
+type AuditData = {
+  requests: AuditRequestData;
+  balanceSheet: any;
+};
 
 export async function generate(auditId: AuditId) {
   const audit = await getAuditById(auditId);
   const requests = await getRequestData(auditId);
+  const balanceSheet = await getBalanceSheetData(auditId);
 
-  const data = {
+  const data: AuditData = {
     requests,
+    balanceSheet,
   };
 
-  console.log(audit, requests);
+  console.log('data available', data);
 
   const document = new Document({
     title: 'My Document',
@@ -211,12 +232,11 @@ export async function generate(auditId: AuditId) {
   });
   return {
     document,
-    // @ts-ignore
     documentName: `Financial Statement - ${requests.BASIC_INFO.businessName} - ${audit.year}.docx`,
   };
 }
 
-function titlePage(data: any) {
+function titlePage(data: AuditData) {
   const yearEnd = dayjs(data.requests.AUDIT_INFO.fiscalYearEnd).format(
     'MMMM D, YYYY',
   );
@@ -256,7 +276,7 @@ function tableOfContents() {
   };
 }
 
-function independentAuditorsReport(data: any) {
+function independentAuditorsReport(data: AuditData) {
   const t1 = new TextRun({
     text: '[Auditor to add opinion]',
     highlight: 'yellow',
@@ -293,48 +313,21 @@ function independentAuditorsReport(data: any) {
   };
 }
 
-function getBalanceSheetData(data: any) {
-  return {
-    assets: {
-      currentAssets: {
-        cash: pp(25979389),
-        other: pp(873839),
-      },
-      totalCurrentAssets: pp(26853228),
-      property: pp(11164032),
-      intangible: pp(346801),
-      operatingLeaseRightOfUse: pp(3800326),
-      other: pp(162656),
-      total: pp(42327043),
-    },
-    liabilities: {
-      current: {
-        accountsPayable: pp(25979389),
-        accrued: pp(873839),
-        operatingLease: pp(873839),
-      },
-      totalCurrent: pp(26853228),
-      accruedInterest: pp(11164032),
-      converableNotes: pp(346801),
-      operatingLease: pp(3800326),
-      total: pp(42327043),
-    },
-  };
-}
-
 function pp(num: number) {
   return num.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
 }
 
-function consolidatedFinancialStatements(data: any) {
+function consolidatedFinancialStatements(data: AuditData) {
   // const t1 = new TextRun({
   //   text: '[Auditor to add opinion]',
   //   highlight: 'yellow',
   // });
-  const vals = getBalanceSheetData(data);
+
   const table = new Table({
     borders: {
       top: { style: BorderStyle.NONE },
@@ -369,41 +362,41 @@ function consolidatedFinancialStatements(data: any) {
       }),
       getRow({
         name: 'Cash',
-        value: vals.assets.currentAssets.cash,
+        value: pp(data.balanceSheet.assets.currentAssets.cash),
         indent: true,
       }),
       getRow({
         name: 'Prepaid expenses and other current assets',
-        value: vals.assets.currentAssets.other,
+        value: pp(data.balanceSheet.assets.currentAssets.other),
         indent: true,
         borderBottom: true,
       }),
       getRow({
         name: 'Total current assets',
-        value: vals.assets.totalCurrentAssets,
+        value: pp(data.balanceSheet.assets.totalCurrentAssets),
         borderBottom: true,
         padTop: true,
       }),
       getRow({
         name: 'Property and equipment, net',
-        value: vals.assets.property,
+        value: pp(data.balanceSheet.assets.property),
       }),
       getRow({
         name: 'Intangible assets, net',
-        value: vals.assets.intangible,
+        value: pp(data.balanceSheet.assets.intangible),
       }),
       getRow({
         name: 'Operating lease right-of-use assets',
-        value: vals.assets.operatingLeaseRightOfUse,
+        value: pp(data.balanceSheet.assets.operatingLeaseRightOfUse),
       }),
       getRow({
         name: 'Other assets',
-        value: vals.assets.other,
+        value: pp(data.balanceSheet.assets.other),
         borderBottom: true,
       }),
       getRow({
         name: 'Total assets',
-        value: vals.assets.total,
+        value: pp(data.balanceSheet.assets.total),
         bold: true,
         borderBottom: true,
         padTop: true,
@@ -420,44 +413,44 @@ function consolidatedFinancialStatements(data: any) {
       }),
       getRow({
         name: 'Accounts payable',
-        value: vals.liabilities.current.accountsPayable,
+        value: pp(data.balanceSheet.liabilities.current.accountsPayable),
         indent: true,
       }),
       getRow({
         name: 'Accrued liabilities',
-        value: vals.liabilities.current.accrued,
+        value: pp(data.balanceSheet.liabilities.current.accrued),
         indent: true,
       }),
       getRow({
         name: 'Operating lease liabilities, current',
-        value: vals.liabilities.current.operatingLease,
+        value: pp(data.balanceSheet.liabilities.current.operatingLease),
         indent: true,
         borderBottom: true,
       }),
       getRow({
         name: 'Total current liabilities',
-        value: vals.liabilities.totalCurrent,
+        value: pp(data.balanceSheet.liabilities.totalCurrent),
         borderBottom: true,
         padTop: true,
       }),
       getRow({
         name: 'Accrued interest',
-        value: vals.liabilities.accruedInterest,
+        value: pp(data.balanceSheet.liabilities.accruedInterest),
         indent: true,
       }),
       getRow({
         name: 'Convertible notes payable',
-        value: vals.liabilities.converableNotes,
+        value: pp(data.balanceSheet.liabilities.converableNotes),
         indent: true,
       }),
       getRow({
         name: 'Operating lease liabilities, net of current portion',
-        value: vals.liabilities.operatingLease,
+        value: pp(data.balanceSheet.liabilities.operatingLease),
         indent: true,
       }),
       getRow({
         name: 'Total liabilities',
-        value: vals.liabilities.total,
+        value: pp(data.balanceSheet.liabilities.total),
         bold: true,
         borderBottom: true,
         padTop: true,
@@ -666,7 +659,7 @@ function templateToParagraph(template: t.Template) {
   ];
 }
 
-function notes(data: any) {
+function notes(data: AuditData) {
   return {
     ...getPageProperties(),
 

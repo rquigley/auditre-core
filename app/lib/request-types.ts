@@ -4,21 +4,10 @@ import * as schemas from '@/lib/form-schema';
 import { head } from '@/lib/util';
 import { balanceSheetTypes } from './consolidated-balance-sheet';
 
-import type { RequestData } from '@/types';
 import type { ZodTypeAny } from 'zod';
 
 const balanceSheetTypeKeys = Object.keys(balanceSheetTypes);
 
-export type RequestTypeConfig = {
-  name: string;
-  description: string;
-  defaultValue: RequestData;
-  form: {
-    [key: string]: InputConfig;
-  };
-  schema: ZodTypeAny;
-  completeOnSet: boolean;
-};
 interface BaseInputConfig {
   label: string;
   description?: string;
@@ -131,6 +120,25 @@ type ExtractionQuestion = {
   model?: string;
   preProcess?: (val: string) => string;
   validate?: (val: string) => boolean;
+};
+
+type HasDefaultValue = { defaultValue: any };
+type RequestDataOnly<Type> = {
+  [Property in keyof Type]: Type[Property] extends HasDefaultValue
+    ? Type[Property]['defaultValue']
+    : never;
+};
+
+export type AuditRequestData = {
+  AUDIT_INFO: RequestDataOnly<AuditInfoForm>;
+  BASIC_INFO: RequestDataOnly<BasicInfoForm>;
+  ARTICLES_OF_INCORPORATION: RequestDataOnly<FileForm>;
+  TRIAL_BALANCE: RequestDataOnly<FileForm>;
+  CHART_OF_ACCOUNTS: RequestDataOnly<FileForm>;
+  LEASES: RequestDataOnly<DateForm>;
+  STOCK_OPTIONS: RequestDataOnly<DateForm>;
+  MATERIAL_CHANGES_POST_AUDIT: RequestDataOnly<DateForm>;
+  USER_REQUESTED: RequestDataOnly<TextareaForm>;
 };
 
 interface FormFieldBasic {
