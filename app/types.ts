@@ -119,6 +119,8 @@ export type NewAudit = Insertable<AuditTable>;
 export type Audit = Selectable<AuditTable>;
 export type ClientSafeAudit = Omit<Selectable<AuditTable>, ClientSafeOmitTypes>;
 
+// Use Conditional Type
+// https://www.typescriptlang.org/static/TypeScript%20Types-ae199d69aeecf7d4a2704a528d0fd3f9.png
 export type RequestData =
   | {
       value: boolean;
