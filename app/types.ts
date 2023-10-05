@@ -124,6 +124,9 @@ export type RequestData =
       value: boolean;
     }
   | {
+      documentId: DocumentId;
+    }
+  | {
       value: string;
     }
   | {
