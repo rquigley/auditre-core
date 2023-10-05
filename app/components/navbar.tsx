@@ -4,13 +4,13 @@ import { Dialog, Menu, Transition } from '@headlessui/react';
 import {
   Bars3Icon,
   BuildingLibraryIcon,
-  ChartPieIcon,
   DocumentDuplicateIcon,
   HomeIcon,
   UsersIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { signOut } from 'next-auth/react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Fragment, useState } from 'react';
@@ -112,7 +112,12 @@ export default function Navbar({
                 {/* Sidebar component, swap this element with another sidebar if you like */}
                 <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-2">
                   <div className="flex h-16 shrink-0 items-center">
-                    <img className="h-8 w-auto" src="/logo.svg" alt="AuditRe" />
+                    <Image
+                      width="53"
+                      height="33"
+                      src="/logo.svg"
+                      alt="AuditRe"
+                    />
                   </div>
                   <nav className="flex flex-1 flex-col">
                     <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -142,7 +147,7 @@ export default function Navbar({
         {/* Sidebar component, swap this element with another sidebar if you like */}
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
           <div className="flex h-16 shrink-0 items-center">
-            <img className="h-8 w-auto" src="/logo.svg" alt="AuditRe" />
+            <Image width="53" height="33" src="/logo.svg" alt="AuditRe" />
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -163,12 +168,14 @@ export default function Navbar({
                   <div>
                     <Menu.Button className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900 hover:bg-gray-50">
                       {userImage && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          className="h-8 w-8 rounded-full bg-gray-50"
-                          src={userImage}
-                          alt={userName || ''}
-                        />
+                        <div className="h-8 w-8 rounded-full bg-gray-50 overflow-hidden">
+                          <Image
+                            width="36"
+                            height="36"
+                            src={userImage}
+                            alt={userName || ''}
+                          />
+                        </div>
                       )}
                       <span className="sr-only">Your profile</span>
                       <span aria-hidden="true">{userName || ''}</span>
@@ -198,11 +205,14 @@ export default function Navbar({
           <span className="sr-only">Your profile</span>
           {userImage && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              className="h-8 w-8 rounded-full bg-gray-50"
-              src={userImage}
-              alt={userName || ''}
-            />
+            <div className="h-8 w-8 rounded-full bg-gray-50 overflow-hidden">
+              <Image
+                width="36"
+                height="36"
+                src={userImage}
+                alt={userName || ''}
+              />
+            </div>
           )}
         </a>
       </div>
