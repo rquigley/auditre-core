@@ -172,7 +172,7 @@ interface AuditInfoForm {
 }
 
 interface FileForm {
-  value: FormFieldFile;
+  documentId: FormFieldFile;
 }
 
 interface TextareaForm {
@@ -260,7 +260,7 @@ export const requestTypes: {
     name: 'Upload the Articles of Incorporation',
     description: '',
     form: {
-      value: {
+      documentId: {
         extensions: ['PDF'],
         maxFilesizeMB: 10,
         input: 'fileupload',
@@ -309,13 +309,13 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.basicAny,
+    schema: schemas.documentId,
   },
   TRIAL_BALANCE: {
     name: 'Upload the Trial Balance',
     description: '',
     form: {
-      value: {
+      documentId: {
         extensions: ['XLS', 'XLSX', 'CSV'],
         maxFilesizeMB: 10,
         input: 'fileupload',
@@ -324,13 +324,13 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.basicAny,
+    schema: schemas.documentId,
   },
   CHART_OF_ACCOUNTS: {
     name: 'Upload the Chart of Accounts',
     description: '',
     form: {
-      value: {
+      documentId: {
         extensions: ['XLS', 'XLSX', 'CSV'],
         maxFilesizeMB: 10,
         input: 'fileupload',
@@ -362,7 +362,7 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.basicAny,
+    schema: schemas.documentId,
   },
   LEASES: {
     name: 'Leases',

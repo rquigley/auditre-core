@@ -141,24 +141,25 @@ export async function askDefaultQuestions(document: Document) {
   let questions = [];
   if (
     typeQuestion.result?.content === 'ARTICLES_OF_INCORPORATION' &&
-    requestTypes.ARTICLES_OF_INCORPORATION.form.value.extractionQuestions
+    requestTypes.ARTICLES_OF_INCORPORATION.form.documentId.extractionQuestions
   ) {
     questions.push(
-      ...requestTypes.ARTICLES_OF_INCORPORATION.form.value.extractionQuestions,
+      ...requestTypes.ARTICLES_OF_INCORPORATION.form.documentId
+        .extractionQuestions,
     );
   } else if (
     typeQuestion.result?.content === 'CHART_OF_ACCOUNTS' &&
-    requestTypes.CHART_OF_ACCOUNTS.form.value.extractionQuestions
+    requestTypes.CHART_OF_ACCOUNTS.form.documentId.extractionQuestions
   ) {
     questions.push(
-      ...requestTypes.CHART_OF_ACCOUNTS.form.value.extractionQuestions,
+      ...requestTypes.CHART_OF_ACCOUNTS.form.documentId.extractionQuestions,
     );
   } else if (
     typeQuestion.result?.content === 'TRIAL_BALANCE' &&
-    requestTypes.TRIAL_BALANCE.form.value.extractionQuestions
+    requestTypes.TRIAL_BALANCE.form.documentId.extractionQuestions
   ) {
     questions.push(
-      ...requestTypes.TRIAL_BALANCE.form.value.extractionQuestions,
+      ...requestTypes.TRIAL_BALANCE.form.documentId.extractionQuestions,
     );
   }
   const aiPromises = questions.map((obj) =>
