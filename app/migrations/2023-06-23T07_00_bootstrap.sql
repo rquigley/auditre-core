@@ -75,16 +75,6 @@ CREATE TABLE "verification_token" (
   "expires" timestamp without time zone NOT NULL
 );
 
-CREATE TABLE "documents" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "s3_key" text NOT NULL UNIQUE,
-  "filename" text NOT NULL,
-  "type" text NOT NULL,
-  "created_at" timestamp DEFAULT now() NOT NULL,
-  "is_deleted" boolean NOT NULL DEFAULT FALSE
-);
-
 CREATE TABLE "audit" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
