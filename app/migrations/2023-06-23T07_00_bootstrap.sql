@@ -1,9 +1,23 @@
+CREATE OR REPLACE FUNCTION update_modified_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- if UPDATE is trying to set "updated_at", don't override it
+    IF NEW.updated_at = OLD.updated_at THEN
+      NEW.updated_at = NOW();
+    END IF;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+
 CREATE TABLE "org" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "name" text,
-  "created_at" timestamp DEFAULT now() NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean DEFAULT FALSE
 );
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "org" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "user" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -12,18 +26,22 @@ CREATE TABLE "user" (
   "email" text UNIQUE,
   "email_verified" text,
   "image" text,
-  "created_at" timestamp DEFAULT now() NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "user" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "invitation" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "email" text UNIQUE,
-  "created_at" timestamp DEFAULT now() NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL,
   "expires_at" timestamp DEFAULT (now() + INTERVAL '7 days') NOT NULL,
   "is_used" boolean NOT NULL DEFAULT FALSE
 );
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "invitation" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "account" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -38,8 +56,10 @@ CREATE TABLE "account" (
   "scope" text,
   "id_token" text,
   "session_state" text,
-  "created_at" timestamp DEFAULT now() NOT NULL
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamp
 );
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "session" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -70,9 +90,11 @@ CREATE TABLE "audit" (
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "name" text,
   "year" numeric(4,0),
-  "created_at" timestamp DEFAULT now() NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "audit" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "request" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -85,9 +107,11 @@ CREATE TABLE "request" (
   -- "requestee" uuid REFERENCES "user" ("id"),
   "data" jsonb,
   "due_date" date,
-  "created_at" timestamp DEFAULT now() NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "request" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "request_change" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -110,9 +134,11 @@ CREATE TABLE "document" (
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "is_processed" boolean NOT NULL DEFAULT FALSE,
   "extracted" text,
-  "created_at" timestamp DEFAULT now() NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "document" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "document_query" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -122,7 +148,7 @@ CREATE TABLE "document_query" (
   "query" text,
   "result" JSONB,
   "usage" JSONB,
-  "created_at" timestamp DEFAULT now() NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
 
@@ -130,9 +156,11 @@ CREATE TABLE "document_queue" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "document_id" uuid REFERENCES "document" ("id"),
   "status" text NOT NULL,
-  "created_at" timestamp DEFAULT now() NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL,
   "payload" text
 );
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "document_queue" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "comment" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -141,9 +169,11 @@ CREATE TABLE "comment" (
   "document_id" uuid REFERENCES "document" ("id"),
   "user_id" uuid NOT NULL REFERENCES "user" ("id"),
   "comment" text,
-  "created_at" timestamp DEFAULT now() NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "comment" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "account_mapping" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -152,10 +182,12 @@ CREATE TABLE "account_mapping" (
   "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
   "account_id" text NOT NULL,
   "account_mapped_to" text,
-  "created_at" timestamp DEFAULT now() NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
 ALTER TABLE "account_mapping" ADD CONSTRAINT constraint_account_id_audit_id_document_id UNIQUE (account_id, audit_id, document_id);
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account_mapping" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 -- CREATE TABLE "log" (
 --   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
