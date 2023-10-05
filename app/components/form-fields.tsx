@@ -161,6 +161,7 @@ export function Year({
           </option>
         ))}
       </select>
+      <span className="sr-only">{config.label}</span>
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
         {errors[field]?.message}
