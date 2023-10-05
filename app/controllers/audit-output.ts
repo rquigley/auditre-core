@@ -65,7 +65,7 @@ async function getRequestData(auditId: AuditId) {
   return requests;
 }
 
-type AuditData = {
+export type AuditData = {
   requests: AuditRequestData;
   balanceSheet: any;
 };
