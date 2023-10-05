@@ -340,7 +340,7 @@ export const requestTypes: {
             identifier: 'ACCOUNT_NAME_COLUMN',
             preProcess: (val: string) => head(val, 10),
             question: stripIndent`
-              In this CSV content which column number contains account names? Think carefully before answering. 
+              In this CSV content which column number contains account names? Think carefully before answering.
               We don't want account types or any other. Return JSON with "columnName" and "columnNum".
               If you are unsure return "-" for values
               `,
