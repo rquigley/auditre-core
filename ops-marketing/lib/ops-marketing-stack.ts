@@ -141,6 +141,7 @@ export class OpsMarketingStack extends cdk.Stack {
     });
 
     siteBucket.grantReadWrite(uploadRole);
+    distribution.grantCreateInvalidation(uploadRole);
 
     new cdk.CfnOutput(this, 'Github Actions Upload Role', {
       value: uploadRole.roleArn,
