@@ -18,6 +18,7 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
+    "@ianvs/prettier-plugin-sort-imports": "4.1.0",
     "aws-cdk-github-oidc": "2.4.1",
     "aws-cdk-lib": "2.99.1",
     "constructs": "10.2.70",
