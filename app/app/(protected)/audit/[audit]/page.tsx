@@ -25,10 +25,7 @@ export default async function AuditPage({
   const requests = await getAllByAuditId(audit.id);
   const clientSafeRequests = clientSafe(requests) as ClientSafeRequest[];
 
-  const breadcrumbs = [
-    { name: 'Audits', href: '/audits' },
-    { name: 'Requests', href: '/audits' },
-  ];
+  const breadcrumbs = [{ name: 'Audits', href: '/audits' }];
   return (
     <>
       <Header

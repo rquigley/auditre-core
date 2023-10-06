@@ -5,11 +5,7 @@ import NewAuditButton from './new-audit-button';
 import NewAuditModal from './new-audit-modal';
 import Row from './row';
 
-export default async function AuditsPage({
-  searchParams,
-}: {
-  searchParams: URLSearchParams;
-}) {
+export default async function AuditsPage() {
   const user = await getCurrent();
   const audits = await getAllByOrgId(user.orgId);
 

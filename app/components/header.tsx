@@ -1,17 +1,6 @@
 'use client';
-import { Fragment } from 'react';
-import {
-  BriefcaseIcon,
-  CalendarIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  CurrencyDollarIcon,
-  LinkIcon,
-  MapPinIcon,
-  PencilIcon,
-} from '@heroicons/react/20/solid';
-import { Menu, Transition } from '@headlessui/react';
+
+import { CalendarIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
