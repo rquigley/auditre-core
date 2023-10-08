@@ -1,18 +1,19 @@
+import {
+  GithubActionsIdentityProvider,
+  GithubActionsRole,
+} from 'aws-cdk-github-oidc';
 import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfront_origins from 'aws-cdk-lib/aws-cloudfront-origins';
 //import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
-import * as acm from 'aws-cdk-lib/aws-certificatemanager';
-import { SSMParameterReader } from './ssm-parameter-reader';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
-import {
-  GithubActionsRole,
-  GithubActionsIdentityProvider,
-} from 'aws-cdk-github-oidc';
+import { Construct } from 'constructs';
+
+import { SSMParameterReader } from './ssm-parameter-reader';
 
 const domainName = 'auditre.co';
 // See ops-certificate-stack
@@ -48,6 +49,7 @@ export class OpsMarketingStack extends cdk.Stack {
 
     const siteBucket = new s3.Bucket(this, 'Chah2tai', {
       bucketName: domainName,
+
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
@@ -55,16 +57,16 @@ export class OpsMarketingStack extends cdk.Stack {
     });
 
     new s3.Bucket(this, 'Chah2tai-www', {
-      websiteRedirect: { hostName: 'www.example.com' },
-
       bucketName: domainNameWithWWW,
+
+      websiteRedirect: {
+        hostName: siteBucket.bucketWebsiteDomainName,
+        protocol: s3.RedirectProtocol.HTTPS,
+      },
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
       autoDeleteObjects: true, // NOT recommended for production code
-    });
-    new s3.Bucket(this, 'MyRedirectedBucket', {
-      websiteRedirect: { hostName: 'www.example.com' },
     });
 
     const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
