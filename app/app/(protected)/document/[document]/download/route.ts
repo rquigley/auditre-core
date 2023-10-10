@@ -1,7 +1,8 @@
+import { notFound } from 'next/navigation';
 import { NextResponse } from 'next/server';
-import { redirect, notFound } from 'next/navigation';
-import { getCurrent } from '@/controllers/session-user';
+
 import { getById } from '@/controllers/document';
+import { getCurrent } from '@/controllers/session-user';
 import { streamFile } from '@/lib/aws';
 
 export async function GET(
@@ -25,7 +26,7 @@ export async function GET(
   return new NextResponse(stream, {
     headers: {
       'content-disposition': `attachment; filename=${document.name}`,
-      'content-type': document.type,
+      'content-type': document.mimeType,
       'content-length': document.size + '',
     },
   });
