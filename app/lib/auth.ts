@@ -1,12 +1,10 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import GitHubProvider from 'next-auth/providers/github';
-import { AuthAdapter } from '@/lib/auth-adapter';
+
 import { getByEmail as getInviteByEmail } from '@/controllers/invitation';
-import {
-  getById as getUserById,
-  getByEmail as getUserByEmail,
-} from '@/controllers/user';
+import { getByEmail as getUserByEmail } from '@/controllers/user';
+//import GitHubProvider from 'next-auth/providers/github';
+import { AuthAdapter } from '@/lib/auth-adapter';
 
 export const {
   handlers: { GET, POST },
