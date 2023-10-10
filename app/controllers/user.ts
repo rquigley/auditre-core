@@ -4,7 +4,7 @@ import { db, sql } from '@/lib/db';
 
 import type { NewUser, OrgId, User, UserId, UserUpdate } from '@/types';
 
-export async function create(user: NewUser): Promise<User> {
+export async function createUser(user: NewUser): Promise<User> {
   return await db
     .insertInto('user')
     .values({ ...user })
@@ -142,7 +142,7 @@ export async function getBySessionToken(sessionTokenArg: string) {
   };
 }
 
-export async function update(id: UserId, updateWith: UserUpdate) {
+export async function updateUser(id: UserId, updateWith: UserUpdate) {
   return await db
     .updateTable('user')
     .set(updateWith)

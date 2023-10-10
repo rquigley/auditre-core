@@ -1,7 +1,8 @@
-import { create, getById, update } from '@/controllers/user';
 import * as orgCtrl from '@/controllers/org';
+import { createUser, getById, updateUser } from '@/controllers/user';
 import { db } from '@/lib/db';
-import type { UserUpdate, Org, OrgId } from '@/types';
+
+import type { Org, OrgId, UserUpdate } from '@/types';
 
 describe('User Controller', () => {
   let testOrg: Org;
@@ -24,7 +25,7 @@ describe('User Controller', () => {
         name: 'New User',
         email,
       };
-      const createdUser = await create(newUser);
+      const createdUser = await createUser(newUser);
       expect(createdUser.name).toBe(newUser.name);
       expect(createdUser.email).toBe(newUser.email);
     });
@@ -32,7 +33,7 @@ describe('User Controller', () => {
 
   describe('getById', () => {
     it('should get a user by id', async () => {
-      const testUser = await create({
+      const testUser = await createUser({
         orgId: testOrgId,
         name: 'New User',
         email: `newuser${Date.now().toString()}@example.com`,
@@ -46,7 +47,7 @@ describe('User Controller', () => {
 
   describe('update', () => {
     it('should update a user', async () => {
-      const testUser = await create({
+      const testUser = await createUser({
         orgId: testOrgId,
         name: 'New User',
         email: `newuser${Date.now().toString()}@example.com`,
@@ -54,7 +55,7 @@ describe('User Controller', () => {
       const updateWith: UserUpdate = {
         name: 'Updated User',
       };
-      await update(testUser.id, updateWith);
+      await updateUser(testUser.id, updateWith);
       const updatedUser = await getById(testUser.id);
       expect(updatedUser.name).toBe(updateWith.name);
     });

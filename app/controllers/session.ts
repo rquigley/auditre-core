@@ -2,7 +2,7 @@ import { db } from '@/lib/db';
 
 import type { NewSession, Session, SessionUpdate, UserId } from '@/types';
 
-export async function create(session: NewSession): Promise<Session> {
+export async function createSession(session: NewSession): Promise<Session> {
   return await db
     .insertInto('session')
     .values({ ...session })
@@ -10,7 +10,7 @@ export async function create(session: NewSession): Promise<Session> {
     .executeTakeFirstOrThrow();
 }
 
-export async function deleteBySessionToken(
+export async function deleteSession(
   sessionToken: string,
 ): Promise<Session | undefined> {
   return await db
@@ -46,7 +46,7 @@ export async function getAllByUserId(userId: UserId): Promise<Session[]> {
     .execute();
 }
 
-export async function updateBySessionToken(
+export async function updateSession(
   sessionToken: string,
   updateWith: SessionUpdate,
 ) {
