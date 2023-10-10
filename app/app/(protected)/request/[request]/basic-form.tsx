@@ -31,7 +31,6 @@ import type {
 
 export type Props = {
   request: ClientSafeRequest;
-  data: RequestData;
   saveData: (data: RequestData) => void;
   createDocument: (file: S3File) => Promise<string>;
   getPresignedUploadUrl: (opts: {
@@ -59,7 +58,6 @@ export type FormState =
   | { type: 'saved' };
 export default function BasicForm({
   request,
-  data,
   saveData,
   createDocument,
   getPresignedUploadUrl,
@@ -87,8 +85,7 @@ export default function BasicForm({
     formState: { errors },
   } = useForm<z.infer<typeof config.schema>>({
     resolver: zodResolver(config.schema),
-    defaultValues: data,
-    values: data,
+    defaultValues: request.data,
   });
 
   useEffect(() => {

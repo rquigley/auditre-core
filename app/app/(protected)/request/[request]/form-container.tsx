@@ -120,7 +120,6 @@ export default async function FormContainer({ request, user, audit }: Props) {
   return (
     <BasicForm
       request={clientSafe(request) as ClientSafeRequest}
-      data={request.data}
       saveData={saveData}
       createDocument={createDoc}
       //getDocumentStatus={getDocumentStatus}
