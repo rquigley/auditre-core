@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
-import LoadingDots from '@/components/loading-dots';
-import { useRouter } from 'next/navigation';
-
 import { XCircleIcon } from '@heroicons/react/20/solid';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+
+import LoadingDots from '@/components/loading-dots';
 
 export function Error({ error }: { error: string }) {
   return (
@@ -62,7 +62,7 @@ export default function Form() {
           id="email"
           name="email"
           type="email"
-          placeholder="test@auditrehq.com"
+          placeholder="test@auditre.co"
           autoComplete="email"
           required
           className="mt-1 block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-black focus:outline-none focus:ring-black sm:text-sm text-gray-600"

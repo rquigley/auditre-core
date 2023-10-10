@@ -1,10 +1,12 @@
+import Image from 'next/image';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import Link from 'next/link';
-import LoginButton from './login-button';
+
 import { getCurrentOrNone } from '@/controllers/session-user';
-import Redirector from './redirector';
 import { getPostAuthUrl } from '@/lib/actions';
+import LoginButton from './login-button';
+import Redirector from './redirector';
 
 export default async function Login() {
   const user = await getCurrentOrNone();
@@ -16,7 +18,13 @@ export default async function Login() {
       <div className="z-10 w-full max-w-md overflow-hidden rounded-2xl border border-gray-100 shadow-xl">
         <div className="flex flex-col items-center justify-center space-y-3 border-b border-gray-200 bg-white px-4 py-6 pt-8 text-center sm:px-16">
           <Link href="/">
-            <img className="h-8 w-auto" src="/logo.svg" alt="AuditRe" />
+            <Image
+              width="134"
+              height="50"
+              src="/auditre.svg"
+              className="h-10 w-auto"
+              alt="AuditRe"
+            />
           </Link>
           <h3 className="text-xl font-semibold">Sign In</h3>
           <p className="text-sm text-gray-500">
