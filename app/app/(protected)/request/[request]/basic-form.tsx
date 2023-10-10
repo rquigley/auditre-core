@@ -234,7 +234,7 @@ export default function BasicForm({
         ) : null}
         <button
           type="submit"
-          disabled={
+          aris-disabled={
             !isDirty || state.type === 'uploading' || state.type === 'saving'
           }
           className={classNames(
