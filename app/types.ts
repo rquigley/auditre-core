@@ -1,3 +1,4 @@
+import type { DocumentType } from './controllers/document-query';
 import type { RequestTypeKey } from './lib/request-types';
 import type {
   ColumnType,
@@ -201,7 +202,12 @@ export interface DocumentTable {
   bucket: string;
   name: string;
   size: number;
-  type: string;
+  mimeType: string;
+  classifiedType: ColumnType<
+    DocumentType | 'UNCLASSIFIED',
+    never,
+    DocumentType
+  >;
   extracted: string | null;
   isProcessed: ColumnType<Boolean, never, Boolean>;
   lastModified: Date;
