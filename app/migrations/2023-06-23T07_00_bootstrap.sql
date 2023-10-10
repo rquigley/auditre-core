@@ -119,7 +119,8 @@ CREATE TABLE "document" (
   "bucket" text NOT NULL,
   "name" text,
   "size" integer NOT NULL,
-  "type" text,
+  "mime_type" text,
+  "classified_type" text NOT NULL DEFAULT 'UNCLASSIFIED',
   "last_modified" timestamp NOT NULL, -- This is for the file, not the record
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "is_processed" boolean NOT NULL DEFAULT FALSE,
@@ -135,8 +136,8 @@ CREATE TABLE "document_query" (
   "document_id" uuid REFERENCES "document" ("id"),
   "model" text,
   "identifier" text,
-  "query" text,
-  "result" JSONB,
+  "query" JSONB,
+  "result" text,
   "usage" JSONB,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
