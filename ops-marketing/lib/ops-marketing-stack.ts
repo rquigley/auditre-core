@@ -2,15 +2,23 @@ import {
   GithubActionsIdentityProvider,
   GithubActionsRole,
 } from 'aws-cdk-github-oidc';
-import * as cdk from 'aws-cdk-lib';
-import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import {
+  CfnOutput,
+  Duration,
+  RemovalPolicy,
+  Stack,
+  StackProps,
+} from 'aws-cdk-lib';
+import { LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
+import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as cloudfront_origins from 'aws-cdk-lib/aws-cloudfront-origins';
-//import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
+import * as cloudfrontOrigins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as dynamoDb from 'aws-cdk-lib/aws-dynamodb';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaNodeJs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 
 import { SSMParameterReader } from './ssm-parameter-reader';
@@ -19,11 +27,11 @@ const domainName = 'auditre.co';
 // See ops-certificate-stack
 const SSM_PARENT_ZONE_ID = 'auditre-parent-zone-id';
 
-export class OpsMarketingStack extends cdk.Stack {
+export class OpsMarketingStack extends Stack {
   constructor(
     scope: Construct,
     id: string,
-    props?: cdk.StackProps & { certificateArn: string },
+    props?: StackProps & { certificateArn: string },
   ) {
     super(scope, id, props);
 
@@ -35,7 +43,7 @@ export class OpsMarketingStack extends cdk.Stack {
         region: 'us-east-1',
       },
     );
-    new cdk.CfnOutput(this, 'parentZoneId', {
+    new CfnOutput(this, 'parentZoneId', {
       value: parentZoneIdReader.getParameterValue(),
     });
 
@@ -43,7 +51,7 @@ export class OpsMarketingStack extends cdk.Stack {
       hostedZoneId: parentZoneIdReader.getParameterValue(),
       zoneName: 'auditre.co',
     });
-    new cdk.CfnOutput(this, 'zone', { value: zone.zoneName });
+    new CfnOutput(this, 'zone', { value: zone.zoneName });
 
     const domainNameWithWWW = `www.${domainName}`;
 
@@ -52,7 +60,7 @@ export class OpsMarketingStack extends cdk.Stack {
 
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
+      removalPolicy: RemovalPolicy.DESTROY, // NOT recommended for production code
       autoDeleteObjects: true, // NOT recommended for production code
     });
 
@@ -65,7 +73,7 @@ export class OpsMarketingStack extends cdk.Stack {
       },
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
+      removalPolicy: RemovalPolicy.DESTROY, // NOT recommended for production code
       autoDeleteObjects: true, // NOT recommended for production code
     });
 
@@ -79,7 +87,7 @@ export class OpsMarketingStack extends cdk.Stack {
 
     // Output from ssl-cert-stack
     const certificateArn = props?.certificateArn || '';
-    const certificate = acm.Certificate.fromCertificateArn(
+    const certificate = Certificate.fromCertificateArn(
       this,
       'Certificate',
       certificateArn,
@@ -94,11 +102,11 @@ export class OpsMarketingStack extends cdk.Stack {
           httpStatus: 403,
           responseHttpStatus: 403,
           responsePagePath: '/error.html',
-          ttl: cdk.Duration.minutes(30),
+          ttl: Duration.minutes(30),
         },
       ],
       defaultBehavior: {
-        origin: new cloudfront_origins.S3Origin(siteBucket, {
+        origin: new cloudfrontOrigins.S3Origin(siteBucket, {
           originAccessIdentity: cloudfrontOAI,
         }),
         compress: true,
@@ -108,7 +116,48 @@ export class OpsMarketingStack extends cdk.Stack {
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
     });
 
-    new cdk.CfnOutput(this, 'DistributionId', {
+    const table = new dynamoDb.Table(this, 'MailingListDyanamoDb', {
+      partitionKey: { name: 'email', type: dynamoDb.AttributeType.STRING },
+    });
+
+    const lambdaFunction = new lambdaNodeJs.NodejsFunction(
+      this,
+      'MailingListLambda',
+      {
+        entry: './packages/mailing-list-handler/handler.ts',
+        runtime: lambda.Runtime.NODEJS_18_X,
+        architecture: lambda.Architecture.ARM_64,
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: table.tableName,
+        },
+        // bundling: {
+        //   nodeModules: ['node-fetch', '@aws-sdk/client-dynamodb'],
+        // },
+      },
+    );
+    table.grantReadWriteData(lambdaFunction);
+
+    const lambdaIntegration = new LambdaIntegration(lambdaFunction);
+
+    const api = new RestApi(this, 'MailingListAPIGateway', {
+      restApiName: 'My Mailing List Service',
+    });
+    // api.root.addMethod('POST', lambdaIntegration);
+    api.root
+      .addResource('join-mailing-list')
+      .addMethod('POST', lambdaIntegration);
+
+    distribution.addBehavior(
+      '/join-mailing-list',
+      new cloudfrontOrigins.RestApiOrigin(api),
+      {
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+      },
+    );
+
+    new CfnOutput(this, 'DistributionId', {
       value: distribution.distributionId,
     });
 
@@ -145,7 +194,7 @@ export class OpsMarketingStack extends cdk.Stack {
     siteBucket.grantReadWrite(uploadRole);
     distribution.grantCreateInvalidation(uploadRole);
 
-    new cdk.CfnOutput(this, 'Github Actions Upload Role', {
+    new CfnOutput(this, 'Github Actions Upload Role', {
       value: uploadRole.roleArn,
     });
 
