@@ -90,7 +90,7 @@ export default async function FormContainer({ request, user, audit }: Props) {
       bucket: file.bucket,
       name: file.name,
       size: file.size,
-      type: file.type,
+      mimeType: file.type,
       lastModified: new Date(file.lastModified),
       orgId: audit.orgId,
       requestId: request.id,
