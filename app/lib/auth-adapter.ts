@@ -1,3 +1,28 @@
+import { create as createAccount, deleteAccount } from '@/controllers/account';
+import {
+  getByEmail as getInviteByEmail,
+  update as updateInvite,
+} from '@/controllers/invitation';
+import {
+  createSession,
+  deleteSession,
+  updateSession,
+} from '@/controllers/session';
+import {
+  createUser,
+  getByAccountProviderAndProviderId as getUserByAccountProviderAndProviderId,
+  getByEmail as getUserByEmail,
+  getById as getUserById,
+  sessionUserLoader,
+  updateUser,
+} from '@/controllers/user';
+import {
+  createVerificationToken,
+  deleteVerificationToken,
+  getByIdentifier as getVerificationTokenByIdentifier,
+} from '@/controllers/verification-token';
+
+import type { User } from '@/types';
 import type {
   Adapter,
   AdapterAccount,
@@ -5,15 +30,6 @@ import type {
   AdapterUser,
   VerificationToken,
 } from '@auth/core/adapters';
-import * as userController from '@/controllers/user';
-import * as accountController from '@/controllers/account';
-import * as sessionController from '@/controllers/session';
-import * as verificationTokenController from '@/controllers/verification-token';
-import {
-  getByEmail as getInviteByEmail,
-  update as updateInvite,
-} from '@/controllers/invitation';
-import type { User } from '@/types';
 
 function userToAdapterUser(user: User) {
   return {
@@ -35,7 +51,7 @@ export function AuthAdapter(): Adapter {
       await updateInvite(invite.id, {
         isUsed: true,
       });
-      const user = await userController.create({
+      const user = await createUser({
         orgId: invite.orgId,
         name: data.name,
         email: data.email,
@@ -46,7 +62,7 @@ export function AuthAdapter(): Adapter {
     },
 
     getUser: async (id: string) => {
-      const user = await userController.getById(id);
+      const user = await getUserById(id);
       if (!user) {
         return null;
       }
@@ -54,7 +70,7 @@ export function AuthAdapter(): Adapter {
     },
 
     getUserByEmail: async (email: string) => {
-      const user = await userController.getByEmail(email);
+      const user = await getUserByEmail(email);
       if (!user) {
         return null;
       }
@@ -63,7 +79,7 @@ export function AuthAdapter(): Adapter {
     },
 
     getUserByAccount: async ({ provider, providerAccountId }) => {
-      const user = await userController.getByAccountProviderAndProviderId(
+      const user = await getUserByAccountProviderAndProviderId(
         provider,
         providerAccountId,
       );
@@ -75,22 +91,22 @@ export function AuthAdapter(): Adapter {
     },
 
     updateUser: async ({ id, ...data }) => {
-      const user = await userController.getById(id);
+      const user = await getUserById(id);
 
-      await userController.update(user.id, {
+      await updateUser(user.id, {
         name: data.name,
         email: data.email,
         emailVerified: data.emailVerified,
         image: data.image,
       });
-      const user2 = await userController.getById(id);
+      const user2 = await getUserById(id);
 
       return userToAdapterUser(user2) as AdapterUser;
     },
 
     deleteUser: async (id) => {
-      const user = await userController.getById(id);
-      await userController.update(user.id, {
+      const user = await getUserById(id);
+      await updateUser(user.id, {
         isDeleted: true,
       });
     },
@@ -108,8 +124,8 @@ export function AuthAdapter(): Adapter {
         id_token: idToken,
         userId,
       } = account;
-      const user = await userController.getById(userId);
-      return accountController.create({
+      const user = await getUserById(userId);
+      return createAccount({
         userId: user.id,
         type,
         provider,
@@ -123,15 +139,14 @@ export function AuthAdapter(): Adapter {
     },
 
     unlinkAccount: ({ provider, providerAccountId }) => {
-      return accountController.deleteAccount(
+      return deleteAccount(
         provider,
         providerAccountId,
       ) as unknown as AdapterAccount;
     },
 
     getSessionAndUser: async (sessionToken) => {
-      const userAndSession =
-        await userController.sessionUserLoader.load(sessionToken);
+      const userAndSession = await sessionUserLoader.load(sessionToken);
       if (!userAndSession) {
         return null;
       }
@@ -143,8 +158,8 @@ export function AuthAdapter(): Adapter {
     },
 
     createSession: async (data) => {
-      const user = await userController.getById(data.userId);
-      const session = await sessionController.create({
+      const user = await getUserById(data.userId);
+      const session = await createSession({
         sessionToken: data.sessionToken,
         userId: user.id,
         expires: data.expires,
@@ -157,10 +172,9 @@ export function AuthAdapter(): Adapter {
     },
 
     updateSession: async (data) => {
-      const session = await sessionController.updateBySessionToken(
-        data.sessionToken,
-        { expires: data.expires },
-      );
+      const session = await updateSession(data.sessionToken, {
+        expires: data.expires,
+      });
 
       return {
         sessionToken: data.sessionToken,
@@ -170,11 +184,11 @@ export function AuthAdapter(): Adapter {
     },
 
     deleteSession: async (sessionToken) => {
-      await sessionController.deleteBySessionToken(sessionToken);
+      await deleteSession(sessionToken);
     },
 
     createVerificationToken: async (data) => {
-      const verificationToken = await verificationTokenController.create({
+      const verificationToken = await createVerificationToken({
         expires: data.expires,
         token: data.token,
       });
@@ -184,9 +198,9 @@ export function AuthAdapter(): Adapter {
 
     useVerificationToken: async ({ identifier, token }) => {
       const verificationToken =
-        await verificationTokenController.getByIdentifier(identifier);
+        await getVerificationTokenByIdentifier(identifier);
       if (verificationToken && verificationToken.token === token) {
-        await verificationTokenController.deleteVerificationToken(identifier);
+        await deleteVerificationToken(identifier);
       } else {
         return null;
       }
