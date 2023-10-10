@@ -1,5 +1,6 @@
 import { ChevronRightIcon } from '@heroicons/react/20/solid';
 import { revalidatePath } from 'next/cache';
+import Image from 'next/image';
 import Link from 'next/link';
 import { z } from 'zod';
 
@@ -71,9 +72,11 @@ function Users({ users }: { users: User[] }) {
         >
           <div className="flex min-w-0 gap-x-4">
             {user.image && (
-              <img
+              <Image
                 className="h-12 w-12 flex-none rounded-full bg-gray-50"
                 src={user.image}
+                width="36"
+                height="36"
                 alt=""
               />
             )}
