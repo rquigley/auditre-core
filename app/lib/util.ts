@@ -68,3 +68,7 @@ export function head(str: string, numLines: number): string {
   const lines = str.split('\n');
   return lines.slice(0, numLines).join('\n');
 }
+
+export function isKey<T extends object>(x: T, k: PropertyKey): k is keyof T {
+  return k in x;
+}
