@@ -111,7 +111,7 @@ export default function Navbar({
                 </Transition.Child>
                 {/* Sidebar component, swap this element with another sidebar if you like */}
                 <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 py-2">
-                  <div className="flex h-16 shrink-0 items-center">
+                  <div className="flex h-16 w-auto shrink-0 items-center">
                     <Image
                       width="100"
                       height="26"
@@ -146,7 +146,7 @@ export default function Navbar({
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-55 lg:flex-col">
         {/* Sidebar component, swap this element with another sidebar if you like */}
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
-          <div className="flex mt-4 h-16 shrink-0 items-center">
+          <div className="flex mt-4 h-16 w-auto shrink-0 items-center">
             <Image width="100" height="26" src="/auditre.svg" alt="AuditRe" />
           </div>
           <nav className="flex flex-1 flex-col">
