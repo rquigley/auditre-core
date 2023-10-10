@@ -3,6 +3,10 @@ const nextConfig = {
   output: 'standalone',
   experimental: {
     serverActions: true,
+    // logging: {
+    //   level: 'verbose',
+    //   fullUrl: true,
+    // },
   },
   images: {
     remotePatterns: [
