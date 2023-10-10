@@ -16,7 +16,7 @@ import {
   Year,
 } from '@/components/form-fields';
 import SaveNotice from '@/components/save-notice';
-import { InputConfig, requestTypes } from '@/lib/request-types';
+import { requestTypes } from '@/lib/request-types';
 import { classNames, delay } from '@/lib/util';
 
 import type {
@@ -131,7 +131,7 @@ export default function BasicForm({
           <div className=" grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             {Object.keys(config.form).map((field) => {
               //@ts-ignore
-              const fieldConfig: InputConfig = config.form[field];
+              const fieldConfig = config.form[field];
 
               return (
                 <div className="sm:col-span-8" key={field}>

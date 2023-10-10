@@ -17,13 +17,12 @@ import {
 } from '@/lib/actions';
 import { fetchWithProgress } from '@/lib/fetch-with-progress';
 import {
-  BooleanInputConfig,
-  CheckboxInputConfig,
-  DateInputConfig,
-  FileUploadInputConfig,
-  TextareaInputConfig,
-  TextInputConfig,
-  YearInputConfig,
+  FormFieldBoolean,
+  FormFieldCheckbox,
+  FormFieldDate,
+  FormFieldFile,
+  FormFieldText,
+  FormFieldYear,
 } from '@/lib/request-types';
 import { classNames } from '@/lib/util';
 
@@ -50,7 +49,7 @@ export function Text({
   register,
   errors,
   config,
-}: FormFieldProps & { config: TextInputConfig }) {
+}: FormFieldProps & { config: FormFieldText }) {
   return (
     <>
       <input
@@ -76,7 +75,7 @@ export function Textarea({
   register,
   errors,
   config,
-}: FormFieldProps & { config: TextareaInputConfig }) {
+}: FormFieldProps & { config: FormFieldText }) {
   return (
     <>
       <textarea
@@ -105,7 +104,7 @@ export function DateField({
   errors,
   config,
 }: FormFieldProps & {
-  config: DateInputConfig;
+  config: FormFieldDate;
   getValues: (key: string) => any;
   setValue: (key: string, val: any, opts: any) => void;
 }) {
@@ -141,7 +140,7 @@ export function Year({
   register,
   errors,
   config,
-}: FormFieldProps & { config: YearInputConfig }) {
+}: FormFieldProps & { config: FormFieldYear }) {
   const nextYear = new Date().getFullYear() + 1;
   const years = Array.from({ length: 10 }, (_, i) => nextYear - i);
   return (
@@ -175,8 +174,7 @@ export function Checkbox({
   register,
   errors,
   config,
-}: FormFieldProps & { config: CheckboxInputConfig }) {
-  config.input;
+}: FormFieldProps & { config: FormFieldCheckbox }) {
   const items = Object.keys(config.items).map((key, idx) => {
     return { type: key, ...config.items[key] };
   });
@@ -221,9 +219,9 @@ export function BooleanField({
   errors,
   config,
 }: FormFieldProps & {
-  config: BooleanInputConfig;
+  config: FormFieldBoolean;
   getValues: (field: string) => any;
-  setValue: (key: string, val: any, opts: any) => void;
+  setValue: (key: string, val: any, opts?: any) => void;
 }) {
   const [enabled, setEnabled] = useState(getValues(field));
   return (
@@ -232,6 +230,7 @@ export function BooleanField({
         checked={enabled}
         onChange={(val) => {
           setValue(field, val, { shouldDirty: true, shouldTouch: true });
+          // setValue(field, val);
           setEnabled(val);
         }}
         className={classNames(
@@ -270,7 +269,7 @@ export function FileUpload({
   getPresignedUploadUrl,
   documents,
 }: FormFieldProps & {
-  config: FileUploadInputConfig;
+  config: FormFieldFile;
   request: ClientSafeRequest;
   setValue: (key: string, val: any, opts: any) => void;
   getValues: () => any;
@@ -637,7 +636,7 @@ function Queries({ queries }: { queries: DocumentQuery[] }) {
       {queries.map((query) => (
         <div key={query.id}>
           <span className="">{humanCase(query.identifier)}</span>:{' '}
-          {query.result?.content}
+          {query.result}
         </div>
       ))}
     </div>
