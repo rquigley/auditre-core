@@ -1,3 +1,4 @@
+import { getAll as getAllAudits } from '@/controllers/audit';
 import { db } from '@/lib/db';
 import { RequestTypeKey, requestTypes } from '@/lib/request-types';
 
@@ -74,6 +75,16 @@ export async function upsertDefault({
   }
   await Promise.allSettled(createPromises);
   await Promise.all(createPromises); // throw if any fail
+}
+
+export async function upsertAll() {
+  const audits = await getAllAudits();
+  const proms = [];
+  for (const audit of audits) {
+    proms.push(upsertDefault({ auditId: audit.id, orgId: audit.orgId }));
+  }
+  await Promise.allSettled(proms);
+  await Promise.all(proms); // throw if any fail
 }
 
 export async function getById(id: RequestId): Promise<Request> {
