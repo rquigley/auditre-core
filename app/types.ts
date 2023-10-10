@@ -1,4 +1,5 @@
 import type { DocumentType } from './controllers/document-query';
+import type { OpenAIMessage } from './lib/ai';
 import type { RequestTypeKey } from './lib/request-types';
 import type {
   ColumnType,
@@ -245,11 +246,6 @@ export type DocumentQueue = Selectable<DocumentQueueTable>;
 
 export type OpenAIModel = 'gpt-3.5-turbo' | 'gpt-3.5-turbo-16k' | 'gpt-4';
 
-export type DocumentQueryResult = {
-  role: 'assistant';
-  content: string;
-};
-
 export type DocumentQueryUsage = {
   promptTokens: number;
   completionTokens: number;
@@ -262,8 +258,8 @@ export interface DocumentQueryTable {
   documentId: DocumentId;
   model: OpenAIModel;
   identifier: string;
-  query: string;
-  result: DocumentQueryResult;
+  query: { messages: OpenAIMessage[] };
+  result: string;
   usage: DocumentQueryUsage;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<Boolean, never, Boolean>;

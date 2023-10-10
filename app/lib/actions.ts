@@ -10,10 +10,11 @@ import { generate as _generateFinancialStatement } from '@/controllers/audit-out
 import {
   deleteDocument as _deleteDocument,
   extractChartOfAccountsMapping,
+  getAllByRequestId as getAllDocumentsByRequestId,
   getById as getDocumentById,
-  getType as getDocumentType,
   process as processDocument,
 } from '@/controllers/document';
+import { getAllByDocumentId as getAllQueriesByDocumentId } from '@/controllers/document-query';
 import {
   getById as getRequestById,
   update as updateRequest,
@@ -22,7 +23,13 @@ import {
 import { getCurrent } from '@/controllers/session-user';
 import { newAudit } from '@/lib/form-schema';
 
-import type { AuditId, DocumentId } from '@/types';
+import type {
+  AuditId,
+  Document,
+  DocumentId,
+  DocumentQuery,
+  RequestId,
+} from '@/types';
 
 export { processDocument };
 
@@ -83,9 +90,10 @@ export async function processChartOfAccounts(
     throw new Error('Unauthorized');
   }
 
-  const docType = await getDocumentType(id);
-  if (docType !== 'CHART_OF_ACCOUNTS') {
-    throw new Error(`Invalid document type for Chart of Accounts: ${docType}`);
+  if (document.classifiedType !== 'CHART_OF_ACCOUNTS') {
+    throw new Error(
+      `Invalid document type for Chart of Accounts: ${document.classifiedType}`,
+    );
   }
   await extractChartOfAccountsMapping(document, auditId);
 }
@@ -104,7 +112,9 @@ export async function selectDocumentForRequest(
   }
 
   const request = await getRequestById(document.requestId);
+  console.log(request);
   if (!request.data.hasOwnProperty(field)) {
+    console.log(request.data);
     throw new Error(`Invalid field: ${field}`);
   }
   const newData = { ...request.data, [field]: document.id };
