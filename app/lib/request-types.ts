@@ -8,45 +8,6 @@ import type { ZodTypeAny } from 'zod';
 
 const balanceSheetTypeKeys = Object.keys(balanceSheetTypes);
 
-interface BaseInputConfig {
-  label: string;
-  description?: string;
-}
-export interface FileUploadInputConfig extends BaseInputConfig {
-  input: 'fileupload';
-  extensions: string[];
-  maxFilesizeMB: number;
-}
-export interface CheckboxInputConfig extends BaseInputConfig {
-  input: 'checkbox';
-  items: {
-    [key: string]: { name: string; description: string };
-  };
-}
-export interface TextInputConfig extends BaseInputConfig {
-  input: 'text';
-}
-export interface TextareaInputConfig extends BaseInputConfig {
-  input: 'textarea';
-}
-export interface DateInputConfig extends BaseInputConfig {
-  input: 'date';
-}
-export interface YearInputConfig extends BaseInputConfig {
-  input: 'year';
-}
-export interface BooleanInputConfig extends BaseInputConfig {
-  input: 'boolean';
-}
-export type InputConfig =
-  | BooleanInputConfig
-  | TextInputConfig
-  | TextareaInputConfig
-  | DateInputConfig
-  | YearInputConfig
-  | CheckboxInputConfig
-  | FileUploadInputConfig;
-
 export const businessModelTypes = {
   SOFTWARE_AS_A_SERVICE: {
     name: 'Software as a Service',
@@ -122,6 +83,82 @@ type ExtractionQuestion = {
   validate?: (val: string) => boolean;
 };
 
+export interface _FormField {
+  label?: string;
+  description?: string;
+  extractionQuestions?: ExtractionQuestion[];
+  dependsOn?: string;
+}
+
+export interface FormFieldText extends _FormField {
+  input: 'text' | 'textarea';
+  defaultValue: string;
+}
+
+export interface FormFieldBoolean extends _FormField {
+  input: 'boolean';
+  defaultValue: boolean;
+}
+
+export interface FormFieldDate extends _FormField {
+  input: 'date';
+  defaultValue: string;
+}
+
+export interface FormFieldYear extends _FormField {
+  input: 'year';
+  defaultValue: string;
+}
+
+export interface FormFieldCheckbox extends _FormField {
+  input: 'checkbox';
+  defaultValue: Array<string>;
+  items: {
+    [key: string]: { name: string; description: string };
+  };
+}
+
+export interface FormFieldFile extends _FormField {
+  input: 'fileupload';
+  extensions: string[];
+  maxFilesizeMB: number;
+  defaultValue: string;
+}
+
+interface BasicInfoForm {
+  businessName: FormFieldText;
+  description: FormFieldText;
+  businessModels: FormFieldCheckbox;
+  chiefDecisionMaker: FormFieldText;
+}
+
+interface AuditInfoForm {
+  year: FormFieldYear;
+  fiscalYearEnd: FormFieldDate;
+  hasBeenAudited: FormFieldBoolean;
+  previousAuditDocumentId: FormFieldFile;
+}
+
+interface FileForm {
+  documentId: FormFieldFile;
+}
+
+interface TextareaForm {
+  value: FormFieldText;
+}
+
+interface LeasesForm {
+  value: FormFieldBoolean;
+}
+
+interface StockOptionsForm {
+  value: FormFieldBoolean;
+}
+
+interface MaterialChangesPostAuditForm {
+  value: FormFieldBoolean;
+}
+
 type HasDefaultValue = { defaultValue: any };
 type RequestDataOnly<Type> = {
   [Property in keyof Type]: Type[Property] extends HasDefaultValue
@@ -135,61 +172,11 @@ export type AuditRequestData = {
   ARTICLES_OF_INCORPORATION: RequestDataOnly<FileForm>;
   TRIAL_BALANCE: RequestDataOnly<FileForm>;
   CHART_OF_ACCOUNTS: RequestDataOnly<FileForm>;
-  LEASES: RequestDataOnly<DateForm>;
-  STOCK_OPTIONS: RequestDataOnly<DateForm>;
-  MATERIAL_CHANGES_POST_AUDIT: RequestDataOnly<DateForm>;
+  LEASES: RequestDataOnly<LeasesForm>;
+  STOCK_OPTIONS: RequestDataOnly<StockOptionsForm>;
+  MATERIAL_CHANGES_POST_AUDIT: RequestDataOnly<MaterialChangesPostAuditForm>;
   USER_REQUESTED: RequestDataOnly<TextareaForm>;
 };
-
-interface FormFieldBasic {
-  input: InputType;
-  label?: string;
-  defaultValue: string;
-  extractionQuestions?: ExtractionQuestion[];
-}
-
-interface FormFieldBoolean extends Omit<FormFieldBasic, 'defaultValue'> {
-  defaultValue: boolean;
-}
-
-interface FormFieldDescription extends FormFieldBasic {
-  description: string;
-}
-
-interface FormFieldBusinessModel extends Omit<FormFieldBasic, 'defaultValue'> {
-  defaultValue: (keyof typeof businessModelTypes)[];
-  items: typeof businessModelTypes;
-}
-
-interface FormFieldFile extends FormFieldBasic {
-  extensions: string[];
-  maxFilesizeMB: number;
-}
-
-interface BasicInfoForm {
-  businessName: FormFieldBasic;
-  description: FormFieldDescription;
-  businessModels: FormFieldBusinessModel;
-  chiefDecisionMaker: FormFieldBasic;
-}
-
-interface AuditInfoForm {
-  year: FormFieldBasic;
-  hasBeenAudited: FormFieldBoolean;
-  fiscalYearEnd: FormFieldBasic;
-}
-
-interface FileForm {
-  documentId: FormFieldFile;
-}
-
-interface TextareaForm {
-  value: FormFieldBasic;
-}
-
-interface DateForm {
-  value: FormFieldBasic;
-}
 
 interface RequestType<T> {
   name: string;
@@ -205,9 +192,9 @@ export const requestTypes: {
   ARTICLES_OF_INCORPORATION: RequestType<FileForm>;
   TRIAL_BALANCE: RequestType<FileForm>;
   CHART_OF_ACCOUNTS: RequestType<FileForm>;
-  LEASES: RequestType<DateForm>;
-  STOCK_OPTIONS: RequestType<DateForm>;
-  MATERIAL_CHANGES_POST_AUDIT: RequestType<DateForm>;
+  LEASES: RequestType<LeasesForm>;
+  STOCK_OPTIONS: RequestType<StockOptionsForm>;
+  MATERIAL_CHANGES_POST_AUDIT: RequestType<MaterialChangesPostAuditForm>;
   USER_REQUESTED: RequestType<TextareaForm>;
 } = {
   BASIC_INFO: {
@@ -250,15 +237,15 @@ export const requestTypes: {
         label: 'What year is being audited?',
         defaultValue: '',
       },
-      hasBeenAudited: {
-        input: 'boolean',
-        label: 'Has the company been audted before?',
-        defaultValue: false,
-      },
       fiscalYearEnd: {
         input: 'date',
         label: "When does the company's fiscal year end?",
         defaultValue: '',
+      },
+      hasBeenAudited: {
+        input: 'boolean',
+        label: 'Has the company been audited before?',
+        defaultValue: false,
       },
     },
     completeOnSet: true,
@@ -379,7 +366,7 @@ export const requestTypes: {
       value: {
         input: 'boolean',
         label: 'Does the company have any leases?',
-        defaultValue: '',
+        defaultValue: false,
       },
     },
     completeOnSet: true,
@@ -392,7 +379,7 @@ export const requestTypes: {
       value: {
         input: 'boolean',
         label: 'Does the company issue stock to employees?',
-        defaultValue: '',
+        defaultValue: false,
       },
     },
     completeOnSet: true,
@@ -406,7 +393,7 @@ export const requestTypes: {
         input: 'boolean',
         label:
           'Have there been any material changes to the operations of the business following the period being audited?',
-        defaultValue: '',
+        defaultValue: false,
       },
     },
     completeOnSet: true,

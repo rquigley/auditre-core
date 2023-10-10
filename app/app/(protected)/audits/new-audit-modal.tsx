@@ -94,7 +94,11 @@ export default function NewAuditModal() {
                             field="name"
                             register={register}
                             errors={errors}
-                            config={{ input: 'text', label: 'Name' }}
+                            config={{
+                              input: 'text',
+                              label: 'Name',
+                              defaultValue: '',
+                            }}
                           />
                         </div>
                         <div>
@@ -108,7 +112,11 @@ export default function NewAuditModal() {
                             field="year"
                             register={register}
                             errors={errors}
-                            config={{ input: 'year', label: 'Year' }}
+                            config={{
+                              input: 'year',
+                              label: 'Year',
+                              defaultValue: '',
+                            }}
                           />
                         </div>
                       </div>
