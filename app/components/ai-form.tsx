@@ -90,7 +90,7 @@ export default function AI({
         )}
         <button
           type="submit"
-          aris-disabled={!isDirty}
+          aria-disabled={!isDirty}
           className={classNames(
             !isDirty
               ? 'bg-gray-400'
