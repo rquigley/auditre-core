@@ -6,7 +6,7 @@ import type {
   VerificationTokenUpdate,
 } from '@/types';
 
-export async function create(
+export async function createVerificationToken(
   user: NewVerificationToken,
 ): Promise<VerificationToken> {
   return await db
@@ -35,7 +35,7 @@ export async function getByIdentifier(
     .executeTakeFirstOrThrow();
 }
 
-export async function update(
+export async function updateVerificationToken(
   identifier: string,
   updateWith: VerificationTokenUpdate,
 ) {
