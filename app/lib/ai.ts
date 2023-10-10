@@ -1,60 +1,88 @@
+import { request } from 'http';
 import OpenAI from 'openai';
 import { z } from 'zod';
 
-import { OpenAIModel } from '@/types';
+import { DocumentQueryUsage, OpenAIModel } from '@/types';
 
 const openaiConfig = z.string().min(3).max(255);
 
 export async function askQuestion({
   question,
   content,
-  model,
+  model = 'gpt-3.5-turbo',
 }: {
   question: string;
   content: string;
   model?: OpenAIModel;
 }) {
-  return await call(
-    [
+  return await call({
+    requestedModel: model,
+    messages: [
       {
         role: 'system',
         content: question,
       },
-      { role: 'user', content },
+      { role: 'user', content: `"""${content}"""` },
     ],
-    {
-      model,
-    },
-  );
+  });
 }
 
-type Message = {
+export type OpenAIMessage = {
   role: 'user' | 'system';
   content: string;
 };
-async function call(
-  messages: Message[],
-  { model }: { model?: OpenAIModel } = {},
-) {
+
+export async function call({
+  messages,
+  requestedModel,
+}: {
+  messages: OpenAIMessage[];
+  requestedModel: OpenAIModel;
+}): Promise<{
+  message: string;
+  model: OpenAIModel;
+  usage: DocumentQueryUsage;
+}> {
   const apiKey = openaiConfig.parse(process.env.OPENAI_API_KEY);
   const openai = new OpenAI({
     apiKey,
   });
 
-  if (!model) {
-    // TODO: better estimate
-    if (JSON.stringify(messages).length > 8000) {
-      model = 'gpt-3.5-turbo-16k';
-    } else {
-      model = 'gpt-3.5-turbo';
-    }
-  }
-
   const t0 = Date.now();
-  const resp = await openai.chat.completions.create({
-    model,
-    messages,
-  });
+  let resp: OpenAI.Chat.Completions.ChatCompletion | undefined;
+  try {
+    resp = await openai.chat.completions.create({
+      model: requestedModel,
+      messages,
+    });
+  } catch (error) {
+    if (error instanceof OpenAI.APIError) {
+      // We might be able to use a larger model
+      // Example error:
+      // 400 This model's maximum context length is 4097 tokens. However, your messages resulted in 4358 tokens. Please reduce the length of the messages.
+      if (error.code === 'context_length_exceeded') {
+        if (requestedModel === 'gpt-3.5-turbo') {
+          return await call({
+            messages,
+            requestedModel: 'gpt-3.5-turbo-16k',
+          });
+        }
+      }
+    }
+    throw error;
+  }
+  if (!resp) {
+    return {
+      message: 'No response from OpenAI',
+      model: requestedModel,
+      usage: {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        timeMs: 0,
+      },
+    };
+  }
   const t1 = Date.now();
   const usage = {
     promptTokens: resp.usage?.prompt_tokens || 0,
@@ -62,9 +90,10 @@ async function call(
     totalTokens: resp.usage?.total_tokens || 0,
     timeMs: t1 - t0,
   };
+
   return {
-    message: resp.choices[0].message,
-    model,
+    message: resp.choices[0].message.content || '',
+    model: requestedModel,
     usage,
   };
 }

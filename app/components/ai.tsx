@@ -46,7 +46,7 @@ export default async function AI({ document }: { document: Document }) {
 
             <div className="text-xs text-gray-500">
               <span className="font-bold" id={`query-${query.id}`}>
-                Q: {nl2br(query.query)}
+                Q: {nl2br(query.query.messages[0].content)}
               </span>
             </div>
             <div className="text-xs text-gray-500 mt-2">
@@ -54,7 +54,7 @@ export default async function AI({ document }: { document: Document }) {
                 className="w-180 whitespace-normal"
                 id={`result-${query.id}`}
               >
-                A: {nl2br(query.result?.content)}
+                A: {nl2br(query.result)}
               </pre>
 
               {/* <CopyToClipboard elementId={`query-${query.id}`}>

@@ -6,6 +6,7 @@ import retry from 'async-retry';
 import { create as createMapping } from '@/controllers/account-mapping';
 import {
   askDefaultQuestions,
+  classifyDocument,
   getByDocumentIdAndIdentifier,
 } from '@/controllers/document-query';
 import { getExtractedContent } from '@/lib/aws';
@@ -104,9 +105,16 @@ export async function process(id: DocumentId): Promise<void> {
   });
 
   const document = await getById(id);
-  await askDefaultQuestions(document);
-  await completeJob(askQuestionsJob.id);
 
+  // check for job status
+  if (document.extracted) {
+    const classifiedType = await classifyDocument(document);
+    await update(id, { classifiedType });
+
+    await askDefaultQuestions(document);
+
+    await completeJob(askQuestionsJob.id);
+  }
   // const docType = await getType(id);
   // // What should we do if we don't have extracted info?
   // if (docType === 'CHART_OF_ACCOUNTS') {
@@ -129,21 +137,6 @@ export async function getStatus(
   return {
     status: 'INCOMPLETE',
   };
-}
-
-export type DocumentType =
-  | 'ARTICLES_OF_INCORPORATION'
-  | 'BYLAWS'
-  | 'TRIAL_BALANCE'
-  | 'CHART_OF_ACCOUNTS'
-  | 'STOCK_PLAN'
-  | 'UNKNOWN';
-export async function getType(id: DocumentId): Promise<DocumentType> {
-  const typeQuery = await getByDocumentIdAndIdentifier(id, 'DOCUMENT_TYPE');
-  if (!typeQuery || !typeQuery.result) {
-    return 'UNKNOWN';
-  }
-  return typeQuery.result.content as unknown as DocumentType;
 }
 
 export async function extractChartOfAccountsMapping(
@@ -178,7 +171,7 @@ export async function extractChartOfAccountsMapping(
 
   let mapping;
   try {
-    mapping = JSON.parse(mappingQuery.result.content) as {
+    mapping = JSON.parse(mappingQuery.result) as {
       name: string;
       type: AccountType | null;
     }[];
