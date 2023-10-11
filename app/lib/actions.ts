@@ -53,10 +53,18 @@ export async function deletePostAuthUrl() {
   cookies().delete(POST_AUTH_URL);
 }
 
+const newAuditSchema = z.object({
+  name: z.string().min(3).max(72),
+  year: z.coerce
+    .number()
+    .min(1970, 'The year must be at least 1970')
+    .max(2050, 'The year must be before 2050'),
+});
+
 export async function createAudit(rawData: { name: string; year: number }) {
   const user = await getCurrent();
 
-  const data = newAudit.parse(rawData);
+  const data = newAuditSchema.parse(rawData);
 
   const audit = await _createAudit({
     name: data.name,
