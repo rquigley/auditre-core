@@ -76,17 +76,19 @@ export default function BasicForm({
   }, [state.type]);
 
   const {
-    formState: { isDirty },
+    formState: { isDirty, dirtyFields },
     register,
     setValue,
     getValues,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<z.infer<typeof config.schema>>({
     resolver: zodResolver(config.schema),
     defaultValues: request.data,
   });
+  console.log('DIRTY', dirtyFields);
 
   useEffect(() => {
     if (isDirty && state.type === 'idle') {
@@ -105,7 +107,7 @@ export default function BasicForm({
     // setState({ type: 'idle' });
     // prevent documents from being created multiple times
     // UNDONE because it breaks inputs reflecting the current value
-    //reset();
+    reset({}, { keepValues: true });
 
     // reload activity feed
     //router.refresh();
@@ -127,11 +129,27 @@ export default function BasicForm({
           )}
           <div className=" grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             {Object.keys(config.form).map((field) => {
-              //@ts-ignore
+              // @ts-ignore
               const fieldConfig = config.form[field];
+              const isVisibleA = isFieldVisible(
+                field,
+                getValues(),
+                config.form,
+                watch,
+              );
+
+              // if (!isVisibleA.every(Boolean)) {
+              //   return <input type="hidden" key={field} {...register(field)} />;
+              // }
 
               return (
-                <div className="sm:col-span-8" key={field}>
+                <div
+                  className={classNames(
+                    isVisibleA.every(Boolean) ? '' : 'hidden',
+                    'sm:col-span-8',
+                  )}
+                  key={field}
+                >
                   <label
                     htmlFor={field}
                     className="block text-sm font-medium leading-6 text-gray-900"
@@ -220,6 +238,7 @@ export default function BasicForm({
             <SaveNotice />
           </div>
         )}
+
         {isDirty && state.type !== 'uploading' && state.type !== 'saving' ? (
           <button
             type="button"
@@ -250,4 +269,32 @@ export default function BasicForm({
       </div>
     </form>
   );
+}
+
+function isFieldVisible(
+  field: any,
+  values: any,
+  formConfig: any,
+  watch: any,
+): Array<boolean> {
+  let isVisble = true;
+  let watchFields = [];
+  // Don't bother for static fields
+  if (!formConfig[field].dependsOn) {
+    return [true];
+  }
+  while (true) {
+    let fieldConfig = formConfig[field];
+
+    if (fieldConfig.dependsOn) {
+      watchFields.push(fieldConfig.dependsOn);
+      if (!values[fieldConfig.dependsOn]) {
+        isVisble = false;
+      }
+      field = fieldConfig.dependsOn;
+    } else {
+      break;
+    }
+  }
+  return watch(watchFields);
 }

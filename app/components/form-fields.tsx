@@ -146,16 +146,14 @@ export function Year({
   return (
     <>
       <select
-        {...register(field, {
-          setValueAs: (v: string) => parseInt(v),
-        })}
+        {...register(field)}
         className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
       >
-        <option key={0} value="">
+        <option key={0} value="-">
           -
         </option>
         {years.map((year) => (
-          <option key={year} value={year}>
+          <option key={year.toString()} value={year}>
             {year}
           </option>
         ))}
@@ -228,9 +226,9 @@ export function BooleanField({
     <>
       <Switch
         checked={enabled}
+        name={field}
         onChange={(val) => {
           setValue(field, val, { shouldDirty: true, shouldTouch: true });
-          // setValue(field, val);
           setEnabled(val);
         }}
         className={classNames(
