@@ -9,8 +9,17 @@ import { z } from 'zod';
 
 import { Text, Year } from '@/components/form-fields';
 import { createAudit } from '@/lib/actions';
-import { newAudit } from '@/lib/form-schema';
 import { classNames } from '@/lib/util';
+
+// this duplicates the schema in actions, but Next prevents non-async actions
+// from export
+const newAuditSchema = z.object({
+  name: z.string().min(3).max(72),
+  year: z.coerce
+    .number()
+    .min(1970, 'The year must be at least 1970')
+    .max(2050, 'The year must be before 2050'),
+});
 
 export default function NewAuditModal() {
   const searchParams = useSearchParams();
@@ -20,8 +29,8 @@ export default function NewAuditModal() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<z.infer<typeof newAudit>>({
-    resolver: zodResolver(newAudit),
+  } = useForm<z.infer<typeof newAuditSchema>>({
+    resolver: zodResolver(newAuditSchema),
 
     defaultValues: {
       name: '',
@@ -33,7 +42,7 @@ export default function NewAuditModal() {
 
   const cancelButtonRef = useRef(null);
 
-  async function onSubmit(data: z.infer<typeof newAudit>) {
+  async function onSubmit(data: z.infer<typeof newAuditSchema>) {
     await createAudit({
       name: data.name,
       year: data.year,
