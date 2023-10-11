@@ -88,7 +88,6 @@ export default function BasicForm({
     resolver: zodResolver(config.schema),
     defaultValues: request.data,
   });
-  console.log('DIRTY', dirtyFields);
 
   useEffect(() => {
     if (isDirty && state.type === 'idle') {
