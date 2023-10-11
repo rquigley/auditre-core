@@ -148,11 +148,17 @@ interface TextareaForm {
 }
 
 interface LeasesForm {
-  value: FormFieldBoolean;
+  hasLeases: FormFieldBoolean;
+  didPerformASC842Analysis: FormFieldBoolean;
+  yearOfASC842Analysis: FormFieldYear;
+  asc842DocumentId: FormFieldFile;
 }
 
-interface StockOptionsForm {
-  value: FormFieldBoolean;
+interface EquityForm {
+  capTableDetailDocumentId: FormFieldFile;
+  certificateTransactionDocumentId: FormFieldFile;
+  hasEmployeeStockPlan: FormFieldBoolean;
+  employeeStockPlanDocumentId: FormFieldFile;
 }
 
 interface MaterialChangesPostAuditForm {
@@ -173,7 +179,7 @@ export type AuditRequestData = {
   TRIAL_BALANCE: RequestDataOnly<FileForm>;
   CHART_OF_ACCOUNTS: RequestDataOnly<FileForm>;
   LEASES: RequestDataOnly<LeasesForm>;
-  STOCK_OPTIONS: RequestDataOnly<StockOptionsForm>;
+  EQUITY: RequestDataOnly<EquityForm>;
   MATERIAL_CHANGES_POST_AUDIT: RequestDataOnly<MaterialChangesPostAuditForm>;
   USER_REQUESTED: RequestDataOnly<TextareaForm>;
 };
@@ -193,7 +199,7 @@ export const requestTypes: {
   TRIAL_BALANCE: RequestType<FileForm>;
   CHART_OF_ACCOUNTS: RequestType<FileForm>;
   LEASES: RequestType<LeasesForm>;
-  STOCK_OPTIONS: RequestType<StockOptionsForm>;
+  EQUITY: RequestType<EquityForm>;
   MATERIAL_CHANGES_POST_AUDIT: RequestType<MaterialChangesPostAuditForm>;
   USER_REQUESTED: RequestType<TextareaForm>;
 } = {
@@ -246,6 +252,14 @@ export const requestTypes: {
         input: 'boolean',
         label: 'Has the company been audited before?',
         defaultValue: false,
+      },
+      previousAuditDocumentId: {
+        label: 'Previous Audit',
+        extensions: ['PDF', 'DOC', 'DOCX'],
+        maxFilesizeMB: 10,
+        input: 'fileupload',
+        defaultValue: '',
+        dependsOn: 'hasBeenAudited',
       },
     },
     completeOnSet: true,
@@ -363,23 +377,65 @@ export const requestTypes: {
     name: 'Leases',
     description: '',
     form: {
-      value: {
+      hasLeases: {
         input: 'boolean',
         label: 'Does the company have any leases?',
         defaultValue: false,
       },
+      didPerformASC842Analysis: {
+        input: 'boolean',
+        label: 'Did the company perform a ASC 842 analysis?',
+        defaultValue: false,
+        dependsOn: 'hasLeases',
+      },
+      yearOfASC842Analysis: {
+        input: 'year',
+        label: 'Which year did the company first perform a ASC 842 analysis?',
+        defaultValue: '',
+        dependsOn: 'didPerformASC842Analysis',
+      },
+      asc842DocumentId: {
+        label: 'ASC 842 Memo',
+        extensions: ['PDF', 'DOC', 'DOCX'],
+        maxFilesizeMB: 10,
+        input: 'fileupload',
+        defaultValue: '',
+        dependsOn: 'didPerformASC842Analysis',
+      },
     },
     completeOnSet: true,
-    schema: schemas.basicAny,
+    schema: schemas.leases,
   },
-  STOCK_OPTIONS: {
-    name: 'Stock option plan and ammendments',
+  EQUITY: {
+    name: 'Equity',
     description: '',
     form: {
-      value: {
+      capTableDetailDocumentId: {
+        label: 'Cap Table Detail',
+        extensions: ['PDF', 'DOC', 'DOCX'],
+        maxFilesizeMB: 10,
+        input: 'fileupload',
+        defaultValue: '',
+      },
+      certificateTransactionDocumentId: {
+        label: 'Certificate Transaction',
+        extensions: ['PDF', 'DOC', 'DOCX'],
+        maxFilesizeMB: 10,
+        input: 'fileupload',
+        defaultValue: '',
+      },
+      hasEmployeeStockPlan: {
         input: 'boolean',
         label: 'Does the company issue stock to employees?',
         defaultValue: false,
+      },
+      employeeStockPlanDocumentId: {
+        label: 'Stock Option Plan & Amendments',
+        extensions: ['PDF', 'DOC', 'DOCX'],
+        maxFilesizeMB: 10,
+        input: 'fileupload',
+        defaultValue: '',
+        dependsOn: 'hasEmployeeStockPlan',
       },
     },
     completeOnSet: true,
