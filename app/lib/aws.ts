@@ -1,6 +1,5 @@
 import { writeFile } from 'node:fs/promises';
 import { extname } from 'path';
-
 import {
   GetObjectCommand,
   PutObjectCommand,
