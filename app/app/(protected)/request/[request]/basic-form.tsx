@@ -160,7 +160,7 @@ export default function BasicForm({
                       {fieldConfig.description}
                     </div>
                   )}
-                  <div className="mt-4">
+                  <div className="pt-2">
                     {fieldConfig.input === 'fileupload' ? (
                       <FileUpload
                         field={field}
