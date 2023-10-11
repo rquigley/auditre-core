@@ -18,11 +18,11 @@ sentry_sdk.init(
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production.
-    traces_sample_rate=1.0,
+    traces_sample_rate=0,
     # Set profiles_sample_rate to 1.0 to profile 100%
     # of sampled transactions.
     # We recommend adjusting this value in production.
-    profiles_sample_rate=1.0,
+    profiles_sample_rate=0,
 )
 
 s3 = boto3.client('s3')
@@ -46,9 +46,9 @@ def handler(event, context):
         s3.download_file(bucket, key, download_path)
 
         if file_type == 'pdf':
-            convert_pdf_to_md(download_path, upload_path)
+            convert_pdf_to_text(download_path, upload_path)
         elif file_type in ['doc', 'docx']:
-            convert_docx_to_md(download_path, upload_path)
+            convert_docx_to_text(download_path, upload_path)
         elif file_type == 'xlsx':
             convert_xlsx_to_csv(download_path, upload_path)
 
@@ -56,7 +56,7 @@ def handler(event, context):
         s3.upload_file(upload_path, bucket, new_key)
 
 
-def convert_pdf_to_md(read_path, extracted_path):
+def convert_pdf_to_text(read_path, extracted_path):
     with open(read_path, 'rb') as f:
         pdf_reader = PdfReader(f)
         with open(extracted_path, 'w') as extracted_file:
@@ -65,7 +65,7 @@ def convert_pdf_to_md(read_path, extracted_path):
                 extracted_file.write('\n\n')
 
 
-def convert_docx_to_md(read_path, extracted_path):
+def convert_docx_to_text(read_path, extracted_path):
     doc = Document(read_path)
     with open(extracted_path, 'w') as extracted_file:
         for para in doc.paragraphs:
@@ -80,6 +80,3 @@ def convert_xlsx_to_csv(read_path, extracted_path):
         writer = csv.writer(extracted_file)
         for row in ws.rows:
             writer.writerow([cell.value for cell in row])
-
-
-# convert_xlsx_to_csv('./test.xlsx', './test.csv')
