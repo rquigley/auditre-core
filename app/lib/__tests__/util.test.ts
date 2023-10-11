@@ -1,4 +1,4 @@
-import { omit, deepCopy, clientSafe } from '../util';
+import { clientSafe, deepCopy, isFieldVisible, omit } from '../util';
 
 describe('omit', () => {
   it('should prune specified keys from an object', () => {
@@ -59,5 +59,64 @@ describe('clientSafe', () => {
     const output = clientSafe(input);
 
     expect(output).toEqual({ bar: 'sdf', he: 'e' });
+  });
+});
+
+describe('isFieldVisible', () => {
+  it("Should show fields that aren't dependant", () => {
+    const formConfig = {
+      yep: {},
+      nope: {},
+    };
+    expect(isFieldVisible('yep', [true], formConfig)).toEqual(true);
+  });
+
+  it('Should follow the truthiness of a parent', () => {
+    const formConfig = {
+      yep: {},
+      nope: { dependsOn: 'yep' },
+    };
+    expect(isFieldVisible('nope', [true], formConfig)).toEqual(true);
+    expect(isFieldVisible('nope', [false], formConfig)).toEqual(false);
+  });
+
+  it('Should follow the truthiness of multiple parents', () => {
+    const formConfig = {
+      foo: {},
+      yep: { dependsOn: 'foo' },
+      nope: { dependsOn: 'yep' },
+    };
+    expect(isFieldVisible('nope', [true, false], formConfig)).toEqual(false);
+    expect(isFieldVisible('nope', [false, true], formConfig)).toEqual(false);
+    expect(isFieldVisible('nope', [true, true], formConfig)).toEqual(true);
+  });
+
+  it('Should follow alt state if defined', () => {
+    const formConfig = {
+      yep: {},
+      nope: { dependsOn: { field: 'yep', state: false } },
+    };
+    expect(isFieldVisible('nope', [true], formConfig)).toEqual(false);
+    expect(isFieldVisible('nope', [false], formConfig)).toEqual(true);
+  });
+
+  it('Should follow alt state if defined true', () => {
+    const formConfig = {
+      yep: {},
+      nope: { dependsOn: { field: 'yep', state: true } },
+    };
+    expect(isFieldVisible('nope', [true], formConfig)).toEqual(true);
+    expect(isFieldVisible('nope', [false], formConfig)).toEqual(false);
+  });
+
+  it('Should follow deep alt state if defined', () => {
+    const formConfig = {
+      foo: {},
+      yep: { dependsOn: 'foo' },
+      nope: { dependsOn: { field: 'yep', state: false } },
+    };
+    expect(isFieldVisible('nope', [true, false], formConfig)).toEqual(false);
+    expect(isFieldVisible('nope', [false, true], formConfig)).toEqual(true);
+    expect(isFieldVisible('nope', [false, false], formConfig)).toEqual(false);
   });
 });

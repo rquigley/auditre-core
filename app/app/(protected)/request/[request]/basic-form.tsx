@@ -17,7 +17,7 @@ import {
 } from '@/components/form-fields';
 import SaveNotice from '@/components/save-notice';
 import { requestTypes } from '@/lib/request-types';
-import { classNames, delay } from '@/lib/util';
+import { classNames, delay, isFieldVisible } from '@/lib/util';
 
 import type {
   ClientSafeRequest,
@@ -130,21 +130,22 @@ export default function BasicForm({
             {Object.keys(config.form).map((field) => {
               // @ts-ignore
               const fieldConfig = config.form[field];
-              const isVisibleA = isFieldVisible(
+              const isVisibleA = setupWatchFields(
                 field,
                 getValues(),
                 config.form,
                 watch,
               );
+              const isVisible = isFieldVisible(field, isVisibleA, config.form);
 
-              // if (!isVisibleA.every(Boolean)) {
+              // if (!isVisible) {
               //   return <input type="hidden" key={field} {...register(field)} />;
               // }
 
               return (
                 <div
                   className={classNames(
-                    isVisibleA.every(Boolean) ? '' : 'hidden',
+                    isVisible ? '' : 'hidden',
                     'sm:col-span-8',
                   )}
                   key={field}
@@ -270,13 +271,12 @@ export default function BasicForm({
   );
 }
 
-function isFieldVisible(
-  field: any,
+export function setupWatchFields(
+  field: string,
   values: any,
   formConfig: any,
   watch: any,
 ): Array<boolean> {
-  let isVisble = true;
   let watchFields = [];
   // Don't bother for static fields
   if (!formConfig[field].dependsOn) {
@@ -284,13 +284,26 @@ function isFieldVisible(
   }
   while (true) {
     let fieldConfig = formConfig[field];
+    if (!fieldConfig) {
+      throw new Error(
+        `Field "${field}" not found in form config, available fields: ${Object.keys(
+          formConfig,
+        ).join(', ')}`,
+      );
+    }
 
     if (fieldConfig.dependsOn) {
-      watchFields.push(fieldConfig.dependsOn);
-      if (!values[fieldConfig.dependsOn]) {
-        isVisble = false;
+      let dependsOnField;
+      //let dependsOnState;
+      if (typeof fieldConfig.dependsOn === 'object') {
+        dependsOnField = fieldConfig.dependsOn.field;
+      } else {
+        dependsOnField = fieldConfig.dependsOn;
       }
-      field = fieldConfig.dependsOn;
+
+      watchFields.push(dependsOnField);
+
+      field = dependsOnField;
     } else {
       break;
     }
