@@ -72,3 +72,30 @@ export function head(str: string, numLines: number): string {
 export function isKey<T extends object>(x: T, k: PropertyKey): k is keyof T {
   return k in x;
 }
+
+export function isFieldVisible(
+  field: string,
+  isVisibleA: Array<boolean>,
+  formConfig: any,
+) {
+  let isVisible = true;
+
+  for (let n = 0, len = isVisibleA.length; n < len; n++) {
+    const parentVal = isVisibleA.shift();
+    let fieldConfig = formConfig[field];
+    if (
+      typeof fieldConfig.dependsOn === 'object' &&
+      fieldConfig.dependsOn.state === false
+    ) {
+      isVisible = !parentVal;
+    } else if (parentVal === false) {
+      isVisible = false;
+    }
+    if (typeof fieldConfig.dependsOn === 'object') {
+      field = fieldConfig.dependsOn.field;
+    } else if (fieldConfig.dependsOn) {
+      field = fieldConfig.dependsOn;
+    }
+  }
+  return isVisible;
+}
