@@ -329,84 +329,76 @@ export function FileUpload({
 
   return (
     <>
-      <div>
-        <Documents
-          documents={documents}
-          field={field}
-          currentDocumentId={value}
-          auditId={request.auditId}
-        />
-        {/* {documents.map((doc) => (
-          <div key={doc.id}>{doc.id}</div>
-        ))} */}
-      </div>
+      <Documents
+        documents={documents}
+        field={field}
+        currentDocumentId={value}
+        auditId={request.auditId}
+      />
 
-      <div className=" py-10">
-        <label
-          htmlFor={`${field}-file`}
-          //className="cursor-pointer inline-flex items-center gap-x-1.5 rounded-md bg-slate-100 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
-          className="cursor-pointer inline-flex items-cente rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white"
-        >
-          {formState.type === 'uploading' && (
-            <svg
-              className="mr-3 h-5 w-5 animate-spin text-green-700"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          )}
-          {formState.type === 'uploaded' ? (
-            <>
-              <CheckCircleIcon
-                className="-ml-0.5 mr-1 h-5 w-5 text-green-700"
-                aria-hidden="true"
-              />
-              Document uploaded
-            </>
-          ) : (
-            <>Upload document</>
-          )}
-        </label>
+      <label
+        htmlFor={`${field}-file`}
+        className="cursor-pointer inline-flex items-cente rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white"
+      >
+        {formState.type === 'uploading' && (
+          <svg
+            className="mr-3 h-5 w-5 animate-spin text-green-700"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+        )}
+        {formState.type === 'uploaded' ? (
+          <>
+            <CheckCircleIcon
+              className="-ml-0.5 mr-1 h-5 w-5 text-green-700"
+              aria-hidden="true"
+            />
+            Document uploaded
+          </>
+        ) : (
+          <>Upload document</>
+        )}
+      </label>
 
-        {/* <p className="text-xs leading-5 text-gray-600">
+      {/* <p className="text-xs leading-5 text-gray-600">
           {config.extensions.join(', ')} up to {config.maxFilesizeMB}MB
         </p> */}
-        <p className="mt-2 text-sm text-red-600" id="email-error">
-          {errors[field]?.message}
-        </p>
+      <p className="mt-2 text-sm text-red-600" id="email-error">
+        {errors[field]?.message}
+      </p>
 
-        <input {...register(field, { required: true })} type="hidden" />
-        <input
-          id={`${field}-file`}
-          name={`${field}-file`}
-          type="file"
-          className="sr-only"
-          multiple={false}
-          onChange={(e) => uploadDocument(e, request)}
-          // accept="image/png, image/jpeg"
-        />
-        {/* {value && (
+      <input {...register(field, { required: true })} type="hidden" />
+      <input
+        id={`${field}-file`}
+        name={`${field}-file`}
+        type="file"
+        className="sr-only"
+        multiple={false}
+        onChange={(e) => uploadDocument(e, request)}
+        // accept="image/png, image/jpeg"
+      />
+      {/* {value && (
           <div className="mt-2">
             <p className="text-xs leading-5 text-gray-600">
               File has been uploaded but not saved
             </p>
           </div>
         )} */}
-      </div>
     </>
   );
 }
@@ -422,98 +414,97 @@ function Documents({
   auditId: AuditId;
   field: string;
 }) {
+  if (!documents.length) {
+    return null;
+  }
   return (
-    <div className="">
-      <div className="-mx-4 mt-10 ring-1 ring-gray-300 sm:mx-0 sm:rounded-lg">
-        <table className="min-w-full divide-y divide-gray-300">
-          <thead>
-            <tr>
-              <th scope="col" className="py-3.5 pl-3"></th>
-              <th
-                scope="col"
-                className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-4"
+    <div className="-mx-4 ring-1 ring-gray-300 sm:mx-0 sm:rounded-lg mb-4">
+      <table className="min-w-full divide-y divide-gray-300">
+        <thead>
+          <tr>
+            <th scope="col" className="py-3.5 pl-3"></th>
+            <th
+              scope="col"
+              className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-4"
+            >
+              File
+            </th>
+            <th
+              scope="col"
+              className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
+            >
+              Uploaded
+            </th>
+            <th
+              scope="col"
+              className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
+            ></th>
+          </tr>
+        </thead>
+        <tbody>
+          {documents.map((document, documentIdx) => (
+            <tr key={document.id}>
+              <td
+                className={classNames(
+                  documentIdx === 0 ? '' : 'border-t border-transparent',
+                  'relative py-4 pl-4',
+                )}
               >
-                File
-              </th>
-              <th
-                scope="col"
-                className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
-              >
-                Uploaded
-              </th>
-              <th
-                scope="col"
-                className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
-              ></th>
-            </tr>
-          </thead>
-          <tbody>
-            {documents.map((document, documentIdx) => (
-              <tr key={document.id}>
-                <td
-                  className={classNames(
-                    documentIdx === 0 ? '' : 'border-t border-transparent',
-                    'relative py-4 pl-4',
-                  )}
-                >
-                  <FiletypeIcon filename={document.key} />
+                <FiletypeIcon filename={document.key} />
 
-                  {documentIdx !== 0 ? (
-                    <div className="absolute -top-px left-6 right-0 h-px bg-gray-200" />
-                  ) : null}
-                </td>
-                <td
-                  className={classNames(
-                    documentIdx === 0 ? '' : 'border-t border-gray-200',
-                    'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
-                  )}
-                >
-                  <div className="font-medium text-gray-900">
-                    {currentDocumentId === document.id && (
-                      <div>
-                        <div className="inline-flex items-center rounded-full bg-green-50 -ml-2 mb-1 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                          Selected
-                        </div>
+                {documentIdx !== 0 ? (
+                  <div className="absolute -top-px left-6 right-0 h-px bg-gray-200" />
+                ) : null}
+              </td>
+              <td
+                className={classNames(
+                  documentIdx === 0 ? '' : 'border-t border-gray-200',
+                  'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
+                )}
+              >
+                <div className="font-medium text-gray-900">
+                  {currentDocumentId === document.id && (
+                    <div>
+                      <div className="inline-flex items-center rounded-full bg-green-50 -ml-2 mb-1 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                        Selected
                       </div>
-                    )}
-                    <Link href={`/document/${document.id}`}>
-                      {document.name}
-                    </Link>
-                    {document.queries && <Queries queries={document.queries} />}
-                  </div>
-                </td>
-                <td
-                  className={classNames(
-                    documentIdx === 0 ? '' : 'border-t border-gray-200',
-                    'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
+                    </div>
                   )}
-                >
-                  <Datetime
-                    className="py-0.5 text-xs text-gray-500"
-                    dateTime={document.createdAt}
-                  />
-                </td>
+                  <Link href={`/document/${document.id}`}>{document.name}</Link>
+                  {document.queries && <Queries queries={document.queries} />}
+                </div>
+              </td>
+              <td
+                className={classNames(
+                  documentIdx === 0 ? '' : 'border-t border-gray-200',
+                  'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
+                )}
+              >
+                <Datetime
+                  className="py-0.5 text-xs text-gray-500"
+                  dateTime={document.createdAt}
+                />
+              </td>
 
-                <td
-                  className={classNames(
-                    documentIdx === 0 ? '' : 'border-t border-transparent',
-                    'relative py-3.5 pr-4 sm:pr-6',
-                  )}
-                >
-                  <Settings
-                    documentId={document.id}
-                    auditId={auditId}
-                    field={field}
-                  />
-                  {documentIdx !== 0 ? (
-                    <div className="absolute -top-px left-0 right-6 h-px bg-gray-200" />
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              <td
+                className={classNames(
+                  documentIdx === 0 ? '' : 'border-t border-transparent',
+                  'relative py-3.5 pr-4 sm:pr-6',
+                )}
+              >
+                <Settings
+                  documentId={document.id}
+                  auditId={auditId}
+                  field={field}
+                />
+                {documentIdx !== 0 ? (
+                  <div className="absolute -top-px left-0 right-6 h-px bg-gray-200" />
+                ) : null}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
