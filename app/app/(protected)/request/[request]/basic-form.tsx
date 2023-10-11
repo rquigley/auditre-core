@@ -100,7 +100,7 @@ export default function BasicForm({
   async function onSubmit(data: z.infer<typeof config.schema>) {
     setState({ type: 'saving' });
 
-    await Promise.all([saveData(data), delay(1500)]);
+    await Promise.all([saveData(data), delay(700)]);
     setState({ type: 'saved' });
     // await delay(5000);
     // setState({ type: 'idle' });
