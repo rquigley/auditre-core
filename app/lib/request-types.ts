@@ -1,6 +1,6 @@
 import { stripIndent } from 'common-tags';
+import * as z from 'zod';
 
-import * as schemas from '@/lib/form-schema';
 import { head } from '@/lib/util';
 import { balanceSheetTypes } from './consolidated-balance-sheet';
 
@@ -143,10 +143,6 @@ interface FileForm {
   documentId: FormFieldFile;
 }
 
-interface TextareaForm {
-  value: FormFieldText;
-}
-
 interface LeasesForm {
   hasLeases: FormFieldBoolean;
   didPerformASC842Analysis: FormFieldBoolean;
@@ -162,7 +158,28 @@ interface EquityForm {
 }
 
 interface MaterialChangesPostAuditForm {
-  value: FormFieldBoolean;
+  hasPostAuditChanges: FormFieldBoolean;
+  postAuditChanges: FormFieldText;
+}
+
+interface OutstandingLegalMattersForm {
+  hasLegalMatters: FormFieldBoolean;
+  legalMatters: FormFieldText;
+}
+
+interface RelatedPartyTransactionsForm {
+  hasRelatedPartyTransactions: FormFieldBoolean;
+  relatedPartyTransactions: FormFieldText;
+}
+
+interface Employee401kForm {
+  has401K: FormFieldBoolean;
+  doesMatch: FormFieldBoolean;
+  pctMatch: FormFieldText;
+}
+
+interface UserRequestedForm {
+  value: FormFieldText;
 }
 
 type HasDefaultValue = { defaultValue: any };
@@ -181,7 +198,11 @@ export type AuditRequestData = {
   LEASES: RequestDataOnly<LeasesForm>;
   EQUITY: RequestDataOnly<EquityForm>;
   MATERIAL_CHANGES_POST_AUDIT: RequestDataOnly<MaterialChangesPostAuditForm>;
-  USER_REQUESTED: RequestDataOnly<TextareaForm>;
+  OUTSTANDING_LEGAL_MATTERS: RequestDataOnly<OutstandingLegalMattersForm>;
+  RELATED_PARTY_TRANSACTIONS: RequestDataOnly<RelatedPartyTransactionsForm>;
+  EMPLOYEE_401K: RequestDataOnly<Employee401kForm>;
+  USER_REQUESTED: RequestDataOnly<UserRequestedForm>;
+  AUDIT_YEAR_TAX_PROVISION: RequestDataOnly<FileForm>;
 };
 
 interface RequestType<T> {
@@ -201,7 +222,11 @@ export const requestTypes: {
   LEASES: RequestType<LeasesForm>;
   EQUITY: RequestType<EquityForm>;
   MATERIAL_CHANGES_POST_AUDIT: RequestType<MaterialChangesPostAuditForm>;
-  USER_REQUESTED: RequestType<TextareaForm>;
+  OUTSTANDING_LEGAL_MATTERS: RequestType<OutstandingLegalMattersForm>;
+  RELATED_PARTY_TRANSACTIONS: RequestType<RelatedPartyTransactionsForm>;
+  EMPLOYEE_401K: RequestType<Employee401kForm>;
+  AUDIT_YEAR_TAX_PROVISION: RequestType<FileForm>;
+  USER_REQUESTED: RequestType<UserRequestedForm>;
 } = {
   BASIC_INFO: {
     name: 'Basic information',
@@ -232,7 +257,12 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.basicInfo,
+    schema: z.object({
+      businessName: z.string().max(128),
+      description: z.string().max(10 * 1024),
+      chiefDecisionMaker: z.string().max(128),
+      businessModels: z.string().array(),
+    }),
   },
   AUDIT_INFO: {
     name: 'Audit information',
@@ -263,7 +293,12 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.auditInfo,
+    schema: z.object({
+      year: z.string(),
+      fiscalYearEnd: z.coerce.date(),
+      hasBeenAudited: z.coerce.boolean(),
+      previousAuditDocumentId: z.string(),
+    }),
   },
   ARTICLES_OF_INCORPORATION: {
     name: 'Upload the Articles of Incorporation',
@@ -318,7 +353,9 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.documentId,
+    schema: z.object({
+      documentId: z.string(),
+    }),
   },
   TRIAL_BALANCE: {
     name: 'Upload the Trial Balance',
@@ -333,7 +370,9 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.documentId,
+    schema: z.object({
+      documentId: z.string(),
+    }),
   },
   CHART_OF_ACCOUNTS: {
     name: 'Upload the Chart of Accounts',
@@ -371,7 +410,9 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.documentId,
+    schema: z.object({
+      documentId: z.string(),
+    }),
   },
   LEASES: {
     name: 'Leases',
@@ -404,7 +445,12 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.leases,
+    schema: z.object({
+      hasLeases: z.coerce.boolean(),
+      didPerformASC842Analysis: z.coerce.boolean(),
+      yearOfASC842Analysis: z.string(),
+      asc842DocumentId: z.string(),
+    }),
   },
   EQUITY: {
     name: 'Equity',
@@ -439,21 +485,126 @@ export const requestTypes: {
       },
     },
     completeOnSet: true,
-    schema: schemas.basicAny,
+    schema: z.object({
+      capTableDetailDocumentId: z.coerce.boolean(),
+      certificateTransactionDocumentId: z.string(),
+      hasEmployeeStockPlan: z.coerce.boolean(),
+      employeeStockPlanDocumentId: z.string(),
+    }),
   },
   MATERIAL_CHANGES_POST_AUDIT: {
     name: 'Post-audit changes',
     description: '',
     form: {
-      value: {
+      hasPostAuditChanges: {
         input: 'boolean',
         label:
           'Have there been any material changes to the operations of the business following the period being audited?',
         defaultValue: false,
       },
+      postAuditChanges: {
+        input: 'textarea',
+        label: 'What are those changes?',
+        defaultValue: '',
+        dependsOn: 'hasPostAuditChanges',
+      },
     },
     completeOnSet: true,
-    schema: schemas.basicAny,
+    schema: z.object({
+      hasPostAuditChanges: z.coerce.boolean(),
+      postAuditChanges: z.string(),
+    }),
+  },
+  OUTSTANDING_LEGAL_MATTERS: {
+    name: 'Outstanding legal matters',
+    description: '',
+    form: {
+      hasLegalMatters: {
+        input: 'boolean',
+        label:
+          'Does the company know of any outstanding material legal matters?',
+        defaultValue: false,
+      },
+      legalMatters: {
+        input: 'textarea',
+        label: 'Please disclose the outstanding material legal matters',
+        defaultValue: '',
+        dependsOn: 'hasLegalMatters',
+      },
+    },
+    completeOnSet: true,
+    schema: z.object({
+      hasLegalMatters: z.coerce.boolean(),
+      legalMatters: z.string(),
+    }),
+  },
+  RELATED_PARTY_TRANSACTIONS: {
+    name: 'Related party transactions ',
+    description: '',
+    form: {
+      hasRelatedPartyTransactions: {
+        input: 'boolean',
+        label: 'Is the company aware of any related party transactions? ',
+        defaultValue: false,
+      },
+      relatedPartyTransactions: {
+        input: 'textarea',
+        label: 'Please disclose the related party transactions',
+        defaultValue: '',
+        dependsOn: 'hasRelatedPartyTransactions',
+      },
+    },
+    completeOnSet: true,
+    schema: z.object({
+      hasRelatedPartyTransactions: z.coerce.boolean(),
+      relatedPartyTransactions: z.string(),
+    }),
+  },
+  EMPLOYEE_401K: {
+    name: '401k plan',
+    description: '',
+    form: {
+      has401K: {
+        input: 'boolean',
+        label: 'Does the company provide a 401k plan to employee?',
+        defaultValue: false,
+      },
+      doesMatch: {
+        input: 'boolean',
+        label: 'Does the company match contributions?',
+        defaultValue: false,
+        dependsOn: 'has401K',
+      },
+      pctMatch: {
+        input: 'text',
+        label: 'What are outstanding material legal matters?',
+        defaultValue: '',
+        dependsOn: 'doesMatch',
+      },
+    },
+    completeOnSet: true,
+    schema: z.object({
+      has401K: z.coerce.boolean(),
+      doesMatch: z.coerce.boolean(),
+      pctMatch: z.string(),
+    }),
+  },
+  AUDIT_YEAR_TAX_PROVISION: {
+    name: 'Audit year tax provision',
+    description: '',
+    form: {
+      documentId: {
+        extensions: ['XLS', 'XLSX', 'CSV'],
+        maxFilesizeMB: 10,
+        input: 'fileupload',
+        defaultValue: '',
+        extractionQuestions: [],
+      },
+    },
+    completeOnSet: true,
+    schema: z.object({
+      documentId: z.string(),
+    }),
   },
   USER_REQUESTED: {
     name: '???',
@@ -465,7 +616,9 @@ export const requestTypes: {
       },
     },
     completeOnSet: false,
-    schema: schemas.basicAny,
+    schema: z.object({
+      value: z.string(),
+    }),
   },
 };
 
