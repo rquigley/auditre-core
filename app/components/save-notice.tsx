@@ -17,7 +17,7 @@ export default function SaveNotice() {
       <div
         className={classNames(
           hidden ? 'opacity-0' : 'opacity-100',
-          'flex transition',
+          'inline-flex transition',
         )}
       >
         <div className="flex-shrink-0">
