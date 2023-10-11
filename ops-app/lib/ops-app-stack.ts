@@ -1,48 +1,63 @@
-import * as cdk from 'aws-cdk-lib';
 import * as path from 'path';
-import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
-import * as s3 from 'aws-cdk-lib/aws-s3';
-import * as ecr from 'aws-cdk-lib/aws-ecr';
-import * as ecs from 'aws-cdk-lib/aws-ecs';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as route53 from 'aws-cdk-lib/aws-route53';
-import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
+import {
+  GithubActionsIdentityProvider,
+  GithubActionsRole,
+} from 'aws-cdk-github-oidc';
+import {
+  CfnOutput,
+  Duration,
+  RemovalPolicy,
+  Stack,
+  StackProps,
+} from 'aws-cdk-lib';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigins from 'aws-cdk-lib/aws-cloudfront-origins';
-import * as targets from 'aws-cdk-lib/aws-route53-targets';
+import { SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2';
+import * as ecr from 'aws-cdk-lib/aws-ecr';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
+import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as eventsTarget from 'aws-cdk-lib/aws-events-targets';
-import * as sns from 'aws-cdk-lib/aws-sns';
-import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
-import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import {
+  Architecture,
+  Code,
+  Function,
+  LayerVersion,
+  Runtime,
+} from 'aws-cdk-lib/aws-lambda';
+import { ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
+import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
+// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { Bucket, EventType, HttpMethods } from 'aws-cdk-lib/aws-s3';
+import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
+import { Topic } from 'aws-cdk-lib/aws-sns';
+import { UrlSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
+import { Construct } from 'constructs';
 
-import {
-  ApplicationLoadBalancer,
-  ApplicationProtocol,
-} from 'aws-cdk-lib/aws-elasticloadbalancingv2';
-import {
-  GithubActionsRole,
-  GithubActionsIdentityProvider,
-} from 'aws-cdk-github-oidc';
 import { PostgresCluster } from './postgres-cluster';
 
-export class OpsAppStack extends cdk.Stack {
+export class OpsAppStack extends Stack {
   constructor(
     scope: Construct,
     id: string,
-    props?: cdk.StackProps & { certificateArn: string; isProd: boolean },
+    props?: StackProps & { certificateArn: string; isProd: boolean },
   ) {
     super(scope, id, props);
     const isProd = props?.isProd || false;
 
     // const repo = new ecr.Repository(this, 'Repo', {
     //   repositoryName: 'auditre-fargate-app',
+    //   lifecycleRules: [
+    //     {
+    //       description: 'keep 10 images',
+    //       maxImageCount: 10,
+    //     },
+    //   ],
+    //   removalPolicy: RemovalPolicy.DESTROY,
     // });
     const repo = ecr.Repository.fromRepositoryName(
       this,
@@ -95,7 +110,7 @@ export class OpsAppStack extends cdk.Stack {
     //fromAwsManagedPolicyName('AppDeployAccess'),
     //);
     // https://github.com/aws-actions/amazon-ecr-login#ecr-private allow push pull!
-    new cdk.CfnOutput(this, 'Github Actions app upload role', {
+    new CfnOutput(this, 'Github Actions app upload role', {
       value: deployRole.roleArn,
     });
 
@@ -104,17 +119,17 @@ export class OpsAppStack extends cdk.Stack {
     let autoDeleteObjects;
     let objectLockEnabled;
     if (isProd) {
-      removalPolicy = cdk.RemovalPolicy.RETAIN;
+      removalPolicy = RemovalPolicy.RETAIN;
       allowedOrigins = ['https://app.auditre.co'];
       autoDeleteObjects = false;
       objectLockEnabled = true;
     } else {
-      removalPolicy = cdk.RemovalPolicy.DESTROY;
+      removalPolicy = RemovalPolicy.DESTROY;
       allowedOrigins = ['http://localhost:3000', 'https://app.ci.auditre.co'];
       autoDeleteObjects = true;
       objectLockEnabled = false;
     }
-    const s3Bucket = new s3.Bucket(this, 's3', {
+    const s3Bucket = new Bucket(this, 's3', {
       bucketName: `auditre-app-org-files-${isProd ? 'prod' : 'dev'}`,
       publicReadAccess: false,
       removalPolicy,
@@ -122,11 +137,7 @@ export class OpsAppStack extends cdk.Stack {
       versioned: isProd, // should be true for prod
       cors: [
         {
-          allowedMethods: [
-            s3.HttpMethods.GET,
-            s3.HttpMethods.POST,
-            s3.HttpMethods.PUT,
-          ],
+          allowedMethods: [HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT],
           allowedOrigins,
           allowedHeaders: ['*'],
         },
@@ -135,71 +146,66 @@ export class OpsAppStack extends cdk.Stack {
       objectLockEnabled,
     });
 
-    const lxmlLayer = new lambda.LayerVersion(this, 'LXMLLayer', {
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      code: lambda.Code.fromAsset(
+    const lxmlLayer = new LayerVersion(this, 'LXMLLayer', {
+      removalPolicy: RemovalPolicy.DESTROY,
+      code: Code.fromAsset(
         path.join(__dirname, '../packages/lxml-layer/layer311.zip'),
       ),
-      compatibleArchitectures: [lambda.Architecture.ARM_64],
-      compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
+      compatibleArchitectures: [Architecture.ARM_64],
+      compatibleRuntimes: [Runtime.PYTHON_3_11],
     });
-    const extractContentLambda = new lambda.Function(
-      this,
-      'ExtractContentLambda',
-      {
-        //functionName: `extract-content`,
-        code: lambda.Code.fromAsset(
-          path.join(__dirname, '../packages/extract-content-lambda'),
-          {
-            bundling: {
-              image: lambda.Runtime.PYTHON_3_11.bundlingImage,
-              command: [
-                'bash',
-                '-c',
-                'pip install -r requirements.txt -t /asset-output && cp -au . /asset-output',
-              ],
-            },
+    const extractContentLambda = new Function(this, 'ExtractContentLambda', {
+      code: Code.fromAsset(
+        path.join(__dirname, '../packages/extract-content-lambda'),
+        {
+          bundling: {
+            image: Runtime.PYTHON_3_11.bundlingImage,
+            command: [
+              'bash',
+              '-c',
+              'pip install -r requirements.txt -t /asset-output && cp -au . /asset-output',
+            ],
           },
-        ),
-        runtime: lambda.Runtime.PYTHON_3_11,
-        architecture: lambda.Architecture.ARM_64,
-        memorySize: 128,
-        timeout: cdk.Duration.seconds(30),
-        // vpc: vpc,
-        // vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
-        handler: 'lambda_function.handler',
-        layers: [lxmlLayer],
-      },
-    );
+        },
+      ),
+      runtime: Runtime.PYTHON_3_11,
+      architecture: Architecture.ARM_64,
+      memorySize: 256,
+      timeout: Duration.seconds(30),
+      // vpc: vpc,
+      // vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
+      handler: 'lambda_function.handler',
+      layers: [lxmlLayer],
+    });
     s3Bucket.grantReadWrite(extractContentLambda);
-    const s3nDest = new s3n.LambdaDestination(extractContentLambda);
+    const s3nDest = new LambdaDestination(extractContentLambda);
     const extensionsToConvert = ['.doc', '.docx', '.pdf', 'xlsx', 'xls'];
     extensionsToConvert.forEach((suffix) => {
-      s3Bucket.addEventNotification(s3.EventType.OBJECT_CREATED, s3nDest, {
+      s3Bucket.addEventNotification(EventType.OBJECT_CREATED, s3nDest, {
         suffix,
       });
     });
 
     // https://www.cloudtechsimplified.com/ci-cd-pipeline-aws-fargate-github-actions-nodejs/
 
-    const vpc = new ec2.Vpc(this, 'FargateNodeJsVpc', {
+    const vpc = new Vpc(this, 'FargateNodeJsVpc', {
       maxAzs: 2,
       natGateways: 1,
       subnetConfiguration: [
         {
           cidrMask: 24,
           name: 'ingress',
-          subnetType: ec2.SubnetType.PUBLIC,
+          subnetType: SubnetType.PUBLIC,
         },
         {
           cidrMask: 24,
           name: 'application',
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          subnetType: SubnetType.PRIVATE_WITH_EGRESS,
         },
         {
           cidrMask: 28,
           name: 'rds',
-          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
+          subnetType: SubnetType.PRIVATE_ISOLATED,
         },
       ],
     });
@@ -208,9 +214,9 @@ export class OpsAppStack extends cdk.Stack {
       vpc,
       internetFacing: true, // TODO: false for prod
       vpcSubnets: vpc.selectSubnets({
-        subnetType: ec2.SubnetType.PUBLIC,
+        subnetType: SubnetType.PUBLIC,
       }),
-      idleTimeout: cdk.Duration.seconds(5),
+      idleTimeout: Duration.seconds(5),
     });
 
     const cluster = new ecs.Cluster(this, 'Cluster', {
@@ -226,7 +232,7 @@ export class OpsAppStack extends cdk.Stack {
       isProd,
     });
     db.instance.connections.allowDefaultPortFrom(cluster);
-    new cdk.CfnOutput(this, 'dbEndpoint', {
+    new CfnOutput(this, 'dbEndpoint', {
       value: db.instance.instanceEndpoint.hostname,
     });
 
@@ -303,7 +309,7 @@ export class OpsAppStack extends cdk.Stack {
         desiredCount: 1,
         serviceName: 'fargate-node-service',
         taskSubnets: vpc.selectSubnets({
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          subnetType: SubnetType.PRIVATE_WITH_EGRESS,
         }),
         //securityGroups: [db.instance.connections.securityGroups[0]],
         loadBalancer: loadbalancer,
@@ -325,10 +331,10 @@ export class OpsAppStack extends cdk.Stack {
         },
       },
     });
-    const topic = new sns.Topic(this, 'FargateDeployTopic');
+    const topic = new Topic(this, 'FargateDeployTopic');
     rule.addTarget(new eventsTarget.SnsTopic(topic));
     topic.addSubscription(
-      new subscriptions.UrlSubscription(
+      new UrlSubscription(
         'https://hooks.slack.com/services/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',
       ),
     );
@@ -352,7 +358,7 @@ export class OpsAppStack extends cdk.Stack {
       //     httpStatus: 403,
       //     responseHttpStatus: 403,
       //     responsePagePath: '/error.html',
-      //     ttl: cdk.Duration.minutes(30),
+      //     ttl: Duration.minutes(30),
       //   },
       // ],
       defaultBehavior: {
@@ -367,9 +373,9 @@ export class OpsAppStack extends cdk.Stack {
           headerBehavior: cloudfront.CacheHeaderBehavior.allowList('Host'),
           cookieBehavior: cloudfront.CacheCookieBehavior.all(),
           queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
-          defaultTtl: cdk.Duration.seconds(5),
-          minTtl: cdk.Duration.seconds(5),
-          maxTtl: cdk.Duration.seconds(5),
+          defaultTtl: Duration.seconds(5),
+          minTtl: Duration.seconds(5),
+          maxTtl: Duration.seconds(5),
           enableAcceptEncodingBrotli: true,
           enableAcceptEncodingGzip: true,
         }),
@@ -387,22 +393,20 @@ export class OpsAppStack extends cdk.Stack {
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
     });
 
-    new cdk.CfnOutput(this, 'DistributionId', {
+    new CfnOutput(this, 'DistributionId', {
       value: distribution.distributionId,
     });
 
     // const zone2 = route53.HostedZone.fromLookup(this, 'Zone', {
     //   domainName: 'ci.auditre.co',
     // });
-    const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'Zone', {
+    const zone = HostedZone.fromHostedZoneAttributes(this, 'Zone', {
       hostedZoneId: 'Z08761632QPQYDP4XYUV2',
       zoneName: 'ci.auditre.co',
     });
-    new route53.ARecord(this, 'AppAliasRecord', {
+    new ARecord(this, 'AppAliasRecord', {
       recordName: 'app.ci.auditre.co',
-      target: route53.RecordTarget.fromAlias(
-        new targets.CloudFrontTarget(distribution),
-      ),
+      target: RecordTarget.fromAlias(new CloudFrontTarget(distribution)),
       zone,
     });
   }
