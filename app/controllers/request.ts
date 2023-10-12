@@ -35,8 +35,7 @@ export async function create(
     actor,
     auditId: request.auditId,
   });
-
-  return res;
+  return normalizeData(res);
 }
 
 export async function upsertDefault({
@@ -65,7 +64,7 @@ export async function upsertDefault({
           auditId,
           orgId,
           type: type as RequestTypeKey,
-          name: request.name,
+          name: '',
           status: 'requested',
           data: defaultValues as RequestData,
         },
@@ -110,18 +109,24 @@ export async function getAllByAuditId(auditId: AuditId): Promise<Request[]> {
   return requests.map(normalizeData);
 }
 
-function normalizeData(request: Request) {
-  const form = requestTypes[request.type].form;
+function normalizeData(request: Omit<Request, 'group'>): Request {
+  const requestType = requestTypes[request.type];
+  const form = requestType.form;
   const dv = {};
   for (const key of Object.keys(form)) {
     // @ts-ignore
     dv[key] = form[key].defaultValue;
   }
-  request.data = {
-    ...dv,
-    ...request.data,
+
+  return {
+    ...request,
+    name: request.type !== 'USER_REQUESTED' ? request.name : requestType.name,
+    group: requestType.group || 'Other',
+    data: {
+      ...dv,
+      ...request.data,
+    },
   };
-  return request;
 }
 
 export async function update(
