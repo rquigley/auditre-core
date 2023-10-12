@@ -108,10 +108,11 @@ export async function createDocument(file: S3File, requestId: RequestId) {
   // classification and question kickoff
   await processDocument(doc.id);
 
-  const { id, classifiedType } = await getDocumentById(doc.id);
+  const { id, classifiedType, name } = await getDocumentById(doc.id);
 
   return {
     id,
+    name,
     classifiedType,
   };
 }
