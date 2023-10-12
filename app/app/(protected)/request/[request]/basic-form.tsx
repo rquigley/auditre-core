@@ -1,7 +1,6 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -19,64 +18,23 @@ import SaveNotice from '@/components/save-notice';
 import { requestTypes } from '@/lib/request-types';
 import { classNames, delay, isFieldVisible } from '@/lib/util';
 
-import type {
-  ClientSafeRequest,
-  Document,
-  DocumentQuery,
-  RequestData,
-  S3File,
-} from '@/types';
+import type { ClientSafeRequest, RequestData } from '@/types';
 
 //import type { UseFormRegister, FieldErrors } from 'react-hook-form';
 
 export type Props = {
   request: ClientSafeRequest;
   saveData: (data: RequestData) => void;
-  createDocument: (file: S3File) => Promise<string>;
-  getPresignedUploadUrl: (opts: {
-    filename: string;
-    contentType: string;
-  }) => Promise<{
-    documentId: string;
-    url: string;
-    key: string;
-    bucket: string;
-  }>;
-  documents: Array<Document & { queries: DocumentQuery[] }>;
+  documents: { [key: string]: JSX.Element };
 };
 
-export type FormState =
-  | { type: 'idle' }
-  | { type: 'dirty' }
-  | {
-      type: 'uploading';
-    }
-  | {
-      type: 'uploaded';
-    }
-  | { type: 'saving' }
-  | { type: 'saved' };
-export default function BasicForm({
-  request,
-  saveData,
-  createDocument,
-  getPresignedUploadUrl,
-  documents,
-}: Props) {
+export default function BasicForm({ request, saveData, documents }: Props) {
   const config = requestTypes[request.type];
 
-  const [state, setState] = useState<FormState>({ type: 'idle' });
-  useEffect(() => {
-    if (state.type === 'saved') {
-      const timeout = setTimeout(() => {
-        setState({ type: 'idle' });
-      }, 5000);
-      return () => clearTimeout(timeout);
-    }
-  }, [state.type]);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const {
-    formState: { isDirty, dirtyFields },
+    formState: { isDirty, isSubmitting, isSubmitSuccessful },
     register,
     setValue,
     getValues,
@@ -90,26 +48,14 @@ export default function BasicForm({
   });
 
   useEffect(() => {
-    if (isDirty && state.type === 'idle') {
-      setState({ type: 'dirty' });
-    } else if (!isDirty && state.type === 'dirty') {
-      setState({ type: 'idle' });
+    if (isSubmitSuccessful) {
+      reset(undefined, { keepValues: true });
+      setShowSuccess(true);
     }
-  }, [isDirty, state.type]);
+  }, [isSubmitSuccessful, reset]);
 
   async function onSubmit(data: z.infer<typeof config.schema>) {
-    setState({ type: 'saving' });
-
     await Promise.all([saveData(data), delay(700)]);
-    setState({ type: 'saved' });
-    // await delay(5000);
-    // setState({ type: 'idle' });
-    // prevent documents from being created multiple times
-    // UNDONE because it breaks inputs reflecting the current value
-    reset({}, { keepValues: true });
-
-    // reload activity feed
-    //router.refresh();
   }
 
   return (
@@ -171,11 +117,7 @@ export default function BasicForm({
                         request={request}
                         setValue={setValue}
                         getValues={getValues}
-                        formState={state}
-                        setFormState={setState}
-                        createDocument={createDocument}
-                        getPresignedUploadUrl={getPresignedUploadUrl}
-                        documents={documents}
+                        document={documents[field]}
                       />
                     ) : fieldConfig.input === 'checkbox' ? (
                       <Checkbox
@@ -231,15 +173,14 @@ export default function BasicForm({
           </div>
         </div>
       </div>
-
       <div className="mt-6 flex items-center justify-end gap-x-6">
-        {!isDirty && state.type === 'saved' && (
+        {showSuccess && (
           <div className="flex-grow">
-            <SaveNotice />
+            <SaveNotice cb={() => setShowSuccess(false)} />
           </div>
         )}
 
-        {isDirty && state.type !== 'uploading' && state.type !== 'saving' ? (
+        {isDirty && !isSubmitting ? (
           <button
             type="button"
             className="text-sm font-semibold leading-6 text-gray-900"
@@ -250,21 +191,15 @@ export default function BasicForm({
         ) : null}
         <button
           type="submit"
-          aria-disabled={
-            !isDirty || state.type === 'uploading' || state.type === 'saving'
-          }
+          aria-disabled={!isDirty || isSubmitting}
           className={classNames(
-            !isDirty || state.type === 'uploading' || state.type === 'saving'
+            !isDirty || isSubmitting
               ? 'bg-gray-400'
               : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
             'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm transition',
           )}
         >
-          {state.type === 'uploading'
-            ? 'Uploading'
-            : state.type === 'saving'
-            ? 'Saving'
-            : 'Save'}
+          {isSubmitting ? 'Saving' : 'Save'}
         </button>
       </div>
     </form>

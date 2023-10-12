@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react';
 
 import { classNames } from '@/lib/util';
 
-export default function SaveNotice() {
+export default function SaveNotice({ cb }: { cb: (visible: boolean) => void }) {
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       setHidden(true);
+      cb(false);
     }, 3000);
     return () => clearTimeout(timeout);
   }, []);
