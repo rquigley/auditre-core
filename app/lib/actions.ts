@@ -2,12 +2,16 @@
 
 import 'server-only';
 
+import { randomUUID } from 'node:crypto';
+import { extname } from 'path';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import * as z from 'zod';
 
 import { create as _createAudit } from '@/controllers/audit';
 import { generate as _generateFinancialStatement } from '@/controllers/audit-output';
 import {
+  create as _createDocument,
   deleteDocument as _deleteDocument,
   extractChartOfAccountsMapping,
   getAllByRequestId as getAllDocumentsByRequestId,
@@ -21,7 +25,7 @@ import {
   upsertDefault as upsertDefaultRequests,
 } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
-import { newAudit } from '@/lib/form-schema';
+import { getPresignedUrl } from '@/lib/aws';
 
 import type {
   AuditId,
@@ -29,6 +33,7 @@ import type {
   DocumentId,
   DocumentQuery,
   RequestId,
+  S3File,
 } from '@/types';
 
 export { processDocument };
@@ -77,6 +82,40 @@ export async function createAudit(rawData: { name: string; year: number }) {
   return;
 }
 
+export async function createDocument(file: S3File, requestId: RequestId) {
+  const user = await getCurrent();
+  const request = await getRequestById(requestId);
+  if (request.orgId !== user.orgId) {
+    throw new Error('Unauthorized');
+  }
+
+  const doc = await _createDocument({
+    id: file.documentId,
+    key: file.key,
+    bucket: file.bucket,
+    name: file.name,
+    size: file.size,
+    mimeType: file.type,
+    lastModified: new Date(file.lastModified),
+    orgId: request.orgId,
+    requestId: request.id,
+  });
+  // todo
+  // check classified type of file.
+  // if doesn't match expected of request type, return error.
+  //throw new Error('incorrect type');
+
+  // classification and question kickoff
+  await processDocument(doc.id);
+
+  const { id, classifiedType } = await getDocumentById(doc.id);
+
+  return {
+    id,
+    classifiedType,
+  };
+}
+
 export async function deleteDocument(id: DocumentId) {
   const user = await getCurrent();
   const document = await getDocumentById(id);
@@ -86,6 +125,43 @@ export async function deleteDocument(id: DocumentId) {
 
   await _deleteDocument(id);
   revalidatePath('/');
+}
+
+const bucketSchema = z.string();
+const filenameSchema = z.string().min(4).max(128);
+const contentTypeSchema = z.string().min(4).max(128);
+
+export async function getPresignedUploadUrl({
+  requestId,
+  filename: unsanitizedFilename,
+  contentType: unsanitizedContentType,
+}: {
+  requestId: RequestId;
+  filename: string;
+  contentType: string;
+}) {
+  const user = await getCurrent();
+  const request = await getRequestById(requestId);
+  if (request.orgId !== user.orgId) {
+    throw new Error('Unauthorized');
+  }
+
+  const filename = filenameSchema.parse(unsanitizedFilename);
+  const bucket = bucketSchema.parse(process.env.AWS_S3_BUCKET);
+  const contentType = contentTypeSchema.parse(unsanitizedContentType);
+  const documentId = randomUUID();
+  const key = `${request.orgId}/${documentId}${extname(filename)}`;
+  const url = await getPresignedUrl({
+    key,
+    bucket,
+    contentType,
+  });
+  return {
+    documentId,
+    url,
+    key,
+    bucket,
+  };
 }
 
 export async function processChartOfAccounts(
