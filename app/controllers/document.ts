@@ -73,8 +73,7 @@ export async function deleteDocument(id: DocumentId) {
   return await update(id, { isDeleted: true });
 }
 
-export async function extractAndUpdateContent(id: DocumentId) {
-  const document = await getById(id);
+export async function extractAndUpdateContent(document: Document) {
   const content = await getExtractedContent({
     bucket: document.bucket,
     key: document.key,
@@ -82,46 +81,59 @@ export async function extractAndUpdateContent(id: DocumentId) {
   if (!content) {
     throw new Error('No data found');
   }
-  await update(id, { extracted: content });
+  await update(document.id, { extracted: content });
 }
 
 export async function process(id: DocumentId): Promise<void> {
+  const t0 = Date.now();
   // TODO: separate out job creation from actual work
   await update(id, { isProcessed: false });
+  console.log(`start time: ${Date.now() - t0}ms`);
 
   const extractJob = await addJob({ documentId: id, status: 'TO_EXTRACT' });
+  let document = await getById(id);
   await retry(
     // TODO: bail should change to error
     async (bail) => {
-      return await extractAndUpdateContent(id);
+      console.log(`retry extract time: ${Date.now() - t0}ms`);
+
+      return await extractAndUpdateContent(document);
     },
-    { minTimeout: 700 },
+    { minTimeout: 4000, factor: 1.5, maxTimeout: 10000, maxRetryTime: 60000 },
   );
   await completeJob(extractJob.id);
+  console.log(`extract done time: ${Date.now() - t0}ms`);
 
-  const askQuestionsJob = await addJob({
-    documentId: id,
-    status: 'TO_ASK_DEFAULT_QUESTIONS',
-  });
-
-  const document = await getById(id);
+  document = await getById(id);
 
   // check for job status
   if (document.extracted) {
     const classifiedType = await classifyDocument(document);
+
+    // IF CLASSIFIED TYPE !== REQUEST_TYPE, bail
     await update(id, { classifiedType });
+    console.log(`classify time: ${Date.now() - t0}ms`);
 
-    await askDefaultQuestions(document);
+    // don't await this
+    const askQuestionsJob = await addJob({
+      documentId: id,
+      status: 'TO_ASK_DEFAULT_QUESTIONS',
+    });
+    askDefaultQuestions(document).then(async (questions) => {
+      console.log('default questions asked');
+      console.log(`total time: ${Date.now() - t0}ms`);
+      await completeJob(askQuestionsJob.id);
+      await update(id, { isProcessed: true });
+    });
 
-    await completeJob(askQuestionsJob.id);
+    // await completeJob(askQuestionsJob.id);
+    // await update(id, { isProcessed: true });
   }
   // const docType = await getType(id);
   // // What should we do if we don't have extracted info?
   // if (docType === 'CHART_OF_ACCOUNTS') {
   //   await extractChartOfAccountsMapping(document);
   // }
-
-  await update(id, { isProcessed: true });
 }
 
 export type DocumentStatus = 'COMPLETE' | 'INCOMPLETE';

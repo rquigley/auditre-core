@@ -1,26 +1,18 @@
-import 'server-only';
+import { FiletypeIcon } from '@/components/filetype-icon';
 
-import { Suspense } from 'react';
-
-import { Await } from '@/components/await';
-import { getById as getDocumentById } from '@/controllers/document';
-
-import type { DocumentId } from '@/types';
-
-export async function Document({ documentId }: { documentId: DocumentId }) {
-  if (!documentId) {
-    return null;
-  }
+export async function Document({
+  docKey,
+  name,
+}: {
+  docKey: string;
+  name: string;
+}) {
   return (
-    <Suspense fallback={'...'}>
-      <Await promise={getDocumentById(documentId)}>
-        {(document) => (
-          <div className="text-xs">
-            Doc: {documentId}
-            {document.name}
-          </div>
-        )}
-      </Await>
-    </Suspense>
+    <div className="h-12 flex items-center">
+      <div className="flex items-center border border-white hover:border-slate-300 p-1 cursor-pointer">
+        <FiletypeIcon filename={docKey} />
+        <span className="ml-2 text-sm text-slate-700">{name}</span>
+      </div>
+    </div>
   );
 }

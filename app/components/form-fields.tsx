@@ -8,7 +8,8 @@ import { Fragment, useState } from 'react';
 
 import Calendar from '@/components/calendar';
 import Datetime from '@/components/datetime';
-import FiletypeIcon from '@/components/FiletypeIcon';
+import { Document } from '@/components/document';
+import { FiletypeIcon } from '@/components/filetype-icon';
 import {
   createDocument,
   deleteDocument,
@@ -28,10 +29,7 @@ import {
 } from '@/lib/request-types';
 import { classNames } from '@/lib/util';
 
-import type {
-  Props as BasicFormProps,
-  FormState,
-} from '@/app/(protected)/request/[request]/basic-form';
+import type { Props as BasicFormProps } from '@/app/(protected)/request/[request]/basic-form';
 import type {
   AuditId,
   ClientSafeRequest,
@@ -256,6 +254,11 @@ export function BooleanField({
 }
 
 type UploadState = 'idle' | 'uploading' | 'uploaded';
+type DraftFile = {
+  name: string;
+  key: string;
+};
+
 export function FileUpload({
   field,
   register,
@@ -274,6 +277,7 @@ export function FileUpload({
   document: JSX.Element;
 }) {
   const [state, setState] = useState<UploadState>('idle');
+  const [draftFile, setDraftFile] = useState<DraftFile | null>(null);
   async function uploadDocument(
     e: React.ChangeEvent<HTMLInputElement>,
     request: ClientSafeRequest,
@@ -308,6 +312,10 @@ export function FileUpload({
         lastModified: file.lastModified,
         type: file.type,
       };
+      setDraftFile({
+        name: file.name,
+        key: signedUrl.key,
+      });
 
       // create the doc in db and determine the classified type
       const { id, classifiedType } = await createDocument(toSave, request.id);
@@ -336,8 +344,12 @@ export function FileUpload({
         currentDocumentId={value}
         auditId={request.auditId}
       /> */}
-      {value}
-      {document}
+
+      {draftFile ? (
+        <Document docKey={draftFile.key} name={draftFile.name} />
+      ) : (
+        document
+      )}
 
       <label
         htmlFor={`${field}-file`}
@@ -408,240 +420,240 @@ export function FileUpload({
   );
 }
 
-function Documents({
-  documents,
-  currentDocumentId,
-  auditId,
-  field,
-}: {
-  documents: BasicFormProps['documents'];
-  currentDocumentId: DocumentId;
-  auditId: AuditId;
-  field: string;
-}) {
-  if (!documents.length) {
-    return null;
-  }
-  return (
-    <div className="-mx-4 ring-1 ring-gray-300 sm:mx-0 sm:rounded-lg mb-4">
-      <table className="min-w-full divide-y divide-gray-300">
-        <thead>
-          <tr>
-            <th scope="col" className="py-3.5 pl-3"></th>
-            <th
-              scope="col"
-              className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-4"
-            >
-              File
-            </th>
-            <th
-              scope="col"
-              className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
-            >
-              Uploaded
-            </th>
-            <th
-              scope="col"
-              className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
-            ></th>
-          </tr>
-        </thead>
-        <tbody>
-          {documents.map((document, documentIdx) => (
-            <tr key={document.id}>
-              <td
-                className={classNames(
-                  documentIdx === 0 ? '' : 'border-t border-transparent',
-                  'relative py-4 pl-4',
-                )}
-              >
-                <FiletypeIcon filename={document.key} />
+// function Documents({
+//   documents,
+//   currentDocumentId,
+//   auditId,
+//   field,
+// }: {
+//   documents: BasicFormProps['documents'];
+//   currentDocumentId: DocumentId;
+//   auditId: AuditId;
+//   field: string;
+// }) {
+//   if (!documents.length) {
+//     return null;
+//   }
+//   return (
+//     <div className="-mx-4 ring-1 ring-gray-300 sm:mx-0 sm:rounded-lg mb-4">
+//       <table className="min-w-full divide-y divide-gray-300">
+//         <thead>
+//           <tr>
+//             <th scope="col" className="py-3.5 pl-3"></th>
+//             <th
+//               scope="col"
+//               className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-4"
+//             >
+//               File
+//             </th>
+//             <th
+//               scope="col"
+//               className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
+//             >
+//               Uploaded
+//             </th>
+//             <th
+//               scope="col"
+//               className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell"
+//             ></th>
+//           </tr>
+//         </thead>
+//         <tbody>
+//           {documents.map((document, documentIdx) => (
+//             <tr key={document.id}>
+//               <td
+//                 className={classNames(
+//                   documentIdx === 0 ? '' : 'border-t border-transparent',
+//                   'relative py-4 pl-4',
+//                 )}
+//               >
+//                 <FiletypeIcon filename={document.key} />
 
-                {documentIdx !== 0 ? (
-                  <div className="absolute -top-px left-6 right-0 h-px bg-gray-200" />
-                ) : null}
-              </td>
-              <td
-                className={classNames(
-                  documentIdx === 0 ? '' : 'border-t border-gray-200',
-                  'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
-                )}
-              >
-                <div className="font-medium text-gray-900">
-                  {currentDocumentId === document.id && (
-                    <div>
-                      <div className="inline-flex items-center rounded-full bg-green-50 -ml-2 mb-1 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                        Selected
-                      </div>
-                    </div>
-                  )}
-                  <Link href={`/document/${document.id}`}>{document.name}</Link>
-                  {document.queries && <Queries queries={document.queries} />}
-                </div>
-              </td>
-              <td
-                className={classNames(
-                  documentIdx === 0 ? '' : 'border-t border-gray-200',
-                  'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
-                )}
-              >
-                <Datetime
-                  className="py-0.5 text-xs text-gray-500"
-                  dateTime={document.createdAt}
-                />
-              </td>
+//                 {documentIdx !== 0 ? (
+//                   <div className="absolute -top-px left-6 right-0 h-px bg-gray-200" />
+//                 ) : null}
+//               </td>
+//               <td
+//                 className={classNames(
+//                   documentIdx === 0 ? '' : 'border-t border-gray-200',
+//                   'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
+//                 )}
+//               >
+//                 <div className="font-medium text-gray-900">
+//                   {currentDocumentId === document.id && (
+//                     <div>
+//                       <div className="inline-flex items-center rounded-full bg-green-50 -ml-2 mb-1 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+//                         Selected
+//                       </div>
+//                     </div>
+//                   )}
+//                   <Link href={`/document/${document.id}`}>{document.name}</Link>
+//                   {document.queries && <Queries queries={document.queries} />}
+//                 </div>
+//               </td>
+//               <td
+//                 className={classNames(
+//                   documentIdx === 0 ? '' : 'border-t border-gray-200',
+//                   'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
+//                 )}
+//               >
+//                 <Datetime
+//                   className="py-0.5 text-xs text-gray-500"
+//                   dateTime={document.createdAt}
+//                 />
+//               </td>
 
-              <td
-                className={classNames(
-                  documentIdx === 0 ? '' : 'border-t border-transparent',
-                  'relative py-3.5 pr-4 sm:pr-6',
-                )}
-              >
-                <Settings
-                  documentId={document.id}
-                  auditId={auditId}
-                  field={field}
-                />
-                {documentIdx !== 0 ? (
-                  <div className="absolute -top-px left-0 right-6 h-px bg-gray-200" />
-                ) : null}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+//               <td
+//                 className={classNames(
+//                   documentIdx === 0 ? '' : 'border-t border-transparent',
+//                   'relative py-3.5 pr-4 sm:pr-6',
+//                 )}
+//               >
+//                 <Settings
+//                   documentId={document.id}
+//                   auditId={auditId}
+//                   field={field}
+//                 />
+//                 {documentIdx !== 0 ? (
+//                   <div className="absolute -top-px left-0 right-6 h-px bg-gray-200" />
+//                 ) : null}
+//               </td>
+//             </tr>
+//           ))}
+//         </tbody>
+//       </table>
+//     </div>
+//   );
+// }
 
-function Settings({
-  documentId,
-  auditId,
-  field,
-}: {
-  documentId: DocumentId;
-  auditId: AuditId;
-  field: string;
-}) {
-  return (
-    <div className="flex flex-none items-center gap-x-4 ">
-      <Menu as="div" className="relative flex-none">
-        <Menu.Button className="-m-2.5 block p-2.5 text-gray-500 hover:text-gray-900">
-          <span className="sr-only">Open options</span>
-          <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
-        </Menu.Button>
-        <Transition
-          as={Fragment}
-          enter="transition ease-out duration-100"
-          enterFrom="transform opacity-0 scale-95"
-          enterTo="transform opacity-100 scale-100"
-          leave="transition ease-in duration-75"
-          leaveFrom="transform opacity-100 scale-100"
-          leaveTo="transform opacity-0 scale-95"
-        >
-          <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
-            <Menu.Item>
-              {({ active }) => (
-                <a
-                  href="#"
-                  onClick={async (e) => {
-                    processChartOfAccounts(documentId, auditId);
-                  }}
-                  className={classNames(
-                    active ? 'bg-gray-50' : '',
-                    'block px-3 py-1 text-sm leading-6 text-gray-900',
-                  )}
-                >
-                  CoA Process
-                </a>
-              )}
-            </Menu.Item>
-            <Menu.Item>
-              {({ active }) => (
-                <a
-                  href="#"
-                  onClick={async (e) => {
-                    processDocument(documentId);
-                  }}
-                  className={classNames(
-                    active ? 'bg-gray-50' : '',
-                    'block px-3 py-1 text-sm leading-6 text-gray-900',
-                  )}
-                >
-                  Re-process
-                </a>
-              )}
-            </Menu.Item>
-            <Menu.Item>
-              {({ active }) => (
-                <a
-                  href="#"
-                  onClick={async (e) => {
-                    await selectDocumentForRequest(documentId, field);
-                  }}
-                  className={classNames(
-                    active ? 'bg-gray-50' : '',
-                    'block px-3 py-1 text-sm leading-6 text-gray-900',
-                  )}
-                >
-                  Select
-                </a>
-              )}
-            </Menu.Item>
-            <Menu.Item>
-              {({ active }) => (
-                <a
-                  href="#"
-                  className={classNames(
-                    active ? 'bg-gray-50' : '',
-                    'block px-3 py-1 text-sm leading-6 text-gray-900',
-                  )}
-                >
-                  Download
-                </a>
-              )}
-            </Menu.Item>
-            <Menu.Item>
-              {({ active }) => (
-                <a
-                  href="#"
-                  onClick={async (e) => {
-                    await deleteDocument(documentId);
-                  }}
-                  className={classNames(
-                    active ? 'bg-gray-50' : '',
-                    'block px-3 py-1 text-sm leading-6 text-gray-900',
-                  )}
-                >
-                  Delete
-                </a>
-              )}
-            </Menu.Item>
-          </Menu.Items>
-        </Transition>
-      </Menu>
-    </div>
-  );
-}
+// function Settings({
+//   documentId,
+//   auditId,
+//   field,
+// }: {
+//   documentId: DocumentId;
+//   auditId: AuditId;
+//   field: string;
+// }) {
+//   return (
+//     <div className="flex flex-none items-center gap-x-4 ">
+//       <Menu as="div" className="relative flex-none">
+//         <Menu.Button className="-m-2.5 block p-2.5 text-gray-500 hover:text-gray-900">
+//           <span className="sr-only">Open options</span>
+//           <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
+//         </Menu.Button>
+//         <Transition
+//           as={Fragment}
+//           enter="transition ease-out duration-100"
+//           enterFrom="transform opacity-0 scale-95"
+//           enterTo="transform opacity-100 scale-100"
+//           leave="transition ease-in duration-75"
+//           leaveFrom="transform opacity-100 scale-100"
+//           leaveTo="transform opacity-0 scale-95"
+//         >
+//           <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+//             <Menu.Item>
+//               {({ active }) => (
+//                 <a
+//                   href="#"
+//                   onClick={async (e) => {
+//                     processChartOfAccounts(documentId, auditId);
+//                   }}
+//                   className={classNames(
+//                     active ? 'bg-gray-50' : '',
+//                     'block px-3 py-1 text-sm leading-6 text-gray-900',
+//                   )}
+//                 >
+//                   CoA Process
+//                 </a>
+//               )}
+//             </Menu.Item>
+//             <Menu.Item>
+//               {({ active }) => (
+//                 <a
+//                   href="#"
+//                   onClick={async (e) => {
+//                     processDocument(documentId);
+//                   }}
+//                   className={classNames(
+//                     active ? 'bg-gray-50' : '',
+//                     'block px-3 py-1 text-sm leading-6 text-gray-900',
+//                   )}
+//                 >
+//                   Re-process
+//                 </a>
+//               )}
+//             </Menu.Item>
+//             <Menu.Item>
+//               {({ active }) => (
+//                 <a
+//                   href="#"
+//                   onClick={async (e) => {
+//                     await selectDocumentForRequest(documentId, field);
+//                   }}
+//                   className={classNames(
+//                     active ? 'bg-gray-50' : '',
+//                     'block px-3 py-1 text-sm leading-6 text-gray-900',
+//                   )}
+//                 >
+//                   Select
+//                 </a>
+//               )}
+//             </Menu.Item>
+//             <Menu.Item>
+//               {({ active }) => (
+//                 <a
+//                   href="#"
+//                   className={classNames(
+//                     active ? 'bg-gray-50' : '',
+//                     'block px-3 py-1 text-sm leading-6 text-gray-900',
+//                   )}
+//                 >
+//                   Download
+//                 </a>
+//               )}
+//             </Menu.Item>
+//             <Menu.Item>
+//               {({ active }) => (
+//                 <a
+//                   href="#"
+//                   onClick={async (e) => {
+//                     await deleteDocument(documentId);
+//                   }}
+//                   className={classNames(
+//                     active ? 'bg-gray-50' : '',
+//                     'block px-3 py-1 text-sm leading-6 text-gray-900',
+//                   )}
+//                 >
+//                   Delete
+//                 </a>
+//               )}
+//             </Menu.Item>
+//           </Menu.Items>
+//         </Transition>
+//       </Menu>
+//     </div>
+//   );
+// }
 
-function Queries({ queries }: { queries: DocumentQuery[] }) {
-  return (
-    <div className="w-80 h-20 overflow-auto mt-1 flex-col text-slate-400 text-xs hidden sm:block">
-      {queries.map((query) => (
-        <div key={query.id}>
-          <span className="">{humanCase(query.identifier)}</span>:{' '}
-          {query.result}
-        </div>
-      ))}
-    </div>
-  );
-}
+// function Queries({ queries }: { queries: DocumentQuery[] }) {
+//   return (
+//     <div className="w-80 h-20 overflow-auto mt-1 flex-col text-slate-400 text-xs hidden sm:block">
+//       {queries.map((query) => (
+//         <div key={query.id}>
+//           <span className="">{humanCase(query.identifier)}</span>:{' '}
+//           {query.result}
+//         </div>
+//       ))}
+//     </div>
+//   );
+// }
 
-function humanCase(input: string): string {
-  const words = input.toLowerCase().split('_');
-  return words
-    .map((word, index) =>
-      index === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word,
-    )
-    .join(' ');
-}
+// function humanCase(input: string): string {
+//   const words = input.toLowerCase().split('_');
+//   return words
+//     .map((word, index) =>
+//       index === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word,
+//     )
+//     .join(' ');
+// }
