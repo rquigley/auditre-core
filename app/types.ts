@@ -123,33 +123,9 @@ export type ClientSafeAudit = Omit<Selectable<AuditTable>, ClientSafeOmitTypes>;
 
 // Use Conditional Type
 // https://www.typescriptlang.org/static/TypeScript%20Types-ae199d69aeecf7d4a2704a528d0fd3f9.png
-export type RequestData =
-  | {
-      value: boolean;
-    }
-  | {
-      documentId: DocumentId;
-    }
-  | {
-      value: string;
-    }
-  | {
-      value: string[];
-    }
-  // | {
-  //     value: S3File;
-  //   }
-  | {
-      businessName: string;
-      description: string;
-      businessModels: string[];
-      chiefDecisionMaker: string;
-    }
-  | {
-      year: string;
-      hasBeenAudited: boolean;
-      fiscalYearEnd: string;
-    };
+export type RequestData = {
+  [key: string]: any;
+};
 
 export type RequestStatus = 'requested' | 'complete' | 'overdue';
 export interface RequestTable {
