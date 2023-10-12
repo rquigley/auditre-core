@@ -87,7 +87,7 @@ export interface _FormField {
   label?: string;
   description?: string;
   extractionQuestions?: ExtractionQuestion[];
-  dependsOn?: string;
+  dependsOn?: string | { field: string; state: boolean };
 }
 
 export interface FormFieldText extends _FormField {
@@ -150,6 +150,12 @@ interface LeasesForm {
   asc842DocumentId: FormFieldFile;
 }
 
+interface ASC606AnalysisForm {
+  hasCompletedASC606Analysis: FormFieldBoolean;
+  asc606DocumentId: FormFieldFile;
+  revenueRecognitionProcess: FormFieldText;
+}
+
 interface EquityForm {
   capTableDetailDocumentId: FormFieldFile;
   certificateTransactionDocumentId: FormFieldFile;
@@ -195,6 +201,7 @@ export type AuditRequestData = {
   ARTICLES_OF_INCORPORATION: RequestDataOnly<FileForm>;
   TRIAL_BALANCE: RequestDataOnly<FileForm>;
   CHART_OF_ACCOUNTS: RequestDataOnly<FileForm>;
+  ASC_606_ANALYSIS: RequestDataOnly<ASC606AnalysisForm>;
   LEASES: RequestDataOnly<LeasesForm>;
   EQUITY: RequestDataOnly<EquityForm>;
   MATERIAL_CHANGES_POST_AUDIT: RequestDataOnly<MaterialChangesPostAuditForm>;
@@ -219,6 +226,7 @@ export const requestTypes: {
   ARTICLES_OF_INCORPORATION: RequestType<FileForm>;
   TRIAL_BALANCE: RequestType<FileForm>;
   CHART_OF_ACCOUNTS: RequestType<FileForm>;
+  ASC_606_ANALYSIS: RequestType<ASC606AnalysisForm>;
   LEASES: RequestType<LeasesForm>;
   EQUITY: RequestType<EquityForm>;
   MATERIAL_CHANGES_POST_AUDIT: RequestType<MaterialChangesPostAuditForm>;
@@ -414,6 +422,38 @@ export const requestTypes: {
       documentId: z.string(),
     }),
   },
+  ASC_606_ANALYSIS: {
+    name: ' ASC 606 Analysis',
+    description: '',
+    form: {
+      hasCompletedASC606Analysis: {
+        input: 'boolean',
+        label: 'Has the company completed ASC 606 Analysis?',
+        defaultValue: false,
+      },
+      asc606DocumentId: {
+        label: 'ASC 606 Analysis Document',
+        extensions: ['PDF', 'DOC', 'DOCX'],
+        maxFilesizeMB: 10,
+        input: 'fileupload',
+        defaultValue: '',
+        dependsOn: 'hasCompletedASC606Analysis',
+      },
+      revenueRecognitionProcess: {
+        input: 'textarea',
+        label: 'Please describe the company’s revenue recognition process',
+        description:
+          'This is a summary of how your company determines whether or not to recognize revenue and the associated COGS. For example, the company’s revenue is direct from the sale of product/service. The company recognizes revenue when the product/service has been shipped/executed to the customer.',
+        defaultValue: '',
+        dependsOn: { field: 'hasCompletedASC606Analysis', state: false },
+      },
+    },
+    completeOnSet: true,
+    schema: z.object({
+      hasCompletedASC606Analysis: z.coerce.boolean(),
+      asc606DocumentId: z.string(),
+    }),
+  },
   LEASES: {
     name: 'Leases',
     description: '',
@@ -486,7 +526,7 @@ export const requestTypes: {
     },
     completeOnSet: true,
     schema: z.object({
-      capTableDetailDocumentId: z.coerce.boolean(),
+      capTableDetailDocumentId: z.string(),
       certificateTransactionDocumentId: z.string(),
       hasEmployeeStockPlan: z.coerce.boolean(),
       employeeStockPlanDocumentId: z.string(),
@@ -577,7 +617,7 @@ export const requestTypes: {
       },
       pctMatch: {
         input: 'text',
-        label: 'What are outstanding material legal matters?',
+        label: 'What % does the company match?',
         defaultValue: '',
         dependsOn: 'doesMatch',
       },
