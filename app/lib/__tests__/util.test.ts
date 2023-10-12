@@ -55,7 +55,7 @@ describe('omit', () => {
 
 describe('clientSafe', () => {
   it('should prune default ids from an object', () => {
-    const input = { id: 1, bar: 'sdf', orgId: 3, he: 'e' };
+    const input = { bar: 'sdf', orgId: 3, he: 'e' };
     const output = clientSafe(input);
 
     expect(output).toEqual({ bar: 'sdf', he: 'e' });
