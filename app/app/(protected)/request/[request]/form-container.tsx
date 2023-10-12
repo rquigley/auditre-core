@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import * as z from 'zod';
 
 import { Await } from '@/components/await';
+import { Document } from '@/components/document';
 import { getById as getDocumentById } from '@/controllers/document';
 import { updateData } from '@/controllers/request';
 import { requestTypes } from '@/lib/request-types';
@@ -47,7 +48,7 @@ export default async function FormContainer({ request, user, audit }: Props) {
   Object.keys(request.data).forEach((key) => {
     if (key.endsWith('ocumentId')) {
       const id: DocumentId = request.data[key];
-      documents[key] = <DocumentCmp documentId={id} />;
+      documents[key] = <AwaitDocument documentId={id} />;
     }
   });
 
@@ -60,19 +61,14 @@ export default async function FormContainer({ request, user, audit }: Props) {
   );
 }
 
-async function DocumentCmp({ documentId }: { documentId: DocumentId }) {
+function AwaitDocument({ documentId }: { documentId: DocumentId }) {
   if (!documentId) {
     return null;
   }
   return (
-    <Suspense fallback={'...'}>
+    <Suspense fallback={<div className="h-12 flex items-center"></div>}>
       <Await promise={getDocumentById(documentId)}>
-        {(document) => (
-          <div className="text-xs">
-            Doc: {documentId}
-            {document.name}
-          </div>
-        )}
+        {(d) => <Document docKey={d.key} name={d.name} />}
       </Await>
     </Suspense>
   );

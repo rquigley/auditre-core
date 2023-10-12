@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 
-export default function FiletypeIcon({ filename }: { filename: string }) {
+export function FiletypeIcon({ filename }: { filename: string }) {
   const fileExt = filename.split('.').pop();
   const dim = 32;
   switch (fileExt) {
