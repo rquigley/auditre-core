@@ -4,6 +4,7 @@ import * as z from 'zod';
 import { head } from '@/lib/util';
 import { balanceSheetTypes } from './consolidated-balance-sheet';
 
+import type { RequestGroup } from '@/types';
 import type { ZodTypeAny } from 'zod';
 
 const balanceSheetTypeKeys = Object.keys(balanceSheetTypes);
@@ -214,6 +215,7 @@ export type AuditRequestData = {
 
 interface RequestType<T> {
   name: string;
+  group?: RequestGroup;
   description: string;
   form: T;
   completeOnSet: boolean;
@@ -238,6 +240,7 @@ export const requestTypes: {
 } = {
   BASIC_INFO: {
     name: 'Basic information',
+    group: 'Background',
     description: '',
     form: {
       businessName: {
@@ -274,6 +277,7 @@ export const requestTypes: {
   },
   AUDIT_INFO: {
     name: 'Audit information',
+    group: 'Background',
     description: '',
     form: {
       year: {
@@ -310,9 +314,11 @@ export const requestTypes: {
   },
   ARTICLES_OF_INCORPORATION: {
     name: 'Articles of Incorporation',
+    group: 'Background',
     description: '',
     form: {
       documentId: {
+        label: 'Upload the Articles of Incorporation',
         extensions: ['PDF'],
         maxFilesizeMB: 10,
         input: 'fileupload',
@@ -366,10 +372,12 @@ export const requestTypes: {
     }),
   },
   TRIAL_BALANCE: {
-    name: 'Upload the Trial Balance',
+    name: 'Trial Balance',
+    group: 'Accounting Information',
     description: '',
     form: {
       documentId: {
+        label: 'Upload the Trial Balance',
         extensions: ['XLS', 'XLSX', 'CSV'],
         maxFilesizeMB: 10,
         input: 'fileupload',
@@ -383,7 +391,8 @@ export const requestTypes: {
     }),
   },
   CHART_OF_ACCOUNTS: {
-    name: 'Upload the Chart of Accounts',
+    name: 'Chart of Accounts',
+    group: 'Accounting Information',
     description: '',
     form: {
       documentId: {
@@ -424,6 +433,7 @@ export const requestTypes: {
   },
   ASC_606_ANALYSIS: {
     name: ' ASC 606 Analysis',
+    group: 'Accounting Information',
     description: '',
     form: {
       hasCompletedASC606Analysis: {
@@ -456,6 +466,7 @@ export const requestTypes: {
   },
   LEASES: {
     name: 'Leases',
+    group: 'Accounting Information',
     description: '',
     form: {
       hasLeases: {
@@ -494,6 +505,7 @@ export const requestTypes: {
   },
   EQUITY: {
     name: 'Equity',
+    group: 'Accounting Information',
     description: '',
     form: {
       capTableDetailDocumentId: {
@@ -534,6 +546,7 @@ export const requestTypes: {
   },
   MATERIAL_CHANGES_POST_AUDIT: {
     name: 'Post-audit changes',
+    group: 'Business Operations',
     description: '',
     form: {
       hasPostAuditChanges: {
@@ -557,6 +570,7 @@ export const requestTypes: {
   },
   OUTSTANDING_LEGAL_MATTERS: {
     name: 'Outstanding legal matters',
+    group: 'Business Operations',
     description: '',
     form: {
       hasLegalMatters: {
@@ -580,6 +594,7 @@ export const requestTypes: {
   },
   RELATED_PARTY_TRANSACTIONS: {
     name: 'Related party transactions ',
+    group: 'Business Operations',
     description: '',
     form: {
       hasRelatedPartyTransactions: {
@@ -602,6 +617,7 @@ export const requestTypes: {
   },
   EMPLOYEE_401K: {
     name: '401k plan',
+    group: 'Business Operations',
     description: '',
     form: {
       has401K: {
@@ -631,6 +647,7 @@ export const requestTypes: {
   },
   AUDIT_YEAR_TAX_PROVISION: {
     name: 'Audit year tax provision',
+    group: 'Accounting Information',
     description: '',
     form: {
       documentId: {

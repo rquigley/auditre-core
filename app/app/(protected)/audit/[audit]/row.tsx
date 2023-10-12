@@ -1,8 +1,8 @@
 'use client';
 
-import type { ClientSafeRequest } from '@/types';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+
+import type { ClientSafeRequest } from '@/types';
 
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
@@ -34,8 +34,6 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function Row({ request }: { request: ClientSafeRequest }) {
-  const router = useRouter();
-
   return (
     <tr key={request.id} className="hover:bg-gray-100">
       <td className="whitespace-nowrap pl-4 sm:pl-2 py-5 text-sm text-gray-500">

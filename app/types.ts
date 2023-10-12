@@ -128,11 +128,16 @@ export type RequestData = {
 };
 
 export type RequestStatus = 'requested' | 'complete' | 'overdue';
+export type RequestGroup =
+  | 'Background'
+  | 'Accounting Information'
+  | 'Business Operations'
+  | 'Other';
 export interface RequestTable {
   id: Generated<RequestId>;
   auditId: AuditId;
   orgId: OrgId;
-  name: string | null;
+  name: string;
   description: string | null;
   status: RequestStatus;
   type: RequestTypeKey;
@@ -145,11 +150,10 @@ export interface RequestTable {
 
 export type RequestUpdate = Updateable<RequestTable>;
 export type NewRequest = Insertable<RequestTable>;
-export type Request = Selectable<RequestTable>;
-export type ClientSafeRequest = Omit<
-  Selectable<RequestTable>,
-  ClientSafeOmitTypes
->;
+export interface Request extends Selectable<RequestTable> {
+  group: RequestGroup;
+}
+export type ClientSafeRequest = Omit<Request, ClientSafeOmitTypes>;
 
 export type RequestChangeValue = RequestData & {
   status: RequestStatus;
@@ -187,7 +191,7 @@ export interface DocumentTable {
   >;
   extracted: string | null;
   isProcessed: ColumnType<Boolean, never, Boolean>;
-  lastModified: Date;
+  fileLastModified: Date;
   orgId: OrgId;
   requestId: RequestId | null;
   createdAt: ColumnType<Date, string | undefined, never>;

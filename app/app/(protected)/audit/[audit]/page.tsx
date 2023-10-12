@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { Fragment } from 'react';
 
 import Header from '@/components/header';
 import { getById } from '@/controllers/audit';
@@ -25,6 +26,12 @@ export default async function AuditPage({
   const requests = await getAllByAuditId(audit.id);
   const clientSafeRequests = clientSafe(requests) as ClientSafeRequest[];
 
+  const groupedRequests = sortRows<ClientSafeRequest>(clientSafeRequests, [
+    'Background',
+    'Accounting Information',
+    'Business Operations',
+    'Other',
+  ]);
   const breadcrumbs = [{ name: 'Audits', href: '/audits' }];
   return (
     <>
@@ -62,9 +69,27 @@ export default async function AuditPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {clientSafeRequests.map((request) => (
-                  <Row request={request} key={request.id} />
-                ))}
+                {groupedRequests.map((group) => {
+                  if (group.rows.length === 0) {
+                    return null;
+                  }
+                  return (
+                    <Fragment key={group.name}>
+                      <tr className="border-t border-gray-200">
+                        <th
+                          colSpan={3}
+                          scope="colgroup"
+                          className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-normal text-gray-900 sm:pl-3"
+                        >
+                          {group.name}
+                        </th>
+                      </tr>
+                      {group.rows.map((row) => (
+                        <Row request={row} key={row.id} />
+                      ))}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
             <div className="mt-4">
@@ -81,4 +106,42 @@ export default async function AuditPage({
       </div>
     </>
   );
+}
+
+interface Row {
+  name: string;
+  group: string;
+}
+
+function sortRows<T extends Row>(
+  rows: T[],
+  groupOrder: string[],
+): {
+  name: string;
+  rows: T[];
+}[] {
+  const groupMap: Record<string, T[]> = {};
+
+  // Group rows by their 'group' property
+  for (const row of rows) {
+    if (!groupMap[row.group]) {
+      groupMap[row.group] = [];
+    }
+    groupMap[row.group].push(row);
+  }
+
+  // Sort each group by 'name'
+  for (const group of Object.keys(groupMap)) {
+    groupMap[group] = groupMap[group].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+  }
+
+  // Create SortedRowGroup based on groupOrder
+  const sortedRows = groupOrder.map((groupName) => ({
+    name: groupName,
+    rows: groupMap[groupName] || [],
+  }));
+
+  return sortedRows;
 }
