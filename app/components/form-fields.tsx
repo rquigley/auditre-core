@@ -308,14 +308,16 @@ export function FileUpload({
         lastModified: file.lastModified,
         type: file.type,
       };
-      setDraftFile({
-        name: file.name,
-        key: signedUrl.key,
-      });
 
       // create the doc in db and determine the classified type
-      const { id, classifiedType } = await createDocument(toSave, request.id);
-
+      const { id, classifiedType, name, key } = await createDocument(
+        toSave,
+        request.id,
+      );
+      setDraftFile({
+        name,
+        key,
+      });
       // don't await this
       // processDocument(id);
 
@@ -331,7 +333,7 @@ export function FileUpload({
 
     setState('uploaded');
   }
-  const value = getValues(field);
+  //const value = getValues(field);
   return (
     <>
       {/* <Documents

@@ -4,6 +4,7 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { extname } from 'path';
+import * as Sentry from '@sentry/node';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import * as z from 'zod';
@@ -106,12 +107,18 @@ export async function createDocument(file: S3File, requestId: RequestId) {
   //throw new Error('incorrect type');
 
   // classification and question kickoff
-  await processDocument(doc.id);
+  try {
+    await processDocument(doc.id);
+  } catch (e) {
+    console.log(e);
+    Sentry.captureException(e);
+  }
 
-  const { id, classifiedType, name } = await getDocumentById(doc.id);
+  const { id, key, classifiedType, name } = await getDocumentById(doc.id);
 
   return {
     id,
+    key,
     name,
     classifiedType,
   };
