@@ -38,7 +38,7 @@ CREATE TABLE "invitation" (
   "email" text UNIQUE,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
-  "expires_at" timestamp DEFAULT (now() + INTERVAL '7 days') NOT NULL,
+  "expires_at" timestamptz DEFAULT (now() + INTERVAL '7 days') NOT NULL,
   "is_used" boolean NOT NULL DEFAULT FALSE
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "invitation" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
@@ -57,7 +57,7 @@ CREATE TABLE "account" (
   "id_token" text,
   "session_state" text,
   "created_at" timestamptz DEFAULT now() NOT NULL,
-  "updated_at" timestamp
+  "updated_at" timestamptz DEFAULT now() NOT NULL,
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
@@ -90,10 +90,10 @@ CREATE TABLE "request" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "name" text,
-  "type" text,
+  "name" text NOT NULL,
+  "type" text NOT NULL,
   "description" text,
-  "status" text,
+  "status" text NOT NULL,
   -- "requestee" uuid REFERENCES "user" ("id"),
   "data" jsonb,
   "due_date" date,
@@ -109,7 +109,7 @@ CREATE TABLE "request_change" (
   "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
   "actor" jsonb,
   "new_data" JSONB,
-  "created_at" timestamp DEFAULT now() NOT NULL
+  "created_at" timestamptz DEFAULT now() NOT NULL
 );
 
 CREATE TABLE "document" (
@@ -121,7 +121,7 @@ CREATE TABLE "document" (
   "size" integer NOT NULL,
   "mime_type" text,
   "classified_type" text NOT NULL DEFAULT 'UNCLASSIFIED',
-  "last_modified" timestamp NOT NULL, -- This is for the file, not the record
+  "file_last_modified" timestamp NOT NULL,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "is_processed" boolean NOT NULL DEFAULT FALSE,
   "extracted" text,
