@@ -96,7 +96,7 @@ export async function createDocument(file: S3File, requestId: RequestId) {
     name: file.name,
     size: file.size,
     mimeType: file.type,
-    lastModified: new Date(file.lastModified),
+    fileLastModified: new Date(file.lastModified),
     orgId: request.orgId,
     requestId: request.id,
   });
