@@ -273,15 +273,11 @@ export function FileUpload({
   request: ClientSafeRequest;
   setValue: (key: string, val: any, opts: any) => void;
   getValues: (key?: string) => any;
-
   document: JSX.Element;
 }) {
   const [state, setState] = useState<UploadState>('idle');
   const [draftFile, setDraftFile] = useState<DraftFile | null>(null);
-  async function uploadDocument(
-    e: React.ChangeEvent<HTMLInputElement>,
-    request: ClientSafeRequest,
-  ) {
+  async function uploadDocument(e: React.ChangeEvent<HTMLInputElement>) {
     setState('uploading');
 
     const file = e.target.files?.[0]!;
@@ -406,7 +402,7 @@ export function FileUpload({
         type="file"
         className="sr-only"
         multiple={false}
-        onChange={(e) => uploadDocument(e, request)}
+        onChange={uploadDocument}
         // accept="image/png, image/jpeg"
       />
       {/* {value && (
