@@ -10,7 +10,9 @@ import Calendar from '@/components/calendar';
 import Datetime from '@/components/datetime';
 import FiletypeIcon from '@/components/FiletypeIcon';
 import {
+  createDocument,
   deleteDocument,
+  getPresignedUploadUrl,
   processChartOfAccounts,
   processDocument,
   selectDocumentForRequest,
@@ -253,6 +255,7 @@ export function BooleanField({
   );
 }
 
+type UploadState = 'idle' | 'uploading' | 'uploaded';
 export function FileUpload({
   field,
   register,
@@ -261,33 +264,28 @@ export function FileUpload({
   errors,
   config,
   request,
-  formState,
-  setFormState,
-  createDocument,
-  getPresignedUploadUrl,
-  documents,
+  document,
 }: FormFieldProps & {
   config: FormFieldFile;
   request: ClientSafeRequest;
   setValue: (key: string, val: any, opts: any) => void;
-  getValues: () => any;
-  formState: FormState;
-  setFormState: (val: FormState) => void;
-  createDocument: BasicFormProps['createDocument'];
-  getPresignedUploadUrl: BasicFormProps['getPresignedUploadUrl'];
-  documents: BasicFormProps['documents'];
+  getValues: (key?: string) => any;
+
+  document: JSX.Element;
 }) {
+  const [state, setState] = useState<UploadState>('idle');
   async function uploadDocument(
     e: React.ChangeEvent<HTMLInputElement>,
     request: ClientSafeRequest,
   ) {
-    setFormState({ type: 'uploading' });
+    setState('uploading');
 
     const file = e.target.files?.[0]!;
     const filename = encodeURIComponent(file.name);
     //const fileType = encodeURIComponent(file.type);
 
     const signedUrl = await getPresignedUploadUrl({
+      requestId: request.id,
       filename,
       contentType: file.type,
     });
@@ -310,11 +308,14 @@ export function FileUpload({
         lastModified: file.lastModified,
         type: file.type,
       };
-      const docId = await createDocument(toSave);
-      // don't await this
-      processDocument(docId);
 
-      setValue(field, docId, { shouldDirty: true, shouldTouch: true });
+      // create the doc in db and determine the classified type
+      const { id, classifiedType } = await createDocument(toSave, request.id);
+
+      // don't await this
+      // processDocument(id);
+
+      setValue(field, id, { shouldDirty: true, shouldTouch: true });
       console.log('SUCCESS', resp.ok, toSave);
     } else {
       // TODO: handle
@@ -323,24 +324,26 @@ export function FileUpload({
 
     // Clear out the file input
     //el.value = '';
-    setFormState({ type: 'uploaded' });
-  }
-  const value = getValues()[field];
 
+    setState('uploaded');
+  }
+  const value = getValues(field);
   return (
     <>
-      <Documents
+      {/* <Documents
         documents={documents}
         field={field}
         currentDocumentId={value}
         auditId={request.auditId}
-      />
+      /> */}
+      {value}
+      {document}
 
       <label
         htmlFor={`${field}-file`}
         className="cursor-pointer inline-flex items-cente rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white"
       >
-        {formState.type === 'uploading' && (
+        {state === 'uploading' && (
           <svg
             className="mr-3 h-5 w-5 animate-spin text-green-700"
             xmlns="http://www.w3.org/2000/svg"
@@ -362,14 +365,16 @@ export function FileUpload({
             ></path>
           </svg>
         )}
-        {formState.type === 'uploaded' ? (
+        {state === 'uploaded' ? (
           <>
             <CheckCircleIcon
               className="-ml-0.5 mr-1 h-5 w-5 text-green-700"
               aria-hidden="true"
             />
-            Document uploaded
+            Upload complete
           </>
+        ) : state === 'uploading' ? (
+          <>Uploading</>
         ) : (
           <>Upload document</>
         )}
