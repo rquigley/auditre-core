@@ -57,7 +57,7 @@ CREATE TABLE "account" (
   "id_token" text,
   "session_state" text,
   "created_at" timestamptz DEFAULT now() NOT NULL,
-  "updated_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
