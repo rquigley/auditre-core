@@ -5,6 +5,7 @@ import Image from 'next/image';
 export function FiletypeIcon({ filename }: { filename: string }) {
   const fileExt = filename.split('.').pop();
   const dim = 32;
+  const className = 'w-6';
   switch (fileExt) {
     case 'pdf':
       return (
@@ -13,7 +14,7 @@ export function FiletypeIcon({ filename }: { filename: string }) {
           width={dim}
           height={dim}
           alt={fileExt}
-          className="min-w-fit"
+          className={className}
         />
       );
 
@@ -25,7 +26,7 @@ export function FiletypeIcon({ filename }: { filename: string }) {
           width={dim}
           height={dim}
           alt={fileExt}
-          className="min-w-fit"
+          className={className}
         />
       );
     case 'xls':
@@ -36,10 +37,10 @@ export function FiletypeIcon({ filename }: { filename: string }) {
           width={dim}
           height={dim}
           alt={fileExt}
-          className="min-w-fit"
+          className={className}
         />
       );
     default:
-      return <div>{fileExt}</div>;
+      return <div className={className}>{fileExt}</div>;
   }
 }
