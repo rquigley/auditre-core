@@ -88,22 +88,40 @@ export async function upsertAll() {
 }
 
 export async function getById(id: RequestId): Promise<Request> {
-  return await db
+  const request = await db
     .selectFrom('request')
     .where('id', '=', id)
     .where('isDeleted', '=', false)
     .selectAll()
     .executeTakeFirstOrThrow();
+
+  return normalizeData(request);
 }
 
 export async function getAllByAuditId(auditId: AuditId): Promise<Request[]> {
-  return await db
+  const requests = await db
     .selectFrom('request')
     .where('auditId', '=', auditId)
     .where('isDeleted', '=', false)
     .orderBy('createdAt')
     .selectAll()
     .execute();
+
+  return requests.map(normalizeData);
+}
+
+function normalizeData(request: Request) {
+  const form = requestTypes[request.type].form;
+  const dv = {};
+  for (const key of Object.keys(form)) {
+    // @ts-ignore
+    dv[key] = form[key].defaultValue;
+  }
+  request.data = {
+    ...dv,
+    ...request.data,
+  };
+  return request;
 }
 
 export async function update(
