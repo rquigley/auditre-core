@@ -309,7 +309,7 @@ export const requestTypes: {
     }),
   },
   ARTICLES_OF_INCORPORATION: {
-    name: 'Upload the Articles of Incorporation',
+    name: 'Articles of Incorporation',
     description: '',
     form: {
       documentId: {
