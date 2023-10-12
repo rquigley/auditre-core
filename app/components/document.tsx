@@ -1,12 +1,6 @@
 import { FiletypeIcon } from '@/components/filetype-icon';
 
-export async function Document({
-  docKey,
-  name,
-}: {
-  docKey: string;
-  name: string;
-}) {
+export function Document({ docKey, name }: { docKey: string; name: string }) {
   return (
     <div className="h-12 flex items-center">
       <div className="flex items-center border border-white hover:border-slate-300 p-1 cursor-pointer">
