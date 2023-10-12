@@ -120,7 +120,7 @@ function normalizeData(request: Omit<Request, 'group'>): Request {
 
   return {
     ...request,
-    name: request.type !== 'USER_REQUESTED' ? request.name : requestType.name,
+    name: request.type === 'USER_REQUESTED' ? request.name : requestType.name,
     group: requestType.group || 'Other',
     data: {
       ...dv,
