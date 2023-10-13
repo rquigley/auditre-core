@@ -18,7 +18,12 @@ import SaveNotice from '@/components/save-notice';
 import { requestTypes } from '@/lib/request-types';
 import { classNames, delay, isFieldVisible } from '@/lib/util';
 
-import type { ClientSafeRequest, RequestData } from '@/types';
+import type {
+  ClientSafeRequest,
+  RequestData,
+  RequestId,
+  S3File,
+} from '@/types';
 
 //import type { UseFormRegister, FieldErrors } from 'react-hook-form';
 
@@ -26,9 +31,15 @@ export type Props = {
   request: ClientSafeRequest;
   saveData: (data: RequestData) => void;
   documents: { [key: string]: JSX.Element };
+  createDocument: (file: S3File, requestId: RequestId) => Promise<any>;
 };
 
-export default function BasicForm({ request, saveData, documents }: Props) {
+export default function BasicForm({
+  request,
+  saveData,
+  documents,
+  createDocument,
+}: Props) {
   const config = requestTypes[request.type];
 
   const [showSuccess, setShowSuccess] = useState(false);
@@ -118,6 +129,7 @@ export default function BasicForm({ request, saveData, documents }: Props) {
                         setValue={setValue}
                         getValues={getValues}
                         document={documents[field]}
+                        createDocument={createDocument}
                       />
                     ) : fieldConfig.input === 'checkbox' ? (
                       <Checkbox
