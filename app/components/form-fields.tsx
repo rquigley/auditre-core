@@ -468,7 +468,10 @@ export function FileUpload({
             // accept="image/png, image/jpeg"
           />
         </label>
-        {fileState.state === 'readyToSave' && (
+        {fileState.state === 'readyToSave' ||
+        // A bug exists here that if a user cancels while in "processing"
+        // the system can still mark it as "readyToSave". TODO: Fix this
+        fileState.state === 'processing' ? (
           <a
             href="#"
             onClick={() => {
@@ -479,7 +482,7 @@ export function FileUpload({
           >
             Cancel
           </a>
-        )}
+        ) : null}
       </div>
       {/* {state.state === 'uploading' && <div className="mt-2">{state.pct}%</div>} */}
       <input {...register(field, { required: true })} type="hidden" />
