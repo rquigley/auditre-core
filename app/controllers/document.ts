@@ -1,7 +1,7 @@
-import retry from 'async-retry';
-
 // import { inferSchema, initParser } from 'udsv';
 // import { string } from 'zod';
+import * as Sentry from '@sentry/node';
+import retry from 'async-retry';
 
 import { create as createMapping } from '@/controllers/account-mapping';
 import {
@@ -85,55 +85,65 @@ export async function extractAndUpdateContent(document: Document) {
 }
 
 export async function process(id: DocumentId): Promise<void> {
-  const t0 = Date.now();
-  // TODO: separate out job creation from actual work
-  await update(id, { isProcessed: false });
-  console.log(`start time: ${Date.now() - t0}ms`);
+  try {
+    const t0 = Date.now();
 
-  const extractJob = await addJob({ documentId: id, status: 'TO_EXTRACT' });
-  let document = await getById(id);
-  await retry(
-    // TODO: bail should change to error
-    async (bail) => {
-      console.log(`retry extract time: ${Date.now() - t0}ms`);
+    const doc = await getById(id);
+    if (!doc.isProcessed) {
+      await update(id, { isProcessed: false });
+    }
+    if (!doc.extracted) {
+      await retry(
+        // TODO: bail should change to error
+        async (bail) => {
+          console.log(`checking for extracted content: ${Date.now() - t0}ms`);
+          return await extractAndUpdateContent(doc);
+        },
+        {
+          minTimeout: 4000,
+          factor: 1.5,
+          maxTimeout: 10000,
+          maxRetryTime: 60000,
+        },
+      );
+      console.log(`extract done time: ${Date.now() - t0}ms`);
+    }
 
-      return await extractAndUpdateContent(document);
-    },
-    { minTimeout: 4000, factor: 1.5, maxTimeout: 10000, maxRetryTime: 60000 },
-  );
-  await completeJob(extractJob.id);
-  console.log(`extract done time: ${Date.now() - t0}ms`);
+    const extractedDoc = await getById(id);
+    if (!extractedDoc.extracted) {
+      console.log('no extracted content, skipping');
+      await update(id, { isProcessed: true });
+      return;
+    }
 
-  document = await getById(id);
-
-  // check for job status
-  if (document.extracted) {
-    const classifiedType = await classifyDocument(document);
-
-    // IF CLASSIFIED TYPE !== REQUEST_TYPE, bail
+    const classifiedType = await classifyDocument(extractedDoc);
     await update(id, { classifiedType });
     console.log(`classify time: ${Date.now() - t0}ms`);
 
     // don't await this
-    const askQuestionsJob = await addJob({
-      documentId: id,
-      status: 'TO_ASK_DEFAULT_QUESTIONS',
-    });
-    askDefaultQuestions(document).then(async (questions) => {
-      console.log('default questions asked');
-      console.log(`total time: ${Date.now() - t0}ms`);
-      await completeJob(askQuestionsJob.id);
-      await update(id, { isProcessed: true });
-    });
+    // const extractJob = await addJob({ documentId: id, status: 'TO_EXTRACT' });
+    // const askQuestionsJob = await addJob({
+    //   documentId: id,
+    //   status: 'TO_ASK_DEFAULT_QUESTIONS',
+    // });
+    // await completeJob(askQuestionsJob.id);
+    await askDefaultQuestions(extractedDoc);
+    console.log('default questions asked');
+    console.log(`total time: ${Date.now() - t0}ms`);
+    // await completeJob(askQuestionsJob.id);
+    await update(id, { isProcessed: true });
 
     // await completeJob(askQuestionsJob.id);
     // await update(id, { isProcessed: true });
+    // const docType = await getType(id);
+    // // What should we do if we don't have extracted info?
+    // if (docType === 'CHART_OF_ACCOUNTS') {
+    //   await extractChartOfAccountsMapping(document);
+    // }
+  } catch (e) {
+    console.log(e);
+    Sentry.captureException(e);
   }
-  // const docType = await getType(id);
-  // // What should we do if we don't have extracted info?
-  // if (docType === 'CHART_OF_ACCOUNTS') {
-  //   await extractChartOfAccountsMapping(document);
-  // }
 }
 
 export type DocumentStatus = 'COMPLETE' | 'INCOMPLETE';

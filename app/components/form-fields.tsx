@@ -1,13 +1,20 @@
 'use client';
 
 import { Switch } from '@headlessui/react';
-import { CheckCircleIcon } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import {
+  ArrowLongRightIcon,
+  CheckCircleIcon,
+} from '@heroicons/react/24/outline';
+import * as Sentry from '@sentry/react';
+import retry from 'async-retry';
+import clsx from 'clsx';
+import { useEffect, useState } from 'react';
 
 import Calendar from '@/components/calendar';
 import { Document } from '@/components/document';
 import {
   createDocument,
+  getDocumentStatus,
   // deleteDocument,
   getPresignedUploadUrl,
 } from '@/lib/actions';
@@ -20,20 +27,20 @@ import {
   FormFieldText,
   FormFieldYear,
 } from '@/lib/request-types';
-import { classNames } from '@/lib/util';
+import { classNames, delay, pWithResolvers, ucFirst } from '@/lib/util';
 
 import type { ClientSafeRequest, S3File } from '@/types';
 
 type FormFieldProps = {
   field: string;
   register: any;
-  errors: any;
+  formState: any;
 };
 
 export function Text({
   field,
   register,
-  errors,
+  formState: { errors },
   config,
 }: FormFieldProps & { config: FormFieldText }) {
   return (
@@ -59,7 +66,7 @@ export function Text({
 export function Textarea({
   field,
   register,
-  errors,
+  formState: { errors },
   config,
 }: FormFieldProps & { config: FormFieldText }) {
   return (
@@ -87,7 +94,7 @@ export function DateField({
   register,
   getValues,
   setValue,
-  errors,
+  formState: { errors },
   config,
 }: FormFieldProps & {
   config: FormFieldDate;
@@ -124,7 +131,7 @@ export function DateField({
 export function Year({
   field,
   register,
-  errors,
+  formState: { errors },
   config,
 }: FormFieldProps & { config: FormFieldYear }) {
   const nextYear = new Date().getFullYear() + 1;
@@ -156,7 +163,7 @@ export function Year({
 export function Checkbox({
   field,
   register,
-  errors,
+  formState: { errors },
   config,
 }: FormFieldProps & { config: FormFieldCheckbox }) {
   const items = Object.keys(config.items).map((key, idx) => {
@@ -200,7 +207,7 @@ export function BooleanField({
   field,
   getValues,
   setValue,
-  errors,
+  formState: { errors },
   config,
 }: FormFieldProps & {
   config: FormFieldBoolean;
@@ -239,32 +246,52 @@ export function BooleanField({
   );
 }
 
-type UploadState = 'idle' | 'uploading' | 'uploaded';
-type DraftFile = {
-  name: string;
-  key: string;
-};
+type FileState =
+  | { state: 'idle' }
+  | { state: 'uploading'; pct: number }
+  | {
+      state: 'uploaded';
+      pct: number;
+    }
+  | {
+      state: 'processing';
+      documentId: string;
+      name: string;
+      key: string;
+    }
+  | { state: 'readyToSave'; documentId: string; name: string; key: string }
+  | {
+      state: 'error';
+      message: string;
+    };
 
 export function FileUpload({
   field,
   register,
   setValue,
   getValues,
-  errors,
+  formState: { isSubmitSuccessful },
   config,
   request,
   document,
+  resetField,
 }: FormFieldProps & {
   config: FormFieldFile;
   request: ClientSafeRequest;
   setValue: (key: string, val: any, opts: any) => void;
   getValues: (key?: string) => any;
   document: JSX.Element;
+  resetField: (field: string) => void;
 }) {
-  const [state, setState] = useState<UploadState>('idle');
-  const [draftFile, setDraftFile] = useState<DraftFile | null>(null);
+  const [fileState, setFileState] = useState<FileState>({ state: 'idle' });
+  useEffect(() => {
+    if (isSubmitSuccessful && fileState.state === 'readyToSave') {
+      setFileState({ state: 'idle' });
+    }
+  }, [isSubmitSuccessful, fileState]);
+
   async function uploadDocument(e: React.ChangeEvent<HTMLInputElement>) {
-    setState('uploading');
+    setFileState({ state: 'uploading', pct: 0 });
 
     const file = e.target.files?.[0]!;
     const filename = encodeURIComponent(file.name);
@@ -276,11 +303,22 @@ export function FileUpload({
       contentType: file.type,
     });
 
-    const resp = await fetchWithProgress(signedUrl.url, file, (ev) => {
+    // For visual effect, ensure uplading takes at least 3s. This also
+    // reduces the perception of the processing time, which can currently go > 20s
+    const { promise, resolve } = pWithResolvers();
+    delay(3000).then(resolve);
+
+    const resp = await fetchWithProgress(signedUrl.url, file, async (ev) => {
       if (ev.lengthComputable) {
-        const percentage = (ev.loaded / ev.total) * 100;
-        console.log('YES', percentage);
-        //uploadProgress.value = percentage;
+        if (ev.loaded === ev.total) {
+          await promise;
+          setFileState({ state: 'uploaded', pct: 100 });
+        } else {
+          setFileState({
+            state: 'uploading',
+            pct: (ev.loaded / ev.total) * 100,
+          });
+        }
       }
     });
 
@@ -295,34 +333,47 @@ export function FileUpload({
         type: file.type,
       };
 
-      // create the doc in db and determine the classified type
-      console.log('client TRIAGE--- Pre createDocument');
+      const { id, name, key } = await createDocument(toSave, request.id);
 
-      const res = await createDocument(toSave, request.id);
-      console.log('client TRIAGE--- Post createDocument 1');
-      console.log('client TRIAGE--- Post createDocument 2', res);
+      // Same as above, reduce perception of processing time
+      await promise;
+      await delay(3000);
 
-      const { id, classifiedType, name, key } = res;
-      setDraftFile({
+      setFileState({
+        state: 'processing',
+        documentId: id,
         name,
         key,
       });
-      // don't await this
-      // processDocument(id);
+
+      await retry(
+        async () => {
+          const docStatus = await getDocumentStatus(id);
+          if (!docStatus.isProcessed) {
+            throw new Error('Still processing');
+          }
+          setFileState({
+            state: 'readyToSave',
+            documentId: id,
+            name,
+            key,
+          });
+        },
+        {
+          minTimeout: 4000,
+          factor: 1.5,
+          maxTimeout: 10000,
+          maxRetryTime: 60000,
+        },
+      );
 
       setValue(field, id, { shouldDirty: true, shouldTouch: true });
-      console.log('SUCCESS', resp.ok, toSave);
     } else {
-      // TODO: handle
-      console.log('ERROR', resp.ok);
+      setFileState({ state: 'error', message: 'Error uploading file' });
+      Sentry.captureException('Error uploading file');
     }
-
-    // Clear out the file input
-    //el.value = '';
-
-    setState('uploaded');
   }
-  //const value = getValues(field);
+  const currentDocumentId = getValues(field);
   return (
     <>
       {/* <Documents
@@ -332,70 +383,112 @@ export function FileUpload({
         auditId={request.auditId}
       /> */}
 
-      {draftFile ? (
-        <Document docKey={draftFile.key} name={draftFile.name} />
+      {fileState.state === 'processing' ? (
+        <div className="flex items-center">
+          <Document docKey={fileState.key} name={fileState.name} />
+          {document ? (
+            <div className="flex items-center">
+              <div className="flex text-xs mx-4 text-slate-500">
+                <div>to replace</div>
+                <ArrowLongRightIcon className="h-4 ml-1" />
+              </div>
+              {document}
+            </div>
+          ) : null}
+        </div>
       ) : (
         document
       )}
+      <div className="flex">
+        <label
+          htmlFor={`${field}-file`}
+          className={clsx(
+            fileState.state === 'uploading' ||
+              fileState.state === 'uploaded' ||
+              fileState.state === 'processing'
+              ? 'cursor-not-allowed hover:bg-white'
+              : 'hover:bg-gray-50 cursor-pointer',
+            ' inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300',
+          )}
+        >
+          {fileState.state === 'uploading' ||
+          fileState.state === 'uploaded' ||
+          fileState.state === 'processing' ? (
+            <>
+              <svg
+                className="mr-3 h-5 w-5 animate-spin text-green-700"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              {ucFirst(fileState.state)}
+              {fileState.state === 'uploading' || fileState.state === 'uploaded'
+                ? ` ${fileState.pct}%`
+                : ''}
+            </>
+          ) : fileState.state === 'readyToSave' ? (
+            <>
+              <CheckCircleIcon
+                className="-ml-0.5 mr-1 h-5 w-5 text-green-700"
+                aria-hidden="true"
+              />
+              Ready to save
+            </>
+          ) : (
+            <>{currentDocumentId ? 'Replace document' : 'Add document'}</>
+          )}
+          <input
+            id={`${field}-file`}
+            name={`${field}-file`}
+            type="file"
+            className="sr-only"
+            multiple={false}
+            onChange={uploadDocument}
+            aria-disabled={
+              fileState.state === 'uploading' ||
+              fileState.state === 'processing'
+            }
 
-      <label
-        htmlFor={`${field}-file`}
-        className="cursor-pointer inline-flex items-cente rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white"
-      >
-        {state === 'uploading' && (
-          <svg
-            className="mr-3 h-5 w-5 animate-spin text-green-700"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
+            // accept="image/png, image/jpeg"
+          />
+        </label>
+        {fileState.state === 'readyToSave' && (
+          <a
+            href="#"
+            onClick={() => {
+              setFileState({ state: 'idle' });
+              resetField(field);
+            }}
+            className="ml-4 p-2 text-xs text-slate-500 hover:text-slate-700"
           >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
+            Cancel
+          </a>
         )}
-        {state === 'uploaded' ? (
-          <>
-            <CheckCircleIcon
-              className="-ml-0.5 mr-1 h-5 w-5 text-green-700"
-              aria-hidden="true"
-            />
-            Upload complete
-          </>
-        ) : state === 'uploading' ? (
-          <>Uploading</>
-        ) : (
-          <>Upload document</>
-        )}
-      </label>
+      </div>
+      {/* {state.state === 'uploading' && <div className="mt-2">{state.pct}%</div>} */}
+      <input {...register(field, { required: true })} type="hidden" />
 
       {/* <p className="text-xs leading-5 text-gray-600">
           {config.extensions.join(', ')} up to {config.maxFilesizeMB}MB
         </p> */}
-      <p className="mt-2 text-sm text-red-600" id="email-error">
+      {/* <p className="mt-2 text-sm text-red-600" id="email-error">
         {errors[field]?.message}
-      </p>
+      </p> */}
 
-      <input {...register(field, { required: true })} type="hidden" />
-      <input
-        id={`${field}-file`}
-        name={`${field}-file`}
-        type="file"
-        className="sr-only"
-        multiple={false}
-        onChange={uploadDocument}
-        // accept="image/png, image/jpeg"
-      />
       {/* {value && (
           <div className="mt-2">
             <p className="text-xs leading-5 text-gray-600">
