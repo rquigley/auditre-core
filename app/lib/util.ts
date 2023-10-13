@@ -111,3 +111,12 @@ export function pWithResolvers() {
   });
   return { resolve: _resolve, reject: _reject, promise: p };
 }
+
+export function humanCase(input: string): string {
+  const words = input.toLowerCase().split('_');
+  return words
+    .map((word, index) =>
+      index === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word,
+    )
+    .join(' ');
+}

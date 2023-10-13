@@ -3,7 +3,7 @@ import { stripIndent } from 'common-tags';
 import { call, askQuestion as OpenAIAskQuestion } from '@/lib/ai';
 import { db } from '@/lib/db';
 import { requestTypes } from '@/lib/request-types';
-import { head } from '@/lib/util';
+import { head, humanCase } from '@/lib/util';
 
 import type { OpenAIMessage } from '@/lib/ai';
 import type {
@@ -124,21 +124,47 @@ export async function askQuestion({
   });
 }
 
-export const documentTypes = {
-  ARTICLES_OF_INCORPORATION: 'Articles of Incorporation',
-  BYLAWS: 'Company Bylaws (but NOT the Board Approval)',
-  TRIAL_BALANCE: 'Trial Balance',
-  CHART_OF_ACCOUNTS:
-    'Chart of Accounts aka a complete listing, by category, of every account in the general ledger of a company. It can include an account name, identifier, account type, additional description, and sometimes the total balance for that account.',
-  STOCK_PLAN:
-    'Stock Option Plan & Amendments. This might include the issuance of stock to founders, employees, or investors.',
-  UNKNOWN: 'Unknown',
-} as const;
-export type DocumentType = keyof typeof documentTypes;
+type DocumentType = {
+  type: string;
+  hint: string;
+};
+const getDocumentTypes = (
+  config: typeof requestTypes,
+): {
+  str: string;
+  lookup: Record<string, string>;
+} => {
+  const result: DocumentType[] = [];
+  const lookup: Record<string, string> = {};
 
-export async function classifyDocument(
-  document: Document,
-): Promise<DocumentType> {
+  for (const topLevelKey in config) {
+    // @ts-ignore
+    const formObj = config[topLevelKey].form;
+
+    for (const formKey in formObj) {
+      const formEntry = formObj[formKey];
+
+      if (formEntry.aiClassificationType) {
+        const type = formEntry.aiClassificationType;
+        const hint = formEntry.aiClassificationHint || humanCase(type);
+
+        result.push({ type, hint });
+        lookup[type] = hint;
+      }
+    }
+  }
+  result.push({ type: 'UNKNOWN', hint: 'Unknown' });
+  lookup['UNKNOWN'] = 'Unknown';
+
+  return {
+    str: result.map((r) => `- ${r.type}: ${r.hint}`).join('\n'),
+    lookup,
+  };
+};
+
+const documentTypes = getDocumentTypes(requestTypes);
+
+export async function classifyDocument(document: Document): Promise<string> {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
   }
@@ -152,9 +178,7 @@ export async function classifyDocument(
         - [identifier]: [type of content along with a description]
 
       Here are the document types:
-      ${Object.entries(documentTypes)
-        .map(([identifier, description]) => `- ${identifier}: ${description}`)
-        .join('\n')}
+      ${documentTypes.str}
 
         Attempt to identify it as one of the listed types. Return the [identifier] e.g. if the content can be identified e.g. "Stock Option Plan & Amendments" returns "STOCK_PLAN"
         If it cannot be identifed with confidence, return UNKNOWN
@@ -188,13 +212,13 @@ export async function classifyDocument(
     result: resp.message,
   });
 
-  const documentType = resp.message.toUpperCase() as DocumentType;
+  const documentType = resp.message.toUpperCase() as string;
 
-  if (documentType in documentTypes === false) {
+  if (documentType in documentTypes.lookup === false) {
     throw new Error(`Invalid document type ${resp.message}`);
   }
 
-  return documentType as DocumentType;
+  return documentType as string;
 }
 
 export async function askDefaultQuestions(document: Document) {
@@ -205,26 +229,23 @@ export async function askDefaultQuestions(document: Document) {
   let questions = [];
   if (
     document.classifiedType === 'ARTICLES_OF_INCORPORATION' &&
-    requestTypes.ARTICLES_OF_INCORPORATION.form.documentId.extractionQuestions
+    requestTypes.ARTICLES_OF_INCORPORATION.form.documentId.aiQuestions
   ) {
     questions.push(
-      ...requestTypes.ARTICLES_OF_INCORPORATION.form.documentId
-        .extractionQuestions,
+      ...requestTypes.ARTICLES_OF_INCORPORATION.form.documentId.aiQuestions,
     );
   } else if (
     document.classifiedType === 'CHART_OF_ACCOUNTS' &&
-    requestTypes.CHART_OF_ACCOUNTS.form.documentId.extractionQuestions
+    requestTypes.CHART_OF_ACCOUNTS.form.documentId.aiQuestions
   ) {
     questions.push(
-      ...requestTypes.CHART_OF_ACCOUNTS.form.documentId.extractionQuestions,
+      ...requestTypes.CHART_OF_ACCOUNTS.form.documentId.aiQuestions,
     );
   } else if (
     document.classifiedType === 'TRIAL_BALANCE' &&
-    requestTypes.TRIAL_BALANCE.form.documentId.extractionQuestions
+    requestTypes.TRIAL_BALANCE.form.documentId.aiQuestions
   ) {
-    questions.push(
-      ...requestTypes.TRIAL_BALANCE.form.documentId.extractionQuestions,
-    );
+    questions.push(...requestTypes.TRIAL_BALANCE.form.documentId.aiQuestions);
   }
   const aiPromises = questions.map((obj) =>
     askQuestion({

@@ -67,16 +67,7 @@ export const businessModelTypes = {
   },
 };
 
-type InputType =
-  | 'text'
-  | 'textarea'
-  | 'checkbox'
-  | 'year'
-  | 'boolean'
-  | 'date'
-  | 'fileupload';
-
-type ExtractionQuestion = {
+type AIQuestion = {
   question: string;
   identifier: string;
   model?: string;
@@ -87,7 +78,7 @@ type ExtractionQuestion = {
 export interface _FormField {
   label?: string;
   description?: string;
-  extractionQuestions?: ExtractionQuestion[];
+  aiQuestions?: AIQuestion[];
   dependsOn?: string | { field: string; state: boolean };
 }
 
@@ -124,6 +115,8 @@ export interface FormFieldFile extends _FormField {
   extensions: string[];
   maxFilesizeMB: number;
   defaultValue: string;
+  aiClassificationType?: string;
+  aiClassificationHint?: string;
 }
 
 interface BasicInfoForm {
@@ -275,6 +268,7 @@ export const requestTypes: {
       businessModels: z.string().array(),
     }),
   },
+
   AUDIT_INFO: {
     name: 'Audit information',
     group: 'Background',
@@ -302,6 +296,7 @@ export const requestTypes: {
         input: 'fileupload',
         defaultValue: '',
         dependsOn: 'hasBeenAudited',
+        aiClassificationType: 'AUDIT',
       },
     },
     completeOnSet: true,
@@ -312,6 +307,7 @@ export const requestTypes: {
       previousAuditDocumentId: z.string(),
     }),
   },
+
   ARTICLES_OF_INCORPORATION: {
     name: 'Articles of Incorporation',
     group: 'Background',
@@ -323,10 +319,8 @@ export const requestTypes: {
         maxFilesizeMB: 10,
         input: 'fileupload',
         defaultValue: '',
-
-        // qualifyingQuestion:
-        //   'Does this look like the Articles of Incorporation for an organization? Answer only with "yes" or "no"',
-        extractionQuestions: [
+        aiClassificationType: 'ARTICLES_OF_INCORPORATION',
+        aiQuestions: [
           {
             identifier: 'INCORPORATION_DATE',
             question: `What date was the company incorporated? Return only the date in the format of YYYY-MM-DD. If you don't find this date, return "-"`,
@@ -371,6 +365,7 @@ export const requestTypes: {
       documentId: z.string(),
     }),
   },
+
   TRIAL_BALANCE: {
     name: 'Trial Balance',
     group: 'Accounting Information',
@@ -382,7 +377,8 @@ export const requestTypes: {
         maxFilesizeMB: 10,
         input: 'fileupload',
         defaultValue: '',
-        extractionQuestions: [],
+        aiClassificationType: 'TRIAL_BALANCE',
+        aiQuestions: [],
       },
     },
     completeOnSet: true,
@@ -390,6 +386,7 @@ export const requestTypes: {
       documentId: z.string(),
     }),
   },
+
   CHART_OF_ACCOUNTS: {
     name: 'Chart of Accounts',
     group: 'Accounting Information',
@@ -400,7 +397,10 @@ export const requestTypes: {
         maxFilesizeMB: 10,
         input: 'fileupload',
         defaultValue: '',
-        extractionQuestions: [
+        aiClassificationType: 'CHART_OF_ACCOUNTS',
+        aiClassificationHint:
+          'Chart of Accounts aka a complete listing, by category, of every account in the general ledger of a company. It can include an account name, identifier, account type, additional description, and sometimes the total balance for that account.',
+        aiQuestions: [
           {
             identifier: 'ACCOUNT_NAME_COLUMN',
             preProcess: (val: string) => head(val, 10),
@@ -414,12 +414,40 @@ export const requestTypes: {
           {
             identifier: 'ACCOUNT_MAPPING',
             question: stripIndent`
-              You are an auditor and CPA. Classify Chart of Accounts accounts (in CSV format) into one of the following account types:
-              ${balanceSheetTypeKeys.join('\n')}
+            For each row in the Chart of Accounts CSV, perform the following steps to generate a JSON-formatted output:
 
-              1. Extract the account names
-              2. Looking at the name of the account and any additional data in the row, attempt to classify it as one of the account types. If you can't classify the account, leave the type blank
-              3. Generate a comprehensive list of all account names and types as JSON using the format "[{name: [ACCOUNT_NAME 1], type: [ACCOUNT_TYPE 1]}, etc...]"
+            1. Account Name/ID
+            Look for the 'Account Name' in columns such as 'Full name,' 'Account Name,' 'Account /Parent Account,' etc.
+            If an 'Account ID' exists in columns like 'Account Number,' include it in the JSON object under the key id.
+
+            2. Type of Account
+            Use conditional logic to classify the type of account to one of the following ACCOUNT_TYPE:
+             ${balanceSheetTypeKeys.join(', ')}
+
+            If unable to classify to one of these types, flag the entry for manual review.
+
+            For example:
+                If 'Account Subtype' or 'Account Sub Type' is 'Cash on hand,' classify as ASSET_CASH.
+                If 'Account Name' contains 'Receivable,' classify as LIABILITY_ACCOUNTS_PAYABLE.
+                If there is a negative balance for the account, it is likely a LIABILITY_* type. If there is a positive balance, it is likely an ASSET_* type.
+            Utilize the 'Account Description' and any other info in the row if available for additional context.
+            If unable to classify with confidence to an [ACCOUNT_TYPE], set it to '-'
+
+            Output Format:
+
+            Output should be in JSON format using the following structure:
+
+              If 'Account ID' exists:
+
+              json
+                [{ "id": "[ACCOUNT_ID]", "name": "[ACCOUNT_NAME]", "type": "[ACCOUNT_TYPE]"}, ...]
+
+            Otherwise:
+
+              json
+                [{ "name": "[ACCOUNT_NAME]", "type": "[ACCOUNT_TYPE]}", ...]
+
+
               `,
             model: 'gpt-3.5-turbo-16k',
           },
@@ -431,6 +459,7 @@ export const requestTypes: {
       documentId: z.string(),
     }),
   },
+
   ASC_606_ANALYSIS: {
     name: ' ASC 606 Analysis',
     group: 'Accounting Information',
@@ -448,6 +477,7 @@ export const requestTypes: {
         input: 'fileupload',
         defaultValue: '',
         dependsOn: 'hasCompletedASC606Analysis',
+        aiClassificationType: 'ASC_606_ANALYSIS',
       },
       revenueRecognitionProcess: {
         input: 'textarea',
@@ -464,6 +494,7 @@ export const requestTypes: {
       asc606DocumentId: z.string(),
     }),
   },
+
   LEASES: {
     name: 'Leases',
     group: 'Accounting Information',
@@ -493,6 +524,7 @@ export const requestTypes: {
         input: 'fileupload',
         defaultValue: '',
         dependsOn: 'didPerformASC842Analysis',
+        aiClassificationType: 'ASC_842_MEMO',
       },
     },
     completeOnSet: true,
@@ -503,6 +535,7 @@ export const requestTypes: {
       asc842DocumentId: z.string(),
     }),
   },
+
   EQUITY: {
     name: 'Equity',
     group: 'Accounting Information',
@@ -514,6 +547,7 @@ export const requestTypes: {
         maxFilesizeMB: 10,
         input: 'fileupload',
         defaultValue: '',
+        aiClassificationType: 'CAP_TABLE',
       },
       certificateTransactionDocumentId: {
         label: 'Certificate Transaction',
@@ -521,6 +555,7 @@ export const requestTypes: {
         maxFilesizeMB: 10,
         input: 'fileupload',
         defaultValue: '',
+        aiClassificationType: 'CERTIFICATE_TRANSACTION',
       },
       hasEmployeeStockPlan: {
         input: 'boolean',
@@ -534,6 +569,9 @@ export const requestTypes: {
         input: 'fileupload',
         defaultValue: '',
         dependsOn: 'hasEmployeeStockPlan',
+        aiClassificationType: 'STOCK_PLAN',
+        aiClassificationHint:
+          'Stock Option Plan & Amendments. This might include the issuance of stock to founders, employees, or investors.',
       },
     },
     completeOnSet: true,
@@ -544,6 +582,7 @@ export const requestTypes: {
       employeeStockPlanDocumentId: z.string(),
     }),
   },
+
   MATERIAL_CHANGES_POST_AUDIT: {
     name: 'Post-audit changes',
     group: 'Business Operations',
@@ -568,6 +607,7 @@ export const requestTypes: {
       postAuditChanges: z.string(),
     }),
   },
+
   OUTSTANDING_LEGAL_MATTERS: {
     name: 'Outstanding legal matters',
     group: 'Business Operations',
@@ -592,6 +632,7 @@ export const requestTypes: {
       legalMatters: z.string(),
     }),
   },
+
   RELATED_PARTY_TRANSACTIONS: {
     name: 'Related party transactions ',
     group: 'Business Operations',
@@ -615,6 +656,7 @@ export const requestTypes: {
       relatedPartyTransactions: z.string(),
     }),
   },
+
   EMPLOYEE_401K: {
     name: '401k plan',
     group: 'Business Operations',
@@ -645,6 +687,7 @@ export const requestTypes: {
       pctMatch: z.string(),
     }),
   },
+
   AUDIT_YEAR_TAX_PROVISION: {
     name: 'Audit year tax provision',
     group: 'Accounting Information',
@@ -655,7 +698,8 @@ export const requestTypes: {
         maxFilesizeMB: 10,
         input: 'fileupload',
         defaultValue: '',
-        extractionQuestions: [],
+        aiQuestions: [],
+        aiClassificationType: 'AUDIT_YEAR_TAX_PROVISION',
       },
     },
     completeOnSet: true,
@@ -663,6 +707,7 @@ export const requestTypes: {
       documentId: z.string(),
     }),
   },
+
   USER_REQUESTED: {
     name: '???',
     description: '',
