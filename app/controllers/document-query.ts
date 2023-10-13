@@ -188,11 +188,13 @@ export async function classifyDocument(
     result: resp.message,
   });
 
-  if (resp.message in documentTypes === false) {
+  const documentType = resp.message.toUpperCase() as DocumentType;
+
+  if (documentType in documentTypes === false) {
     throw new Error(`Invalid document type ${resp.message}`);
   }
 
-  return resp.message as DocumentType;
+  return documentType as DocumentType;
 }
 
 export async function askDefaultQuestions(document: Document) {
