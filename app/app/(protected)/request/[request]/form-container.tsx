@@ -6,6 +6,7 @@ import { Await } from '@/components/await';
 import { Document } from '@/components/document';
 import { getById as getDocumentById } from '@/controllers/document';
 import { updateData } from '@/controllers/request';
+import { createDocument } from '@/lib/actions';
 import { requestTypes } from '@/lib/request-types';
 import { clientSafe } from '@/lib/util';
 import BasicForm from './basic-form';
@@ -57,6 +58,7 @@ export default async function FormContainer({ request, user, audit }: Props) {
       request={clientSafe(request) as ClientSafeRequest}
       saveData={saveData}
       documents={documents}
+      createDocument={createDocument}
     />
   );
 }
