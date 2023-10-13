@@ -360,9 +360,8 @@ export function FileUpload({
           });
         },
         {
-          minTimeout: 4000,
-          factor: 1.5,
-          maxTimeout: 10000,
+          factor: 1.2,
+          maxTimeout: 3000,
           maxRetryTime: 60000,
         },
       );
@@ -376,7 +375,7 @@ export function FileUpload({
   const currentDocumentId = getValues(field);
   return (
     <>
-      {fileState.state === 'processing' ? (
+      {fileState.state === 'processing' || fileState.state === 'readyToSave' ? (
         <div className="flex items-center">
           <Document docKey={fileState.key} name={fileState.name} />
           {document ? (
