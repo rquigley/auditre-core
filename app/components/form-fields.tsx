@@ -7,7 +7,7 @@ import { useState } from 'react';
 import Calendar from '@/components/calendar';
 import { Document } from '@/components/document';
 import {
-  //createDocument,
+  createDocument,
   // deleteDocument,
   getPresignedUploadUrl,
 } from '@/lib/actions';
@@ -22,7 +22,7 @@ import {
 } from '@/lib/request-types';
 import { classNames } from '@/lib/util';
 
-import type { ClientSafeRequest, RequestId, S3File } from '@/types';
+import type { ClientSafeRequest, S3File } from '@/types';
 
 type FormFieldProps = {
   field: string;
@@ -254,14 +254,12 @@ export function FileUpload({
   config,
   request,
   document,
-  createDocument,
 }: FormFieldProps & {
   config: FormFieldFile;
   request: ClientSafeRequest;
   setValue: (key: string, val: any, opts: any) => void;
   getValues: (key?: string) => any;
   document: JSX.Element;
-  createDocument: (file: S3File, requestId: RequestId) => Promise<any>;
 }) {
   const [state, setState] = useState<UploadState>('idle');
   const [draftFile, setDraftFile] = useState<DraftFile | null>(null);
