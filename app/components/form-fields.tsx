@@ -296,10 +296,13 @@ export function FileUpload({
       };
 
       // create the doc in db and determine the classified type
-      const { id, classifiedType, name, key } = await createDocument(
-        toSave,
-        request.id,
-      );
+      console.log('client TRIAGE--- Pre createDocument');
+
+      const res = await createDocument(toSave, request.id);
+      console.log('client TRIAGE--- Post createDocument 1');
+      console.log('client TRIAGE--- Post createDocument 2', res);
+
+      const { id, classifiedType, name, key } = res;
       setDraftFile({
         name,
         key,

@@ -107,14 +107,17 @@ export async function createDocument(file: S3File, requestId: RequestId) {
   //throw new Error('incorrect type');
 
   // classification and question kickoff
+  console.log('TRIAGE--- Pre processDocument');
   try {
     await processDocument(doc.id);
   } catch (e) {
     console.log(e);
     Sentry.captureException(e);
   }
-
-  const { id, key, classifiedType, name } = await getDocumentById(doc.id);
+  console.log('TRIAGE--- Pre get getDocumentById');
+  const res = await getDocumentById(doc.id);
+  console.log('TRIAGE--- Post get getDocumentById', res);
+  const { id, key, classifiedType, name } = res;
 
   return {
     id,
