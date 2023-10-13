@@ -27,7 +27,7 @@ export interface OrgTable {
   id: GeneratedAlways<string>;
   name: string | null;
   createdAt: ColumnType<Date, string | undefined, never>;
-  isDeleted: ColumnType<Boolean, never, Boolean>;
+  isDeleted: ColumnType<boolean, never, boolean>;
 }
 
 export type OrgUpdate = Updateable<OrgTable>;
@@ -44,7 +44,7 @@ export interface UserTable {
   emailVerified: Date | null;
   image: string | null;
   createdAt: ColumnType<Date, string | undefined, never>;
-  isDeleted: ColumnType<Boolean, never, Boolean>;
+  isDeleted: ColumnType<boolean, never, boolean>;
 }
 
 export type UserUpdate = Updateable<UserTable>;
@@ -58,7 +58,7 @@ export interface InvitationTable {
   email: string;
   createdAt: ColumnType<Date, string | undefined, never>;
   expiresAt: ColumnType<Date, string | undefined, never>;
-  isUsed: ColumnType<Boolean, never, Boolean>;
+  isUsed: ColumnType<boolean, never, boolean>;
 }
 
 export type InvitationUpdate = Updateable<InvitationTable>;
@@ -113,7 +113,7 @@ export interface AuditTable {
   name: string | null;
   year: number | null;
   createdAt: ColumnType<Date, string | undefined, never>;
-  isDeleted: ColumnType<Boolean, never, Boolean>;
+  isDeleted: ColumnType<boolean, never, boolean>;
 }
 
 export type AuditUpdate = Updateable<AuditTable>;
@@ -145,7 +145,7 @@ export interface RequestTable {
   data: RequestData;
   dueDate: Date | null;
   createdAt: ColumnType<Date, string | undefined, never>;
-  isDeleted: ColumnType<Boolean, never, Boolean>;
+  isDeleted: ColumnType<boolean, never, boolean>;
 }
 
 export type RequestUpdate = Updateable<RequestTable>;
@@ -158,7 +158,7 @@ export type ClientSafeRequest = Omit<Request, ClientSafeOmitTypes>;
 export type RequestChangeValue = RequestData & {
   status: RequestStatus;
   dueDate: Date | null;
-  isDeleted: Boolean;
+  isDeleted: boolean;
 };
 export interface RequestChangeTable {
   id: Generated<number>;
@@ -190,12 +190,12 @@ export interface DocumentTable {
     DocumentType
   >;
   extracted: string | null;
-  isProcessed: ColumnType<Boolean, never, Boolean>;
+  isProcessed: ColumnType<boolean, never, boolean>;
   fileLastModified: Date;
   orgId: OrgId;
   requestId: RequestId | null;
   createdAt: ColumnType<Date, string | undefined, never>;
-  isDeleted: ColumnType<Boolean, never, Boolean>;
+  isDeleted: ColumnType<boolean, never, boolean>;
 }
 
 export type DocumentUpdate = Updateable<DocumentTable>;
@@ -242,7 +242,7 @@ export interface DocumentQueryTable {
   result: string;
   usage: DocumentQueryUsage;
   createdAt: ColumnType<Date, string | undefined, never>;
-  isDeleted: ColumnType<Boolean, never, Boolean>;
+  isDeleted: ColumnType<boolean, never, boolean>;
 }
 
 export type DocumentQueryUpdate = Updateable<DocumentQueryTable>;
@@ -267,7 +267,7 @@ export interface CommentTable {
   documentId: DocumentId | null;
   comment: string;
   createdAt: ColumnType<Date, string | undefined, never>;
-  isDeleted: ColumnType<Boolean, never, Boolean>;
+  isDeleted: ColumnType<boolean, never, boolean>;
 }
 
 export type CommentUpdate = Updateable<CommentTable>;
@@ -305,7 +305,7 @@ export interface AccountMappingTable {
   accountId: string;
   accountMappedTo: AccountType | null;
   createdAt: ColumnType<Date, string | undefined, never>;
-  isDeleted: ColumnType<Boolean, never, Boolean>;
+  isDeleted: ColumnType<boolean, never, boolean>;
 }
 
 export type AccountMappingUpdate = Updateable<AccountMappingTable>;
