@@ -53,8 +53,8 @@ export class OpsAppStack extends Stack {
     //   repositoryName: 'auditre-fargate-app',
     //   lifecycleRules: [
     //     {
-    //       description: 'keep 10 images',
-    //       maxImageCount: 10,
+    //       description: 'keep 5 images',
+    //       maxImageCount: 5,
     //     },
     //   ],
     //   removalPolicy: RemovalPolicy.DESTROY,
