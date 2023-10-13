@@ -67,7 +67,7 @@ export const businessModelTypes = {
   },
 };
 
-type AIQuestion = {
+export type AIQuestion = {
   question: string;
   identifier: string;
   model?: string;
