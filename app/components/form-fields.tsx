@@ -337,7 +337,7 @@ export function FileUpload({
 
       // Same as above, reduce perception of processing time
       await promise;
-      await delay(3000);
+      await delay(2000);
 
       setFileState({
         state: 'processing',
