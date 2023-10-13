@@ -1,22 +1,15 @@
 'use client';
 
-import { Menu, Switch, Transition } from '@headlessui/react';
-import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
+import { Switch } from '@headlessui/react';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 
 import Calendar from '@/components/calendar';
-import Datetime from '@/components/datetime';
 import { Document } from '@/components/document';
-import { FiletypeIcon } from '@/components/filetype-icon';
 import {
   createDocument,
-  deleteDocument,
+  // deleteDocument,
   getPresignedUploadUrl,
-  processChartOfAccounts,
-  processDocument,
-  selectDocumentForRequest,
 } from '@/lib/actions';
 import { fetchWithProgress } from '@/lib/fetch-with-progress';
 import {
@@ -29,14 +22,7 @@ import {
 } from '@/lib/request-types';
 import { classNames } from '@/lib/util';
 
-import type { Props as BasicFormProps } from '@/app/(protected)/request/[request]/basic-form';
-import type {
-  AuditId,
-  ClientSafeRequest,
-  DocumentId,
-  DocumentQuery,
-  S3File,
-} from '@/types';
+import type { ClientSafeRequest, S3File } from '@/types';
 
 type FormFieldProps = {
   field: string;
