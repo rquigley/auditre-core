@@ -1,4 +1,4 @@
-import type { DocumentType } from './controllers/document-query';
+//import type { DocumentType } from './controllers/document-query';
 import type { OpenAIMessage } from './lib/ai';
 import type { RequestTypeKey } from './lib/request-types';
 import type {
@@ -184,11 +184,12 @@ export interface DocumentTable {
   name: string;
   size: number;
   mimeType: string;
-  classifiedType: ColumnType<
-    DocumentType | 'UNCLASSIFIED',
-    never,
-    DocumentType
-  >;
+  // classifiedType: ColumnType<
+  //   DocumentType | 'UNCLASSIFIED',
+  //   never,
+  //   DocumentType
+  // >;
+  classifiedType: ColumnType<string | 'UNCLASSIFIED', never, string>;
   extracted: string | null;
   isProcessed: ColumnType<boolean, never, boolean>;
   fileLastModified: Date;
