@@ -316,7 +316,7 @@ export function FileUpload({
         } else {
           setFileState({
             state: 'uploading',
-            pct: (ev.loaded / ev.total) * 100,
+            pct: Math.round((ev.loaded / ev.total) * 100),
           });
         }
       }
@@ -376,13 +376,6 @@ export function FileUpload({
   const currentDocumentId = getValues(field);
   return (
     <>
-      {/* <Documents
-        documents={documents}
-        field={field}
-        currentDocumentId={value}
-        auditId={request.auditId}
-      /> */}
-
       {fileState.state === 'processing' ? (
         <div className="flex items-center">
           <Document docKey={fileState.key} name={fileState.name} />
