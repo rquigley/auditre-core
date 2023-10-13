@@ -109,7 +109,7 @@ export async function createDocument(file: S3File, requestId: RequestId) {
   // classification and question kickoff
   console.log('TRIAGE--- Pre processDocument');
   try {
-    await processDocument(doc.id);
+    //await processDocument(doc.id);
   } catch (e) {
     console.log(e);
     Sentry.captureException(e);
