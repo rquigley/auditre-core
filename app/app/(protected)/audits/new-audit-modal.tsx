@@ -24,12 +24,9 @@ const newAuditSchema = z.object({
 export default function NewAuditModal() {
   const searchParams = useSearchParams();
 
-  const {
-    formState: { isDirty, isSubmitting },
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<z.infer<typeof newAuditSchema>>({
+  const { formState, register, handleSubmit } = useForm<
+    z.infer<typeof newAuditSchema>
+  >({
     resolver: zodResolver(newAuditSchema),
 
     defaultValues: {
@@ -102,7 +99,7 @@ export default function NewAuditModal() {
                           <Text
                             field="name"
                             register={register}
-                            errors={errors}
+                            formState={formState}
                             config={{
                               input: 'text',
                               label: 'Name',
@@ -120,7 +117,7 @@ export default function NewAuditModal() {
                           <Year
                             field="year"
                             register={register}
-                            errors={errors}
+                            formState={formState}
                             config={{
                               input: 'year',
                               label: 'Year',
@@ -134,9 +131,9 @@ export default function NewAuditModal() {
                   <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
                     <button
                       type="submit"
-                      disabled={!isDirty || isSubmitting}
+                      disabled={!formState.isDirty || formState.isSubmitting}
                       className={classNames(
-                        !isDirty
+                        !formState.isDirty
                           ? 'bg-gray-400'
                           : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
                         'inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm sm:col-start-2',

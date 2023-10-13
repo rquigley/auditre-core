@@ -4,7 +4,6 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { extname } from 'path';
-import * as Sentry from '@sentry/node';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import * as z from 'zod';
@@ -15,11 +14,9 @@ import {
   create as _createDocument,
   deleteDocument as _deleteDocument,
   extractChartOfAccountsMapping,
-  getAllByRequestId as getAllDocumentsByRequestId,
   getById as getDocumentById,
   process as processDocument,
 } from '@/controllers/document';
-import { getAllByDocumentId as getAllQueriesByDocumentId } from '@/controllers/document-query';
 import {
   getById as getRequestById,
   update as updateRequest,
@@ -28,14 +25,7 @@ import {
 import { getCurrent } from '@/controllers/session-user';
 import { getPresignedUrl } from '@/lib/aws';
 
-import type {
-  AuditId,
-  Document,
-  DocumentId,
-  DocumentQuery,
-  RequestId,
-  S3File,
-} from '@/types';
+import type { AuditId, DocumentId, RequestId, S3File } from '@/types';
 
 export { processDocument };
 
@@ -101,29 +91,22 @@ export async function createDocument(file: S3File, requestId: RequestId) {
     orgId: request.orgId,
     requestId: request.id,
   });
-  // todo
-  // check classified type of file.
-  // if doesn't match expected of request type, return error.
-  //throw new Error('incorrect type');
 
-  // classification and question kickoff
-  console.log('TRIAGE--- Pre processDocument');
-  try {
-    //await processDocument(doc.id);
-  } catch (e) {
-    console.log(e);
-    Sentry.captureException(e);
-  }
-  console.log('TRIAGE--- Pre get getDocumentById');
-  const res = await getDocumentById(doc.id);
-  console.log('TRIAGE--- Post get getDocumentById', res);
-  const { id, key, classifiedType, name } = res;
+  // Kick processing off in the background. Do not await
+  processDocument(doc.id);
 
   return {
-    id,
-    key,
-    name,
-    classifiedType,
+    id: doc.id,
+    key: doc.key,
+    name: doc.name,
+  };
+}
+
+export async function getDocumentStatus(id: DocumentId) {
+  const doc = await getDocumentById(id);
+  return {
+    isProcessed: doc.isProcessed,
+    classifiedType: doc.classifiedType,
   };
 }
 

@@ -97,3 +97,17 @@ export function isFieldVisible(
   }
   return isVisible;
 }
+
+export function ucFirst(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export function pWithResolvers() {
+  let _resolve;
+  let _reject;
+  const p = new Promise((resolve, reject) => {
+    _resolve = resolve;
+    _reject = reject;
+  });
+  return { resolve: _resolve, reject: _reject, promise: p };
+}

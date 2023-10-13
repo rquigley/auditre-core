@@ -34,25 +34,25 @@ export default function BasicForm({ request, saveData, documents }: Props) {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const {
-    formState: { isDirty, isSubmitting, isSubmitSuccessful },
     register,
     setValue,
     getValues,
     handleSubmit,
     reset,
+    resetField,
     watch,
-    formState: { errors },
+    formState,
   } = useForm<z.infer<typeof config.schema>>({
     resolver: zodResolver(config.schema),
     defaultValues: request.data,
   });
 
   useEffect(() => {
-    if (isSubmitSuccessful) {
+    if (formState.isSubmitSuccessful) {
       reset(undefined, { keepValues: true });
       setShowSuccess(true);
     }
-  }, [isSubmitSuccessful, reset]);
+  }, [formState.isSubmitSuccessful, reset]);
 
   async function onSubmit(data: z.infer<typeof config.schema>) {
     await Promise.all([saveData(data), delay(700)]);
@@ -112,18 +112,19 @@ export default function BasicForm({ request, saveData, documents }: Props) {
                       <FileUpload
                         field={field}
                         register={register}
-                        errors={errors}
+                        formState={formState}
                         config={fieldConfig}
                         request={request}
                         setValue={setValue}
                         getValues={getValues}
+                        resetField={resetField}
                         document={documents[field]}
                       />
                     ) : fieldConfig.input === 'checkbox' ? (
                       <Checkbox
                         field={field}
                         register={register}
-                        errors={errors}
+                        formState={formState}
                         config={fieldConfig}
                       />
                     ) : fieldConfig.input === 'boolean' ? (
@@ -132,14 +133,14 @@ export default function BasicForm({ request, saveData, documents }: Props) {
                         register={register}
                         getValues={getValues}
                         setValue={setValue}
-                        errors={errors}
+                        formState={formState}
                         config={fieldConfig}
                       />
                     ) : fieldConfig.input === 'textarea' ? (
                       <Textarea
                         field={field}
                         register={register}
-                        errors={errors}
+                        formState={formState}
                         config={fieldConfig}
                       />
                     ) : fieldConfig.input === 'date' ? (
@@ -148,21 +149,21 @@ export default function BasicForm({ request, saveData, documents }: Props) {
                         getValues={getValues}
                         setValue={setValue}
                         register={register}
-                        errors={errors}
+                        formState={formState}
                         config={fieldConfig}
                       />
                     ) : fieldConfig.input === 'year' ? (
                       <Year
                         field={field}
                         register={register}
-                        errors={errors}
+                        formState={formState}
                         config={fieldConfig}
                       />
                     ) : fieldConfig.input === 'text' ? (
                       <Text
                         field={field}
                         register={register}
-                        errors={errors}
+                        formState={formState}
                         config={fieldConfig}
                       />
                     ) : null}
@@ -180,7 +181,7 @@ export default function BasicForm({ request, saveData, documents }: Props) {
           </div>
         )}
 
-        {isDirty && !isSubmitting ? (
+        {formState.isDirty && !formState.isSubmitting ? (
           <button
             type="button"
             className="text-sm font-semibold leading-6 text-gray-900"
@@ -191,15 +192,15 @@ export default function BasicForm({ request, saveData, documents }: Props) {
         ) : null}
         <button
           type="submit"
-          aria-disabled={!isDirty || isSubmitting}
+          aria-disabled={!formState.isDirty || formState.isSubmitting}
           className={classNames(
-            !isDirty || isSubmitting
+            !formState.isDirty || formState.isSubmitting
               ? 'bg-gray-400'
               : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
             'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm transition',
           )}
         >
-          {isSubmitting ? 'Saving' : 'Save'}
+          {formState.isSubmitting ? 'Saving' : 'Save'}
         </button>
       </div>
     </form>
