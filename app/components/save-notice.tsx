@@ -12,7 +12,7 @@ export default function SaveNotice({ cb }: { cb: (visible: boolean) => void }) {
       cb(false);
     }, 3000);
     return () => clearTimeout(timeout);
-  }, []);
+  }, [cb]);
   return (
     <div>
       <div
