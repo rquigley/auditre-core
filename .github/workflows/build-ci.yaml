@@ -44,7 +44,7 @@ jobs:
           echo project=app >> .sentryclirc
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@master
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           # This might only work for dev?
           role-to-assume: arn:aws:iam::258343757818:role/AppDeployRole
