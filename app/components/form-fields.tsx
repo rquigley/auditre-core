@@ -405,7 +405,8 @@ export function FileUpload({
           className={clsx(
             fileState.state === 'uploading' ||
               fileState.state === 'uploaded' ||
-              fileState.state === 'processing'
+              fileState.state === 'processing' ||
+              fileState.state === 'readyToSave'
               ? 'cursor-not-allowed hover:bg-white'
               : 'hover:bg-gray-50 cursor-pointer',
             ' inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300',
@@ -460,7 +461,8 @@ export function FileUpload({
             onChange={uploadDocument}
             aria-disabled={
               fileState.state === 'uploading' ||
-              fileState.state === 'processing'
+              fileState.state === 'processing' ||
+              fileState.state === 'readyToSave'
             }
 
             // accept="image/png, image/jpeg"
