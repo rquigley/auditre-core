@@ -1,7 +1,3 @@
-// import 'server-only';
-
-//import 'sharp'; // required for standalone mode
-
 export function classNames(...classes: string[]): string {
   return classes.filter(Boolean).join(' ');
 }
