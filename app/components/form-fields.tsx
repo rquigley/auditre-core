@@ -27,7 +27,7 @@ import {
   FormFieldText,
   FormFieldYear,
 } from '@/lib/request-types';
-import { classNames, delay, pWithResolvers, ucFirst } from '@/lib/util';
+import { delay, pWithResolvers, ucFirst } from '@/lib/util';
 
 import type { ClientSafeRequest, S3File } from '@/types';
 
@@ -48,7 +48,7 @@ export function Text({
       <input
         {...register(field)}
         autoComplete="off"
-        className={classNames(
+        className={clsx(
           errors[field]
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
@@ -74,7 +74,7 @@ export function Textarea({
       <textarea
         rows={4}
         {...register(field)}
-        className={classNames(
+        className={clsx(
           errors[field]
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
@@ -114,7 +114,7 @@ export function DateField({
       {/* <input
         {...register(field)}
         autoComplete="off"
-        className={classNames(
+        className={clsx(
           errors[field]
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
@@ -224,7 +224,7 @@ export function BooleanField({
           setValue(field, val, { shouldDirty: true, shouldTouch: true });
           setEnabled(val);
         }}
-        className={classNames(
+        className={clsx(
           enabled ? 'bg-sky-700' : 'bg-gray-200',
           'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-700 focus:ring-offset-2',
         )}
@@ -232,7 +232,7 @@ export function BooleanField({
         <span className="sr-only">{config.label}</span>
         <span
           aria-hidden="true"
-          className={classNames(
+          className={clsx(
             enabled ? 'translate-x-5' : 'translate-x-0',
             'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
           )}
@@ -544,7 +544,7 @@ export function FileUpload({
 //           {documents.map((document, documentIdx) => (
 //             <tr key={document.id}>
 //               <td
-//                 className={classNames(
+//                 className={clsx(
 //                   documentIdx === 0 ? '' : 'border-t border-transparent',
 //                   'relative py-4 pl-4',
 //                 )}
@@ -556,7 +556,7 @@ export function FileUpload({
 //                 ) : null}
 //               </td>
 //               <td
-//                 className={classNames(
+//                 className={clsx(
 //                   documentIdx === 0 ? '' : 'border-t border-gray-200',
 //                   'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
 //                 )}
@@ -574,7 +574,7 @@ export function FileUpload({
 //                 </div>
 //               </td>
 //               <td
-//                 className={classNames(
+//                 className={clsx(
 //                   documentIdx === 0 ? '' : 'border-t border-gray-200',
 //                   'px-3 py-3.5 text-sm text-gray-500 lg:table-cell',
 //                 )}
@@ -586,7 +586,7 @@ export function FileUpload({
 //               </td>
 
 //               <td
-//                 className={classNames(
+//                 className={clsx(
 //                   documentIdx === 0 ? '' : 'border-t border-transparent',
 //                   'relative py-3.5 pr-4 sm:pr-6',
 //                 )}
@@ -641,7 +641,7 @@ export function FileUpload({
 //                   onClick={async (e) => {
 //                     processChartOfAccounts(documentId, auditId);
 //                   }}
-//                   className={classNames(
+//                   className={clsx(
 //                     active ? 'bg-gray-50' : '',
 //                     'block px-3 py-1 text-sm leading-6 text-gray-900',
 //                   )}
@@ -657,7 +657,7 @@ export function FileUpload({
 //                   onClick={async (e) => {
 //                     processDocument(documentId);
 //                   }}
-//                   className={classNames(
+//                   className={clsx(
 //                     active ? 'bg-gray-50' : '',
 //                     'block px-3 py-1 text-sm leading-6 text-gray-900',
 //                   )}
@@ -673,7 +673,7 @@ export function FileUpload({
 //                   onClick={async (e) => {
 //                     await selectDocumentForRequest(documentId, field);
 //                   }}
-//                   className={classNames(
+//                   className={clsx(
 //                     active ? 'bg-gray-50' : '',
 //                     'block px-3 py-1 text-sm leading-6 text-gray-900',
 //                   )}
@@ -686,7 +686,7 @@ export function FileUpload({
 //               {({ active }) => (
 //                 <a
 //                   href="#"
-//                   className={classNames(
+//                   className={clsx(
 //                     active ? 'bg-gray-50' : '',
 //                     'block px-3 py-1 text-sm leading-6 text-gray-900',
 //                   )}
@@ -702,7 +702,7 @@ export function FileUpload({
 //                   onClick={async (e) => {
 //                     await deleteDocument(documentId);
 //                   }}
-//                   className={classNames(
+//                   className={clsx(
 //                     active ? 'bg-gray-50' : '',
 //                     'block px-3 py-1 text-sm leading-6 text-gray-900',
 //                   )}
