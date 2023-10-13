@@ -170,7 +170,7 @@ export class OpsAppStack extends Stack {
       ),
       runtime: Runtime.PYTHON_3_11,
       architecture: Architecture.ARM_64,
-      memorySize: 256,
+      memorySize: 512,
       timeout: Duration.seconds(30),
       // vpc: vpc,
       // vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
