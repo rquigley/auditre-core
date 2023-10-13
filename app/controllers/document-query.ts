@@ -1,11 +1,12 @@
 import { stripIndent } from 'common-tags';
 
-import { call, askQuestion as OpenAIAskQuestion } from '@/lib/ai';
+import { call } from '@/lib/ai';
 import { db } from '@/lib/db';
 import { requestTypes } from '@/lib/request-types';
 import { head, humanCase } from '@/lib/util';
 
 import type { OpenAIMessage } from '@/lib/ai';
+import type { AIQuestion } from '@/lib/request-types';
 import type {
   Document,
   DocumentId,
@@ -128,12 +129,10 @@ type DocumentType = {
   type: string;
   hint: string;
 };
-const getDocumentTypes = (
-  config: typeof requestTypes,
-): {
+function getDocumentTypes(config: typeof requestTypes): {
   str: string;
   lookup: Record<string, string>;
-} => {
+} {
   const result: DocumentType[] = [];
   const lookup: Record<string, string> = {};
 
@@ -160,7 +159,7 @@ const getDocumentTypes = (
     str: result.map((r) => `- ${r.type}: ${r.hint}`).join('\n'),
     lookup,
   };
-};
+}
 
 const documentTypes = getDocumentTypes(requestTypes);
 
@@ -221,33 +220,43 @@ export async function classifyDocument(document: Document): Promise<string> {
   return documentType as string;
 }
 
+function getAIQuestions(
+  config: typeof requestTypes,
+): Record<string, AIQuestion[]> {
+  const res: Record<string, AIQuestion[]> = {};
+
+  for (const topLevelKey in config) {
+    // @ts-ignore
+    const formObj = config[topLevelKey].form;
+
+    for (const formKey in formObj) {
+      const formEntry = formObj[formKey];
+
+      if (formEntry.aiQuestions) {
+        const type = formEntry.aiClassificationType;
+
+        res[formEntry.aiClassificationType] = formEntry.aiQuestions;
+      }
+    }
+  }
+
+  return res;
+}
+const aiQuestions = getAIQuestions(requestTypes);
+
 export async function askDefaultQuestions(document: Document) {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
   }
 
-  let questions = [];
   if (
-    document.classifiedType === 'ARTICLES_OF_INCORPORATION' &&
-    requestTypes.ARTICLES_OF_INCORPORATION.form.documentId.aiQuestions
+    !aiQuestions[document.classifiedType] ||
+    aiQuestions[document.classifiedType].length === 0
   ) {
-    questions.push(
-      ...requestTypes.ARTICLES_OF_INCORPORATION.form.documentId.aiQuestions,
-    );
-  } else if (
-    document.classifiedType === 'CHART_OF_ACCOUNTS' &&
-    requestTypes.CHART_OF_ACCOUNTS.form.documentId.aiQuestions
-  ) {
-    questions.push(
-      ...requestTypes.CHART_OF_ACCOUNTS.form.documentId.aiQuestions,
-    );
-  } else if (
-    document.classifiedType === 'TRIAL_BALANCE' &&
-    requestTypes.TRIAL_BALANCE.form.documentId.aiQuestions
-  ) {
-    questions.push(...requestTypes.TRIAL_BALANCE.form.documentId.aiQuestions);
+    return;
   }
-  const aiPromises = questions.map((obj) =>
+
+  const aiPromises = aiQuestions[document.classifiedType].map((obj) =>
     askQuestion({
       document,
       question: obj.question,

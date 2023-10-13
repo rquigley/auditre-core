@@ -127,7 +127,8 @@ export async function process(id: DocumentId): Promise<void> {
     //   status: 'TO_ASK_DEFAULT_QUESTIONS',
     // });
     // await completeJob(askQuestionsJob.id);
-    await askDefaultQuestions(extractedDoc);
+    const classifiedDoc = await getById(id);
+    await askDefaultQuestions(classifiedDoc);
     console.log('default questions asked');
     console.log(`total time: ${Date.now() - t0}ms`);
     // await completeJob(askQuestionsJob.id);
