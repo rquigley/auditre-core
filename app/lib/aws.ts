@@ -34,6 +34,7 @@ export async function getFile({
   await writeFile(outputFilename, stream);
 }
 
+const nonExtractableExts = ['.csv', '.txt', '.json', '.md'];
 export async function getExtractedContent({
   bucket,
   key,
@@ -42,8 +43,8 @@ export async function getExtractedContent({
   key: string;
 }) {
   let extractedKey;
-  // The extractor doesn't run on CSVs, so we need to use the original key
-  if (extname(key) === '.csv') {
+  // The extractor doesn't run on plaintext files, so we need to use the original key
+  if (nonExtractableExts.includes(extname(key))) {
     extractedKey = key;
   } else {
     extractedKey = `${key}.extracted`;
