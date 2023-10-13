@@ -36,6 +36,11 @@ ARG SENTRY_AUTH_TOKEN
 ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
 
 RUN npm run build
+# https://nextjs.org/docs/messages/sharp-missing-in-production
+# as of Next.js 13.5.4, sharp is not included in the standalone build.
+# Install this manually
+WORKDIR /app/.next/standalone
+RUN npm install sharp --only=prod
 
 # If using npm comment out above and use below instead
 # RUN npm run build
