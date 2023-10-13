@@ -152,6 +152,12 @@ function getDocumentTypes(config: typeof requestTypes): {
       }
     }
   }
+
+  // Types we want to ignore but are included to prevent misclassification of other types
+  result.push({ type: 'BYLAWS', hint: 'Bylaws' });
+  lookup['BYLAWS'] = '--IGNORE--';
+
+  // Default type
   result.push({ type: 'UNKNOWN', hint: 'Unknown' });
   lookup['UNKNOWN'] = 'Unknown';
 
