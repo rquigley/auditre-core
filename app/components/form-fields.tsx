@@ -259,7 +259,20 @@ type FileState =
       name: string;
       key: string;
     }
-  | { state: 'readyToSave'; documentId: string; name: string; key: string }
+  | {
+      state: 'readyToSave';
+      documentId: string;
+      name: string;
+      key: string;
+      classifiedType: string;
+    }
+  | {
+      state: 'classifyTypeMismatch';
+      documentId: string;
+      name: string;
+      key: string;
+      classifiedType: string;
+    }
   | {
       state: 'error';
       message: string;
@@ -284,6 +297,7 @@ export function FileUpload({
   resetField: (field: string) => void;
 }) {
   const [fileState, setFileState] = useState<FileState>({ state: 'idle' });
+
   useEffect(() => {
     if (isSubmitSuccessful && fileState.state === 'readyToSave') {
       setFileState({ state: 'idle' });
@@ -346,25 +360,50 @@ export function FileUpload({
         key,
       });
 
+      let classifiedType;
       await retry(
         async () => {
           const docStatus = await getDocumentStatus(id);
           if (!docStatus.isProcessed) {
             throw new Error('Still processing');
           }
-          setFileState({
-            state: 'readyToSave',
-            documentId: id,
-            name,
-            key,
-          });
+          classifiedType = docStatus.classifiedType;
         },
         {
           factor: 1.2,
           maxTimeout: 3000,
-          maxRetryTime: 60000,
+          maxRetryTime: 120000,
         },
       );
+
+      // Check here for type!
+      if (!classifiedType) {
+        setFileState({
+          state: 'error',
+          message: 'Could not determine the type of document',
+        });
+        return;
+      } else if (classifiedType !== config.aiClassificationType) {
+        setFileState({
+          state: 'classifyTypeMismatch',
+          documentId: id,
+          name,
+          key,
+          classifiedType,
+        });
+        console.log(
+          `Mismatch on classified type, expected ${config.aiClassificationType} got ${classifiedType}`,
+        );
+        return;
+      } else {
+        setFileState({
+          state: 'readyToSave',
+          documentId: id,
+          name,
+          key,
+          classifiedType,
+        });
+      }
 
       setValue(field, id, { shouldDirty: true, shouldTouch: true });
     } else {
@@ -375,7 +414,9 @@ export function FileUpload({
   const currentDocumentId = getValues(field);
   return (
     <>
-      {fileState.state === 'processing' || fileState.state === 'readyToSave' ? (
+      {fileState.state === 'processing' ||
+      fileState.state === 'readyToSave' ||
+      fileState.state === 'classifyTypeMismatch' ? (
         <div className="flex items-center">
           <Document docKey={fileState.key} name={fileState.name} />
           {document ? (
@@ -461,6 +502,7 @@ export function FileUpload({
           />
         </label>
         {fileState.state === 'readyToSave' ||
+        fileState.state === 'classifyTypeMismatch' ||
         // A bug exists here that if a user cancels while in "processing"
         // the system can still mark it as "readyToSave". TODO: Fix this
         fileState.state === 'processing' ? (
@@ -482,9 +524,17 @@ export function FileUpload({
       {/* <p className="text-xs leading-5 text-gray-600">
           {config.extensions.join(', ')} up to {config.maxFilesizeMB}MB
         </p> */}
-      {/* <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors[field]?.message}
-      </p> */}
+      {fileState.state === 'classifyTypeMismatch' && (
+        <div className="mt-2 text-sm text-red-900">
+          It looks like you&lsquo;re trying to upload a different type of file (
+          {fileState.classifiedType}). Please try again.
+        </div>
+      )}
+      {fileState.state === 'error' && (
+        <p className="mt-2 text-sm text-red-600" id={`${field}-error`}>
+          {fileState.message}
+        </p>
+      )}
 
       {/* {value && (
           <div className="mt-2">
