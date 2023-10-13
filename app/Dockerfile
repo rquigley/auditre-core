@@ -32,10 +32,12 @@ COPY --link . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# comment these out if using locally to disable sentry
 ARG SENTRY_AUTH_TOKEN
 ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
 
 RUN npm run build
+
 # https://nextjs.org/docs/messages/sharp-missing-in-production
 # as of Next.js 13.5.4, sharp is not included in the standalone build.
 # Install this manually
@@ -66,6 +68,7 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --link --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --link --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
 # uncomment the following if using locally to use .env.local for configuration
 # COPY --link --from=builder --chown=nextjs:nodejs /app/.env.local ./
 
