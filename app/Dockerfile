@@ -66,6 +66,8 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --link --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --link --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# uncomment the following if using locally to use .env.local for configuration
+# COPY --link --from=builder --chown=nextjs:nodejs /app/.env.local ./
 
 USER nextjs
 
