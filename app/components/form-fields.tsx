@@ -6,7 +6,6 @@ import {
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import * as Sentry from '@sentry/react';
-import retry from 'async-retry';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 
@@ -360,24 +359,9 @@ export function FileUpload({
         key,
       });
 
-      let classifiedType;
-      await retry(
-        async () => {
-          const docStatus = await getDocumentStatus(id);
-          if (!docStatus.isProcessed) {
-            throw new Error('Still processing');
-          }
-          classifiedType = docStatus.classifiedType;
-        },
-        {
-          factor: 1.2,
-          maxTimeout: 3000,
-          maxRetryTime: 120000,
-        },
-      );
+      const { isProcessed, classifiedType } = await getDocumentStatus(id);
 
-      // Check here for type!
-      if (!classifiedType) {
+      if (!isProcessed || classifiedType === 'UNKNOWN') {
         setFileState({
           state: 'error',
           message: 'Could not determine the type of document',

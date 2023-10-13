@@ -4,6 +4,7 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { extname } from 'path';
+import retry from 'async-retry';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import * as z from 'zod';
@@ -103,11 +104,33 @@ export async function createDocument(file: S3File, requestId: RequestId) {
 }
 
 export async function getDocumentStatus(id: DocumentId) {
-  const doc = await getDocumentById(id);
-  return {
-    isProcessed: doc.isProcessed,
-    classifiedType: doc.classifiedType,
-  };
+  try {
+    const classifiedType = await retry(
+      async () => {
+        const doc = await getDocumentById(id);
+        if (!doc.isProcessed) {
+          throw new Error('Still processing');
+        }
+        return doc.classifiedType;
+      },
+      {
+        factor: 1.2,
+        maxTimeout: 3000,
+        maxRetryTime: 120000,
+      },
+    );
+
+    return {
+      isProcessed: true,
+      classifiedType,
+    };
+  } catch (e) {
+    // todo, catch different error if it's really an error
+    return {
+      isProcessed: false,
+      classifiedType: 'UNKNOWN',
+    };
+  }
 }
 
 export async function deleteDocument(id: DocumentId) {
