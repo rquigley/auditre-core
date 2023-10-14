@@ -154,9 +154,10 @@ export class OpsAppStack extends Stack {
       compatibleArchitectures: [Architecture.ARM_64],
       compatibleRuntimes: [Runtime.PYTHON_3_11],
     });
-    const extractContentLambda = new Function(this, 'ExtractContentLambda', {
+    /// excel
+    const extractPdfLambda = new Function(this, 'ExtractPdfLambda', {
       code: Code.fromAsset(
-        path.join(__dirname, '../packages/extract-content-lambda'),
+        path.join(__dirname, '../packages/extract-pdf-lambda'),
         {
           bundling: {
             image: Runtime.PYTHON_3_11.bundlingImage,
@@ -175,11 +176,41 @@ export class OpsAppStack extends Stack {
       // vpc: vpc,
       // vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
       handler: 'lambda_function.handler',
+      //layers: [lxmlLayer],
+    });
+    s3Bucket.grantReadWrite(extractPdfLambda);
+    const pdfS3nDest = new LambdaDestination(extractPdfLambda);
+    const pdfExtensionsToConvert = ['pdf'];
+    pdfExtensionsToConvert.forEach((suffix) => {
+      s3Bucket.addEventNotification(EventType.OBJECT_CREATED, pdfS3nDest, {
+        suffix,
+      });
+    });
+    ////
+    const extractContentLambda = new Function(this, 'ExtractContentLambda', {
+      code: Code.fromAsset(
+        path.join(__dirname, '../packages/extract-content-lambda'),
+        {
+          bundling: {
+            image: Runtime.PYTHON_3_11.bundlingImage,
+            command: [
+              'bash',
+              '-c',
+              'pip install -r requirements.txt -t /asset-output && cp -au . /asset-output',
+            ],
+          },
+        },
+      ),
+      runtime: Runtime.PYTHON_3_11,
+      architecture: Architecture.ARM_64,
+      memorySize: 512,
+      timeout: Duration.seconds(30),
+      handler: 'lambda_function.handler',
       layers: [lxmlLayer],
     });
     s3Bucket.grantReadWrite(extractContentLambda);
     const s3nDest = new LambdaDestination(extractContentLambda);
-    const extensionsToConvert = ['.doc', '.docx', '.pdf', 'xlsx', 'xls'];
+    const extensionsToConvert = ['xlsx', 'xls', '.doc', '.docx'];
     extensionsToConvert.forEach((suffix) => {
       s3Bucket.addEventNotification(EventType.OBJECT_CREATED, s3nDest, {
         suffix,
