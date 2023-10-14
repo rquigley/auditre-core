@@ -404,7 +404,12 @@ export function FileUpload({
         <div className="flex items-center">
           <Document docKey={fileState.key} name={fileState.name} />
           {document ? (
-            <div className="flex items-center">
+            <div
+              className={clsx(
+                fileState.state === 'classifyTypeMismatch' ? 'opacity-20' : '',
+                'flex items-center',
+              )}
+            >
               <div className="flex text-xs mx-4 text-slate-500">
                 <div>to replace</div>
                 <ArrowLongRightIcon className="h-4 ml-1" />

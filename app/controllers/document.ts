@@ -100,10 +100,9 @@ export async function process(id: DocumentId): Promise<void> {
           return await extractAndUpdateContent(doc);
         },
         {
-          minTimeout: 4000,
-          factor: 1.5,
-          maxTimeout: 10000,
-          maxRetryTime: 60000,
+          factor: 1.2,
+          maxTimeout: 3000,
+          maxRetryTime: 20000,
         },
       );
       console.log(`extract done time: ${Date.now() - t0}ms`);
