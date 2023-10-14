@@ -114,9 +114,10 @@ export async function getDocumentStatus(id: DocumentId) {
         return doc.classifiedType;
       },
       {
+        retries: 30,
         factor: 1.2,
         maxTimeout: 3000,
-        maxRetryTime: 120000,
+        maxRetryTime: 20000,
       },
     );
 
@@ -126,6 +127,7 @@ export async function getDocumentStatus(id: DocumentId) {
     };
   } catch (e) {
     // todo, catch different error if it's really an error
+    console.log(e);
     return {
       isProcessed: false,
       classifiedType: 'UNKNOWN',
