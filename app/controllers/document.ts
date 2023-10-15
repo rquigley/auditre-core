@@ -1,7 +1,6 @@
 // import { inferSchema, initParser } from 'udsv';
 // import { string } from 'zod';
 import * as Sentry from '@sentry/node';
-import retry from 'async-retry';
 
 import { create as createMapping } from '@/controllers/account-mapping';
 import {
@@ -9,8 +8,9 @@ import {
   classifyDocument,
   getByDocumentIdAndIdentifier,
 } from '@/controllers/document-query';
-import { getExtractedContent } from '@/lib/aws';
+import { getExtractedContent, NoSuchKey } from '@/lib/aws';
 import { db } from '@/lib/db';
+import { delay } from '@/lib/util';
 import { addJob, completeJob, getAllByDocumentId } from './document-queue';
 
 import type {
@@ -73,51 +73,61 @@ export async function deleteDocument(id: DocumentId) {
   return await update(id, { isDeleted: true });
 }
 
-export async function extractAndUpdateContent(document: Document) {
-  const content = await getExtractedContent({
-    bucket: document.bucket,
-    key: document.key,
-  });
-  if (!content) {
-    throw new Error('No data found');
+export async function didExtractAndUpdateContent(document: Document) {
+  try {
+    const content = await getExtractedContent({
+      bucket: document.bucket,
+      key: document.key,
+    });
+    await update(document.id, { extracted: content });
+    return true;
+  } catch (e) {
+    if (e instanceof NoSuchKey) {
+      return false;
+    } else {
+      throw e;
+    }
   }
-  await update(document.id, { extracted: content });
 }
 
 export async function process(id: DocumentId): Promise<void> {
   try {
     const t0 = Date.now();
+    let usage = {
+      extractMs: 0,
+      classifyMs: 0,
+      askQuestionsMs: 0,
+      numQuestions: 0,
+    };
 
     const doc = await getById(id);
     if (!doc.isProcessed) {
       await update(id, { isProcessed: false });
     }
+
     if (!doc.extracted) {
-      await retry(
-        // TODO: bail should change to error
-        async (bail) => {
-          console.log(`checking for extracted content: ${Date.now() - t0}ms`);
-          return await extractAndUpdateContent(doc);
-        },
-        {
-          factor: 1.2,
-          maxTimeout: 3000,
-          maxRetryTime: 20000,
-        },
-      );
-      console.log(`extract done time: ${Date.now() - t0}ms`);
+      for (let i = 0; i < 30; i++) {
+        await delay(1000);
+        console.log(`checking for extracted content: ${Date.now() - t0}ms`);
+        if (await didExtractAndUpdateContent(doc)) {
+          usage.extractMs = Date.now() - t0;
+          break;
+        }
+      }
     }
 
     const extractedDoc = await getById(id);
     if (!extractedDoc.extracted) {
-      console.log('no extracted content, skipping');
-      await update(id, { isProcessed: true });
+      console.log('Document process complete, no extracted content:', usage);
+
+      await update(id, { isProcessed: true, usage });
       return;
     }
 
     const classifiedType = await classifyDocument(extractedDoc);
-    await update(id, { classifiedType });
-    console.log(`classify time: ${Date.now() - t0}ms`);
+    usage.classifyMs = Date.now() - t0;
+
+    await update(id, { classifiedType, usage });
 
     // don't await this
     // const extractJob = await addJob({ documentId: id, status: 'TO_EXTRACT' });
@@ -127,11 +137,11 @@ export async function process(id: DocumentId): Promise<void> {
     // });
     // await completeJob(askQuestionsJob.id);
     const classifiedDoc = await getById(id);
-    await askDefaultQuestions(classifiedDoc);
-    console.log('default questions asked');
-    console.log(`total time: ${Date.now() - t0}ms`);
+    usage.numQuestions = await askDefaultQuestions(classifiedDoc);
+    usage.askQuestionsMs = Date.now() - t0;
+
     // await completeJob(askQuestionsJob.id);
-    await update(id, { isProcessed: true });
+    await update(id, { isProcessed: true, usage });
 
     // await completeJob(askQuestionsJob.id);
     // await update(id, { isProcessed: true });
@@ -140,6 +150,8 @@ export async function process(id: DocumentId): Promise<void> {
     // if (docType === 'CHART_OF_ACCOUNTS') {
     //   await extractChartOfAccountsMapping(document);
     // }
+    console.log('Document process complete:', usage);
+    console.log(`total time: ${Date.now() - t0}ms`);
   } catch (e) {
     console.log(e);
     Sentry.captureException(e);

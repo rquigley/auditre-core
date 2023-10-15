@@ -1,5 +1,6 @@
 import { stripIndent } from 'common-tags';
 
+import { getById as getDocumentById } from '@/controllers/document';
 import { call } from '@/lib/ai';
 import { db } from '@/lib/db';
 import { requestTypes } from '@/lib/request-types';
@@ -246,8 +247,8 @@ export async function classifyDocument(
 
 function getAIQuestions(
   config: typeof requestTypes,
-): Record<string, AIQuestion[]> {
-  const res: Record<string, AIQuestion[]> = {};
+): Record<string, Record<string, AIQuestion>> {
+  const res: Record<string, Record<string, AIQuestion>> = {};
 
   for (const topLevelKey in config) {
     // @ts-ignore
@@ -268,29 +269,55 @@ function getAIQuestions(
 }
 const aiQuestions = getAIQuestions(requestTypes);
 
-export async function askDefaultQuestions(document: Document) {
+export async function askDefaultQuestions(document: Document): Promise<number> {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
   }
 
-  if (
-    !aiQuestions[document.classifiedType] ||
-    aiQuestions[document.classifiedType].length === 0
-  ) {
-    return;
+  if (!aiQuestions[document.classifiedType]) {
+    return 0;
   }
 
-  const aiPromises = aiQuestions[document.classifiedType].map((obj) =>
-    askQuestion({
+  const questions = aiQuestions[document.classifiedType];
+  const aiPromises = Object.keys(questions).map((identifier) => {
+    const obj = questions[identifier];
+    return askQuestion({
       document,
       question: obj.question,
-      // @ts-ignore
-      model: obj.model ? obj.model : undefined,
-      identifier: obj.identifier,
-      // @ts-ignore
+      model: obj.model ? (obj.model as OpenAIModel) : undefined,
+      identifier,
       preProcess: obj.preProcess ? obj.preProcess : undefined,
-    }),
-  );
+    });
+  });
   await Promise.allSettled(aiPromises);
   await Promise.all(aiPromises);
+
+  return aiPromises.length;
+}
+
+type FormattedQueryData = Record<
+  string,
+  {
+    value: string | undefined;
+    label: string | undefined;
+  }
+>;
+export async function getData(
+  documentId: DocumentId,
+): Promise<FormattedQueryData> {
+  const { classifiedType } = await getDocumentById(documentId);
+  const answeredQuestions = await getAllByDocumentId(documentId);
+  const defaultQuestions = { ...aiQuestions[classifiedType] };
+  if (!defaultQuestions) {
+    return {};
+  }
+  let res: FormattedQueryData = {};
+  for (const identifier in defaultQuestions) {
+    const answered = answeredQuestions.find((q) => q.identifier === identifier);
+    res[identifier] = {
+      value: answered?.result,
+      label: defaultQuestions[identifier].label,
+    };
+  }
+  return res;
 }
