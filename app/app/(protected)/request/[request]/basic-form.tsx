@@ -232,7 +232,6 @@ export function setupWatchFields(
 
     if (fieldConfig.dependsOn) {
       let dependsOnField;
-      //let dependsOnState;
       if (typeof fieldConfig.dependsOn === 'object') {
         dependsOnField = fieldConfig.dependsOn.field;
       } else {
