@@ -25,7 +25,7 @@ import type { ClientSafeRequest, RequestData } from '@/types';
 export type Props = {
   request: ClientSafeRequest;
   saveData: (data: RequestData) => void;
-  documents: { [key: string]: JSX.Element };
+  documents: { [key: string]: { doc: JSX.Element; data: JSX.Element } };
 };
 
 export default function BasicForm({ request, saveData, documents }: Props) {
