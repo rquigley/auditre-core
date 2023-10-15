@@ -125,6 +125,7 @@ CREATE TABLE "document" (
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "is_processed" boolean NOT NULL DEFAULT FALSE,
   "extracted" text,
+  "usage" JSONB,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
