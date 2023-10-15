@@ -45,11 +45,15 @@ export default async function FormContainer({ request, user, audit }: Props) {
     revalidatePath(`/request/${request.id}`);
   }
 
-  let documents: Record<string, { doc: JSX.Element; data: JSX.Element }> = {};
+  let documents: Record<
+    string,
+    { id: DocumentId; doc: JSX.Element; data: JSX.Element }
+  > = {};
   Object.keys(request.data).forEach((key) => {
     if (key.endsWith('ocumentId')) {
       const id: DocumentId = request.data[key];
       documents[key] = {
+        id,
         doc: <AwaitDocument documentId={id} />,
         data: <DocumentData documentId={id} />,
       };
@@ -120,6 +124,7 @@ function DataRow({
   }
   return (
     <div className="flex items-center justify-between">
+      {/* <span className="text-xs leading-5 text-gray-600 hover:text-gray-800 hover:underline cursor-pointer"> */}
       <span className="text-xs leading-5 text-gray-600">{data.label}</span>
       <p className="text-xs leading-5 text-gray-600">{data.value}</p>
     </div>
