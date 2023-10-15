@@ -402,7 +402,7 @@ export function FileUpload({
       fileState.state === 'classifyTypeMismatch' ? (
         <div className="flex items-center">
           <Document docKey={fileState.key} name={fileState.name} />
-          {document ? (
+          {currentDocumentId && document ? (
             <div
               className={clsx(
                 fileState.state === 'classifyTypeMismatch' ? 'opacity-20' : '',
