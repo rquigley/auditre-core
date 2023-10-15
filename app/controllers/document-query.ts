@@ -169,7 +169,10 @@ function getDocumentTypes(config: typeof requestTypes): {
 
 const documentTypes = getDocumentTypes(requestTypes);
 
-export async function classifyDocument(document: Document): Promise<string> {
+export async function classifyDocument(
+  document: Document,
+  isRetryWithGPT4?: boolean,
+): Promise<string> {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
   }
@@ -203,8 +206,12 @@ export async function classifyDocument(document: Document): Promise<string> {
     },
   ];
 
+  let requestedModel: OpenAIModel = 'gpt-3.5-turbo';
+  if (isRetryWithGPT4) {
+    requestedModel = 'gpt-4';
+  }
   const resp = await call({
-    requestedModel: 'gpt-3.5-turbo',
+    requestedModel,
     messages,
   });
 
@@ -220,8 +227,19 @@ export async function classifyDocument(document: Document): Promise<string> {
   const documentType = resp.message.toUpperCase() as string;
 
   if (documentType in documentTypes.lookup === false) {
-    throw new Error(`Invalid document type ${resp.message}`);
+    if (!isRetryWithGPT4) {
+      console.log(
+        `Invalid document type "${documentType}." Retrying with GPT-4`,
+      );
+
+      return await classifyDocument(document, true);
+    }
+    throw new Error(`Invalid document type ${documentType}`);
+  } else if (documentType === 'UNKNOWN' && !isRetryWithGPT4) {
+    console.log('Unknown. Retrying with GPT-4');
+    return await classifyDocument(document, true);
   }
+  console.log(`Classified as "${documentType}"`);
 
   return documentType as string;
 }
