@@ -191,6 +191,12 @@ export interface DocumentTable {
   // >;
   classifiedType: ColumnType<string | 'UNCLASSIFIED', never, string>;
   extracted: string | null;
+  usage: {
+    extractMs: number;
+    classifyMs: number;
+    askQuestionsMs: number;
+    numQuestions: number;
+  } | null;
   isProcessed: ColumnType<boolean, never, boolean>;
   fileLastModified: Date;
   orgId: OrgId;

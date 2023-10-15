@@ -13,7 +13,6 @@ import Calendar from '@/components/calendar';
 import { Document } from '@/components/document';
 import {
   createDocument,
-  getDocumentStatus,
   // deleteDocument,
   getPresignedUploadUrl,
 } from '@/lib/actions';
@@ -28,7 +27,7 @@ import {
 } from '@/lib/request-types';
 import { delay, pWithResolvers, ucFirst } from '@/lib/util';
 
-import type { ClientSafeRequest, S3File } from '@/types';
+import type { ClientSafeRequest, DocumentId, S3File } from '@/types';
 
 type FormFieldProps = {
   field: string;
@@ -292,7 +291,7 @@ export function FileUpload({
   request: ClientSafeRequest;
   setValue: (key: string, val: any, opts: any) => void;
   getValues: (key?: string) => any;
-  document: JSX.Element;
+  document: { doc: JSX.Element; data: JSX.Element } | null;
   resetField: (field: string) => void;
 }) {
   const [fileState, setFileState] = useState<FileState>({ state: 'idle' });
@@ -359,9 +358,9 @@ export function FileUpload({
         key,
       });
 
-      const { isProcessed, classifiedType } = await getDocumentStatus(id);
+      const { isProcessed, classifiedType } = await getClassificationStatus(id);
 
-      if (!isProcessed || classifiedType === 'UNKNOWN') {
+      if (classifiedType === 'UNKNOWN') {
         setFileState({
           state: 'error',
           message: 'Could not determine the type of document',
@@ -414,13 +413,22 @@ export function FileUpload({
                 <div>to replace</div>
                 <ArrowLongRightIcon className="h-4 ml-1" />
               </div>
-              {document}
+              {document.doc}
             </div>
           ) : null}
         </div>
-      ) : (
-        document
-      )}
+      ) : document ? (
+        <div
+          className={clsx(
+            fileState.state === 'uploading' || fileState.state === 'uploaded'
+              ? 'opacity-20'
+              : '',
+            'flex items-center',
+          )}
+        >
+          {document.doc}
+        </div>
+      ) : null}
       <div className="flex">
         <label
           htmlFor={`${field}-file`}
@@ -532,8 +540,34 @@ export function FileUpload({
             </p>
           </div>
         )} */}
+      <div className={fileState.state !== 'idle' ? 'opacity-20' : ''}>
+        {document ? document.data : null}
+      </div>
     </>
   );
+}
+
+type StatusRes = {
+  isProcessed: boolean;
+  classifiedType: string;
+};
+async function getClassificationStatus(documentId: DocumentId) {
+  for (let i = 0; i < 30; i++) {
+    await delay(1000);
+
+    const res = await fetch(`/document/${documentId}/status`, {
+      cache: 'no-store',
+    });
+    const data = (await res.json()) as StatusRes;
+    console.log(data);
+    if (data.classifiedType !== 'UNCLASSIFIED') {
+      return data;
+    }
+  }
+  return {
+    isProcessed: false,
+    classifiedType: 'UNKNOWN',
+  };
 }
 
 // function Documents({

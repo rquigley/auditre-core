@@ -5,6 +5,7 @@ import * as z from 'zod';
 import { Await } from '@/components/await';
 import { Document } from '@/components/document';
 import { getById as getDocumentById } from '@/controllers/document';
+import { getData } from '@/controllers/document-query';
 import { updateData } from '@/controllers/request';
 import { requestTypes } from '@/lib/request-types';
 import { clientSafe } from '@/lib/util';
@@ -44,11 +45,14 @@ export default async function FormContainer({ request, user, audit }: Props) {
     revalidatePath(`/request/${request.id}`);
   }
 
-  let documents: Record<string, JSX.Element> = {};
+  let documents: Record<string, { doc: JSX.Element; data: JSX.Element }> = {};
   Object.keys(request.data).forEach((key) => {
     if (key.endsWith('ocumentId')) {
       const id: DocumentId = request.data[key];
-      documents[key] = <AwaitDocument documentId={id} />;
+      documents[key] = {
+        doc: <AwaitDocument documentId={id} />,
+        data: <DocumentData documentId={id} />,
+      };
     }
   });
 
@@ -71,5 +75,50 @@ function AwaitDocument({ documentId }: { documentId: DocumentId }) {
         {(d) => <Document docKey={d.key} name={d.name} />}
       </Await>
     </Suspense>
+  );
+}
+
+function DocumentData({ documentId }: { documentId: string }) {
+  return (
+    <div className="mt-2">
+      <span className="text-xs font-semibold leading-5 text-gray-600">
+        Extracted document data
+      </span>
+      <div className="text-xs leading-5 text-gray-600">
+        <Suspense fallback={null}>
+          <Await promise={getData(documentId)}>
+            {(data) => (
+              <div>
+                {Object.keys(data).map((identifier) => (
+                  <DataRow
+                    key={identifier}
+                    identifier={identifier}
+                    data={data[identifier]}
+                  />
+                ))}
+              </div>
+            )}
+          </Await>
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+function DataRow({
+  identifier,
+  data,
+}: {
+  identifier: string;
+  data: { value: string | undefined; label: string | undefined };
+}) {
+  if (!data.label) {
+    return null;
+  }
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs leading-5 text-gray-600">{data.label}</span>
+      <p className="text-xs leading-5 text-gray-600">{data.value}</p>
+    </div>
   );
 }

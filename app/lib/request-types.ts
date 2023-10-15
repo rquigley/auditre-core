@@ -68,8 +68,8 @@ export const businessModelTypes = {
 };
 
 export type AIQuestion = {
+  label?: string;
   question: string;
-  identifier: string;
   model?: string;
   preProcess?: (val: string) => string;
   validate?: (val: string) => boolean;
@@ -78,7 +78,7 @@ export type AIQuestion = {
 export interface _FormField {
   label?: string;
   description?: string;
-  aiQuestions?: AIQuestion[];
+  aiQuestions?: Record<string, AIQuestion>;
   dependsOn?: string | { field: string; state: boolean };
 }
 
@@ -320,44 +320,33 @@ export const requestTypes: {
         input: 'fileupload',
         defaultValue: '',
         aiClassificationType: 'ARTICLES_OF_INCORPORATION',
-        aiQuestions: [
-          {
-            identifier: 'INCORPORATION_DATE',
+        aiQuestions: {
+          incorporationDate: {
+            label: 'Date of incorporation',
             question: `What date was the company incorporated? Return only the date in the format of YYYY-MM-DD. If you don't find this date, return "-"`,
             // model: 'gpt-4',
           },
-          {
-            identifier: 'NUMBER_OF_SHARES',
+          numberOfShares: {
+            label: 'Number of shares',
             question:
               'How many shares does the company have the ability to offer? Return only the number without commas. If there are no numbers in your answer, return "-"',
             // model: 'gpt-4',
           },
-          {
-            identifier: 'PAR_VALUE_PER_SHARE',
+          parValuePerShare: {
+            label: 'Par value per share',
             question:
               'What is the par value per share? Return only the number without commas. If there are no numbers in your answer, return "-"',
             // process: (val: string) => val,
             // validate: (val: string) => true,
             //model: 'gpt-4',
           },
-          {
-            identifier: 'INCORPORATION_JURISDICTION',
+          incorporationJurisdiction: {
+            label: 'Jurisdiction of incorporation',
             question:
               'What is the jurisdiction of incorporation? Answer only with the jurisdiction',
             //model: 'gpt-4',
           },
-          // {
-          //   identifier: 'TEST_QUESTION',
-          //   question: stripIndent`Answer the following questions. The questions are in the format "[IDENTIFIER]: [QUESTION]" with each one on a new line.
-          //     Respond in the format "[IDENTIFIER]: [ANSWER]" with each one on a new line. Only answer with the information requested.
-          //     INCORPORATION_DATE: What date was the company incorporated? Answer only with the date in the format of YYYY-MM-DD
-          //     NUMBER_OF_SHARES: How many shares does the company have the ability to offer? Answer only with the number
-          //     PAR_VALUE_PER_SHARE: What is the par value per share? Answer only with the number without commas
-          //     INCORPORATION_JURISDICTION: What is the jurisdiction of incorporation? Answer only with the jurisdiction
-          //     `,
-          //   model: 'gpt-4',
-          // },
-        ],
+        },
       },
     },
     completeOnSet: true,
@@ -378,7 +367,6 @@ export const requestTypes: {
         input: 'fileupload',
         defaultValue: '',
         aiClassificationType: 'TRIAL_BALANCE',
-        aiQuestions: [],
       },
     },
     completeOnSet: true,
@@ -400,9 +388,8 @@ export const requestTypes: {
         aiClassificationType: 'CHART_OF_ACCOUNTS',
         aiClassificationHint:
           'Chart of Accounts aka a complete listing, by category, of every account in the general ledger of a company. It can include an account name, identifier, account type, additional description, and sometimes the total balance for that account.',
-        aiQuestions: [
-          {
-            identifier: 'ACCOUNT_NAME_COLUMN',
+        aiQuestions: {
+          accountNameColumn: {
             preProcess: (val: string) => head(val, 10),
             question: stripIndent`
               In this CSV content which column number contains account names? Think carefully before answering.
@@ -411,8 +398,7 @@ export const requestTypes: {
               `,
             //model: 'gpt-4',
           },
-          {
-            identifier: 'ACCOUNT_MAPPING',
+          accountMapping: {
             question: stripIndent`
             For each row in the Chart of Accounts CSV, perform the following steps to generate a JSON-formatted output:
 
@@ -451,7 +437,7 @@ export const requestTypes: {
               `,
             model: 'gpt-3.5-turbo-16k',
           },
-        ],
+        },
       },
     },
     completeOnSet: true,
@@ -698,7 +684,6 @@ export const requestTypes: {
         maxFilesizeMB: 10,
         input: 'fileupload',
         defaultValue: '',
-        aiQuestions: [],
         aiClassificationType: 'AUDIT_YEAR_TAX_PROVISION',
       },
     },
