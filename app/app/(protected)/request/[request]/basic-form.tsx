@@ -18,14 +18,16 @@ import SaveNotice from '@/components/save-notice';
 import { requestTypes } from '@/lib/request-types';
 import { classNames, delay, isFieldVisible } from '@/lib/util';
 
-import type { ClientSafeRequest, RequestData } from '@/types';
+import type { ClientSafeRequest, DocumentId, RequestData } from '@/types';
 
 //import type { UseFormRegister, FieldErrors } from 'react-hook-form';
 
 export type Props = {
   request: ClientSafeRequest;
   saveData: (data: RequestData) => void;
-  documents: { [key: string]: { doc: JSX.Element; data: JSX.Element } };
+  documents: {
+    [key: string]: { id: DocumentId; doc: JSX.Element; data: JSX.Element };
+  };
 };
 
 export default function BasicForm({ request, saveData, documents }: Props) {
