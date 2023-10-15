@@ -79,6 +79,9 @@ function AwaitDocument({ documentId }: { documentId: DocumentId }) {
 }
 
 function DocumentData({ documentId }: { documentId: string }) {
+  if (!documentId) {
+    return null;
+  }
   return (
     <div className="mt-2">
       <span className="text-xs font-semibold leading-5 text-gray-600">
