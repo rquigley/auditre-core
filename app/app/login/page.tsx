@@ -3,13 +3,16 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-import { getCurrentOrNone } from '@/controllers/session-user';
+import { getCurrent } from '@/controllers/session-user';
 import { getPostAuthUrl } from '@/lib/actions';
 import LoginButton from './login-button';
 import Redirector from './redirector';
 
 export default async function Login() {
-  const user = await getCurrentOrNone();
+  let user;
+  try {
+    user = await getCurrent();
+  } catch (err) {}
   if (user) {
     redirect(await getPostAuthUrl());
   }
