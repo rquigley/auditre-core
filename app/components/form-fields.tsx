@@ -559,7 +559,6 @@ async function getClassificationStatus(documentId: DocumentId) {
       cache: 'no-store',
     });
     const data = (await res.json()) as StatusRes;
-    console.log(data);
     if (data.classifiedType !== 'UNCLASSIFIED') {
       return data;
     }
