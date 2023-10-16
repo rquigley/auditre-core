@@ -55,7 +55,7 @@ export function summarySigAccountPractices2(data: AuditData): Template {
   return {
     header: 'Foreign Currencies',
     body: stripIndent`
-      Gains and losses resulting from foreign currency transactions are included in other income, net within the consolidated statement of operations. For the year ended ${dateEnd}, the impact from foreign currency transactions was immaterial.
+      Gains and losses resulting from foreign currency transactions are included in other income, net without the consolidated statement of operations. For the year ended ${dateEnd}, the impact from foreign currency transactions was immaterial.
     `,
   };
 }
