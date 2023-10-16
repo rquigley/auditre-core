@@ -19,9 +19,9 @@ async function connect() {
 
 async function ensureVersionTableExists() {
   await db.query(`
-    CREATE TABLE IF NOT EXISTS migration_version (
-      migration varchar(255) NOT NULL PRIMARY KEY,
-      timestamp TIMESTAMP DEFAULT NOW()
+    CREATE TABLE IF NOT EXISTS "migration_version" (
+      "migration" varchar(255) NOT NULL PRIMARY KEY,
+      "created_at" timestamptz DEFAULT NOW() NOT NULL
     );
   `);
 }
@@ -29,8 +29,8 @@ async function ensureVersionTableExists() {
 const applyMigration = async (migrationName) => {
   const filePath = path.join(migrationDir, migrationName);
   const sql = fs.readFileSync(filePath, 'utf-8');
-  await db.query('BEGIN');
   try {
+    await db.query('BEGIN');
     await db.query(sql);
 
     await db.query('INSERT INTO migration_version (migration) VALUES ($1)', [
@@ -38,25 +38,61 @@ const applyMigration = async (migrationName) => {
     ]);
 
     await db.query('COMMIT');
+    return true;
   } catch (err) {
     await db.query('ROLLBACK');
+
+    let buggySchema = '';
+    if (err.position) {
+      const res = findBuggySchema(sql, err.position);
+      buggySchema = `Line: ${res.lineNumber}
+-------------------------------------------------------------
+      ${res.lines.join('\n')}
+      `;
+    }
     console.error(`
 -------------------------------------------------------------
 Error applying migration: ${migrationName}
 -------------------------------------------------------------
 Code: ${err.code}
 Message: ${err.message}
+${buggySchema}
 -------------------------------------------------------------
-${sql}
--------------------------------------------------------------
-`);
-    throw err;
+    `);
+    return false;
   }
 };
 
 function takeAfter(array, value) {
   const index = array.indexOf(value);
   return index !== -1 ? array.slice(index + 1) : [];
+}
+
+function findBuggySchema(text, offset) {
+  // Split the text into lines
+  const lines = text.split('\n');
+
+  // Find the line number containing the offset
+  let lineIndex = 0;
+  let currentOffset = 0;
+  for (let i = 0; i < lines.length; i++) {
+    currentOffset += lines[i].length + 1; // +1 for the newline character
+    if (currentOffset > offset) {
+      lineIndex = i;
+      break;
+    }
+  }
+
+  // Extract the target lines
+  const start = Math.max(0, lineIndex - 2);
+  const end = Math.min(lines.length, lineIndex + 3);
+  const extractedLines = lines.slice(start, end);
+
+  // Return the extracted lines and the line number
+  return {
+    lines: extractedLines,
+    lineNumber: lineIndex + 1, // +1 to make it 1-based
+  };
 }
 
 const migrateToLatest = async () => {
@@ -77,19 +113,24 @@ const migrateToLatest = async () => {
     for (const file of files) {
       !runSilent && console.log(`Applying migration: ${file}`);
       try {
-        await applyMigration(file);
+        if (!(await applyMigration(file))) {
+          console.error(`Migration failed at ${file}`);
+
+          await db.end();
+          process.exit(1);
+        }
       } catch (err) {
         await db.end();
         process.exit(1);
       }
     }
+
     !runSilent && console.log('Migration done');
   } else {
     !runSilent && console.log('No migrations to run');
   }
 
   await db.end();
-
   process.exit(0);
 };
 
