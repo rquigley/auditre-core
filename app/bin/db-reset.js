@@ -29,7 +29,9 @@ async function resetDb() {
   }
   console.log(`Recreating Database ${database}`);
   await db.connect();
-  const res = await db.query(`
+  try {
+    await db.query('BEGIN');
+    await db.query(`
 do $do$ declare
   r record;
 begin
@@ -38,6 +40,11 @@ begin
   end loop;
 end $do$;
 `);
+    await db.query('COMMIT');
+  } catch (err) {
+    await db.query('ROLLBACK');
+    throw err;
+  }
   await db.end();
 }
 
