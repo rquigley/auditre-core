@@ -291,7 +291,7 @@ export function FileUpload({
   request: ClientSafeRequest;
   setValue: (key: string, val: any, opts: any) => void;
   getValues: (key?: string) => any;
-  document: { doc: JSX.Element; data: JSX.Element } | null;
+  document: { id: DocumentId; doc: JSX.Element; data: JSX.Element } | null;
   resetField: (field: string) => void;
 }) {
   const [fileState, setFileState] = useState<FileState>({ state: 'idle' });
@@ -402,7 +402,7 @@ export function FileUpload({
       fileState.state === 'classifyTypeMismatch' ? (
         <div className="flex items-center">
           <Document docKey={fileState.key} name={fileState.name} />
-          {currentDocumentId && document ? (
+          {document && document.doc ? (
             <div
               className={clsx(
                 fileState.state === 'classifyTypeMismatch' ? 'opacity-20' : '',
