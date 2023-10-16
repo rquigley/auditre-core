@@ -25,7 +25,7 @@ export default function Header({ title, subtitle, breadcrumbs }: Props) {
               : null}
           </ol>
         </nav>
-        <h2 className="mt-2 text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+        <h2 className="mt-2 text-2xl font-semibold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
           {title}
         </h2>
         {subtitle && (
