@@ -3,6 +3,7 @@
 import * as Sentry from '@sentry/node';
 
 import { create as createMapping } from '@/controllers/account-mapping';
+import { getById as getAuditById } from '@/controllers/audit';
 import {
   askDefaultQuestions,
   classifyDocument,
@@ -11,7 +12,8 @@ import {
 import { getExtractedContent, NoSuchKey } from '@/lib/aws';
 import { db } from '@/lib/db';
 import { delay } from '@/lib/util';
-import { addJob, completeJob, getAllByDocumentId } from './document-queue';
+import { getAllByDocumentId } from './document-queue';
+import { getAllByAuditId as getAllRequestsByAuditId } from './request';
 
 import type {
   AccountType,
@@ -46,6 +48,30 @@ export async function getAllByOrgId(orgId: OrgId): Promise<Document[]> {
     .selectFrom('document')
     .where('orgId', '=', orgId)
     .where('isDeleted', '=', false)
+    .selectAll()
+    .execute();
+}
+
+export async function getAllByAuditId(auditId: AuditId): Promise<Document[]> {
+  const audit = await getAuditById(auditId);
+  const requests = await getAllRequestsByAuditId(auditId);
+  let documents: DocumentId[] = [];
+  for (const request of requests) {
+    Object.keys(request.data || {}).forEach((key) => {
+      if (key.indexOf('ocumentId') !== -1 && request.data[key]) {
+        console.log(key, request.data[key]);
+        documents.push(request.data[key]);
+      }
+    });
+  }
+  if (!documents.length) {
+    return [];
+  }
+  return await db
+    .selectFrom('document')
+    .where('orgId', '=', audit.orgId)
+    .where('isDeleted', '=', false)
+    .where('id', 'in', documents)
     .selectAll()
     .execute();
 }
