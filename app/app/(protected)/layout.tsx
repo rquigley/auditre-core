@@ -4,7 +4,7 @@ import { Inter } from 'next/font/google';
 import { Suspense } from 'react';
 
 import Navbar from '@/components/navbar';
-import { getCurrentOrNone } from '@/controllers/session-user';
+import { getCurrent } from '@/controllers/session-user';
 import { setPostAuthUrl } from '@/lib/actions';
 import Redirector from './redirector';
 
@@ -19,7 +19,11 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentOrNone();
+  let user;
+  try {
+    user = await getCurrent();
+  } catch (err) {}
+
   if (!user) {
     return (
       <html lang="en" className={inter.className}>
