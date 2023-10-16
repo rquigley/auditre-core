@@ -110,7 +110,7 @@ export type VerificationToken = Selectable<VerificationTokenTable>;
 export interface AuditTable {
   id: GeneratedAlways<AuditId>;
   orgId: OrgId;
-  name: string | null;
+  name: string;
   year: number | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
