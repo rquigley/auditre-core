@@ -1,11 +1,12 @@
-import Activity from './activity';
-import FormContainer from './form-container';
+import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+
 import Header from '@/components/header';
 import { getById as getAuditById } from '@/controllers/audit';
 import { getById as getRequestById } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
-import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
+import Activity from './activity';
+import FormContainer from './form-container';
 
 export default async function RequestPage({
   params: { request: id },
@@ -28,11 +29,7 @@ export default async function RequestPage({
   ];
   return (
     <>
-      <Header
-        title={request.name || ''}
-        subtitle={audit.year ? String(audit.year) : undefined}
-        breadcrumbs={breadcrumbs}
-      />
+      <Header title={request.name} breadcrumbs={breadcrumbs} />
 
       <div className=" max-w-7xl px-4 py-16 sm:px-1 lg:px-1">
         <div className=" grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
