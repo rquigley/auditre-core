@@ -381,6 +381,7 @@ export const requestTypes: {
     description: '',
     form: {
       documentId: {
+        label: "Upload the company's Chart of Accounts",
         extensions: ['XLS', 'XLSX', 'CSV'],
         maxFilesizeMB: 10,
         input: 'fileupload',
@@ -680,6 +681,7 @@ export const requestTypes: {
     description: '',
     form: {
       documentId: {
+        label: 'Upload the Audit year tax provision',
         extensions: ['XLS', 'XLSX', 'CSV'],
         maxFilesizeMB: 10,
         input: 'fileupload',
