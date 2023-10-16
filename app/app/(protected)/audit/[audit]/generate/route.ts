@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { NextResponse } from 'next/server';
 
 import { getById as getAuditById } from '@/controllers/audit';
