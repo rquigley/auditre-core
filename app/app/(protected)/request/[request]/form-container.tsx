@@ -87,7 +87,7 @@ function DocumentData({ documentId }: { documentId: string }) {
     return null;
   }
   return (
-    <div className="mt-2">
+    <>
       <span className="text-xs font-semibold leading-5 text-gray-600">
         Extracted document data
       </span>
@@ -108,7 +108,7 @@ function DocumentData({ documentId }: { documentId: string }) {
           </Await>
         </Suspense>
       </div>
-    </div>
+    </>
   );
 }
 

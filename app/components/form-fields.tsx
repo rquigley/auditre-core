@@ -397,38 +397,6 @@ export function FileUpload({
   const currentDocumentId = getValues(field);
   return (
     <>
-      {fileState.state === 'processing' ||
-      fileState.state === 'readyToSave' ||
-      fileState.state === 'classifyTypeMismatch' ? (
-        <div className="flex items-center">
-          <Document docKey={fileState.key} name={fileState.name} />
-          {document && document.doc ? (
-            <div
-              className={clsx(
-                fileState.state === 'classifyTypeMismatch' ? 'opacity-20' : '',
-                'flex items-center',
-              )}
-            >
-              <div className="flex text-xs mx-4 text-slate-500">
-                <div>to replace</div>
-                <ArrowLongRightIcon className="h-4 ml-1" />
-              </div>
-              {document.doc}
-            </div>
-          ) : null}
-        </div>
-      ) : document ? (
-        <div
-          className={clsx(
-            fileState.state === 'uploading' || fileState.state === 'uploaded'
-              ? 'opacity-20'
-              : '',
-            'flex items-center',
-          )}
-        >
-          {document.doc}
-        </div>
-      ) : null}
       <div className="flex">
         <label
           htmlFor={`${field}-file`}
@@ -517,6 +485,38 @@ export function FileUpload({
       </div>
       {/* {state.state === 'uploading' && <div className="mt-2">{state.pct}%</div>} */}
       <input {...register(field, { required: true })} type="hidden" />
+      {fileState.state === 'processing' ||
+      fileState.state === 'readyToSave' ||
+      fileState.state === 'classifyTypeMismatch' ? (
+        <div className="flex items-center">
+          <Document docKey={fileState.key} name={fileState.name} />
+          {document && document.doc ? (
+            <div
+              className={clsx(
+                fileState.state === 'classifyTypeMismatch' ? 'opacity-20' : '',
+                'flex items-center',
+              )}
+            >
+              <div className="flex text-xs mx-4 text-slate-500">
+                <div>to replace</div>
+                <ArrowLongRightIcon className="h-4 ml-1" />
+              </div>
+              {document.doc}
+            </div>
+          ) : null}
+        </div>
+      ) : document ? (
+        <div
+          className={clsx(
+            fileState.state === 'uploading' || fileState.state === 'uploaded'
+              ? 'opacity-20'
+              : '',
+            'flex items-center',
+          )}
+        >
+          {document.doc}
+        </div>
+      ) : null}
 
       {/* <p className="text-xs leading-5 text-gray-600">
           {config.extensions.join(', ')} up to {config.maxFilesizeMB}MB
