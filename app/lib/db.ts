@@ -23,6 +23,7 @@ const dBConfig = z.object({
 });
 export { sql };
 
+let pgPool: Pool;
 const dialect = new PostgresDialect({
   pool: async () => {
     let config;
@@ -63,7 +64,8 @@ const dialect = new PostgresDialect({
       process.exit(1);
     }
 
-    return new Pool(config);
+    pgPool = new Pool(config);
+    return pgPool;
   },
 });
 
@@ -118,3 +120,14 @@ function prettyStack(error: any) {
   }
   return lines.join('\n           ');
 }
+
+process.on('SIGTERM', async () => {
+  console.log('The service is about to shut down!');
+
+  if (pgPool) {
+    await pgPool.end();
+  }
+
+  // TODO, not the best place to do this, but it's the connection that counts.
+  process.exit(0);
+});
