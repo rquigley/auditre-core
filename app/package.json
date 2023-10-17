@@ -32,7 +32,7 @@
     "mime-types": "2.1.35",
     "next": "13.5.5",
     "next-auth": "0.0.0-manual.ffd05533",
-    "openai": "4.12.1",
+    "openai": "4.12.3",
     "pg": "8.11.3",
     "picocolors": "1.0.0",
     "postcss": "8.4.31",
