@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation';
 import { Fragment } from 'react';
 
-import Header from '@/components/header';
 import { getById } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
 import { clientSafe } from '@/lib/util';
+import { AuditHeader } from './audit-header';
 import Row from './row';
 
 import type { ClientSafeRequest } from '@/types';
@@ -18,7 +18,6 @@ export default async function AuditPage({
   const user = await getCurrent();
   const audit = await getById(id);
 
-  // TODO, how do we better enforce this across routes
   if (audit.orgId !== user.orgId) {
     return notFound();
   }
@@ -32,14 +31,9 @@ export default async function AuditPage({
     'Business Operations',
     'Other',
   ]);
-  const breadcrumbs = [{ name: 'Audits', href: '/audits' }];
   return (
     <>
-      <Header
-        title={audit.name || ''}
-        subtitle={audit.year ? String(audit.year) : undefined}
-        breadcrumbs={breadcrumbs}
-      />
+      <AuditHeader audit={audit} />
 
       <div className="mt-8 flow-root">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -92,15 +86,6 @@ export default async function AuditPage({
                 })}
               </tbody>
             </table>
-            <div className="mt-4">
-              <a
-                type="button"
-                href={`/audit/${audit.id}/generate`}
-                className="rounded-full bg-white px-3.5 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-              >
-                Generate Financial Statement
-              </a>
-            </div>
           </div>
         </div>
       </div>
