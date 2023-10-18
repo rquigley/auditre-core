@@ -31,7 +31,7 @@
     "kysely": "0.26.3",
     "mime-types": "2.1.35",
     "next": "13.5.5",
-    "next-auth": "0.0.0-manual.ffd05533",
+    "next-auth": "0.0.0-manual.dacbe24d",
     "openai": "4.12.4",
     "pg": "8.11.3",
     "picocolors": "1.0.0",
