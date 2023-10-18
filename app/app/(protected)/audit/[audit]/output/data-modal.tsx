@@ -1,6 +1,7 @@
 'use client';
 
 import { Dialog, Transition } from '@headlessui/react';
+import clsx from 'clsx';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
@@ -94,20 +95,19 @@ export default function DataModal({ auditId }: { auditId: AuditId }) {
 
 // @ts-ignore
 function RequestType({ name, data }) {
-  //   return (
-  //     <div>
-  //       {name}: {JSON.stringify(Object.keys(data))}
-  //     </div>
-  //   );
   return (
     <div className="my-4">
       <div className="font-semibold text-sm">{name}</div>
       <ul>
-        {Object.keys(data).map((key) => (
-          <li key={key}>
-            {key}: {JSON.stringify(data[key])}
-          </li>
-        ))}
+        {Object.keys(data).map((key) => {
+          const isMissing =
+            data[key] === null || data[key] === undefined || data[key] === '';
+          return (
+            <li key={key} className={clsx(isMissing ? 'text-red-600' : '')}>
+              {key}: {data[key].toString()}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
