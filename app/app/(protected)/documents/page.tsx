@@ -1,10 +1,11 @@
-import Row from './row';
 import Header from '@/components/header';
 import { getById as getAuditById } from '@/controllers/audit';
 import { getAllByOrgId } from '@/controllers/document';
 import { getById as getRequestById } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
 import { clientSafe } from '@/lib/util';
+import Row from './row';
+
 import type { ClientSafeDocument, Document } from '@/types';
 
 export default async function DocumentsPage() {
