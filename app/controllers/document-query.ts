@@ -155,7 +155,10 @@ function getDocumentTypes(config: typeof requestTypes): {
   }
 
   // Types we want to ignore but are included to prevent misclassification of other types
-  result.push({ type: 'BYLAWS', hint: 'Bylaws' });
+  result.push({
+    type: 'BYLAWS',
+    hint: 'Bylaws. This document identifies the board of directors, committees, officers, and voting for the business.',
+  });
   lookup['BYLAWS'] = '--IGNORE--';
 
   // Default type

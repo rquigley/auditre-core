@@ -485,6 +485,8 @@ export const requestTypes: {
         defaultValue: '',
         dependsOn: 'hasCompletedASC606Analysis',
         aiClassificationType: 'ASC_606_ANALYSIS',
+        aiClassificationHint:
+          'Asc 606 analysis. This document identifies five different steps – 1. Identify the contract with a customer, 2. Identify the performance obligations of the contract, 3. Determine the transaction price, 4. Allocate the transaction price, and 5. Recognize revenue when the entity satisfies a performance obligations.',
       },
       revenueRecognitionProcess: {
         input: 'textarea',
@@ -532,6 +534,8 @@ export const requestTypes: {
         defaultValue: '',
         dependsOn: 'didPerformASC842Analysis',
         aiClassificationType: 'ASC_842_MEMO',
+        aiClassificationHint:
+          'Asc 842 memo. This document identifies leases and states “ASC 842” within the document.',
       },
     },
     completeOnSet: true,
@@ -555,6 +559,8 @@ export const requestTypes: {
         input: 'fileupload',
         defaultValue: '',
         aiClassificationType: 'CAP_TABLE',
+        aiClassificationHint:
+          'Cap table. The cap table will itemize the number of shares by shareholder. The shares are typically identified as common or preferred shares.',
       },
       certificateTransactionDocumentId: {
         label: 'Certificate Transaction',
@@ -563,6 +569,8 @@ export const requestTypes: {
         input: 'fileupload',
         defaultValue: '',
         aiClassificationType: 'CERTIFICATE_TRANSACTION',
+        aiClassificationHint:
+          'Certificate transaction. The certificate transaction report will itemize the share count, cost, and unique identifier for each shareholder.',
       },
       hasEmployeeStockPlan: {
         input: 'boolean',
@@ -578,7 +586,7 @@ export const requestTypes: {
         dependsOn: 'hasEmployeeStockPlan',
         aiClassificationType: 'STOCK_PLAN',
         aiClassificationHint:
-          'Stock Option Plan & Amendments. This might include the issuance of stock to founders, employees, or investors.',
+          'Stock Option Plan & Amendments. This includes the terms and definitions of stated with an equity incentive plan.',
       },
     },
     completeOnSet: true,
