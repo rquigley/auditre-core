@@ -9,7 +9,6 @@ import { AuthAdapter } from '@/lib/auth-adapter';
 export const {
   handlers: { GET, POST },
   auth,
-  CSRF_experimental,
 } = NextAuth({
   providers: [
     // GitHubProvider({
