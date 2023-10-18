@@ -457,7 +457,7 @@ export function FileUpload({
             className="sr-only"
             multiple={false}
             onChange={uploadDocument}
-            aria-disabled={
+            disabled={
               fileState.state === 'uploading' ||
               fileState.state === 'processing' ||
               fileState.state === 'readyToSave'

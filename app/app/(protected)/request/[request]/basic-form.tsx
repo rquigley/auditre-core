@@ -194,7 +194,7 @@ export default function BasicForm({ request, saveData, documents }: Props) {
         ) : null}
         <button
           type="submit"
-          aria-disabled={!formState.isDirty || formState.isSubmitting}
+          disabled={!formState.isDirty || formState.isSubmitting}
           className={classNames(
             !formState.isDirty || formState.isSubmitting
               ? 'bg-gray-400'
