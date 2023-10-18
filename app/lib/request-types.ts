@@ -75,49 +75,57 @@ export type AIQuestion = {
   validate?: (val: string) => boolean;
 };
 
-export interface _FormField {
+interface _FormFieldBase {
   label?: string;
   description?: string;
-  aiQuestions?: Record<string, AIQuestion>;
   dependsOn?: string | { field: string; state: boolean };
 }
 
-export interface FormFieldText extends _FormField {
+export interface FormFieldText extends _FormFieldBase {
   input: 'text' | 'textarea';
   defaultValue: string;
 }
 
-export interface FormFieldBoolean extends _FormField {
+export interface FormFieldBoolean extends _FormFieldBase {
   input: 'boolean';
   defaultValue: boolean;
 }
 
-export interface FormFieldDate extends _FormField {
+export interface FormFieldDate extends _FormFieldBase {
   input: 'date';
   defaultValue: string;
 }
 
-export interface FormFieldYear extends _FormField {
+export interface FormFieldYear extends _FormFieldBase {
   input: 'year';
   defaultValue: string;
 }
 
-export interface FormFieldCheckbox extends _FormField {
+export interface FormFieldCheckbox extends _FormFieldBase {
   input: 'checkbox';
-  defaultValue: Array<string>;
+  defaultValue: readonly string[];
   items: {
     [key: string]: { name: string; description: string };
   };
 }
 
-export interface FormFieldFile extends _FormField {
+export interface FormFieldFile extends _FormFieldBase {
   input: 'fileupload';
-  extensions: string[];
+  extensions: readonly string[];
   maxFilesizeMB: number;
   defaultValue: string;
-  aiClassificationType?: string;
+  aiClassificationType: string;
   aiClassificationHint?: string;
+  aiQuestions?: Record<string, AIQuestion>;
 }
+
+export type FormField =
+  | FormFieldText
+  | FormFieldBoolean
+  | FormFieldDate
+  | FormFieldYear
+  | FormFieldCheckbox
+  | FormFieldFile;
 
 interface BasicInfoForm {
   businessName: FormFieldText;
@@ -181,6 +189,18 @@ interface Employee401kForm {
 interface UserRequestedForm {
   value: FormFieldText;
 }
+export type ValidField =
+  | keyof UserRequestedForm
+  | keyof Employee401kForm
+  | keyof RelatedPartyTransactionsForm
+  | keyof OutstandingLegalMattersForm
+  | keyof MaterialChangesPostAuditForm
+  | keyof EquityForm
+  | keyof ASC606AnalysisForm
+  | keyof LeasesForm
+  | keyof FileForm
+  | keyof AuditInfoForm
+  | keyof BasicInfoForm;
 
 type HasDefaultValue = { defaultValue: any };
 type RequestDataOnly<Type> = {
@@ -709,6 +729,6 @@ export const requestTypes: {
       value: z.string(),
     }),
   },
-};
+} as const;
 
 export type RequestTypeKey = keyof typeof requestTypes;
