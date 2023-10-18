@@ -2,7 +2,11 @@ import * as fs from 'fs';
 import dayjs from 'dayjs';
 
 import { getById as getAuditById } from '@/controllers/audit';
-import { getAllByDocumentId as getAllQueriesByDocumentId } from '@/controllers/document-query';
+import { getAllByAuditId as getAllDocumentsByAuditId } from '@/controllers/document';
+import {
+  getAllByDocumentId as getAllQueriesByDocumentId,
+  getData as getDocData,
+} from '@/controllers/document-query';
 import { getAllByAuditId } from '@/controllers/request';
 import { requestTypes } from '@/lib/request-types';
 import { get as getBalanceSheetData } from './financial-statement/balance-sheet';
@@ -42,45 +46,57 @@ const {
   // } from 'docx';
 } = require('docx');
 
-async function getRequestData(auditId: AuditId) {
-  const auditRequests = await getAllByAuditId(auditId);
+export type AuditData = AuditRequestData & { balanceSheet: any };
+export async function getAuditData(auditId: AuditId): Promise<AuditData> {
+  // const audit = await getAuditById(auditId);
 
-  for (const req of auditRequests) {
-    // if request form has a document attached, load all documentQuery data for it
-    if ('documentId' in req.data) {
-      const documentQueries = await getAllQueriesByDocumentId(
-        req.data.documentId,
-      );
-      // req.data.documentQueries = documentQueries.reduce((acc: any, req) => {
-      //   acc[req.identifier] = req.result.content;
-      //   return acc;
-      // }, {}) as unknown as Record<string, string>;
-    }
+  const requests = await getAllByAuditId(auditId);
+  const documents = await getAllDocumentsByAuditId(auditId);
+
+  let aiData = new Map();
+  for (const document of documents) {
+    const docData = await getDocData(document.id);
+    const request = requests.find((r) => r.id === document.requestId);
+
+    aiData.set(request?.type, {
+      ...aiData.get(request?.type),
+      ...docData,
+    });
   }
 
-  let requests: AuditRequestData = auditRequests.reduce((acc: any, req) => {
-    acc[req.type] = req.data;
+  const data = Object.keys(requestTypes).reduce((acc, k) => {
+    const request = requests.find((r) => r.type === k);
+
+    // @ts-ignore
+    acc[k] = {
+      // @ts-ignore
+      ...getDefaultValuesForRequestType(requestTypes[k]),
+      ...(request?.data || {}),
+      ...aiData.get(k),
+    };
     return acc;
   }, {});
-  return requests;
+
+  const balanceSheet = await getBalanceSheetData(auditId);
+
+  // @ts-ignore
+  data.balanceSheet = balanceSheet;
+
+  // @ts-ignore
+  return data;
 }
 
-export type AuditData = {
-  requests: AuditRequestData;
-  balanceSheet: any;
-};
+function getDefaultValuesForRequestType(requestType: any) {
+  const ret: Record<string, any> = {};
+  for (const field of Object.keys(requestType.form)) {
+    ret[field] = requestType.form[field].defaultValue;
+  }
+  return ret;
+}
 
 export async function generate(auditId: AuditId) {
   const audit = await getAuditById(auditId);
-  const requests = await getRequestData(auditId);
-  const balanceSheet = await getBalanceSheetData(auditId);
-
-  const data: AuditData = {
-    requests,
-    balanceSheet,
-  };
-
-  console.log('data available', data);
+  const data = await getAuditData(auditId);
 
   const document = new Document({
     title: 'My Document',
@@ -232,19 +248,17 @@ export async function generate(auditId: AuditId) {
   });
   return {
     document,
-    documentName: `Financial Statement - ${requests.BASIC_INFO.businessName} - ${audit.year}.docx`,
+    documentName: `Financial Statement - ${data.BASIC_INFO.businessName} - ${audit.year}.docx`,
   };
 }
 
 function titlePage(data: AuditData) {
-  const yearEnd = dayjs(data.requests.AUDIT_INFO.fiscalYearEnd).format(
-    'MMMM D, YYYY',
-  );
+  const yearEnd = dayjs(data.AUDIT_INFO.fiscalYearEnd).format('MMMM D, YYYY');
   return {
     ...getPageProperties(),
     children: [
       new Paragraph({
-        text: data.requests.BASIC_INFO.businessName,
+        text: data.BASIC_INFO.businessName,
         heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({

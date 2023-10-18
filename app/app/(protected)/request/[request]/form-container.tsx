@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { Await } from '@/components/await';
 import { Document } from '@/components/document';
 import { getById as getDocumentById } from '@/controllers/document';
-import { getData } from '@/controllers/document-query';
+import { getDataWithLabels } from '@/controllers/document-query';
 import { updateData } from '@/controllers/request';
 import { requestTypes } from '@/lib/request-types';
 import { clientSafe } from '@/lib/util';
@@ -93,7 +93,7 @@ function DocumentData({ documentId }: { documentId: string }) {
       </span>
       <div className="text-xs leading-5 text-gray-600">
         <Suspense fallback={null}>
-          <Await promise={getData(documentId)}>
+          <Await promise={getDataWithLabels(documentId)}>
             {(data) => (
               <div>
                 {Object.keys(data).map((identifier) => (

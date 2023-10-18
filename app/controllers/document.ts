@@ -59,7 +59,6 @@ export async function getAllByAuditId(auditId: AuditId): Promise<Document[]> {
   for (const request of requests) {
     Object.keys(request.data || {}).forEach((key) => {
       if (key.indexOf('ocumentId') !== -1 && request.data[key]) {
-        console.log(key, request.data[key]);
         documents.push(request.data[key]);
       }
     });
