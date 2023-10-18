@@ -101,6 +101,11 @@ export interface FormFieldYear extends _FormFieldBase {
   defaultValue: string;
 }
 
+export interface FormFieldMonth extends _FormFieldBase {
+  input: 'month';
+  defaultValue: string;
+}
+
 export interface FormFieldCheckbox extends _FormFieldBase {
   input: 'checkbox';
   defaultValue: readonly string[];
@@ -124,6 +129,7 @@ export type FormField =
   | FormFieldBoolean
   | FormFieldDate
   | FormFieldYear
+  | FormFieldMonth
   | FormFieldCheckbox
   | FormFieldFile;
 
@@ -136,7 +142,7 @@ interface BasicInfoForm {
 
 interface AuditInfoForm {
   year: FormFieldYear;
-  fiscalYearEnd: FormFieldDate;
+  fiscalYearMonthEnd: FormFieldMonth;
   hasBeenAudited: FormFieldBoolean;
   previousAuditDocumentId: FormFieldFile;
 }
@@ -299,9 +305,9 @@ export const requestTypes: {
         label: 'What year is being audited?',
         defaultValue: '',
       },
-      fiscalYearEnd: {
-        input: 'date',
-        label: "When does the company's fiscal year end?",
+      fiscalYearMonthEnd: {
+        input: 'month',
+        label: "What month does the company's fiscal year end?",
         defaultValue: '',
       },
       hasBeenAudited: {
@@ -322,7 +328,7 @@ export const requestTypes: {
     completeOnSet: true,
     schema: z.object({
       year: z.string(),
-      fiscalYearEnd: z.coerce.date(),
+      fiscalYearMonthEnd: z.coerce.number(),
       hasBeenAudited: z.coerce.boolean(),
       previousAuditDocumentId: z.string(),
     }),

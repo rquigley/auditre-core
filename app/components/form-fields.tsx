@@ -22,6 +22,7 @@ import {
   FormFieldCheckbox,
   FormFieldDate,
   FormFieldFile,
+  FormFieldMonth,
   FormFieldText,
   FormFieldYear,
 } from '@/lib/request-types';
@@ -138,7 +139,7 @@ export function Year({
     <>
       <select
         {...register(field)}
-        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
       >
         <option key={0} value="-">
           -
@@ -158,6 +159,49 @@ export function Year({
   );
 }
 
+export function Month({
+  field,
+  register,
+  formState: { errors },
+  config,
+}: FormFieldProps & { config: FormFieldMonth }) {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return (
+    <>
+      <select
+        {...register(field)}
+        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+      >
+        <option key={0} value="-">
+          -
+        </option>
+        {months.map((month, idx) => (
+          <option key={idx} value={idx + 1}>
+            {month}
+          </option>
+        ))}
+      </select>
+      <span className="sr-only">{config.label}</span>
+
+      <p className="mt-2 text-sm text-red-600" id="email-error">
+        {errors[field]?.message}
+      </p>
+    </>
+  );
+}
 export function Checkbox({
   field,
   register,
