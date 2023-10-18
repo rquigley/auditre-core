@@ -10,6 +10,7 @@ import {
   Checkbox,
   DateField,
   FileUpload,
+  Month,
   Text,
   Textarea,
   Year,
@@ -156,6 +157,13 @@ export default function BasicForm({ request, saveData, documents }: Props) {
                       />
                     ) : fieldConfig.input === 'year' ? (
                       <Year
+                        field={field}
+                        register={register}
+                        formState={formState}
+                        config={fieldConfig}
+                      />
+                    ) : fieldConfig.input === 'month' ? (
+                      <Month
                         field={field}
                         register={register}
                         formState={formState}
