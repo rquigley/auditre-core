@@ -46,7 +46,7 @@ const {
   // } from 'docx';
 } = require('docx');
 
-export type AuditData = AuditRequestData & { balanceSheet: any };
+export type AuditData = AuditRequestData & { balanceSheet: any } & any;
 export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   // const audit = await getAuditById(auditId);
 

@@ -3,6 +3,19 @@ import dayjs from 'dayjs';
 
 import type { AuditData } from '../audit-output';
 
+function toDate(date: any) {
+  return dayjs(date).format('MMMM D, YYYY');
+}
+
+function pp(num: number) {
+  return num.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
+
 export type Template = {
   header: string;
   body: string;
@@ -12,22 +25,31 @@ export type Template = {
 // Organization
 //
 export function organization1(data: AuditData): Template {
-  const { businessName, description } = data.BASIC_INFO;
-  // const {incorporationDate} = data.BASIC_INFO;
   return {
     header: 'Description of Business',
     body: stripIndent`
-      [${businessName}]. (the “Company”) was incorporated in the State of [Delaware] on [November 18, 2020]. [${description}]. [The Company has wholly owned subsidiaries], [SUBSIDIARY 1], [SUBSIDIARY 2].
+      [${
+        data.BASIC_INFO.businessName
+      }]. (the “Company”) was incorporated in the State of [${
+        data.ARTICLES_OF_INCORPORATION.incorporationJurisdiction
+      }] on [${toDate(data.ARTICLES_OF_INCORPORATION.incorporationDate)}]. [${
+        data.BASIC_INFO.description
+      }]. [The Company has wholly owned subsidiaries], [SUBSIDIARY 1], [SUBSIDIARY 2].
     `,
   };
 }
 
 export function organization2(data: AuditData): Template {
-  const dateEnd = dayjs(data.AUDIT_INFO.fiscalYearEnd).format('MMMM D, YYYY');
   return {
     header: 'Going Concern and Liquidity',
     body: stripIndent`
-      The Company has incurred recurring losses and negative cash flows from operating activities since inception. As of [${dateEnd}], the Company had cash of [cash total, $XX,XXX] and an accumulated deficit of [accumluated deficit, $XX,XXX]. Based on the Company’s forecasts, the Company’s current resources and cash balance are sufficient to enable the Company to continue as a going concern for 12 months from the date these consolidated financial statements are available to be issued.
+      The Company has incurred recurring losses and negative cash flows from operating activities since inception. As of [${toDate(
+        data.AUDIT_INFO.fiscalYearEnd,
+      )}], the Company had cash of [${pp(
+        data.balanceSheet.assets.currentAssets.cash,
+      )}] and an accumulated deficit of [${pp(
+        data.balanceSheet.liabilities.totalCurrent,
+      )}]. Based on the Company’s forecasts, the Company’s current resources and cash balance are sufficient to enable the Company to continue as a going concern for 12 months from the date these consolidated financial statements are available to be issued.
 
       The ability to continue as a going concern is dependent upon the Company obtaining necessary financing to meet its obligations and repay its liabilities arising from normal business operations when they come due. The Company may raise additional capital through the issuance of equity securities, debt financings or other sources in order to further implement its business plan. However, if such financing is not available when needed and at adequate levels, the Company will need to reevaluate its operating plan and may be required to delay the development of its products.
     `,
@@ -48,11 +70,12 @@ export function summarySigAccountPractices1(data: AuditData): Template {
 }
 
 export function summarySigAccountPractices2(data: AuditData): Template {
-  const dateEnd = dayjs(data.AUDIT_INFO.fiscalYearEnd).format('MMMM D, YYYY');
   return {
     header: 'Foreign Currencies',
     body: stripIndent`
-      Gains and losses resulting from foreign currency transactions are included in other income, net within the consolidated statement of operations. For the year ended ${dateEnd}, the impact from foreign currency transactions was immaterial.
+      Gains and losses resulting from foreign currency transactions are included in other income, net within the consolidated statement of operations. For the year ended ${toDate(
+        data.AUDIT_INFO.fiscalYearEnd,
+      )}, the impact from foreign currency transactions was immaterial.
     `,
   };
 }
@@ -149,10 +172,11 @@ export function summarySigAccountPractices8(data: AuditData): Template {
 }
 
 export function summarySigAccountPractices9(data: AuditData): Template {
-  //[If answered yes to leases in questionnaire AND if answered yes to having ASC 842 analsys]
-  // return null
   if (!data.LEASES.hasLeases || !data.LEASES.didPerformASC842Analysis) {
-    return null;
+    return {
+      header: 'Leases',
+      body: '[NOT SHOWING: !data.LEASES.hasLeases || !data.LEASES.didPerformASC842Analysis]',
+    };
   }
   return {
     header: 'Leases',
@@ -167,8 +191,12 @@ export function summarySigAccountPractices9(data: AuditData): Template {
 }
 
 export function summarySigAccountPractices10(data: AuditData): Template {
-  //[If answered yes to leases in questionnaire AND if answered yes to having ASC 842 analsys]
-  // return null
+  if (!data.LEASES.hasLeases || !data.LEASES.didPerformASC842Analysis) {
+    return {
+      header: 'Impairment of Long-Lived Assets',
+      body: '[NOT SHOWING: !data.LEASES.hasLeases || !data.LEASES.didPerformASC842Analysis]',
+    };
+  }
   return {
     header: 'Impairment of Long-Lived Assets',
     body: stripIndent`
@@ -202,6 +230,13 @@ export function summarySigAccountPractices12(data: AuditData): Template {
 export function summarySigAccountPractices13(data: AuditData): Template {
   //[if answered yes to "if the company isssued stock to employees"]
   // return null
+  if (!data.EQUITY.hasEmployeeStockPlan) {
+    return {
+      header: 'Stock-Based Compensation',
+      body: '[NOT SHOWING: !data.EQUITY.hasEmployeeStockPlan]',
+    };
+  }
+
   return {
     header: 'Stock-Based Compensation',
     body: stripIndent`
