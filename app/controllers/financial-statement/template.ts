@@ -12,19 +12,18 @@ export type Template = {
 // Organization
 //
 export function organization1(data: AuditData): Template {
-  const { businessName, description } = data.requests.BASIC_INFO;
+  const { businessName, description } = data.BASIC_INFO;
+  // const {incorporationDate} = data.BASIC_INFO;
   return {
     header: 'Description of Business',
     body: stripIndent`
-      [${businessName}]. (the “Company”) was incorporated in the [State of Delaware] on [November 18, 2020]. [${description}]. [The Company has wholly owned subsidiaries], [SUBSIDIARY 1], [SUBSIDIARY 2].
+      [${businessName}]. (the “Company”) was incorporated in the State of [Delaware] on [November 18, 2020]. [${description}]. [The Company has wholly owned subsidiaries], [SUBSIDIARY 1], [SUBSIDIARY 2].
     `,
   };
 }
 
 export function organization2(data: AuditData): Template {
-  const dateEnd = dayjs(data.requests.AUDIT_INFO.fiscalYearEnd).format(
-    'MMMM D, YYYY',
-  );
+  const dateEnd = dayjs(data.AUDIT_INFO.fiscalYearEnd).format('MMMM D, YYYY');
   return {
     header: 'Going Concern and Liquidity',
     body: stripIndent`
@@ -49,9 +48,7 @@ export function summarySigAccountPractices1(data: AuditData): Template {
 }
 
 export function summarySigAccountPractices2(data: AuditData): Template {
-  const dateEnd = dayjs(data.requests.AUDIT_INFO.fiscalYearEnd).format(
-    'MMMM D, YYYY',
-  );
+  const dateEnd = dayjs(data.AUDIT_INFO.fiscalYearEnd).format('MMMM D, YYYY');
   return {
     header: 'Foreign Currencies',
     body: stripIndent`
@@ -154,6 +151,9 @@ export function summarySigAccountPractices8(data: AuditData): Template {
 export function summarySigAccountPractices9(data: AuditData): Template {
   //[If answered yes to leases in questionnaire AND if answered yes to having ASC 842 analsys]
   // return null
+  if (!data.LEASES.hasLeases || !data.LEASES.didPerformASC842Analysis) {
+    return null;
+  }
   return {
     header: 'Leases',
     body: stripIndent`

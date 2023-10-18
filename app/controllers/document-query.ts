@@ -4,10 +4,15 @@ import { getById as getDocumentById } from '@/controllers/document';
 import { call } from '@/lib/ai';
 import { db } from '@/lib/db';
 import { requestTypes } from '@/lib/request-types';
-import { head, humanCase } from '@/lib/util';
+import { head, humanCase, isKey } from '@/lib/util';
 
 import type { OpenAIMessage } from '@/lib/ai';
-import type { AIQuestion } from '@/lib/request-types';
+import type {
+  AIQuestion,
+  FormField,
+  RequestTypeKey,
+  ValidField,
+} from '@/lib/request-types';
 import type {
   Document,
   DocumentId,
@@ -250,19 +255,21 @@ export async function classifyDocument(
 
 function getAIQuestions(
   config: typeof requestTypes,
-): Record<string, Record<string, AIQuestion>> {
-  const res: Record<string, Record<string, AIQuestion>> = {};
+): Record<Partial<RequestTypeKey>, Record<ValidField, AIQuestion>> {
+  const res: Record<string, any> = {};
 
   for (const topLevelKey in config) {
-    // @ts-ignore
+    if (!isKey(config, topLevelKey)) {
+      continue;
+    }
     const formObj = config[topLevelKey].form;
 
     for (const formKey in formObj) {
-      const formEntry = formObj[formKey];
-
-      if (formEntry.aiQuestions) {
-        const type = formEntry.aiClassificationType;
-
+      if (!isKey(formObj, formKey)) {
+        continue;
+      }
+      const formEntry = formObj[formKey] as FormField;
+      if (formEntry.input === 'fileupload') {
         res[formEntry.aiClassificationType] = formEntry.aiQuestions;
       }
     }
@@ -277,10 +284,12 @@ export async function askDefaultQuestions(document: Document): Promise<number> {
     throw new Error('Document has no extracted content');
   }
 
+  // @ts-ignore
   if (!aiQuestions[document.classifiedType]) {
     return 0;
   }
 
+  // @ts-ignore
   const questions = aiQuestions[document.classifiedType];
   const aiPromises = Object.keys(questions).map((identifier) => {
     const obj = questions[identifier];
@@ -298,18 +307,41 @@ export async function askDefaultQuestions(document: Document): Promise<number> {
   return aiPromises.length;
 }
 
-type FormattedQueryData = Record<
+type FormattedQueryDataWithLabels = Record<
   string,
   {
     value: string | undefined;
     label: string | undefined;
   }
 >;
+export async function getDataWithLabels(
+  documentId: DocumentId,
+): Promise<FormattedQueryDataWithLabels> {
+  const { classifiedType } = await getDocumentById(documentId);
+  const answeredQuestions = await getAllByDocumentId(documentId);
+  // @ts-ignore
+  const defaultQuestions = { ...aiQuestions[classifiedType] };
+  if (!defaultQuestions) {
+    return {};
+  }
+  let res: FormattedQueryDataWithLabels = {};
+  for (const identifier in defaultQuestions) {
+    const answered = answeredQuestions.find((q) => q.identifier === identifier);
+    res[identifier] = {
+      value: answered?.result,
+      label: defaultQuestions[identifier].label,
+    };
+  }
+  return res;
+}
+
+type FormattedQueryData = Record<string, string | undefined>;
 export async function getData(
   documentId: DocumentId,
 ): Promise<FormattedQueryData> {
   const { classifiedType } = await getDocumentById(documentId);
   const answeredQuestions = await getAllByDocumentId(documentId);
+  // @ts-ignore
   const defaultQuestions = { ...aiQuestions[classifiedType] };
   if (!defaultQuestions) {
     return {};
@@ -317,10 +349,7 @@ export async function getData(
   let res: FormattedQueryData = {};
   for (const identifier in defaultQuestions) {
     const answered = answeredQuestions.find((q) => q.identifier === identifier);
-    res[identifier] = {
-      value: answered?.result,
-      label: defaultQuestions[identifier].label,
-    };
+    res[identifier] = answered?.result;
   }
   return res;
 }
