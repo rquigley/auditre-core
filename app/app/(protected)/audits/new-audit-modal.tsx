@@ -40,11 +40,11 @@ export default function NewAuditModal() {
   const cancelButtonRef = useRef(null);
 
   async function onSubmit(data: z.infer<typeof newAuditSchema>) {
-    await createAudit({
+    const audit = await createAudit({
       name: data.name,
       year: data.year,
     });
-    router.push(pathname);
+    router.push(`/audit/${audit.id}`);
   }
 
   return (
