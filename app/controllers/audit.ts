@@ -10,13 +10,15 @@ export async function create(audit: NewAudit): Promise<Audit> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getById(id: OrgId): Promise<Audit> {
-  return await db
-    .selectFrom('audit')
-    .where('id', '=', id)
-    .where('isDeleted', '=', false)
-    .selectAll()
-    .executeTakeFirstOrThrow();
+export async function getById(
+  id: OrgId,
+  params?: { includeDeleted?: boolean },
+): Promise<Audit> {
+  let query = db.selectFrom('audit').where('id', '=', id);
+  if (!params?.includeDeleted) {
+    query = query.where('isDeleted', '=', false);
+  }
+  return await query.selectAll().executeTakeFirstOrThrow();
 }
 
 export type AuditWithRequestCounts = Audit & {

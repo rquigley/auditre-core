@@ -55,12 +55,14 @@ export default function Row({
             <span className="text-xs">
               {document.auditName}
               <br />
-              <Link
-                href={`/request/${document.requestId}`}
-                className="text-sky-700 hover:text-sky-700"
-              >
-                {document.requestName}
-              </Link>
+              {document.requestName ? (
+                <Link
+                  href={`/request/${document.requestId}`}
+                  className="text-sky-700 hover:text-sky-700"
+                >
+                  {document.requestName}
+                </Link>
+              ) : null}
             </span>
           </>
         )}
