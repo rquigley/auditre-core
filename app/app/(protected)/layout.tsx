@@ -2,6 +2,7 @@ import '../globals.css';
 
 import { Inter } from 'next/font/google';
 import { Suspense } from 'react';
+import { Toaster } from 'sonner';
 
 import Navbar from '@/components/navbar';
 import { getCurrent } from '@/controllers/session-user';
@@ -43,6 +44,7 @@ export default async function RootLayout({
             <Suspense fallback="">{children}</Suspense>
           </div>
         </div>
+        <Toaster />
       </body>
     </html>
   );
