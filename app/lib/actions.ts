@@ -9,7 +9,11 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import * as z from 'zod';
 
-import { create as _createAudit } from '@/controllers/audit';
+import {
+  create as _createAudit,
+  getById as getAuditById,
+  update as updateAuditById,
+} from '@/controllers/audit';
 import { generate as _generateFinancialStatement } from '@/controllers/audit-output';
 import {
   create as _createDocument,
@@ -71,6 +75,41 @@ export async function createAudit(rawData: { name: string; year: number }) {
   await upsertDefaultRequests({ auditId: audit.id, orgId: user.orgId });
 
   revalidatePath('/');
+  return audit;
+}
+
+const auditSchema = z.object({
+  name: z.string().min(3).max(72),
+});
+
+export async function updateAudit(auditId: AuditId, rawData: { name: string }) {
+  const user = await getCurrent();
+  const audit = await getAuditById(auditId);
+  if (audit.orgId !== user.orgId) {
+    throw new Error('Unauthorized');
+  }
+
+  const data = auditSchema.parse(rawData);
+
+  await updateAuditById(auditId, {
+    name: data.name,
+  });
+
+  revalidatePath('/');
+  return;
+}
+
+export async function deleteAudit(auditId: AuditId) {
+  const user = await getCurrent();
+  const audit = await getAuditById(auditId);
+  if (audit.orgId !== user.orgId) {
+    throw new Error('Unauthorized');
+  }
+
+  await updateAuditById(auditId, {
+    isDeleted: true,
+  });
+
   return;
 }
 

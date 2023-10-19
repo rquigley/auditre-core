@@ -308,6 +308,7 @@ export const requestTypes: {
       fiscalYearMonthEnd: {
         input: 'month',
         label: "What month does the company's fiscal year end?",
+        description: 'This is typically December.',
         defaultValue: '',
       },
       hasBeenAudited: {
