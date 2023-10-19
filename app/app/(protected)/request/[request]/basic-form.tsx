@@ -1,8 +1,10 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import * as z from 'zod';
 
 import {
@@ -33,7 +35,7 @@ export type Props = {
 
 export default function BasicForm({ request, saveData, documents }: Props) {
   const config = requestTypes[request.type];
-
+  const router = useRouter();
   const [showSuccess, setShowSuccess] = useState(false);
 
   const {
@@ -53,12 +55,22 @@ export default function BasicForm({ request, saveData, documents }: Props) {
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
       reset(undefined, { keepValues: true });
-      setShowSuccess(true);
+      // setShowSuccess(true);
     }
   }, [formState.isSubmitSuccessful, reset]);
 
   async function onSubmit(data: z.infer<typeof config.schema>) {
-    await Promise.all([saveData(data), delay(700)]);
+    const p = Promise.all([saveData(data), delay(700)]);
+
+    toast.promise(p, {
+      loading: 'Saving...',
+      success: async (data) => {
+        await delay(1000);
+        router.push(`/audit/${request.auditId}`);
+        return `Data saved`;
+      },
+      error: 'Error',
+    });
   }
 
   return (
