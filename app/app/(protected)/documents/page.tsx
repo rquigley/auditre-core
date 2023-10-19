@@ -15,11 +15,13 @@ export default async function DocumentsPage() {
   for (const document of documents) {
     if (document.requestId) {
       const request = await getRequestById(document.requestId);
-      const audit = await getAuditById(request.auditId);
+      const audit = await getAuditById(request.auditId, {
+        includeDeleted: true,
+      });
       // @ts-ignore
-      document.auditName = audit.name;
+      document.auditName = audit && !audit.isDeleted ? audit.name : '';
       // @ts-ignore
-      document.requestName = request.name;
+      document.requestName = audit && !audit.isDeleted ? request.name : '';
     }
     // TODO: look into FF and dayjs date handling.
     // @ts-ignore
