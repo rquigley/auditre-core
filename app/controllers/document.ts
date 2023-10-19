@@ -131,7 +131,8 @@ export async function process(id: DocumentId): Promise<void> {
     }
 
     if (!doc.extracted) {
-      for (let i = 0; i < 30; i++) {
+      // The extract lambda can take up to 60 seconds to run for especially large excel docs
+      for (let i = 0; i < 60; i++) {
         await delay(1000);
         console.log(`checking for extracted content: ${Date.now() - t0}ms`);
         if (await didExtractAndUpdateContent(doc)) {
