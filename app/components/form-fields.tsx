@@ -596,7 +596,8 @@ type StatusRes = {
   classifiedType: string;
 };
 async function getClassificationStatus(documentId: DocumentId) {
-  for (let i = 0; i < 30; i++) {
+  // The extract lambda can take up to 60 seconds to run for especially large excel docs
+  for (let i = 0; i < 60; i++) {
     await delay(1000);
 
     const res = await fetch(`/document/${documentId}/status`, {
