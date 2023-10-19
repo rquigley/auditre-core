@@ -154,7 +154,7 @@ export class OpsAppStack extends Stack {
       compatibleArchitectures: [Architecture.ARM_64],
       compatibleRuntimes: [Runtime.PYTHON_3_11],
     });
-    /// excel
+    /// pdf
     const extractPdfLambda = new Function(this, 'ExtractPdfLambda', {
       code: Code.fromAsset(
         path.join(__dirname, '../packages/extract-pdf-lambda'),
@@ -173,10 +173,7 @@ export class OpsAppStack extends Stack {
       architecture: Architecture.ARM_64,
       memorySize: 512,
       timeout: Duration.seconds(30),
-      // vpc: vpc,
-      // vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
       handler: 'lambda_function.handler',
-      //layers: [lxmlLayer],
     });
     s3Bucket.grantReadWrite(extractPdfLambda);
     const pdfS3nDest = new LambdaDestination(extractPdfLambda);
@@ -204,7 +201,7 @@ export class OpsAppStack extends Stack {
       runtime: Runtime.PYTHON_3_11,
       architecture: Architecture.ARM_64,
       memorySize: 512,
-      timeout: Duration.seconds(30),
+      timeout: Duration.seconds(60),
       handler: 'lambda_function.handler',
       layers: [lxmlLayer],
     });
