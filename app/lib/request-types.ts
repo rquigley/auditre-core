@@ -508,6 +508,7 @@ export const requestTypes: {
     schema: z.object({
       hasCompletedASC606Analysis: z.coerce.boolean(),
       asc606DocumentId: z.string(),
+      revenueRecognitionProcess: z.string(),
     }),
   },
 
