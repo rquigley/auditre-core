@@ -18,25 +18,33 @@ import {
   Year,
 } from '@/components/form-fields';
 import SaveNotice from '@/components/save-notice';
-import { requestTypes } from '@/lib/request-types';
+import { getSchemaForId } from '@/lib/request-types';
 import { classNames, delay, isFieldVisible } from '@/lib/util';
 
-import type { ClientSafeRequest, DocumentId, RequestData } from '@/types';
-
+import type { RequestWithoutSchema } from './form-container';
 //import type { UseFormRegister, FieldErrors } from 'react-hook-form';
+//import type { RequestTypeWithData } from '@/controllers/request';
+// import type { RequestType } from '@/lib/request-types';
+import type { DocumentId, RequestData } from '@/types';
 
 export type Props = {
-  request: ClientSafeRequest;
+  request: RequestWithoutSchema;
+  requestData: Record<string, unknown>;
   saveData: (data: RequestData) => void;
   documents: {
     [key: string]: { id: DocumentId; doc: JSX.Element; data: JSX.Element };
   };
 };
 
-export default function BasicForm({ request, saveData, documents }: Props) {
-  const config = requestTypes[request.type];
+export default function BasicForm({
+  request,
+  requestData,
+  saveData,
+  documents,
+}: Props) {
   const router = useRouter();
   const [showSuccess, setShowSuccess] = useState(false);
+  const schema = getSchemaForId(request.id);
 
   const {
     register,
@@ -47,9 +55,9 @@ export default function BasicForm({ request, saveData, documents }: Props) {
     resetField,
     watch,
     formState,
-  } = useForm<z.infer<typeof config.schema>>({
-    resolver: zodResolver(config.schema),
-    defaultValues: request.data,
+  } = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: requestData,
   });
 
   useEffect(() => {
@@ -59,7 +67,7 @@ export default function BasicForm({ request, saveData, documents }: Props) {
     }
   }, [formState.isSubmitSuccessful, reset]);
 
-  async function onSubmit(data: z.infer<typeof config.schema>) {
+  async function onSubmit(data: z.infer<typeof schema>) {
     const p = Promise.all([saveData(data), delay(700)]);
 
     toast.promise(p, {
@@ -80,24 +88,21 @@ export default function BasicForm({ request, saveData, documents }: Props) {
           {/* <h2 className="text-base font-semibold leading-7 text-gray-900">
             {request.type == 'USER_REQUESTED' ? request.name : config.name}
           </h2> */}
-          {(request.description || config.description) && (
+          {request.description && (
             <p className="mt-1 text-sm leading-6 text-gray-600 mb-10">
-              {request.type == 'USER_REQUESTED'
-                ? request.description
-                : config.description}
+              {request.description}
             </p>
           )}
           <div className=" grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-            {Object.keys(config.form).map((field) => {
-              // @ts-ignore
-              const fieldConfig = config.form[field];
+            {Object.keys(request.form).map((field) => {
+              const fieldConfig = request.form[field];
               const isVisibleA = setupWatchFields(
                 field,
                 getValues(),
-                config.form,
+                request.form,
                 watch,
               );
-              const isVisible = isFieldVisible(field, isVisibleA, config.form);
+              const isVisible = isFieldVisible(field, isVisibleA, request.form);
 
               // if (!isVisible) {
               //   return <input type="hidden" key={field} {...register(field)} />;

@@ -3,20 +3,22 @@ import { Suspense } from 'react';
 
 import Header from '@/components/header';
 import { getById as getAuditById } from '@/controllers/audit';
-import { getById as getRequestById } from '@/controllers/request';
+import { getRequestBySlug } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
 import Activity from './activity';
 import FormContainer from './form-container';
 
+import type { AuditId } from '@/types';
+
 export default async function RequestPage({
-  params: { request: id },
+  params: { audit: auditId, request: requestSlug },
 }: {
-  params: { request: string };
+  params: { audit: AuditId; request: string };
 }) {
   const user = await getCurrent();
-  const request = await getRequestById(id);
-  const audit = await getAuditById(request.auditId);
-  if (audit.orgId !== user.orgId) {
+  const audit = await getAuditById(auditId);
+  const request = await getRequestBySlug(auditId, requestSlug);
+  if (!request || !audit || request.orgId !== user.orgId) {
     return notFound();
   }
 

@@ -28,7 +28,7 @@ import {
 } from '@/lib/request-types';
 import { delay, pWithResolvers, ucFirst } from '@/lib/util';
 
-import type { ClientSafeRequest, DocumentId, S3File } from '@/types';
+import type { DocumentId, S3File } from '@/types';
 
 type FormFieldProps = {
   field: string;
@@ -327,12 +327,10 @@ export function FileUpload({
   getValues,
   formState: { isSubmitSuccessful },
   config,
-  request,
   document,
   resetField,
 }: FormFieldProps & {
   config: FormFieldFile;
-  request: ClientSafeRequest;
   setValue: (key: string, val: any, opts: any) => void;
   getValues: (key?: string) => any;
   document: { id: DocumentId; doc: JSX.Element; data: JSX.Element } | null;
@@ -354,7 +352,6 @@ export function FileUpload({
     //const fileType = encodeURIComponent(file.type);
 
     const signedUrl = await getPresignedUploadUrl({
-      requestId: request.id,
       filename,
       contentType: file.type,
     });
@@ -389,7 +386,7 @@ export function FileUpload({
         type: file.type,
       };
 
-      const { id, name, key } = await createDocument(toSave, request.id);
+      const { id, name, key } = await createDocument(toSave);
 
       // Same as above, reduce perception of processing time
       await promise;

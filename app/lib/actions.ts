@@ -22,15 +22,10 @@ import {
   getById as getDocumentById,
   process as processDocument,
 } from '@/controllers/document';
-import {
-  getById as getRequestById,
-  update as updateRequest,
-  upsertDefault as upsertDefaultRequests,
-} from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
 import { getPresignedUrl } from '@/lib/aws';
 
-import type { AuditId, DocumentId, RequestId, S3File } from '@/types';
+import type { AuditId, DocumentId, S3File } from '@/types';
 
 export { processDocument };
 
@@ -72,7 +67,6 @@ export async function createAudit(rawData: { name: string; year: number }) {
     year: data.year,
     orgId: user.orgId,
   });
-  await upsertDefaultRequests({ auditId: audit.id, orgId: user.orgId });
 
   revalidatePath('/');
   return audit;
@@ -113,12 +107,12 @@ export async function deleteAudit(auditId: AuditId) {
   return;
 }
 
-export async function createDocument(file: S3File, requestId: RequestId) {
+export async function createDocument(file: S3File) {
   const user = await getCurrent();
-  const request = await getRequestById(requestId);
-  if (request.orgId !== user.orgId) {
-    throw new Error('Unauthorized');
-  }
+  // const request = await getRequestById(requestId);
+  // if (request.orgId !== user.orgId) {
+  //   throw new Error('Unauthorized');
+  // }
 
   const doc = await _createDocument({
     id: file.documentId,
@@ -128,8 +122,8 @@ export async function createDocument(file: S3File, requestId: RequestId) {
     size: file.size,
     mimeType: file.type,
     fileLastModified: new Date(file.lastModified),
-    orgId: request.orgId,
-    requestId: request.id,
+    orgId: user.orgId,
+    //requestId: request.id,
   });
 
   // Kick processing off in the background. Do not await
@@ -190,25 +184,19 @@ const filenameSchema = z.string().min(4).max(128);
 const contentTypeSchema = z.string().min(4).max(128);
 
 export async function getPresignedUploadUrl({
-  requestId,
   filename: unsanitizedFilename,
   contentType: unsanitizedContentType,
 }: {
-  requestId: RequestId;
   filename: string;
   contentType: string;
 }) {
   const user = await getCurrent();
-  const request = await getRequestById(requestId);
-  if (request.orgId !== user.orgId) {
-    throw new Error('Unauthorized');
-  }
 
   const filename = filenameSchema.parse(unsanitizedFilename);
   const bucket = bucketSchema.parse(process.env.AWS_S3_BUCKET);
   const contentType = contentTypeSchema.parse(unsanitizedContentType);
   const documentId = randomUUID();
-  const key = `${request.orgId}/${documentId}${extname(filename)}`;
+  const key = `${user.orgId}/${documentId}${extname(filename)}`;
   const url = await getPresignedUrl({
     key,
     bucket,
@@ -240,33 +228,33 @@ export async function processChartOfAccounts(
   await extractChartOfAccountsMapping(document, auditId);
 }
 
-export async function selectDocumentForRequest(
-  id: DocumentId,
-  field: string,
-): Promise<void> {
-  const user = await getCurrent();
-  const document = await getDocumentById(id);
-  if (document.orgId !== user.orgId) {
-    throw new Error('Unauthorized');
-  }
-  if (!document.requestId) {
-    throw new Error('Document is not bound to a request');
-  }
-
-  const request = await getRequestById(document.requestId);
-  console.log(request);
-  if (!request.data.hasOwnProperty(field)) {
-    console.log(request.data);
-    throw new Error(`Invalid field: ${field}`);
-  }
-  const newData = { ...request.data, [field]: document.id };
-  await updateRequest(
-    request.id,
-    { data: newData },
-    { userId: user.id, type: 'USER' },
-  );
-  revalidatePath('/');
-}
+// export async function selectDocumentForRequest(
+//   id: DocumentId,
+//   field: string,
+// ): Promise<void> {
+//   const user = await getCurrent();
+//   const document = await getDocumentById(id);
+//   if (document.orgId !== user.orgId) {
+//     throw new Error('Unauthorized');
+//   }
+//   if (!document.requestId) {
+//     throw new Error('Document is not bound to a request');
+//   }
+//   return;
+//   const request = await getRequestById(document.requestId);
+//   console.log(request);
+//   if (!request.data.hasOwnProperty(field)) {
+//     console.log(request.data);
+//     throw new Error(`Invalid field: ${field}`);
+//   }
+//   const newData = { ...request.data, [field]: document.id };
+//   await updateRequest(
+//     request.id,
+//     { data: newData },
+//     { userId: user.id, type: 'USER' },
+//   );
+//   revalidatePath('/');
+// }
 
 export async function generateFinancialStatement(auditId: AuditId) {
   await _generateFinancialStatement(auditId);
