@@ -1,13 +1,18 @@
-import CommentForm from './comment-form';
-import Datetime from '@/components/datetime';
-import { getAllByRequestId as getAllCommentsByRequestId } from '@/controllers/comment';
-import { create as createComment } from '@/controllers/comment';
-import { getChangesById } from '@/controllers/request';
-import { userLoader } from '@/controllers/user';
-import { classNames } from '@/lib/util';
-import type { Request, User } from '@/types';
+import clsx from 'clsx';
 import { revalidatePath } from 'next/cache';
+import Image from 'next/image';
 import z from 'zod';
+
+import Datetime from '@/components/datetime';
+import {
+  create as createComment,
+  getAllForRequest as getAllCommentsForRequest,
+} from '@/controllers/comment';
+import { getChangesForRequestType } from '@/controllers/request-data';
+import CommentForm from './comment-form';
+
+import type { Request } from '@/controllers/request';
+import type { User } from '@/types';
 
 const schema = z.object({
   comment: z.string().max(500),
@@ -22,16 +27,19 @@ export default async function Activity({
 }) {
   const feed = await getFeed(request);
 
-  async function saveData(data: z.infer<typeof schema>) {
+  async function saveData(dataRaw: z.infer<typeof schema>) {
     'use server';
+
+    const data = schema.parse(dataRaw);
 
     await createComment({
       orgId: user.orgId,
-      requestId: request.id,
+      auditId: request.auditId,
+      requestType: request.id,
       comment: data.comment,
       userId: user.id,
     });
-    revalidatePath(`/request/${request.id}`);
+    revalidatePath(`/audit/${request.auditId}/request/${request.id}`);
   }
 
   return (
@@ -40,7 +48,7 @@ export default async function Activity({
         {feed.map((item, idx) => (
           <li key={idx} className="relative flex gap-x-4">
             <div
-              className={classNames(
+              className={clsx(
                 idx === feed.length - 1 ? 'h-6' : '-bottom-6',
                 'absolute left-0 top-0 flex w-6 justify-center',
               )}
@@ -50,10 +58,11 @@ export default async function Activity({
             {item.type === 'COMMENT' ? (
               <>
                 {item.actor.type === 'USER' && item.actor.image && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={item.actor.image}
                     alt=""
+                    width="36"
+                    height="36"
                     className="relative mt-3 h-6 w-6 flex-none rounded-full bg-gray-50"
                   />
                 )}
@@ -94,8 +103,7 @@ export default async function Activity({
                   <span className="font-medium text-gray-900">
                     {item.actor.type === 'USER' && item.actor.name}
                   </span>{' '}
-                  {(item.type === 'CREATED' && 'created the request') ||
-                    'updated the request'}
+                  {idx === 0 ? 'created the request' : 'updated the request'}
                 </p>
                 <Datetime
                   className="flex-none py-0.5 text-xs leading-5 text-gray-500"
@@ -111,8 +119,10 @@ export default async function Activity({
       <div className="mt-6 flex gap-x-3">
         {user.image && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={user.image}
+            width="36"
+            height="36"
             alt=""
             className="h-6 w-6 flex-none rounded-full bg-gray-50"
           />
@@ -133,46 +143,45 @@ export type Change = {
 };
 
 async function getFeed(request: Request) {
-  const rawChanges = await getChangesById(request.id);
-  const rawComments = await getAllCommentsByRequestId(request.id);
+  const rawChanges = await getChangesForRequestType(request.auditId, request);
+  console.log(rawChanges);
+  const rawComments = await getAllCommentsForRequest(
+    request.auditId,
+    request.id,
+  );
 
   let ret: Change[] = [];
 
   for (let n = 0; n < rawChanges.length; n++) {
     let change = rawChanges[n];
     let actor;
-    if (change.actor.type === 'USER') {
-      const user = await userLoader.load(change.actor.userId);
-      actor = { type: 'USER', name: user.name, image: user.image } as UserActor;
+    if (change.actorUserId) {
+      actor = {
+        type: 'USER',
+        name: change.name,
+        image: change.image,
+      } as UserActor;
     } else {
       actor = { type: 'SYSTEM' } as SystemActor;
     }
-    if (n === 0) {
-      ret.push({
-        type: 'CREATED',
-        createdAt: change.createdAt,
-        actor,
-      });
-    } else {
-      if (rawChanges[n - 1].newData !== change.newData) {
-        ret.push({
-          type: 'VALUE',
-          createdAt: change.createdAt,
-          actor,
-        });
-      }
-    }
+
+    ret.push({
+      type: 'VALUE',
+      createdAt: change.createdAt,
+      actor,
+    });
   }
+
   for (let n = 0; n < rawComments.length; n++) {
     let comment = rawComments[n];
-    let actor;
-    const user = await userLoader.load(comment.userId);
-    actor = { type: 'USER', name: user.name, image: user.image } as UserActor;
-
     ret.push({
       type: 'COMMENT',
       createdAt: comment.createdAt,
-      actor,
+      actor: {
+        type: 'USER',
+        name: comment.name || '',
+        image: comment.image || '',
+      },
       comment: comment.comment,
     });
   }

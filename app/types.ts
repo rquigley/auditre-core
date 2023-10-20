@@ -1,6 +1,5 @@
 //import type { DocumentType } from './controllers/document-query';
 import type { OpenAIMessage } from './lib/ai';
-import type { RequestTypeKey } from './lib/request-types';
 import type {
   ColumnType,
   Generated,
@@ -121,61 +120,29 @@ export type NewAudit = Insertable<AuditTable>;
 export type Audit = Selectable<AuditTable>;
 export type ClientSafeAudit = Omit<Selectable<AuditTable>, ClientSafeOmitTypes>;
 
-// Use Conditional Type
-// https://www.typescriptlang.org/static/TypeScript%20Types-ae199d69aeecf7d4a2704a528d0fd3f9.png
-export type RequestData = {
-  [key: string]: any;
-};
-
 export type RequestStatus = 'requested' | 'complete' | 'overdue';
 export type RequestGroup =
   | 'Background'
   | 'Accounting Information'
   | 'Business Operations'
   | 'Other';
-export interface RequestTable {
+
+export interface RequestDataTable {
   id: Generated<RequestId>;
   auditId: AuditId;
   orgId: OrgId;
-  name: string;
-  description: string | null;
-  status: RequestStatus;
-  type: RequestTypeKey;
-  //requestee: UserId | null;
-  data: RequestData;
-  dueDate: Date | null;
-  createdAt: ColumnType<Date, string | undefined, never>;
-  isDeleted: ColumnType<boolean, never, boolean>;
+  requestType: string;
+  requestId: string;
+  data: { value: any } | null;
+  documentId: DocumentId | null;
+  actorUserId: UserId | null;
+  createdAt: ColumnType<Date, Date | undefined, never>;
+  // isDeleted: ColumnType<boolean, never, boolean>;
 }
 
-export type RequestUpdate = Updateable<RequestTable>;
-export type NewRequest = Insertable<RequestTable>;
-export interface Request extends Selectable<RequestTable> {
-  group: RequestGroup;
-}
-export type ClientSafeRequest = Omit<Request, ClientSafeOmitTypes>;
-
-export type RequestChangeValue = RequestData & {
-  status: RequestStatus;
-  dueDate: Date | null;
-  isDeleted: boolean;
-};
-export interface RequestChangeTable {
-  id: Generated<number>;
-  requestId: RequestId;
-  auditId: AuditId;
-  actor: Actor;
-  newData: RequestChangeValue;
-  createdAt: ColumnType<Date, string | undefined, never>;
-}
-
-export type RequestChangeUpdate = Updateable<RequestChangeTable>;
-export type NewRequestChange = Insertable<RequestChangeTable>;
-export type RequestChange = Selectable<RequestChangeTable>;
-export type ClientSafeRequestChange = Omit<
-  Selectable<RequestChangeTable>,
-  ClientSafeOmitTypes
->;
+export type RequestDataUpdate = Updateable<RequestDataTable>;
+export type NewRequestData = Insertable<RequestDataTable>;
+export type RequestData = Selectable<RequestDataTable>;
 
 export interface DocumentTable {
   id: Generated<string>;
@@ -270,7 +237,8 @@ export interface CommentTable {
   id: GeneratedAlways<string>;
   orgId: OrgId;
   userId: UserId;
-  requestId: RequestId | null;
+  auditId: AuditId;
+  requestType: string;
   documentId: DocumentId | null;
   comment: string;
   createdAt: ColumnType<Date, string | undefined, never>;
@@ -329,8 +297,7 @@ export interface Database extends Kysely<Database> {
   documentQuery: DocumentQueryTable;
   invitation: InvitationTable;
   org: OrgTable;
-  request: RequestTable;
-  requestChange: RequestChangeTable;
+  requestData: RequestDataTable;
   session: SessionTable;
   user: UserTable;
   verificationToken: VerificationTokenTable;

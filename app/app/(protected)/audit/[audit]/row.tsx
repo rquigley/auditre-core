@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import type { ClientSafeRequest } from '@/types';
+import type { Request } from '@/lib/request-types';
 
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
@@ -33,7 +33,7 @@ function StatusBadge({ status }: { status: string }) {
   }
 }
 
-export default function Row({ request }: { request: ClientSafeRequest }) {
+export default function Row({ request }: { request: Request }) {
   return (
     <tr key={request.id} className="hover:bg-gray-100">
       <td className="whitespace-nowrap pl-4 sm:pl-2 py-5 text-sm text-gray-500">
@@ -42,7 +42,7 @@ export default function Row({ request }: { request: ClientSafeRequest }) {
       <td className="py-5 text-sm">
         <div className="text-gray-900 font-semibold">
           <Link
-            href={`/request/${request.id}`}
+            href={`/audit/${request.auditId}/request/${request.id}`}
             className="hover:underline hover:text-blue-500"
           >
             {request.name}

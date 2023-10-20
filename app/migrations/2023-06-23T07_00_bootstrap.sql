@@ -86,35 +86,24 @@ CREATE TABLE "audit" (
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "audit" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
-CREATE TABLE "request" (
+
+CREATE TABLE "request_data" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "name" text NOT NULL,
-  "type" text NOT NULL,
-  "description" text,
-  "status" text NOT NULL,
-  -- "requestee" uuid REFERENCES "user" ("id"),
+  "request_type" text NOT NULL,
+  "request_id" text NOT NULL,
   "data" jsonb,
-  "due_date" date,
-  "created_at" timestamptz DEFAULT now() NOT NULL,
-  "updated_at" timestamptz DEFAULT now() NOT NULL,
-  "is_deleted" boolean NOT NULL DEFAULT FALSE
-);
-CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "request" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
-
-CREATE TABLE "request_change" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  "request_id" uuid NOT NULL REFERENCES "request" ("id"),
-  "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
-  "actor" jsonb,
-  "new_data" JSONB,
+  "document_id" uuid REFERENCES "document" ("id"),
+  "actor_user_id" uuid REFERENCES "user" ("id"),
   "created_at" timestamptz DEFAULT now() NOT NULL
 );
+CREATE INDEX idx_request_data_1 ON request_data (audit_id, request_type, request_id, created_at DESC);
 
 CREATE TABLE "document" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  "request_id" uuid REFERENCES "request" ("id"),
+  --"request_id" uuid REFERENCES "request" ("id"),
+  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "key" text NOT NULL UNIQUE,
   "bucket" text NOT NULL,
   "name" text,
@@ -122,7 +111,6 @@ CREATE TABLE "document" (
   "mime_type" text,
   "classified_type" text NOT NULL DEFAULT 'UNCLASSIFIED',
   "file_last_modified" timestamp NOT NULL,
-  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "is_processed" boolean NOT NULL DEFAULT FALSE,
   "extracted" text,
   "usage" JSONB,
@@ -157,10 +145,11 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "document_queue" FOR 
 CREATE TABLE "comment" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "request_id" uuid REFERENCES "request" ("id"),
-  "document_id" uuid REFERENCES "document" ("id"),
+  "audit_id" uuid REFERENCES "audit" ("id"),
+  "request_type" text NOT NULL,
   "user_id" uuid NOT NULL REFERENCES "user" ("id"),
   "comment" text,
+  "document_id" uuid REFERENCES "document" ("id"),
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE

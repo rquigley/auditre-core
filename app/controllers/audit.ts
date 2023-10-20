@@ -27,25 +27,34 @@ export type AuditWithRequestCounts = Audit & {
 };
 export async function getAllByOrgId(
   orgId: OrgId,
-): Promise<AuditWithRequestCounts[]> {
+  // ): Promise<AuditWithRequestCounts[]> {
+): Promise<Audit[]> {
   return await db
     .selectFrom('audit')
-    .innerJoin('request', 'audit.id', 'request.auditId')
-
-    .where('audit.orgId', '=', orgId)
-    .where('audit.isDeleted', '=', false)
-    .where('request.isDeleted', '=', false)
-    .groupBy('audit.id')
-    .selectAll('audit')
-    .select((eb) =>
-      eb.fn
-        .count<number>('request.id')
-        .filterWhere('request.status', '=', 'complete')
-        .as('numCompletedRequests'),
-    )
-    .select((eb) => eb.fn.count<number>('request.id').as('numRequests'))
-    .orderBy(['audit.year desc', 'audit.name asc'])
+    .where('orgId', '=', orgId)
+    .where('isDeleted', '=', false)
+    .selectAll()
+    .orderBy(['name'])
     .execute();
+
+  // return await db
+  //   .selectFrom('audit')
+  //   .innerJoin('request', 'audit.id', 'request.auditId')
+
+  //   .where('audit.orgId', '=', orgId)
+  //   .where('audit.isDeleted', '=', false)
+  //   .where('request.isDeleted', '=', false)
+  //   .groupBy('audit.id')
+  //   .selectAll('audit')
+  //   .select((eb) =>
+  //     eb.fn
+  //       .count<number>('request.id')
+  //       .filterWhere('request.status', '=', 'complete')
+  //       .as('numCompletedRequests'),
+  //   )
+  //   .select((eb) => eb.fn.count<number>('request.id').as('numRequests'))
+  //   .orderBy(['audit.year desc', 'audit.name asc'])
+  //   .execute();
 }
 
 export async function getAll(): Promise<Audit[]> {
