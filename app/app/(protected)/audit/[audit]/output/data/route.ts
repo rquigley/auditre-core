@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
 import { getById } from '@/controllers/audit';
-import { getAuditData } from '@/controllers/audit-output';
+import { getDataForAuditId } from '@/controllers/request-data';
 import { getCurrent } from '@/controllers/session-user';
 
 export async function GET(
@@ -17,6 +17,6 @@ export async function GET(
   if (audit.orgId !== user.orgId) {
     return notFound();
   }
-  const auditData = await getAuditData(id);
+  const auditData = await getDataForAuditId(id);
   return Response.json(auditData);
 }

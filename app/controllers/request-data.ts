@@ -1,17 +1,8 @@
-import { getAll as getAllAudits } from '@/controllers/audit';
 import { db } from '@/lib/db';
-import { getDefaultValues } from '@/lib/request-types';
+import { getAllDefaultValues, getDefaultValues } from '@/lib/request-types';
 
 import type { RequestType } from '@/lib/request-types';
-import type {
-  AuditId,
-  NewRequestData,
-  OrgId,
-  RequestData,
-  RequestDataUpdate,
-  RequestId,
-  UserId,
-} from '@/types';
+import type { AuditId, NewRequestData, RequestData, UserId } from '@/types';
 
 export async function create(
   requestData: NewRequestData,
@@ -50,6 +41,33 @@ export async function getDataForRequestType(
     }
   }
 
+  return data;
+}
+
+export async function getDataForAuditId(auditId: AuditId) {
+  const rows = await db
+    .selectFrom('requestData')
+    .select(['requestType', 'requestId', 'data', 'documentId'])
+    .distinctOn(['auditId', 'requestType', 'requestId'])
+    .where('auditId', '=', auditId)
+    .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
+    .execute();
+
+  const data = getAllDefaultValues();
+  for (const rt of Object.keys(data)) {
+    const rtData = data[rt];
+    for (const key of Object.keys(rtData)) {
+      const d = rows.find((r) => r.requestId === key);
+      if (!d) {
+        continue;
+      }
+      if (d.documentId) {
+        rtData[key] = d.documentId;
+      } else if (d.data) {
+        rtData[key] = d.data.value;
+      }
+    }
+  }
   return data;
 }
 
