@@ -73,7 +73,6 @@ export type FormField =
   | FormFieldMonth
   | FormFieldCheckbox
   | FormFieldFile;
-// export type FormFieldDefaultValue = FormField['defaultValue'];
 
 function generateFormField(config: Partial<FormField>) {
   let schema;
@@ -146,6 +145,16 @@ function generateFormField(config: Partial<FormField>) {
     formField,
     schema,
   } as const;
+}
+
+export function getAllDefaultValues() {
+  const ret: Record<string, Record<string, FormField['defaultValue']>> = {};
+
+  for (const rt of requestTypes) {
+    ret[rt.id] = getDefaultValues(rt);
+  }
+
+  return ret;
 }
 
 export function getDefaultValues(rt: Pick<RequestType, 'form'>) {
