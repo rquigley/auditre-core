@@ -103,7 +103,7 @@ export default async function Activity({
                   <span className="font-medium text-gray-900">
                     {item.actor.type === 'USER' && item.actor.name}
                   </span>{' '}
-                  {idx === 0 ? 'created the request' : 'updated the request'}
+                  updated the request
                 </p>
                 <Datetime
                   className="flex-none py-0.5 text-xs leading-5 text-gray-500"
