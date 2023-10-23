@@ -21,15 +21,16 @@ import SaveNotice from '@/components/save-notice';
 import { getSchemaForId } from '@/lib/request-types';
 import { classNames, delay, isFieldVisible } from '@/lib/util';
 
-import type { RequestWithoutSchema } from './form-container';
+import type { Request } from '@/controllers/request';
 //import type { UseFormRegister, FieldErrors } from 'react-hook-form';
 //import type { RequestTypeWithData } from '@/controllers/request';
 // import type { RequestType } from '@/lib/request-types';
 import type { DocumentId, RequestData } from '@/types';
 
 export type Props = {
-  request: RequestWithoutSchema;
+  request: Request;
   requestData: Record<string, unknown>;
+  dataMatchesConfig: boolean;
   saveData: (data: RequestData) => void;
   documents: {
     [key: string]: { id: DocumentId; doc: JSX.Element; data: JSX.Element };
@@ -39,13 +40,14 @@ export type Props = {
 export default function BasicForm({
   request,
   requestData,
+  dataMatchesConfig,
   saveData,
   documents,
 }: Props) {
   const router = useRouter();
   const [showSuccess, setShowSuccess] = useState(false);
   const schema = getSchemaForId(request.id);
-
+  console.log(requestData);
   const {
     register,
     setValue,
@@ -81,6 +83,18 @@ export default function BasicForm({
     });
   }
 
+  let enableSubmit;
+  if (formState.isSubmitting) {
+    enableSubmit = false;
+  } else if (formState.isDirty) {
+    enableSubmit = true;
+  } else if (!dataMatchesConfig) {
+    enableSubmit = true;
+  } else {
+    enableSubmit = false;
+  }
+
+  const disableSubmit = !enableSubmit;
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-12">
@@ -134,7 +148,6 @@ export default function BasicForm({
                         register={register}
                         formState={formState}
                         config={fieldConfig}
-                        request={request}
                         setValue={setValue}
                         getValues={getValues}
                         resetField={resetField}
@@ -208,7 +221,7 @@ export default function BasicForm({
           </div>
         )}
 
-        {formState.isDirty && !formState.isSubmitting ? (
+        {enableSubmit && formState.isDirty ? (
           <button
             type="button"
             className="text-sm font-semibold leading-6 text-gray-900"
@@ -219,9 +232,9 @@ export default function BasicForm({
         ) : null}
         <button
           type="submit"
-          disabled={!formState.isDirty || formState.isSubmitting}
+          disabled={enableSubmit === false}
           className={classNames(
-            !formState.isDirty || formState.isSubmitting
+            enableSubmit === false
               ? 'bg-gray-400'
               : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
             'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm transition',

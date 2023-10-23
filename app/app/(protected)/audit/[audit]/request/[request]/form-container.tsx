@@ -18,8 +18,6 @@ type Props = {
   audit: Audit;
 };
 
-export type RequestWithoutSchema = Omit<Request, 'schema'>;
-
 export default async function FormContainer({ request, user, audit }: Props) {
   async function saveData(data: Record<string, unknown>) {
     'use server';
@@ -29,8 +27,8 @@ export default async function FormContainer({ request, user, audit }: Props) {
     revalidatePath(`/audit/${audit.id}/request/${request.id}`);
   }
 
-  const requestData = await getDataForRequestType(request.auditId, request);
-
+  const { data: requestData, uninitializedFields } =
+    await getDataForRequestType(request.auditId, request);
   let documents: Record<
     string,
     { id: DocumentId; doc: JSX.Element; data: JSX.Element }
@@ -43,12 +41,11 @@ export default async function FormContainer({ request, user, audit }: Props) {
     };
   });
 
-  // You can't pass functions to client component
-  delete (request as { schema?: unknown }).schema;
   return (
     <BasicForm
-      request={request as RequestWithoutSchema}
+      request={request}
       requestData={requestData}
+      dataMatchesConfig={uninitializedFields.length === 0}
       saveData={saveData}
       documents={documents}
     />
