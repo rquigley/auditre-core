@@ -144,7 +144,6 @@ export type Change = {
 
 async function getFeed(request: Request) {
   const rawChanges = await getChangesForRequestType(request.auditId, request);
-  console.log(rawChanges);
   const rawComments = await getAllCommentsForRequest(
     request.auditId,
     request.id,
