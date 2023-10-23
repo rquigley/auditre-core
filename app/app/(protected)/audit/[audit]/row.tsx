@@ -17,8 +17,8 @@ function StatusBadge({ status }: { status: string }) {
       );
     case 'started':
       return (
-        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-          Incomplete
+        <span className="inline-flex items-center rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
+          Started
         </span>
       );
     case 'complete':
