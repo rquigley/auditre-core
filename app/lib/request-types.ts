@@ -93,7 +93,7 @@ function generateFormField(config: Partial<FormField>) {
     case 'year':
     case 'month':
       config.defaultValue ??= '';
-      schema = z.coerce.number();
+      schema = z.string().max(96);
 
       break;
     case 'checkbox':
@@ -104,7 +104,7 @@ function generateFormField(config: Partial<FormField>) {
       schema = z.string().array();
       break;
     case 'fileupload':
-      config.defaultValue ??= '';
+      config.defaultValue = '';
       if (!config.aiClassificationType) {
         throw new Error(`Fileupload 'aiClassificationType' must be provided.`);
       }
@@ -157,7 +157,9 @@ export function getAllDefaultValues() {
   return ret;
 }
 
-export function getDefaultValues(rt: Pick<RequestType, 'form'>) {
+export function getDefaultValues(
+  rt: Pick<RequestType, 'form'>,
+): Record<string, FormField['defaultValue']> {
   const ret: Record<string, FormField['defaultValue']> = {};
   for (const field of Object.keys(rt.form)) {
     ret[field] = rt.form[field].defaultValue;
@@ -171,6 +173,20 @@ export function getRequestTypeForId(id: string) {
     throw new Error(`Invalid request type: ${id}`);
   }
   return rt;
+}
+
+export function getStatusForRequestType(
+  rt: Pick<RequestType, 'form'>,
+  requestData: Record<string, unknown>,
+) {
+  let status: 'complete' | 'requested' | 'none' = 'complete';
+  for (const field of Object.keys(rt.form)) {
+    if (requestData[field] === rt.form[field].defaultValue) {
+      status = 'requested';
+      break;
+    }
+  }
+  return status;
 }
 
 export const getSchemaForId = (id: string) => getRequestTypeForId(id).schema;

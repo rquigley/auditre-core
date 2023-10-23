@@ -141,11 +141,11 @@ export function Year({
         {...register(field)}
         className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
       >
-        <option key={0} value="-">
+        <option key={0} value="">
           -
         </option>
         {years.map((year) => (
-          <option key={year.toString()} value={year}>
+          <option key={year} value={year}>
             {year}
           </option>
         ))}
@@ -185,7 +185,7 @@ export function Month({
         {...register(field)}
         className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
       >
-        <option key={0} value="-">
+        <option key={0} value="">
           -
         </option>
         {months.map((month, idx) => (

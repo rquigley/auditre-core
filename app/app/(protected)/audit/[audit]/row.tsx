@@ -1,15 +1,24 @@
 'use client';
 
 import Link from 'next/link';
+import { Suspense } from 'react';
 
-import type { Request } from '@/lib/request-types';
+import { Await } from '@/components/await';
+
+import type { ClientSafeRequest } from '@/controllers/request';
 
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
-    case 'requested':
+    case 'todo':
       return (
         <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
           Todo
+        </span>
+      );
+    case 'started':
+      return (
+        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+          Incomplete
         </span>
       );
     case 'complete':
@@ -33,11 +42,21 @@ function StatusBadge({ status }: { status: string }) {
   }
 }
 
-export default function Row({ request }: { request: Request }) {
+export default function Row({
+  request,
+  statusesP,
+}: {
+  request: ClientSafeRequest;
+  statusesP: any;
+}) {
   return (
     <tr key={request.id} className="hover:bg-gray-100">
       <td className="whitespace-nowrap pl-4 sm:pl-2 py-5 text-sm text-gray-500">
-        <StatusBadge status={request.status} />
+        <Suspense fallback={null}>
+          <Await promise={statusesP}>
+            {(s) => <StatusBadge status={s[request.id].status} />}
+          </Await>
+        </Suspense>
       </td>
       <td className="py-5 text-sm">
         <div className="text-gray-900 font-semibold">
