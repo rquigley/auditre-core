@@ -55,7 +55,7 @@ export async function saveRequestData(
       let data = null;
       let documentId = null;
       if (rt.form[key].input === 'fileupload') {
-        documentId = newData[key];
+        documentId = newData[key] || null;
       } else {
         data = { value: newData[key] };
       }

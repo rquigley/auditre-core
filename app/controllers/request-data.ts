@@ -6,7 +6,7 @@ import {
   getStatusForRequestType,
 } from '@/lib/request-types';
 
-import type { RequestType } from '@/lib/request-types';
+import type { FormField, RequestType } from '@/lib/request-types';
 import type { AuditId, NewRequestData, RequestData, UserId } from '@/types';
 
 export async function create(
@@ -46,7 +46,10 @@ export async function getDataForRequestType(
   };
 }
 
-export async function getDataForAuditId(auditId: AuditId) {
+export async function getDataForAuditId(
+  auditId: AuditId,
+  includeDefaultValues: boolean = true,
+) {
   const rows = await db
     .selectFrom('requestData')
     .select(['requestType', 'requestId', 'data', 'documentId'])
@@ -54,7 +57,22 @@ export async function getDataForAuditId(auditId: AuditId) {
     .where('auditId', '=', auditId)
     .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
     .execute();
+  let ret: Record<
+    string,
+    {
+      data: Record<string, unknown>;
+      uninitializedFields: Array<string>;
+    }
+  > = {};
+  const allDefaultValues = getAllDefaultValues();
+  for (const rt of Object.keys(allDefaultValues)) {
+    const requestRows = rows.filter((r) => r.requestType === rt);
 
+    ret[rt] = normalizeRequestData(allDefaultValues[rt], requestRows);
+  }
+
+  return ret;
+}
 
 export type DataObj = {
   requestId: string;
@@ -64,7 +82,11 @@ export type DataObj = {
 export function normalizeRequestData(
   defaultValues: Record<string, FormField['defaultValue']>,
   data: Array<DataObj>,
-) {
+): {
+  data: Record<string, unknown>;
+  //dataMatchesConfig: boolean;
+  uninitializedFields: Array<string>;
+} {
   let dataMatchesConfig = true;
   let uninitializedFields = [];
 
@@ -90,25 +112,40 @@ export function normalizeRequestData(
 
   return {
     data: ret,
-    dataMatchesConfig,
+    //dataMatchesConfig,
     uninitializedFields,
   };
 }
+
+type RequestStatus = 'todo' | 'started' | 'complete' | 'overdue';
+export async function getStatusesForAuditId(auditId: AuditId) {
+  const data = await getDataForAuditId(auditId);
+
+  let statuses: Record<
+    string,
+    { status: RequestStatus; totalTasks: number; completedTasks: number }
+  > = {};
   for (const rt of Object.keys(data)) {
-    const rtData = data[rt];
-    for (const key of Object.keys(rtData)) {
-      const d = rows.find((r) => r.requestId === key);
-      if (!d) {
-        continue;
-      }
-      if (d.documentId) {
-        rtData[key] = d.documentId;
-      } else if (d.data) {
-        rtData[key] = d.data.value;
-      }
+    const request = data[rt];
+
+    const totalTasks = Object.keys(request.data).length;
+    const completedTasks = totalTasks - request.uninitializedFields.length;
+    //status = getStatusForRequestType(getRequestTypeForId(rt), request);
+    let status: RequestStatus;
+    if (completedTasks === totalTasks) {
+      status = 'complete';
+    } else if (completedTasks > 0) {
+      status = 'started';
+    } else {
+      status = 'todo';
     }
+    statuses[rt] = {
+      status,
+      totalTasks,
+      completedTasks,
+    };
   }
-  return data;
+  return statuses;
 }
 
 type Change = {

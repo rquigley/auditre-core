@@ -47,7 +47,7 @@ export default function BasicForm({
   const router = useRouter();
   const [showSuccess, setShowSuccess] = useState(false);
   const schema = getSchemaForId(request.id);
-  console.log(requestData);
+
   const {
     register,
     setValue,
@@ -94,7 +94,6 @@ export default function BasicForm({
     enableSubmit = false;
   }
 
-  const disableSubmit = !enableSubmit;
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-12">
