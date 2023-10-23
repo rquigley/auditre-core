@@ -12,6 +12,13 @@ import {
 import type { RequestType } from '@/lib/request-types';
 import type { AuditId, OrgId, UserId } from '@/types';
 
+export type ClientSafeRequest = Pick<
+  RequestType,
+  'id' | 'name' | 'group' | 'description'
+> & {
+  auditId: AuditId;
+  orgId: OrgId;
+};
 export async function getAllByAuditId(auditId: AuditId) {
   const audit = await getAuditById(auditId);
 
@@ -21,8 +28,8 @@ export async function getAllByAuditId(auditId: AuditId) {
       auditId,
       orgId: audit.orgId,
       name: rt.name,
-      status: 'requested',
       group: rt.group,
+      description: rt.description,
     };
   });
 }
@@ -32,18 +39,19 @@ export async function saveRequestData(
   newDataRaw: any,
   actorUserId?: UserId,
 ) {
-  const requestData = await getDataForRequestType(rt.auditId, rt);
+  const { data: requestData, uninitializedFields } =
+    await getDataForRequestType(rt.auditId, rt);
 
   const newData = getSchemaForId(rt.id).parse(newDataRaw);
-
-  // TODO: perform a check against the schema to make sure the data is valid?
-  // look for keys that are not in the schema?
 
   // Ensure that all changes have the same timestamp
   const createdAt = new Date();
 
   for (const key of Object.keys(requestData)) {
-    if (newData[key] && newData[key] !== requestData[key]) {
+    if (
+      uninitializedFields.includes(key) ||
+      (newData[key] && newData[key] !== requestData[key])
+    ) {
       let data = null;
       let documentId = null;
       if (rt.form[key].input === 'fileupload') {
