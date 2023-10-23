@@ -6,7 +6,11 @@ import {
   getStatusForRequestType,
 } from '@/lib/request-types';
 
-import type { FormField, RequestType } from '@/lib/request-types';
+import type {
+  FormField,
+  RequestType,
+  RequestTypeStatus,
+} from '@/lib/request-types';
 import type { AuditId, NewRequestData, RequestData, UserId } from '@/types';
 
 export async function create(
@@ -39,7 +43,7 @@ export async function getDataForRequestType(
     .execute();
 
   const defaultValues = getDefaultValues(rt);
-  const normalizedData = normalizeRequestData(defaultValues, rows);
+  const normalizedData = normalizeRequestData(rt.id, defaultValues, rows);
   return {
     data: normalizedData.data,
     uninitializedFields: normalizedData.uninitializedFields,
@@ -68,7 +72,7 @@ export async function getDataForAuditId(
   for (const rt of Object.keys(allDefaultValues)) {
     const requestRows = rows.filter((r) => r.requestType === rt);
 
-    ret[rt] = normalizeRequestData(allDefaultValues[rt], requestRows);
+    ret[rt] = normalizeRequestData(rt, allDefaultValues[rt], requestRows);
   }
 
   return ret;
@@ -80,13 +84,14 @@ export type DataObj = {
   documentId: string | null;
 };
 export function normalizeRequestData(
+  rt: string,
   defaultValues: Record<string, FormField['defaultValue']>,
   data: Array<DataObj>,
 ): {
   data: Record<string, unknown>;
-  //dataMatchesConfig: boolean;
   uninitializedFields: Array<string>;
 } {
+  const form = getRequestTypeForId(rt).form;
   let dataMatchesConfig = true;
   let uninitializedFields = [];
 
@@ -103,7 +108,7 @@ export function normalizeRequestData(
       uninitializedFields.push(key);
 
       ret[key] = defaultValues[key];
-    } else if (d.documentId) {
+    } else if (form[key].input === 'fileupload') {
       ret[key] = d.documentId;
     } else if (d.data && 'value' in d.data) {
       ret[key] = d.data.value;
@@ -112,38 +117,16 @@ export function normalizeRequestData(
 
   return {
     data: ret,
-    //dataMatchesConfig,
     uninitializedFields,
   };
 }
 
-type RequestStatus = 'todo' | 'started' | 'complete' | 'overdue';
 export async function getStatusesForAuditId(auditId: AuditId) {
   const data = await getDataForAuditId(auditId);
 
-  let statuses: Record<
-    string,
-    { status: RequestStatus; totalTasks: number; completedTasks: number }
-  > = {};
+  let statuses: Record<string, RequestTypeStatus> = {};
   for (const rt of Object.keys(data)) {
-    const request = data[rt];
-
-    const totalTasks = Object.keys(request.data).length;
-    const completedTasks = totalTasks - request.uninitializedFields.length;
-    //status = getStatusForRequestType(getRequestTypeForId(rt), request);
-    let status: RequestStatus;
-    if (completedTasks === totalTasks) {
-      status = 'complete';
-    } else if (completedTasks > 0) {
-      status = 'started';
-    } else {
-      status = 'todo';
-    }
-    statuses[rt] = {
-      status,
-      totalTasks,
-      completedTasks,
-    };
+    statuses[rt] = getStatusForRequestType(rt, data[rt]);
   }
   return statuses;
 }

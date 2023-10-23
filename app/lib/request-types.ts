@@ -59,7 +59,7 @@ export interface FormFieldFile extends _FormFieldBase {
   input: 'fileupload';
   extensions: readonly string[];
   maxFilesizeMB: number;
-  defaultValue: string;
+  defaultValue: null;
   aiClassificationType: string;
   aiClassificationHint?: string;
   aiQuestions?: Record<string, AIQuestion>;
@@ -76,17 +76,24 @@ export type FormField =
 
 function generateFormField(config: Partial<FormField>) {
   let schema;
+  let validationSchema;
   switch (config.input) {
     case 'text':
       config.defaultValue ??= '';
       schema = z.string().max(512);
+      validationSchema = z.string().min(1);
+
     case 'textarea':
       config.defaultValue ??= '';
       schema = z.string().max(10 * 1024);
+      validationSchema = z.string().min(1);
+
       break;
     case 'boolean':
       config.defaultValue ??= false;
       schema = z.coerce.boolean();
+      validationSchema = z.coerce.boolean();
+
       break;
 
     case 'date':
@@ -94,6 +101,7 @@ function generateFormField(config: Partial<FormField>) {
     case 'month':
       config.defaultValue ??= '';
       schema = z.string().max(96);
+      validationSchema = z.string().min(1);
 
       break;
     case 'checkbox':
@@ -102,15 +110,17 @@ function generateFormField(config: Partial<FormField>) {
       }
       config.defaultValue ??= [];
       schema = z.string().array();
+      validationSchema = z.string().array().nonempty();
       break;
     case 'fileupload':
-      config.defaultValue = '';
+      config.defaultValue = null;
       if (!config.aiClassificationType) {
         throw new Error(`Fileupload 'aiClassificationType' must be provided.`);
       }
       config.maxFilesizeMB = 10;
       config.extensions ??= ['PDF', 'DOC', 'DOCX', 'XLSX', 'XLS', 'CSV'];
-      schema = z.string().max(256);
+      schema = z.string().max(256).nullable();
+      validationSchema = z.string().min(1);
       break;
     case undefined:
       throw new Error(`'input' must be provided.`);
@@ -144,6 +154,7 @@ function generateFormField(config: Partial<FormField>) {
   return {
     formField,
     schema,
+    validationSchema,
   } as const;
 }
 
@@ -175,21 +186,54 @@ export function getRequestTypeForId(id: string) {
   return rt;
 }
 
+type RequestStatus = 'todo' | 'started' | 'complete' | 'overdue';
+
+export type RequestTypeStatus = {
+  status: RequestStatus;
+  totalTasks: number;
+  completedTasks: number;
+};
 export function getStatusForRequestType(
-  rt: Pick<RequestType, 'form'>,
-  requestData: Record<string, unknown>,
-) {
-  let status: 'complete' | 'requested' | 'none' = 'complete';
-  for (const field of Object.keys(rt.form)) {
-    if (requestData[field] === rt.form[field].defaultValue) {
-      status = 'requested';
-      break;
+  rt: string,
+  requestData: { data: Record<string, unknown>; uninitializedFields: string[] },
+): RequestTypeStatus {
+  let status: RequestStatus;
+  const totalTasks = Object.keys(requestData.data).length;
+  let completedTasks;
+
+  if (requestData.uninitializedFields.length > 0) {
+    status = 'todo';
+    completedTasks = 0;
+  } else {
+    const validationSchema = getValidationSchemaForId(rt);
+    const res = validationSchema.safeParse(requestData.data);
+    let numIssues = 0;
+    if (!res.success) {
+      numIssues = res.error.issues.length;
+      // if (rt === 'asc-606-analysis') {
+      //   console.log(res.error.issues);
+      // }
+    }
+    completedTasks = totalTasks - numIssues;
+    if (numIssues === 0) {
+      status = 'complete';
+    } else if (completedTasks > 0) {
+      status = 'started';
+    } else {
+      status = 'todo';
     }
   }
-  return status;
+
+  return {
+    status,
+    completedTasks,
+    totalTasks,
+  };
 }
 
 export const getSchemaForId = (id: string) => getRequestTypeForId(id).schema;
+export const getValidationSchemaForId = (id: string) =>
+  getRequestTypeForId(id).validationSchema;
 
 interface RequestTypeConfig {
   id: string;
@@ -208,6 +252,7 @@ export interface RequestType {
   form: Record<string, FormField>;
   completeOnSet: boolean;
   schema: ZodTypeAny;
+  validationSchema: ZodTypeAny;
 }
 function generateRequestType(
   config: RequestTypeConfig,
@@ -215,13 +260,15 @@ function generateRequestType(
 ): RequestType {
   let form: Record<string, FormField> = {};
   let schemas: Record<string, ZodTypeAny> = {};
+  let validationSchemas: Record<string, ZodTypeAny> = {};
   for (const [field, val] of Object.entries(formConfig)) {
     if (val === undefined) {
       continue;
     }
-    const { formField, schema } = generateFormField(val);
+    const { formField, schema, validationSchema } = generateFormField(val);
     form[field] = formField;
     schemas[field] = schema;
+    validationSchemas[field] = validationSchema;
   }
   return {
     id: config.id,
@@ -231,6 +278,7 @@ function generateRequestType(
     form,
     completeOnSet: true,
     schema: z.object(schemas),
+    validationSchema: z.object(validationSchemas),
   } as const;
 }
 
@@ -617,18 +665,18 @@ export const requestTypes = [
     },
   ),
 
-  generateRequestType(
-    {
-      id: 'user-requested',
-      name: '???',
-      group: 'Other',
-    },
-    {
-      value: {
-        input: 'textarea',
-      },
-    },
-  ),
+  // generateRequestType(
+  //   {
+  //     id: 'user-requested',
+  //     name: '???',
+  //     group: 'Other',
+  //   },
+  //   {
+  //     value: {
+  //       input: 'textarea',
+  //     },
+  //   },
+  // ),
 ] as const;
 
 //export type RequestTypeKey = keyof typeof requestTypes;
