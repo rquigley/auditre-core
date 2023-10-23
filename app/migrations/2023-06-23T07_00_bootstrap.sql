@@ -86,20 +86,6 @@ CREATE TABLE "audit" (
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "audit" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
-
-CREATE TABLE "request_data" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
-  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "request_type" text NOT NULL,
-  "request_id" text NOT NULL,
-  "data" jsonb,
-  "document_id" uuid REFERENCES "document" ("id"),
-  "actor_user_id" uuid REFERENCES "user" ("id"),
-  "created_at" timestamptz DEFAULT now() NOT NULL
-);
-CREATE INDEX idx_request_data_1 ON request_data (audit_id, request_type, request_id, created_at DESC);
-
 CREATE TABLE "document" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   --"request_id" uuid REFERENCES "request" ("id"),
@@ -141,6 +127,19 @@ CREATE TABLE "document_queue" (
   "payload" text
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "document_queue" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
+
+CREATE TABLE "request_data" (
+  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
+  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
+  "request_type" text NOT NULL,
+  "request_id" text NOT NULL,
+  "data" jsonb,
+  "document_id" uuid REFERENCES "document" ("id"),
+  "actor_user_id" uuid REFERENCES "user" ("id"),
+  "created_at" timestamptz DEFAULT now() NOT NULL
+);
+CREATE INDEX idx_request_data_1 ON request_data (audit_id, request_type, request_id, created_at DESC);
 
 CREATE TABLE "comment" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
