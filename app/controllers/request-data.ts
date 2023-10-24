@@ -26,7 +26,6 @@ export async function create(
 export async function getDataForRequestType(
   auditId: AuditId,
   rt: Pick<RequestType, 'id' | 'form'>,
-  //includeDefaultValues: boolean = true,
 ): Promise<{
   data: Record<string, unknown>;
 

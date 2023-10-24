@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import { getById } from '@/controllers/audit';
+import { getByIdForClient } from '@/controllers/audit';
 import { getCurrent } from '@/controllers/session-user';
 import { AuditHeader } from '../audit-header';
 import { DeleteAuditButton } from './delete-audit-button';
@@ -12,7 +12,7 @@ export default async function AuditPage({
   params: { audit: string };
 }) {
   const user = await getCurrent();
-  const audit = await getById(id);
+  const audit = await getByIdForClient(id);
 
   if (audit.orgId !== user.orgId) {
     return notFound();

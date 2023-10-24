@@ -1,16 +1,13 @@
 import { notFound } from 'next/navigation';
 
-import { getById } from '@/controllers/audit';
+import { getByIdForClient } from '@/controllers/audit';
 import { getAuditData } from '@/controllers/audit-output';
 import { getAllByAuditId } from '@/controllers/document';
 import { getCurrent } from '@/controllers/session-user';
-import { clientSafe } from '@/lib/util';
 import { AuditHeader } from '../audit-header';
 import DataModal from './data-modal';
 import Row from './row';
 import { ViewDataButton } from './view-data-button';
-
-import type { ClientSafeDocument } from '@/types';
 
 export default async function AuditPage({
   params: { audit: id },
@@ -18,7 +15,7 @@ export default async function AuditPage({
   params: { audit: string };
 }) {
   const user = await getCurrent();
-  const audit = await getById(id);
+  const audit = await getByIdForClient(id);
 
   const data = await getAuditData(audit.id);
   if (audit.orgId !== user.orgId) {
@@ -26,11 +23,6 @@ export default async function AuditPage({
   }
 
   const documents = await getAllByAuditId(id);
-  const clientSafeDocuments = clientSafe(documents) as ClientSafeDocument[] &
-    {
-      // auditName?: string;
-      requestName?: string;
-    }[];
 
   return (
     <>
@@ -70,8 +62,12 @@ export default async function AuditPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {clientSafeDocuments.map((document) => (
-                  <Row document={document} key={document.id} />
+                {documents.map((document) => (
+                  <Row
+                    auditId={audit.id}
+                    document={document}
+                    key={document.id}
+                  />
                 ))}
               </tbody>
             </table>

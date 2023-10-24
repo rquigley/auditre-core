@@ -52,26 +52,33 @@ export async function getAllByOrgId(orgId: OrgId): Promise<Document[]> {
     .execute();
 }
 
-export async function getAllByAuditId(auditId: AuditId): Promise<Document[]> {
-  const audit = await getAuditById(auditId);
-  const requests = await getAllRequestsByAuditId(auditId);
-  let documents: DocumentId[] = [];
-  for (const request of requests) {
-    Object.keys(request.data || {}).forEach((key) => {
-      if (key.indexOf('ocumentId') !== -1 && request.data[key]) {
-        documents.push(request.data[key]);
-      }
-    });
-  }
-  if (!documents.length) {
-    return [];
-  }
+export type DocumentWithRequestData = Pick<
+  Document,
+  'id' | 'createdAt' | 'name'
+> & {
+  requestType: string;
+  requestId: string;
+};
+export async function getAllByAuditId(
+  auditId: AuditId,
+): Promise<DocumentWithRequestData[]> {
   return await db
     .selectFrom('document')
-    .where('orgId', '=', audit.orgId)
-    .where('isDeleted', '=', false)
-    .where('id', 'in', documents)
-    .selectAll()
+    .innerJoin('requestData', 'document.id', 'requestData.documentId')
+    .select([
+      'document.id',
+      'document.createdAt',
+      'document.name',
+      'requestData.requestType',
+      'requestData.requestId',
+    ])
+    .distinctOn([
+      'requestData.auditId',
+      'requestData.requestType',
+      'requestData.requestId',
+    ])
+    .where('requestData.auditId', '=', auditId)
+    .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
     .execute();
 }
 
