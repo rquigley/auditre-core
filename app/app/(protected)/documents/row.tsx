@@ -4,16 +4,9 @@ import Link from 'next/link';
 
 import Datetime from '@/components/datetime';
 
-import type { ClientSafeDocument } from '@/types';
+import type { OrgDocument } from '@/controllers/document';
 
-export default function Row({
-  document,
-}: {
-  document: ClientSafeDocument & {
-    auditName?: string;
-    requestName?: string;
-  };
-}) {
+export default function Row({ document }: { document: OrgDocument }) {
   return (
     <tr key={document.id} className="hover:bg-gray-100">
       <td className="py-5 pl-4 sm:pl-2 pr-3 text-sm">
@@ -50,19 +43,17 @@ export default function Row({
       </td>
 
       <td className="relative whitespace-nowrap py-5 pr-4 sm:pr-2 text-right text-sm">
-        {document.requestId && (
+        {document.auditId && (
           <>
             <span className="text-xs">
               {document.auditName}
               <br />
-              {document.requestName ? (
-                <Link
-                  href={`/request/${document.requestId}`}
-                  className="text-sky-700 hover:text-sky-700"
-                >
-                  {document.requestName}
-                </Link>
-              ) : null}
+              <Link
+                href={`/audit/${document.auditId}/request/${document.requestType}`}
+                className="text-sky-700 hover:text-sky-700"
+              >
+                {document.requestType}
+              </Link>
             </span>
           </>
         )}

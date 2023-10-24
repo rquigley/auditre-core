@@ -1,37 +1,34 @@
 import Header from '@/components/header';
-import { getById as getAuditById } from '@/controllers/audit';
+// import { getById as getAuditById } from '@/controllers/audit';
 import { getAllByOrgId } from '@/controllers/document';
-import { getById as getRequestById } from '@/controllers/request';
+// import { getById as getRequestById } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
-import { clientSafe } from '@/lib/util';
 import Row from './row';
-
-import type { ClientSafeDocument, Document } from '@/types';
 
 export default async function DocumentsPage() {
   const user = await getCurrent();
   const documents = await getAllByOrgId(user.orgId);
 
-  for (const document of documents) {
-    if (document.requestId) {
-      const request = await getRequestById(document.requestId);
-      const audit = await getAuditById(request.auditId, {
-        includeDeleted: true,
-      });
-      // @ts-ignore
-      document.auditName = audit && !audit.isDeleted ? audit.name : '';
-      // @ts-ignore
-      document.requestName = audit && !audit.isDeleted ? request.name : '';
-    }
-    // TODO: look into FF and dayjs date handling.
-    // @ts-ignore
-    document.createdAt = document.createdAt.toString();
-  }
-  const clientSafeDocuments = clientSafe(documents) as ClientSafeDocument[] &
-    {
-      auditName?: string;
-      requestName?: string;
-    }[];
+  // for (const document of documents) {
+  //   if (document.requestId) {
+  //     const request = await getRequestById(document.requestId);
+  //     const audit = await getAuditById(request.auditId, {
+  //       includeDeleted: true,
+  //     });
+  //     // @ts-ignore
+  //     document.auditName = audit && !audit.isDeleted ? audit.name : '';
+  //     // @ts-ignore
+  //     document.requestName = audit && !audit.isDeleted ? request.name : '';
+  //   }
+  //   // TODO: look into FF and dayjs date handling.
+  //   // @ts-ignore
+  //   document.createdAt = document.createdAt.toString();
+  // }
+  // const clientSafeDocuments = clientSafe(documents) as ClientSafeDocument[] &
+  //   {
+  //     auditName?: string;
+  //     requestName?: string;
+  //   }[];
 
   return (
     <>
@@ -70,7 +67,7 @@ export default async function DocumentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {clientSafeDocuments.map((document) => (
+                {documents.map((document) => (
                   <Row document={document} key={document.id} />
                 ))}
               </tbody>
