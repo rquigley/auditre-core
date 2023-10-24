@@ -18,7 +18,7 @@ import {
   Year,
 } from '@/components/form-fields';
 import SaveNotice from '@/components/save-notice';
-import { getSchemaForId } from '@/lib/request-types';
+import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
 import { classNames, delay, isFieldVisible } from '@/lib/util';
 
 import type { Request } from '@/controllers/request';
@@ -108,12 +108,8 @@ export default function BasicForm({
           <div className=" grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             {Object.keys(request.form).map((field) => {
               const fieldConfig = request.form[field];
-              const isVisibleA = setupWatchFields(
-                field,
-                getValues(),
-                request.form,
-                watch,
-              );
+              const deps = getFieldDependencies(field, request.form);
+              const isVisibleA = deps.length ? watch(deps) : [true];
               const isVisible = isFieldVisible(field, isVisibleA, request.form);
 
               // if (!isVisible) {
@@ -243,43 +239,4 @@ export default function BasicForm({
       </div>
     </form>
   );
-}
-
-export function setupWatchFields(
-  field: string,
-  values: any,
-  formConfig: any,
-  watch: any,
-): Array<boolean> {
-  let watchFields = [];
-  // Don't bother for static fields
-  if (!formConfig[field].dependsOn) {
-    return [true];
-  }
-  while (true) {
-    let fieldConfig = formConfig[field];
-    if (!fieldConfig) {
-      throw new Error(
-        `Field "${field}" not found in form config, available fields: ${Object.keys(
-          formConfig,
-        ).join(', ')}`,
-      );
-    }
-
-    if (fieldConfig.dependsOn) {
-      let dependsOnField;
-      if (typeof fieldConfig.dependsOn === 'object') {
-        dependsOnField = fieldConfig.dependsOn.field;
-      } else {
-        dependsOnField = fieldConfig.dependsOn;
-      }
-
-      watchFields.push(dependsOnField);
-
-      field = dependsOnField;
-    } else {
-      break;
-    }
-  }
-  return watch(watchFields);
 }

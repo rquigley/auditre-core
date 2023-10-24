@@ -178,7 +178,7 @@ export function getDefaultValues(
   return ret;
 }
 
-export function getRequestTypeForId(id: string) {
+export function getRequestTypeForId(id: string): RequestType {
   const rt = requestTypes.find((rt) => rt.id === id);
   if (!rt) {
     throw new Error(`Invalid request type: ${id}`);
@@ -198,21 +198,19 @@ export function getStatusForRequestType(
   requestData: { data: Record<string, unknown>; uninitializedFields: string[] },
 ): RequestTypeStatus {
   let status: RequestStatus;
-  const totalTasks = Object.keys(requestData.data).length;
+  const validationSchema = getValidationSchemaForId(rt, requestData.data);
+  const parsedRes = validationSchema.safeParse(requestData.data);
+
+  const totalTasks = Object.keys(validationSchema.shape).length;
   let completedTasks;
 
   if (requestData.uninitializedFields.length > 0) {
     status = 'todo';
     completedTasks = 0;
   } else {
-    const validationSchema = getValidationSchemaForId(rt);
-    const res = validationSchema.safeParse(requestData.data);
     let numIssues = 0;
-    if (!res.success) {
-      numIssues = res.error.issues.length;
-      // if (rt === 'asc-606-analysis') {
-      //   console.log(res.error.issues);
-      // }
+    if (!parsedRes.success) {
+      numIssues = parsedRes.error.issues.length;
     }
     completedTasks = totalTasks - numIssues;
     if (numIssues === 0) {
@@ -231,9 +229,88 @@ export function getStatusForRequestType(
   };
 }
 
+export function getFieldDependencies(
+  field: string,
+  formConfig: Record<string, FormField>,
+) {
+  let deps = [];
+
+  while (true) {
+    let fieldConfig = formConfig[field];
+    if (!fieldConfig) {
+      throw new Error(`Field "${field}" not found in form config`);
+    }
+
+    if (fieldConfig.dependsOn) {
+      let dependsOnField;
+      if (typeof fieldConfig.dependsOn === 'object') {
+        dependsOnField = fieldConfig.dependsOn.field;
+      } else {
+        dependsOnField = fieldConfig.dependsOn;
+      }
+
+      deps.push(dependsOnField);
+
+      field = dependsOnField;
+    } else {
+      break;
+    }
+  }
+  return deps;
+}
+
+export function isFieldEnabled(
+  field: string,
+  formConfig: Record<string, FormField>,
+  data: Record<string, unknown>,
+) {
+  const deps = getFieldDependencies(field, formConfig);
+  if (deps.length === 0) {
+    return true;
+  }
+
+  let isFieldEnabled = true;
+
+  for (let n = 0, len = deps.length; n < len; n++) {
+    const parentField = deps.shift() as string;
+    const parentVal = data[parentField];
+    if (typeof parentVal !== 'boolean') {
+      throw new Error(`Field "${parentField}" must be a boolean`);
+    }
+    const fieldConfig = formConfig[field];
+    if (
+      typeof fieldConfig.dependsOn === 'object' &&
+      fieldConfig.dependsOn.state === false
+    ) {
+      isFieldEnabled = !parentVal;
+    } else if (parentVal === false) {
+      isFieldEnabled = false;
+    }
+    if (typeof fieldConfig.dependsOn === 'object') {
+      field = fieldConfig.dependsOn.field;
+    } else if (fieldConfig.dependsOn) {
+      field = fieldConfig.dependsOn;
+    }
+  }
+  return isFieldEnabled;
+}
+
 export const getSchemaForId = (id: string) => getRequestTypeForId(id).schema;
-export const getValidationSchemaForId = (id: string) =>
-  getRequestTypeForId(id).validationSchema;
+
+export function getValidationSchemaForId(
+  id: string,
+  data: Record<string, unknown>,
+) {
+  const request = getRequestTypeForId(id);
+  let validationSchema = { ...request.validationSchema };
+
+  for (const field of Object.keys(request.form)) {
+    if (!isFieldEnabled(field, request.form, data)) {
+      delete validationSchema[field];
+    }
+  }
+  return z.object(validationSchema);
+}
 
 interface RequestTypeConfig {
   id: string;
@@ -251,8 +328,15 @@ export interface RequestType {
   description: string;
   form: Record<string, FormField>;
   completeOnSet: boolean;
+
+  // used within an individual request to validate each field
+  // TODO: We can likely combine this with validationSchema
   schema: ZodTypeAny;
-  validationSchema: ZodTypeAny;
+
+  // Schema for completeness of the request.
+  // This schema isn't built until runtime because fields can be disabled
+  // based on the overall state of the form.
+  validationSchema: Record<string, ZodTypeAny>;
 }
 function generateRequestType(
   config: RequestTypeConfig,
@@ -260,15 +344,19 @@ function generateRequestType(
 ): RequestType {
   let form: Record<string, FormField> = {};
   let schemas: Record<string, ZodTypeAny> = {};
-  let validationSchemas: Record<string, ZodTypeAny> = {};
+  let validationSchema: Record<string, ZodTypeAny> = {};
   for (const [field, val] of Object.entries(formConfig)) {
     if (val === undefined) {
       continue;
     }
-    const { formField, schema, validationSchema } = generateFormField(val);
+    const {
+      formField,
+      schema,
+      validationSchema: vSchema,
+    } = generateFormField(val);
     form[field] = formField;
     schemas[field] = schema;
-    validationSchemas[field] = validationSchema;
+    validationSchema[field] = vSchema;
   }
   return {
     id: config.id,
@@ -278,7 +366,7 @@ function generateRequestType(
     form,
     completeOnSet: true,
     schema: z.object(schemas),
-    validationSchema: z.object(validationSchemas),
+    validationSchema,
   } as const;
 }
 
