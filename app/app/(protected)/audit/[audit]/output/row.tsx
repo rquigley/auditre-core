@@ -4,15 +4,14 @@ import Link from 'next/link';
 
 import Datetime from '@/components/datetime';
 
-import type { ClientSafeDocument } from '@/types';
+import type { DocumentWithRequestData } from '@/controllers/document';
 
 export default function Row({
+  auditId,
   document,
 }: {
-  document: ClientSafeDocument & {
-    auditName?: string;
-    requestName?: string;
-  };
+  auditId: string;
+  document: DocumentWithRequestData;
 }) {
   return (
     <tr key={document.id} className="hover:bg-gray-100">
@@ -53,12 +52,11 @@ export default function Row({
         {document.requestId && (
           <>
             <span className="text-xs">
-              <br />
               <Link
-                href={`/request/${document.requestId}`}
+                href={`/audit/${auditId}/request/${document.requestType}`}
                 className="text-sky-700 hover:text-sky-700"
               >
-                {document.requestName}
+                {document.requestType}
               </Link>
             </span>
           </>
