@@ -34,13 +34,21 @@ export async function getAllByAuditId(auditId: AuditId) {
   });
 }
 
-export async function saveRequestData(
-  rt: Request,
-  newDataRaw: any,
-  actorUserId?: UserId,
-) {
+export async function saveRequestData({
+  auditId,
+  requestType,
+  data: newDataRaw,
+  actorUserId,
+}: {
+  auditId: AuditId;
+  requestType: string;
+  data: Record<string, unknown>;
+  actorUserId?: UserId;
+}) {
+  const audit = await getAuditById(auditId);
+  const rt = getRequestTypeForId(requestType);
   const { data: requestData, uninitializedFields } =
-    await getDataForRequestType(rt.auditId, rt);
+    await getDataForRequestType(auditId, rt);
 
   const newData = getSchemaForId(rt.id).parse(newDataRaw);
 
@@ -60,8 +68,8 @@ export async function saveRequestData(
         data = { value: newData[key] };
       }
       await addRequestData({
-        auditId: rt.auditId,
-        orgId: rt.orgId,
+        auditId: auditId,
+        orgId: audit.orgId,
         requestType: rt.id,
         requestId: key,
         data,

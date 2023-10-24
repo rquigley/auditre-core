@@ -79,7 +79,6 @@ CREATE TABLE "audit" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "name" text,
-  "year" numeric(4,0),
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE

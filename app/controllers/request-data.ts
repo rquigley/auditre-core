@@ -50,6 +50,22 @@ export async function getDataForRequestType(
   };
 }
 
+export async function getDataForRequestAttribute(
+  auditId: AuditId,
+  requestType: string,
+  requestId: string,
+) {
+  return await db
+    .selectFrom('requestData')
+    .select(['data', 'documentId'])
+    .where('auditId', '=', auditId)
+    .where('requestType', '=', requestType)
+    .where('requestId', '=', requestId)
+    .orderBy(['createdAt desc'])
+    .limit(1)
+    .executeTakeFirst();
+}
+
 export async function getDataForAuditId(
   auditId: AuditId,
   includeDefaultValues: boolean = true,

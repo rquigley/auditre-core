@@ -15,14 +15,19 @@ import type { Audit, DocumentId, User } from '@/types';
 type Props = {
   request: Request;
   user: User;
-  audit: Audit;
+  audit: { id: Audit['id'] };
 };
 
 export default async function FormContainer({ request, user, audit }: Props) {
   async function saveData(data: Record<string, unknown>) {
     'use server';
 
-    await saveRequestData(request, data, user.id);
+    await saveRequestData({
+      auditId: audit.id,
+      requestType: request.id,
+      data: data,
+      actorUserId: user.id,
+    });
 
     revalidatePath(`/audit/${audit.id}/request/${request.id}`);
   }

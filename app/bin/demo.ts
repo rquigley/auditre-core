@@ -3,6 +3,7 @@ import { program } from 'commander';
 import { create as createAudit } from '@/controllers/audit';
 import { create as createInvitation } from '@/controllers/invitation';
 import { create as createOrg } from '@/controllers/org';
+import { saveRequestData } from '@/controllers/request';
 import { db } from '@/lib/db';
 
 import type { OrgId } from '@/types';
@@ -22,11 +23,50 @@ async function setupAccount(): Promise<OrgId> {
 }
 
 async function setupAudit(orgId: OrgId) {
-  await createAudit({
+  const audit = await createAudit({
     orgId,
     name: 'Initial Audit',
-    year: 2023,
   });
+
+  let rdP = [
+    saveRequestData({
+      auditId: audit.id,
+      requestType: 'basic-info',
+      data: {
+        businessName: 'AuditRe, Inc.',
+        description:
+          'Audit readiness for startups and small businesses. They generate audit-ready financial statements in a matter of days instead of months – at a fraction of the cost – by bringing technology to the traditional audit process.',
+        businessModels: ['SOFTWARE_AS_A_SERVICE'],
+        chiefDecisionMaker: 'Jason Gordon',
+      },
+    }),
+    saveRequestData({
+      auditId: audit.id,
+      requestType: 'audit-info',
+      data: {
+        year: '2021',
+        fiscalYearMonthEnd: '12',
+        hasBeenAudited: false,
+      },
+    }),
+    saveRequestData({
+      auditId: audit.id,
+      requestType: 'asc-606-analysis',
+      data: {
+        hasCompletedASC606Analysis: false,
+        revenueRecognitionProcess: 'We do not recognize reveune yet',
+      },
+    }),
+    saveRequestData({
+      auditId: audit.id,
+      requestType: 'leases',
+      data: {
+        hasLeases: false,
+        didPerformASC842Analysis: false,
+      },
+    }),
+  ];
+  await Promise.all(rdP);
 }
 
 async function main() {

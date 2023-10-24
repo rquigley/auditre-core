@@ -22,8 +22,10 @@ import {
   getById as getDocumentById,
   process as processDocument,
 } from '@/controllers/document';
+import { create as addRequestData } from '@/controllers/request-data';
 import { getCurrent } from '@/controllers/session-user';
 import { getPresignedUrl } from '@/lib/aws';
+import { getRequestTypeForId } from '@/lib/request-types';
 
 import type { AuditId, DocumentId, S3File } from '@/types';
 
@@ -51,21 +53,30 @@ export async function deletePostAuthUrl() {
 
 const newAuditSchema = z.object({
   name: z.string().min(3).max(72),
-  year: z.coerce
-    .number()
-    .min(1970, 'The year must be at least 1970')
-    .max(2050, 'The year must be before 2050'),
+  year: z.string().min(1).max(4),
 });
 
-export async function createAudit(rawData: { name: string; year: number }) {
+export async function createAudit(rawData: { name: string; year: string }) {
   const user = await getCurrent();
 
   const data = newAuditSchema.parse(rawData);
 
   const audit = await _createAudit({
     name: data.name,
-    year: data.year,
     orgId: user.orgId,
+  });
+
+  const rt = getRequestTypeForId('audit-info');
+  if (rt.form.year === undefined) {
+    throw new Error('Request config for audit-info is missing year field');
+  }
+  await addRequestData({
+    auditId: audit.id,
+    orgId: audit.orgId,
+    requestType: 'audit-info',
+    requestId: 'year',
+    data: { value: data.year },
+    actorUserId: user.id,
   });
 
   revalidatePath('/');
