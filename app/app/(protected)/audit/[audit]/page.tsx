@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Fragment } from 'react';
 
-import { getById } from '@/controllers/audit';
+import { getByIdForClient } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/request';
 import { getStatusesForAuditId } from '@/controllers/request-data';
 import { getCurrent } from '@/controllers/session-user';
@@ -14,7 +14,7 @@ export default async function AuditPage({
   params: { audit: string };
 }) {
   const user = await getCurrent();
-  const audit = await getById(id);
+  const audit = await getByIdForClient(id);
 
   if (audit.orgId !== user.orgId) {
     return notFound();

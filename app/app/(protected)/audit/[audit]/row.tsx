@@ -47,7 +47,7 @@ export default function Row({
   statusesP,
 }: {
   request: ClientSafeRequest;
-  statusesP: any;
+  statusesP: Promise<Record<string, { status: string }>>;
 }) {
   return (
     <tr key={request.id} className="hover:bg-gray-100">

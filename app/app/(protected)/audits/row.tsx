@@ -1,8 +1,10 @@
 'use client';
 
-import Datetime from '@/components/datetime';
-import type { AuditWithRequestCounts } from '@/controllers/audit';
 import Link from 'next/link';
+
+import Datetime from '@/components/datetime';
+
+import type { AuditWithRequestCounts } from '@/controllers/audit';
 
 export default function Row({ audit }: { audit: AuditWithRequestCounts }) {
   const pctComplete = (audit.numCompletedRequests / audit.numRequests) * 100;

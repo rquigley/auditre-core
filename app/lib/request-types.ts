@@ -153,7 +153,7 @@ function generateFormField(config: Partial<FormField>) {
   }
   return {
     formField,
-    schema,
+    schema: schema.optional(),
     validationSchema,
   } as const;
 }
