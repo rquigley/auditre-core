@@ -43,12 +43,28 @@ export async function getById(id: DocumentId): Promise<Document> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getAllByOrgId(orgId: OrgId): Promise<Document[]> {
+export type OrgDocument = Pick<Document, 'id' | 'createdAt' | 'name'> & {
+  requestType: string | null;
+  requestId: string | null;
+  auditId: string | null;
+  auditName: string | null;
+};
+export async function getAllByOrgId(orgId: OrgId): Promise<OrgDocument[]> {
   return await db
     .selectFrom('document')
-    .where('orgId', '=', orgId)
-    .where('isDeleted', '=', false)
-    .selectAll()
+    .leftJoin('requestData', 'document.id', 'requestData.documentId')
+    .leftJoin('audit', 'requestData.auditId', 'audit.id')
+    .select([
+      'document.id',
+      'document.createdAt',
+      'document.name',
+      'audit.id as auditId',
+      'audit.name as auditName',
+      'requestData.requestType',
+      'requestData.requestId',
+    ])
+    .where('document.orgId', '=', orgId)
+    .where('document.isDeleted', '=', false)
     .execute();
 }
 
