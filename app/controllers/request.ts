@@ -50,7 +50,7 @@ export async function saveRequestData(
   for (const key of Object.keys(requestData)) {
     if (
       uninitializedFields.includes(key) ||
-      (newData[key] && newData[key] !== requestData[key])
+      (newData[key] !== undefined && newData[key] !== requestData[key])
     ) {
       let data = null;
       let documentId = null;
