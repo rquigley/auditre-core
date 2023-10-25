@@ -5,7 +5,7 @@ import { getByEmail } from './user';
 
 import type { User } from '@/types';
 
-export async function _getCurrent(): Promise<User> {
+export async function getCurrent(): Promise<User> {
   const session = await auth();
   if (!session) {
     throw new Error('No session found');
@@ -16,11 +16,14 @@ export async function _getCurrent(): Promise<User> {
   // which does not include the id. Use email for now.
   const email = session.user?.email;
   if (email) {
-    const user = await getByEmail(email);
+    const user = await getByEmailCached(email);
     if (user) {
       return user;
     }
   }
   throw new Error('No session found');
 }
-export const getCurrent = cache(() => _getCurrent());
+
+const getByEmailCached = cache(async (email: string) => {
+  return await getByEmail(email, { comment: 'getByEmailCached' });
+});
