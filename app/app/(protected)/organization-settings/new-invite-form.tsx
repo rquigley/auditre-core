@@ -1,9 +1,9 @@
 'use client';
 
 import {
-  // @ts-ignore
+  // @ts-expect-error
   experimental_useFormState as useFormState,
-  // @ts-ignore
+  // @ts-expect-error
   experimental_useFormStatus as useFormStatus,
 } from 'react-dom';
 

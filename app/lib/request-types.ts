@@ -492,7 +492,7 @@ export const requestTypes = [
         input: 'textarea',
         label: 'Please describe the company’s revenue recognition process',
         description:
-          'This is a summary of how your company determines whether or not to recognize revenue and the associated COGS. For example, the company’s revenue is direct from the sale of product/service. The company recognizes revenue when the product/service has been shipped/executed to the customer.',
+          'Provide a summary of how your company determines whether or not to recognize revenue and the associated COGS. For example, the company’s revenue is direct from the sale of product/service. The company recognizes revenue when the product/service has been shipped/executed to the customer.',
         defaultValue: '',
         dependsOn: { field: 'hasCompletedASC606Analysis', state: false },
       },
@@ -586,6 +586,8 @@ export const requestTypes = [
       postAuditChanges: {
         input: 'textarea',
         label: 'What are those changes?',
+        description:
+          'Provide a high-level overview of any material changes. Examples include equity or debt financing, an acquisition, entering into a significant contract or lawsuit settlement.',
         dependsOn: 'hasPostAuditChanges',
       },
     },
@@ -605,7 +607,9 @@ export const requestTypes = [
       },
       legalMatters: {
         input: 'textarea',
-        label: 'Please disclose the outstanding material legal matters',
+        label: 'What are those legal matters?',
+        description:
+          'Disclose any outstanding lawsuits known to the business, that would result in a negative outcome if found liable. There are many examples of lawsuits, with the most common lawsuits being: breach of contract claims, employment disputes, intellectual property disputes, shareholder lawsuits, and class actions (typically from customers).',
         dependsOn: 'hasLegalMatters',
       },
     },
@@ -625,6 +629,9 @@ export const requestTypes = [
       relatedPartyTransactions: {
         input: 'textarea',
         label: 'Please disclose the related party transactions',
+        description: `Third-party transactions refer to agreements between two parties who have a preexisting business relationship. Commonly related parties are typically related to shareholders. Two common examples of a related-party transaction are:
+        - If you used shareholders company to perform a service for your business
+        - If you raised debt from an existing shareholder`,
         dependsOn: 'hasRelatedPartyTransactions',
       },
     },

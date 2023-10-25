@@ -20,7 +20,7 @@ export default function LoginButton({
 
   useEffect(() => {
     const errorMessage = Array.isArray(error) ? error.pop() : error;
-    // @ts-ignore
+    // @ts-expect-error
     errorMessage && toast.error(errorMessage);
   }, [error]);
 

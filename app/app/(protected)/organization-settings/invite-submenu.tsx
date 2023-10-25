@@ -4,9 +4,9 @@ import { Menu, Transition } from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
 import { Fragment } from 'react';
 import {
-  // @ts-ignore
+  // @ts-expect-error
   experimental_useFormState as useFormState,
-  // @ts-ignore
+  // @ts-expect-error
   experimental_useFormStatus as useFormStatus,
 } from 'react-dom';
 
