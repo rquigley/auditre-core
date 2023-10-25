@@ -43,35 +43,58 @@ export async function getById(id: DocumentId): Promise<Document> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getAllByOrgId(orgId: OrgId): Promise<Document[]> {
+export type OrgDocument = Pick<Document, 'id' | 'createdAt' | 'name'> & {
+  requestType: string | null;
+  requestId: string | null;
+  auditId: string | null;
+  auditName: string | null;
+};
+export async function getAllByOrgId(orgId: OrgId): Promise<OrgDocument[]> {
   return await db
     .selectFrom('document')
-    .where('orgId', '=', orgId)
-    .where('isDeleted', '=', false)
-    .selectAll()
+    .leftJoin('requestData', 'document.id', 'requestData.documentId')
+    .leftJoin('audit', 'requestData.auditId', 'audit.id')
+    .select([
+      'document.id',
+      'document.createdAt',
+      'document.name',
+      'audit.id as auditId',
+      'audit.name as auditName',
+      'requestData.requestType',
+      'requestData.requestId',
+    ])
+    .where('document.orgId', '=', orgId)
+    .where('document.isDeleted', '=', false)
     .execute();
 }
 
-export async function getAllByAuditId(auditId: AuditId): Promise<Document[]> {
-  const audit = await getAuditById(auditId);
-  const requests = await getAllRequestsByAuditId(auditId);
-  let documents: DocumentId[] = [];
-  for (const request of requests) {
-    Object.keys(request.data || {}).forEach((key) => {
-      if (key.indexOf('ocumentId') !== -1 && request.data[key]) {
-        documents.push(request.data[key]);
-      }
-    });
-  }
-  if (!documents.length) {
-    return [];
-  }
+export type DocumentWithRequestData = Pick<
+  Document,
+  'id' | 'createdAt' | 'name'
+> & {
+  requestType: string;
+  requestId: string;
+};
+export async function getAllByAuditId(
+  auditId: AuditId,
+): Promise<DocumentWithRequestData[]> {
   return await db
     .selectFrom('document')
-    .where('orgId', '=', audit.orgId)
-    .where('isDeleted', '=', false)
-    .where('id', 'in', documents)
-    .selectAll()
+    .innerJoin('requestData', 'document.id', 'requestData.documentId')
+    .select([
+      'document.id',
+      'document.createdAt',
+      'document.name',
+      'requestData.requestType',
+      'requestData.requestId',
+    ])
+    .distinctOn([
+      'requestData.auditId',
+      'requestData.requestType',
+      'requestData.requestId',
+    ])
+    .where('requestData.auditId', '=', auditId)
+    .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
     .execute();
 }
 

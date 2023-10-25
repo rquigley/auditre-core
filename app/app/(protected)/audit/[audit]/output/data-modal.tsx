@@ -3,42 +3,23 @@
 import { Dialog, Transition } from '@headlessui/react';
 import clsx from 'clsx';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Fragment, useEffect, useRef, useState } from 'react';
-import { z } from 'zod';
+import { Fragment, useRef } from 'react';
 
-import type { Audit, AuditId } from '@/types';
+import type { AuditId } from '@/types';
 
-// this duplicates the schema in actions, but Next prevents non-async actions
-// from export
-const newAuditSchema = z.object({
-  name: z.string().min(3).max(72),
-  year: z.coerce
-    .number()
-    .min(1970, 'The year must be at least 1970')
-    .max(2050, 'The year must be before 2050'),
-});
-
-async function getData(auditId: AuditId) {
-  const res = await fetch(`/audit/${auditId}/output/data`, {
-    cache: 'no-store',
-  });
-  const data = (await res.json()) as any;
-  return data;
-}
-
-export default function DataModal({ auditId }: { auditId: AuditId }) {
+export default function DataModal({
+  auditId,
+  auditData,
+}: {
+  auditId: AuditId;
+  auditData: any;
+}) {
   const searchParams = useSearchParams();
 
   const router = useRouter();
   const pathname = usePathname();
 
   const cancelButtonRef = useRef(null);
-
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    getData(auditId).then((data) => setData(data));
-  }, [auditId]);
 
   return (
     <Transition.Root show={searchParams.get('view-data') === '1'} as={Fragment}>
@@ -76,10 +57,14 @@ export default function DataModal({ auditId }: { auditId: AuditId }) {
                   Data:
                   <br />
                   {/* {data ? JSON.stringify(data) : null} */}
-                  {data
-                    ? Object.keys(data).map((key) => {
+                  {auditData
+                    ? Object.keys(auditData).map((key) => {
                         return (
-                          <RequestType key={key} name={key} data={data[key]} />
+                          <RequestType
+                            key={key}
+                            name={key}
+                            data={auditData[key]}
+                          />
                         );
                       })
                     : null}
@@ -93,8 +78,13 @@ export default function DataModal({ auditId }: { auditId: AuditId }) {
   );
 }
 
-// @ts-ignore
-function RequestType({ name, data }) {
+function RequestType({
+  name,
+  data,
+}: {
+  name: string;
+  data: Record<string, any>;
+}) {
   return (
     <div className="my-4">
       <div className="font-semibold text-sm">{name}</div>
@@ -102,9 +92,10 @@ function RequestType({ name, data }) {
         {Object.keys(data).map((key) => {
           const isMissing =
             data[key] === null || data[key] === undefined || data[key] === '';
+
           return (
             <li key={key} className={clsx(isMissing ? 'text-red-600' : '')}>
-              {key}: {data[key].toString()}
+              {key}: {data[key] ? data[key].toString() : ''}
             </li>
           );
         })}

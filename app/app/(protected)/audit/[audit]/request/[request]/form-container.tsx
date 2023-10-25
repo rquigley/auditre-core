@@ -1,68 +1,56 @@
 import { revalidatePath } from 'next/cache';
 import { Suspense } from 'react';
-import * as z from 'zod';
 
 import { Await } from '@/components/await';
 import { Document } from '@/components/document';
 import { getById as getDocumentById } from '@/controllers/document';
 import { getDataWithLabels } from '@/controllers/document-query';
-import { updateData } from '@/controllers/request';
-import { requestTypes } from '@/lib/request-types';
-import { clientSafe } from '@/lib/util';
+import { getDocumentIds, saveRequestData } from '@/controllers/request';
+import { getDataForRequestType } from '@/controllers/request-data';
 import BasicForm from './basic-form';
 
-import type {
-  Audit,
-  ClientSafeRequest,
-  DocumentId,
-  Request,
-  User,
-} from '@/types';
+import type { Request } from '@/controllers/request';
+import type { Audit, DocumentId, User } from '@/types';
 
 type Props = {
   request: Request;
   user: User;
-  audit: Audit;
+  audit: { id: Audit['id'] };
 };
 
 export default async function FormContainer({ request, user, audit }: Props) {
-  const requestConfig = requestTypes[request.type];
-  const formSchema = requestConfig.schema;
-
-  async function saveData(data: z.infer<typeof formSchema>) {
+  async function saveData(data: Record<string, unknown>) {
     'use server';
 
-    await updateData({
-      id: request.id,
-      data,
-      actor: {
-        type: 'USER',
-        userId: user.id,
-      },
-      type: request.type,
+    await saveRequestData({
+      auditId: audit.id,
+      requestType: request.id,
+      data: data,
+      actorUserId: user.id,
     });
 
-    revalidatePath(`/request/${request.id}`);
+    revalidatePath(`/audit/${audit.id}/request/${request.id}`);
   }
 
+  const { data: requestData, uninitializedFields } =
+    await getDataForRequestType(request.auditId, request);
   let documents: Record<
     string,
     { id: DocumentId; doc: JSX.Element; data: JSX.Element }
   > = {};
-  Object.keys(request.data).forEach((key) => {
-    if (key.endsWith('ocumentId')) {
-      const id: DocumentId = request.data[key];
-      documents[key] = {
-        id,
-        doc: <AwaitDocument documentId={id} />,
-        data: <DocumentData documentId={id} />,
-      };
-    }
+  getDocumentIds(request, requestData).forEach((row) => {
+    documents[row.field] = {
+      id: row.documentId,
+      doc: <AwaitDocument documentId={row.documentId} />,
+      data: <DocumentData documentId={row.documentId} />,
+    };
   });
 
   return (
     <BasicForm
-      request={clientSafe(request) as ClientSafeRequest}
+      request={request}
+      requestData={requestData}
+      dataMatchesConfig={uninitializedFields.length === 0}
       saveData={saveData}
       documents={documents}
     />
