@@ -1,12 +1,12 @@
 import { db } from '@/lib/db';
 
 import type {
+  AuditId,
   Comment,
   CommentId,
   CommentUpdate,
   DocumentId,
   NewComment,
-  RequestId,
 } from '@/types';
 
 export async function create(comment: NewComment): Promise<Comment> {
@@ -37,14 +37,31 @@ export async function getAllByDocumentId(
     .execute();
 }
 
-export async function getAllByRequestId(
-  requestId: RequestId,
-): Promise<Comment[]> {
+type CommentWithUser = {
+  userId: string;
+  createdAt: Date;
+  comment: string;
+  name: string | null;
+  image: string | null;
+};
+
+export async function getAllForRequest(
+  auditId: AuditId,
+  requestType: string,
+): Promise<CommentWithUser[]> {
   return await db
     .selectFrom('comment')
-    .where('requestId', '=', requestId)
-    .where('isDeleted', '=', false)
-    .selectAll()
+    .leftJoin('user', 'comment.userId', 'user.id')
+    .select([
+      'comment.userId',
+      'comment.createdAt',
+      'comment.comment',
+      'user.name',
+      'user.image',
+    ])
+    .where('comment.auditId', '=', auditId)
+    .where('comment.requestType', '=', requestType)
+    .where('comment.isDeleted', '=', false)
     .execute();
 }
 

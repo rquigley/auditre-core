@@ -16,7 +16,11 @@ const auditSchema = z.object({
   name: z.string().min(3).max(72),
 });
 
-export function SettingsForm({ audit }: { audit: Audit }) {
+export function SettingsForm({
+  audit,
+}: {
+  audit: { id: string; name: string };
+}) {
   const { formState, register, handleSubmit, reset } = useForm<
     z.infer<typeof auditSchema>
   >({

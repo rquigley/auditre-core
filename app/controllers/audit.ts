@@ -1,4 +1,8 @@
 import { db } from '@/lib/db';
+import {
+  getDataForRequestAttribute,
+  getStatusesForAuditId,
+} from './request-data';
 
 import type { Audit, AuditId, AuditUpdate, NewAudit, OrgId } from '@/types';
 
@@ -21,31 +25,69 @@ export async function getById(
   return await query.selectAll().executeTakeFirstOrThrow();
 }
 
-export type AuditWithRequestCounts = Audit & {
+// TODO: let's figure out a better pattern for where this lives.
+export async function getByIdForClient(auditId: AuditId) {
+  const audit = await db
+    .selectFrom('audit')
+    .select(['id', 'name', 'createdAt', 'orgId'])
+    .where('id', '=', auditId)
+    .where('isDeleted', '=', false)
+    .executeTakeFirstOrThrow();
+
+  const yearRes = await getDataForRequestAttribute(
+    audit.id,
+    'audit-info',
+    'year',
+  );
+  const year = yearRes?.data?.value as string;
+  return {
+    ...audit,
+    year,
+  };
+}
+
+export type AuditWithRequestCounts = Pick<
+  Audit,
+  'id' | 'name' | 'createdAt'
+> & {
+  year: string;
   numCompletedRequests: number;
   numRequests: number;
 };
 export async function getAllByOrgId(
   orgId: OrgId,
 ): Promise<AuditWithRequestCounts[]> {
-  return await db
+  const audits = await db
     .selectFrom('audit')
-    .innerJoin('request', 'audit.id', 'request.auditId')
-
-    .where('audit.orgId', '=', orgId)
-    .where('audit.isDeleted', '=', false)
-    .where('request.isDeleted', '=', false)
-    .groupBy('audit.id')
-    .selectAll('audit')
-    .select((eb) =>
-      eb.fn
-        .count<number>('request.id')
-        .filterWhere('request.status', '=', 'complete')
-        .as('numCompletedRequests'),
-    )
-    .select((eb) => eb.fn.count<number>('request.id').as('numRequests'))
-    .orderBy(['audit.year desc', 'audit.name asc'])
+    .select(['id', 'name', 'createdAt'])
+    .where('orgId', '=', orgId)
+    .where('isDeleted', '=', false)
+    .orderBy(['name'])
     .execute();
+
+  const ret: AuditWithRequestCounts[] = [];
+  for (const audit of audits) {
+    const yearRes = await getDataForRequestAttribute(
+      audit.id,
+      'audit-info',
+      'year',
+    );
+    const year = yearRes?.data?.value as string | '';
+    const statuses = await getStatusesForAuditId(audit.id);
+    ret.push({
+      ...audit,
+      year,
+      numCompletedRequests: Object.values(statuses).reduce(
+        (acc, s) => s.completedTasks + acc,
+        0,
+      ),
+      numRequests: Object.values(statuses).reduce(
+        (acc, s) => s.totalTasks + acc,
+        0,
+      ),
+    });
+  }
+  return ret;
 }
 
 export async function getAll(): Promise<Audit[]> {

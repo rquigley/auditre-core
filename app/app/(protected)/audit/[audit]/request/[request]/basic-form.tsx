@@ -18,25 +18,35 @@ import {
   Year,
 } from '@/components/form-fields';
 import SaveNotice from '@/components/save-notice';
-import { requestTypes } from '@/lib/request-types';
+import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
 import { classNames, delay, isFieldVisible } from '@/lib/util';
 
-import type { ClientSafeRequest, DocumentId, RequestData } from '@/types';
-
+import type { Request } from '@/controllers/request';
 //import type { UseFormRegister, FieldErrors } from 'react-hook-form';
+//import type { RequestTypeWithData } from '@/controllers/request';
+// import type { RequestType } from '@/lib/request-types';
+import type { DocumentId, RequestData } from '@/types';
 
 export type Props = {
-  request: ClientSafeRequest;
+  request: Request;
+  requestData: Record<string, unknown>;
+  dataMatchesConfig: boolean;
   saveData: (data: RequestData) => void;
   documents: {
     [key: string]: { id: DocumentId; doc: JSX.Element; data: JSX.Element };
   };
 };
 
-export default function BasicForm({ request, saveData, documents }: Props) {
-  const config = requestTypes[request.type];
+export default function BasicForm({
+  request,
+  requestData,
+  dataMatchesConfig,
+  saveData,
+  documents,
+}: Props) {
   const router = useRouter();
   const [showSuccess, setShowSuccess] = useState(false);
+  const schema = getSchemaForId(request.id);
 
   const {
     register,
@@ -47,11 +57,10 @@ export default function BasicForm({ request, saveData, documents }: Props) {
     resetField,
     watch,
     formState,
-  } = useForm<z.infer<typeof config.schema>>({
-    resolver: zodResolver(config.schema),
-    defaultValues: request.data,
+  } = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: requestData,
   });
-
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
       reset(undefined, { keepValues: true });
@@ -59,7 +68,7 @@ export default function BasicForm({ request, saveData, documents }: Props) {
     }
   }, [formState.isSubmitSuccessful, reset]);
 
-  async function onSubmit(data: z.infer<typeof config.schema>) {
+  async function onSubmit(data: z.infer<typeof schema>) {
     const p = Promise.all([saveData(data), delay(700)]);
 
     toast.promise(p, {
@@ -73,6 +82,17 @@ export default function BasicForm({ request, saveData, documents }: Props) {
     });
   }
 
+  let enableSubmit;
+  if (formState.isSubmitting) {
+    enableSubmit = false;
+  } else if (formState.isDirty) {
+    enableSubmit = true;
+  } else if (!dataMatchesConfig) {
+    enableSubmit = true;
+  } else {
+    enableSubmit = false;
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-12">
@@ -80,24 +100,17 @@ export default function BasicForm({ request, saveData, documents }: Props) {
           {/* <h2 className="text-base font-semibold leading-7 text-gray-900">
             {request.type == 'USER_REQUESTED' ? request.name : config.name}
           </h2> */}
-          {(request.description || config.description) && (
+          {request.description && (
             <p className="mt-1 text-sm leading-6 text-gray-600 mb-10">
-              {request.type == 'USER_REQUESTED'
-                ? request.description
-                : config.description}
+              {request.description}
             </p>
           )}
           <div className=" grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-            {Object.keys(config.form).map((field) => {
-              // @ts-ignore
-              const fieldConfig = config.form[field];
-              const isVisibleA = setupWatchFields(
-                field,
-                getValues(),
-                config.form,
-                watch,
-              );
-              const isVisible = isFieldVisible(field, isVisibleA, config.form);
+            {Object.keys(request.form).map((field) => {
+              const fieldConfig = request.form[field];
+              const deps = getFieldDependencies(field, request.form);
+              const isVisibleA = deps.length ? watch(deps) : [true];
+              const isVisible = isFieldVisible(field, isVisibleA, request.form);
 
               // if (!isVisible) {
               //   return <input type="hidden" key={field} {...register(field)} />;
@@ -129,7 +142,6 @@ export default function BasicForm({ request, saveData, documents }: Props) {
                         register={register}
                         formState={formState}
                         config={fieldConfig}
-                        request={request}
                         setValue={setValue}
                         getValues={getValues}
                         resetField={resetField}
@@ -203,7 +215,7 @@ export default function BasicForm({ request, saveData, documents }: Props) {
           </div>
         )}
 
-        {formState.isDirty && !formState.isSubmitting ? (
+        {enableSubmit && formState.isDirty ? (
           <button
             type="button"
             className="text-sm font-semibold leading-6 text-gray-900"
@@ -214,9 +226,9 @@ export default function BasicForm({ request, saveData, documents }: Props) {
         ) : null}
         <button
           type="submit"
-          disabled={!formState.isDirty || formState.isSubmitting}
+          disabled={enableSubmit === false}
           className={classNames(
-            !formState.isDirty || formState.isSubmitting
+            enableSubmit === false
               ? 'bg-gray-400'
               : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
             'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm transition',
@@ -227,43 +239,4 @@ export default function BasicForm({ request, saveData, documents }: Props) {
       </div>
     </form>
   );
-}
-
-export function setupWatchFields(
-  field: string,
-  values: any,
-  formConfig: any,
-  watch: any,
-): Array<boolean> {
-  let watchFields = [];
-  // Don't bother for static fields
-  if (!formConfig[field].dependsOn) {
-    return [true];
-  }
-  while (true) {
-    let fieldConfig = formConfig[field];
-    if (!fieldConfig) {
-      throw new Error(
-        `Field "${field}" not found in form config, available fields: ${Object.keys(
-          formConfig,
-        ).join(', ')}`,
-      );
-    }
-
-    if (fieldConfig.dependsOn) {
-      let dependsOnField;
-      if (typeof fieldConfig.dependsOn === 'object') {
-        dependsOnField = fieldConfig.dependsOn.field;
-      } else {
-        dependsOnField = fieldConfig.dependsOn;
-      }
-
-      watchFields.push(dependsOnField);
-
-      field = dependsOnField;
-    } else {
-      break;
-    }
-  }
-  return watch(watchFields);
 }

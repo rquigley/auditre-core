@@ -15,10 +15,7 @@ import { classNames } from '@/lib/util';
 // from export
 const newAuditSchema = z.object({
   name: z.string().min(3).max(72),
-  year: z.coerce
-    .number()
-    .min(1970, 'The year must be at least 1970')
-    .max(2050, 'The year must be before 2050'),
+  year: z.string().min(1),
 });
 
 export default function NewAuditModal() {
@@ -31,7 +28,7 @@ export default function NewAuditModal() {
 
     defaultValues: {
       name: '',
-      year: new Date().getFullYear(),
+      year: '',
     },
   });
   const router = useRouter();

@@ -1,14 +1,12 @@
 import { notFound } from 'next/navigation';
 import { Fragment } from 'react';
 
-import { getById } from '@/controllers/audit';
+import { getByIdForClient } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/request';
+import { getStatusesForAuditId } from '@/controllers/request-data';
 import { getCurrent } from '@/controllers/session-user';
-import { clientSafe } from '@/lib/util';
 import { AuditHeader } from './audit-header';
 import Row from './row';
-
-import type { ClientSafeRequest } from '@/types';
 
 export default async function AuditPage({
   params: { audit: id },
@@ -16,16 +14,17 @@ export default async function AuditPage({
   params: { audit: string };
 }) {
   const user = await getCurrent();
-  const audit = await getById(id);
+  const audit = await getByIdForClient(id);
 
   if (audit.orgId !== user.orgId) {
     return notFound();
   }
 
   const requests = await getAllByAuditId(audit.id);
-  const clientSafeRequests = clientSafe(requests) as ClientSafeRequest[];
 
-  const groupedRequests = sortRows<ClientSafeRequest>(clientSafeRequests, [
+  const statusesP = getStatusesForAuditId(audit.id);
+
+  const groupedRequests = sortRows(requests, [
     'Background',
     'Accounting Information',
     'Business Operations',
@@ -79,7 +78,7 @@ export default async function AuditPage({
                         </th>
                       </tr>
                       {group.rows.map((row) => (
-                        <Row request={row} key={row.id} />
+                        <Row request={row} statusesP={statusesP} key={row.id} />
                       ))}
                     </Fragment>
                   );

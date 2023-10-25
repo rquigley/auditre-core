@@ -3,16 +3,12 @@ import { stripIndent } from 'common-tags';
 import { getById as getDocumentById } from '@/controllers/document';
 import { call } from '@/lib/ai';
 import { db } from '@/lib/db';
+import { documentAiQuestions } from '@/lib/document-ai-questions';
 import { requestTypes } from '@/lib/request-types';
 import { head, humanCase, isKey } from '@/lib/util';
 
 import type { OpenAIMessage } from '@/lib/ai';
-import type {
-  AIQuestion,
-  FormField,
-  RequestTypeKey,
-  ValidField,
-} from '@/lib/request-types';
+import type { FormField } from '@/lib/request-types';
 import type {
   Document,
   DocumentId,
@@ -142,22 +138,16 @@ function getDocumentTypes(config: typeof requestTypes): {
   const result: DocumentType[] = [];
   const lookup: Record<string, string> = {};
 
-  for (const topLevelKey in config) {
-    // @ts-ignore
-    const formObj = config[topLevelKey].form;
-
-    for (const formKey in formObj) {
-      const formEntry = formObj[formKey];
-
-      if (formEntry.aiClassificationType) {
-        const type = formEntry.aiClassificationType;
-        const hint = formEntry.aiClassificationHint || humanCase(type);
-
+  requestTypes.forEach((rt) => {
+    Object.values(rt.form).forEach((field: FormField) => {
+      if ('aiClassificationType' in field && field.aiClassificationType) {
+        const type = field.aiClassificationType;
+        const hint = field.aiClassificationHint || humanCase(type);
         result.push({ type, hint });
         lookup[type] = hint;
       }
-    }
-  }
+    });
+  });
 
   // Types we want to ignore but are included to prevent misclassification of other types
   result.push({
@@ -253,51 +243,22 @@ export async function classifyDocument(
   return documentType as string;
 }
 
-function getAIQuestions(
-  config: typeof requestTypes,
-): Record<Partial<RequestTypeKey>, Record<ValidField, AIQuestion>> {
-  const res: Record<string, any> = {};
-
-  for (const topLevelKey in config) {
-    if (!isKey(config, topLevelKey)) {
-      continue;
-    }
-    const formObj = config[topLevelKey].form;
-
-    for (const formKey in formObj) {
-      if (!isKey(formObj, formKey)) {
-        continue;
-      }
-      const formEntry = formObj[formKey] as FormField;
-      if (formEntry.input === 'fileupload') {
-        res[formEntry.aiClassificationType] = formEntry.aiQuestions;
-      }
-    }
-  }
-
-  return res;
-}
-const aiQuestions = getAIQuestions(requestTypes);
-
 export async function askDefaultQuestions(document: Document): Promise<number> {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
   }
 
-  // @ts-ignore
-  if (!aiQuestions[document.classifiedType]) {
+  const config = documentAiQuestions[document.classifiedType];
+  if (!config || !config.questions.length) {
     return 0;
   }
 
-  // @ts-ignore
-  const questions = aiQuestions[document.classifiedType];
-  const aiPromises = Object.keys(questions).map((identifier) => {
-    const obj = questions[identifier];
+  const aiPromises = config.questions.map((obj) => {
     return askQuestion({
       document,
       question: obj.question,
       model: obj.model ? (obj.model as OpenAIModel) : undefined,
-      identifier,
+      identifier: obj.id,
       preProcess: obj.preProcess ? obj.preProcess : undefined,
     });
   });
@@ -319,19 +280,18 @@ export async function getDataWithLabels(
 ): Promise<FormattedQueryDataWithLabels> {
   const { classifiedType } = await getDocumentById(documentId);
   const answeredQuestions = await getAllByDocumentId(documentId);
-  // @ts-ignore
-  const defaultQuestions = { ...aiQuestions[classifiedType] };
+  const defaultQuestions = documentAiQuestions[classifiedType];
   if (!defaultQuestions) {
     return {};
   }
   let res: FormattedQueryDataWithLabels = {};
-  for (const identifier in defaultQuestions) {
-    const answered = answeredQuestions.find((q) => q.identifier === identifier);
-    res[identifier] = {
+  defaultQuestions.questions.forEach((q) => {
+    const answered = answeredQuestions.find((aq) => aq.identifier === q.id);
+    res[q.id] = {
       value: answered?.result,
-      label: defaultQuestions[identifier].label,
+      label: q.label,
     };
-  }
+  });
   return res;
 }
 
@@ -341,15 +301,15 @@ export async function getData(
 ): Promise<FormattedQueryData> {
   const { classifiedType } = await getDocumentById(documentId);
   const answeredQuestions = await getAllByDocumentId(documentId);
-  // @ts-ignore
-  const defaultQuestions = { ...aiQuestions[classifiedType] };
+  const defaultQuestions = documentAiQuestions[classifiedType];
   if (!defaultQuestions) {
     return {};
   }
   let res: FormattedQueryData = {};
-  for (const identifier in defaultQuestions) {
-    const answered = answeredQuestions.find((q) => q.identifier === identifier);
-    res[identifier] = answered?.result;
-  }
+  defaultQuestions.questions.forEach((q) => {
+    const answered = answeredQuestions.find((aq) => aq.identifier === q.id);
+    res[q.id] = answered?.result;
+  });
+
   return res;
 }

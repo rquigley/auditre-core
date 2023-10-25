@@ -1,79 +1,9 @@
-import { stripIndent } from 'common-tags';
 import * as z from 'zod';
 
-import { head } from '@/lib/util';
-import { balanceSheetTypes } from './consolidated-balance-sheet';
+import { businessModelTypes } from './business-models';
 
 import type { RequestGroup } from '@/types';
 import type { ZodTypeAny } from 'zod';
-
-const balanceSheetTypeKeys = Object.keys(balanceSheetTypes);
-
-export const businessModelTypes = {
-  SOFTWARE_AS_A_SERVICE: {
-    name: 'Software as a Service',
-    description:
-      'Businesses that provide software services on a subscription basis, often delivered via the internet.',
-  },
-  E_COMMERCE: {
-    name: 'E-commerce',
-    description:
-      'Businesses that sell goods or services, either through their own website or through online platforms.',
-  },
-  RETAIL: {
-    name: 'Retail',
-    description:
-      'Businesses that sell goods or services in a physical retail location.',
-  },
-  MARKETPLACE: {
-    name: 'Marketplace',
-    description:
-      'Businesses that act as intermediaries, connecting buyers and sellers, and take a commission from each transaction.',
-  },
-  MANUFACTURING: {
-    name: 'Manufacturing',
-    description:
-      'Businesses that produce goods, which often involve mass production.',
-  },
-  FINANCIAL_SERVICES: {
-    name: 'Financial Services',
-    description:
-      'Companies that offer various financial products and services, including investment management, insurance, and banking.',
-  },
-  ENERGY: {
-    name: 'Energy',
-    description:
-      'Businesses that are involved in the production, distribution, and sale of energy resources like electricity, gas, or renewable energy.',
-  },
-  CONSULTING_SERVICES: {
-    name: 'Consulting Services',
-    description:
-      'Businesses that offer specialized advice and expertise to clients seeking solutions for specific challenges or opportunities.',
-  },
-  GAMING: {
-    name: 'Gaming',
-    description:
-      'Businesses that engaged in the development, publishing, and distribution of video games.',
-  },
-  SOCIAL_MEDIA: {
-    name: 'Social Media',
-    description:
-      'Businesses that have online platforms that allow users to create, share, and interact with content, fostering social connections.',
-  },
-  HEALTHCARE: {
-    name: 'Healthcare',
-    description:
-      'Businesses that provide medical services, products, or equipment to promote health and well-being.',
-  },
-};
-
-export type AIQuestion = {
-  label?: string;
-  question: string;
-  model?: string;
-  preProcess?: (val: string) => string;
-  validate?: (val: string) => boolean;
-};
 
 interface _FormFieldBase {
   label?: string;
@@ -118,10 +48,9 @@ export interface FormFieldFile extends _FormFieldBase {
   input: 'fileupload';
   extensions: readonly string[];
   maxFilesizeMB: number;
-  defaultValue: string;
+  defaultValue: null;
   aiClassificationType: string;
   aiClassificationHint?: string;
-  aiQuestions?: Record<string, AIQuestion>;
 }
 
 export type FormField =
@@ -133,363 +62,427 @@ export type FormField =
   | FormFieldCheckbox
   | FormFieldFile;
 
-interface BasicInfoForm {
-  businessName: FormFieldText;
-  description: FormFieldText;
-  businessModels: FormFieldCheckbox;
-  chiefDecisionMaker: FormFieldText;
+function generateFormField(config: Partial<FormField>) {
+  let schema;
+  let validationSchema;
+  switch (config.input) {
+    case 'text':
+      config.defaultValue ??= '';
+      schema = z.string().max(512);
+      validationSchema = z.string().min(1);
+
+    case 'textarea':
+      config.defaultValue ??= '';
+      schema = z.string().max(10 * 1024);
+      validationSchema = z.string().min(1);
+
+      break;
+    case 'boolean':
+      config.defaultValue ??= false;
+      schema = z.coerce.boolean();
+      validationSchema = z.coerce.boolean();
+
+      break;
+
+    case 'date':
+    case 'year':
+    case 'month':
+      config.defaultValue ??= '';
+      schema = z.string().max(96);
+      validationSchema = z.string().min(1);
+
+      break;
+    case 'checkbox':
+      if (!config.items) {
+        throw new Error(`Checkbox 'items' must be provided.`);
+      }
+      config.defaultValue ??= [];
+      schema = z.string().array();
+      validationSchema = z.string().array().nonempty();
+      break;
+    case 'fileupload':
+      config.defaultValue = null;
+      if (!config.aiClassificationType) {
+        throw new Error(`Fileupload 'aiClassificationType' must be provided.`);
+      }
+      config.maxFilesizeMB = 10;
+      config.extensions ??= ['PDF', 'DOC', 'DOCX', 'XLSX', 'XLS', 'CSV'];
+      schema = z.string().max(256).nullable();
+      validationSchema = z.string().min(1);
+      break;
+    case undefined:
+      throw new Error(`'input' must be provided.`);
+  }
+
+  let formField;
+  switch (config.input) {
+    case 'text':
+    case 'textarea':
+      formField = { ...config } as FormFieldText;
+      break;
+    case 'boolean':
+      formField = { ...config } as FormFieldBoolean;
+      break;
+    case 'date':
+      formField = { ...config } as FormFieldDate;
+      break;
+    case 'year':
+      formField = { ...config } as FormFieldYear;
+      break;
+    case 'month':
+      formField = { ...config } as FormFieldMonth;
+      break;
+    case 'checkbox':
+      formField = { ...config } as FormFieldCheckbox;
+      break;
+    case 'fileupload':
+      formField = { ...config } as FormFieldFile;
+      break;
+  }
+  return {
+    formField,
+    schema: schema.optional(),
+    validationSchema,
+  } as const;
 }
 
-interface AuditInfoForm {
-  year: FormFieldYear;
-  fiscalYearMonthEnd: FormFieldMonth;
-  hasBeenAudited: FormFieldBoolean;
-  previousAuditDocumentId: FormFieldFile;
+export function getAllDefaultValues() {
+  const ret: Record<string, Record<string, FormField['defaultValue']>> = {};
+
+  for (const rt of requestTypes) {
+    ret[rt.id] = getDefaultValues(rt);
+  }
+
+  return ret;
 }
 
-interface FileForm {
-  documentId: FormFieldFile;
+export function getDefaultValues(
+  rt: Pick<RequestType, 'form'>,
+): Record<string, FormField['defaultValue']> {
+  const ret: Record<string, FormField['defaultValue']> = {};
+  for (const field of Object.keys(rt.form)) {
+    ret[field] = rt.form[field].defaultValue;
+  }
+  return ret;
 }
 
-interface LeasesForm {
-  hasLeases: FormFieldBoolean;
-  didPerformASC842Analysis: FormFieldBoolean;
-  yearOfASC842Analysis: FormFieldYear;
-  asc842DocumentId: FormFieldFile;
+export function getRequestTypeForId(id: string): RequestType {
+  const rt = requestTypes.find((rt) => rt.id === id);
+  if (!rt) {
+    throw new Error(`Invalid request type: ${id}`);
+  }
+  return rt;
 }
 
-interface ASC606AnalysisForm {
-  hasCompletedASC606Analysis: FormFieldBoolean;
-  asc606DocumentId: FormFieldFile;
-  revenueRecognitionProcess: FormFieldText;
-}
+type RequestStatus = 'todo' | 'started' | 'complete' | 'overdue';
 
-interface EquityForm {
-  capTableDetailDocumentId: FormFieldFile;
-  certificateTransactionDocumentId: FormFieldFile;
-  hasEmployeeStockPlan: FormFieldBoolean;
-  employeeStockPlanDocumentId: FormFieldFile;
-}
-
-interface MaterialChangesPostAuditForm {
-  hasPostAuditChanges: FormFieldBoolean;
-  postAuditChanges: FormFieldText;
-}
-
-interface OutstandingLegalMattersForm {
-  hasLegalMatters: FormFieldBoolean;
-  legalMatters: FormFieldText;
-}
-
-interface RelatedPartyTransactionsForm {
-  hasRelatedPartyTransactions: FormFieldBoolean;
-  relatedPartyTransactions: FormFieldText;
-}
-
-interface Employee401kForm {
-  has401K: FormFieldBoolean;
-  doesMatch: FormFieldBoolean;
-  pctMatch: FormFieldText;
-}
-
-interface UserRequestedForm {
-  value: FormFieldText;
-}
-export type ValidField =
-  | keyof UserRequestedForm
-  | keyof Employee401kForm
-  | keyof RelatedPartyTransactionsForm
-  | keyof OutstandingLegalMattersForm
-  | keyof MaterialChangesPostAuditForm
-  | keyof EquityForm
-  | keyof ASC606AnalysisForm
-  | keyof LeasesForm
-  | keyof FileForm
-  | keyof AuditInfoForm
-  | keyof BasicInfoForm;
-
-type HasDefaultValue = { defaultValue: any };
-type RequestDataOnly<Type> = {
-  [Property in keyof Type]: Type[Property] extends HasDefaultValue
-    ? Type[Property]['defaultValue']
-    : never;
+export type RequestTypeStatus = {
+  status: RequestStatus;
+  totalTasks: number;
+  completedTasks: number;
 };
+export function getStatusForRequestType(
+  rt: string,
+  requestData: { data: Record<string, unknown>; uninitializedFields: string[] },
+): RequestTypeStatus {
+  let status: RequestStatus;
+  const validationSchema = getValidationSchemaForId(rt, requestData.data);
+  const parsedRes = validationSchema.safeParse(requestData.data);
 
-export type AuditRequestData = {
-  AUDIT_INFO: RequestDataOnly<AuditInfoForm>;
-  BASIC_INFO: RequestDataOnly<BasicInfoForm>;
-  ARTICLES_OF_INCORPORATION: RequestDataOnly<FileForm>;
-  TRIAL_BALANCE: RequestDataOnly<FileForm>;
-  CHART_OF_ACCOUNTS: RequestDataOnly<FileForm>;
-  ASC_606_ANALYSIS: RequestDataOnly<ASC606AnalysisForm>;
-  LEASES: RequestDataOnly<LeasesForm>;
-  EQUITY: RequestDataOnly<EquityForm>;
-  MATERIAL_CHANGES_POST_AUDIT: RequestDataOnly<MaterialChangesPostAuditForm>;
-  OUTSTANDING_LEGAL_MATTERS: RequestDataOnly<OutstandingLegalMattersForm>;
-  RELATED_PARTY_TRANSACTIONS: RequestDataOnly<RelatedPartyTransactionsForm>;
-  EMPLOYEE_401K: RequestDataOnly<Employee401kForm>;
-  USER_REQUESTED: RequestDataOnly<UserRequestedForm>;
-  AUDIT_YEAR_TAX_PROVISION: RequestDataOnly<FileForm>;
-};
+  const totalTasks = Object.keys(validationSchema.shape).length;
+  let completedTasks;
 
-interface RequestType<T> {
+  if (requestData.uninitializedFields.length > 0) {
+    status = 'todo';
+    completedTasks = 0;
+  } else {
+    let numIssues = 0;
+    if (!parsedRes.success) {
+      numIssues = parsedRes.error.issues.length;
+    }
+    completedTasks = totalTasks - numIssues;
+    if (numIssues === 0) {
+      status = 'complete';
+    } else if (completedTasks > 0) {
+      status = 'started';
+    } else {
+      status = 'todo';
+    }
+  }
+
+  return {
+    status,
+    completedTasks,
+    totalTasks,
+  };
+}
+
+export function getFieldDependencies(
+  field: string,
+  formConfig: Record<string, FormField>,
+) {
+  let deps = [];
+
+  while (true) {
+    let fieldConfig = formConfig[field];
+    if (!fieldConfig) {
+      throw new Error(`Field "${field}" not found in form config`);
+    }
+
+    if (fieldConfig.dependsOn) {
+      let dependsOnField;
+      if (typeof fieldConfig.dependsOn === 'object') {
+        dependsOnField = fieldConfig.dependsOn.field;
+      } else {
+        dependsOnField = fieldConfig.dependsOn;
+      }
+
+      deps.push(dependsOnField);
+
+      field = dependsOnField;
+    } else {
+      break;
+    }
+  }
+  return deps;
+}
+
+export function isFieldEnabled(
+  field: string,
+  formConfig: Record<string, FormField>,
+  data: Record<string, unknown>,
+) {
+  const deps = getFieldDependencies(field, formConfig);
+  if (deps.length === 0) {
+    return true;
+  }
+
+  let isFieldEnabled = true;
+
+  for (let n = 0, len = deps.length; n < len; n++) {
+    const parentField = deps.shift() as string;
+    const parentVal = data[parentField];
+    if (typeof parentVal !== 'boolean') {
+      throw new Error(`Field "${parentField}" must be a boolean`);
+    }
+    const fieldConfig = formConfig[field];
+    if (
+      typeof fieldConfig.dependsOn === 'object' &&
+      fieldConfig.dependsOn.state === false
+    ) {
+      isFieldEnabled = !parentVal;
+    } else if (parentVal === false) {
+      isFieldEnabled = false;
+    }
+    if (typeof fieldConfig.dependsOn === 'object') {
+      field = fieldConfig.dependsOn.field;
+    } else if (fieldConfig.dependsOn) {
+      field = fieldConfig.dependsOn;
+    }
+  }
+  return isFieldEnabled;
+}
+
+export const getSchemaForId = (id: string) => getRequestTypeForId(id).schema;
+
+export function getValidationSchemaForId(
+  id: string,
+  data: Record<string, unknown>,
+) {
+  const request = getRequestTypeForId(id);
+  let validationSchema = { ...request.validationSchema };
+
+  for (const field of Object.keys(request.form)) {
+    if (!isFieldEnabled(field, request.form, data)) {
+      delete validationSchema[field];
+    }
+  }
+  return z.object(validationSchema);
+}
+
+interface RequestTypeConfig {
+  id: string;
   name: string;
-  group?: RequestGroup;
+  group: RequestGroup;
+  description?: string;
+}
+interface RequestTypeFormConfig {
+  [field: string]: Partial<FormField>;
+}
+export interface RequestType {
+  id: string;
+  name: string;
+  group: RequestGroup;
   description: string;
-  form: T;
+  form: Record<string, FormField>;
   completeOnSet: boolean;
+
+  // used within an individual request to validate each field
+  // TODO: We can likely combine this with validationSchema
   schema: ZodTypeAny;
+
+  // Schema for completeness of the request.
+  // This schema isn't built until runtime because fields can be disabled
+  // based on the overall state of the form.
+  validationSchema: Record<string, ZodTypeAny>;
+}
+function generateRequestType(
+  config: RequestTypeConfig,
+  formConfig: RequestTypeFormConfig,
+): RequestType {
+  let form: Record<string, FormField> = {};
+  let schemas: Record<string, ZodTypeAny> = {};
+  let validationSchema: Record<string, ZodTypeAny> = {};
+  for (const [field, val] of Object.entries(formConfig)) {
+    if (val === undefined) {
+      continue;
+    }
+    const {
+      formField,
+      schema,
+      validationSchema: vSchema,
+    } = generateFormField(val);
+    form[field] = formField;
+    schemas[field] = schema;
+    validationSchema[field] = vSchema;
+  }
+  return {
+    id: config.id,
+    name: config.name,
+    group: config.group,
+    description: config.description || '',
+    form,
+    completeOnSet: true,
+    schema: z.object(schemas),
+    validationSchema,
+  } as const;
 }
 
-export const requestTypes: {
-  BASIC_INFO: RequestType<BasicInfoForm>;
-  AUDIT_INFO: RequestType<AuditInfoForm>;
-  ARTICLES_OF_INCORPORATION: RequestType<FileForm>;
-  TRIAL_BALANCE: RequestType<FileForm>;
-  CHART_OF_ACCOUNTS: RequestType<FileForm>;
-  ASC_606_ANALYSIS: RequestType<ASC606AnalysisForm>;
-  LEASES: RequestType<LeasesForm>;
-  EQUITY: RequestType<EquityForm>;
-  MATERIAL_CHANGES_POST_AUDIT: RequestType<MaterialChangesPostAuditForm>;
-  OUTSTANDING_LEGAL_MATTERS: RequestType<OutstandingLegalMattersForm>;
-  RELATED_PARTY_TRANSACTIONS: RequestType<RelatedPartyTransactionsForm>;
-  EMPLOYEE_401K: RequestType<Employee401kForm>;
-  AUDIT_YEAR_TAX_PROVISION: RequestType<FileForm>;
-  USER_REQUESTED: RequestType<UserRequestedForm>;
-} = {
-  BASIC_INFO: {
-    name: 'Basic information',
-    group: 'Background',
-    description: '',
-    form: {
+export const requestTypes = [
+  generateRequestType(
+    {
+      id: 'basic-info',
+      name: 'Basic information',
+      group: 'Background',
+    },
+    {
       businessName: {
         input: 'text',
         label: 'Legal name of the business',
-        defaultValue: '',
       },
       description: {
         input: 'textarea',
         label: 'Description of the business',
-        defaultValue: '',
         description:
           'Provide a high-level overview of the business so anyone who reads the audited financials can easily understand how your business description fits into your financial statements. This can best be summarized as your "elevator pitch" if you were to sell someone about your business for the first time.',
       },
       businessModels: {
         input: 'checkbox',
         label: 'Business model',
-        defaultValue: [],
         items: businessModelTypes,
       },
       chiefDecisionMaker: {
         input: 'text',
         label: 'Chief decision maker',
-        defaultValue: '',
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      businessName: z.string().max(128),
-      description: z.string().max(10 * 1024),
-      chiefDecisionMaker: z.string().max(128),
-      businessModels: z.string().array(),
-    }),
-  },
+  ),
 
-  AUDIT_INFO: {
-    name: 'Audit information',
-    group: 'Background',
-    description: '',
-    form: {
+  generateRequestType(
+    {
+      id: 'audit-info',
+
+      name: 'Audit information',
+      group: 'Background',
+    },
+    {
       year: {
         input: 'year',
         label: 'What year is being audited?',
-        defaultValue: '',
       },
       fiscalYearMonthEnd: {
         input: 'month',
         label: "What month does the company's fiscal year end?",
         description: 'This is typically December.',
-        defaultValue: '',
       },
       hasBeenAudited: {
         input: 'boolean',
         label: 'Has the company been audited before?',
-        defaultValue: false,
       },
       previousAuditDocumentId: {
         label: 'Previous Audit',
         extensions: ['PDF', 'DOC', 'DOCX'],
-        maxFilesizeMB: 10,
         input: 'fileupload',
-        defaultValue: '',
         dependsOn: 'hasBeenAudited',
         aiClassificationType: 'AUDIT',
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      year: z.string(),
-      fiscalYearMonthEnd: z.coerce.number(),
-      hasBeenAudited: z.coerce.boolean(),
-      previousAuditDocumentId: z.string(),
-    }),
-  },
+  ),
 
-  ARTICLES_OF_INCORPORATION: {
-    name: 'Articles of Incorporation',
-    group: 'Background',
-    description: '',
-    form: {
+  generateRequestType(
+    {
+      id: 'articles-of-incorporation',
+      name: 'Articles of Incorporation',
+      group: 'Background',
+    },
+    {
       documentId: {
         label: 'Upload the Articles of Incorporation',
         extensions: ['PDF'],
-        maxFilesizeMB: 10,
         input: 'fileupload',
-        defaultValue: '',
         aiClassificationType: 'ARTICLES_OF_INCORPORATION',
-        aiQuestions: {
-          incorporationDate: {
-            label: 'Date of incorporation',
-            question: `What date was the company incorporated? Return only the date in the format of YYYY-MM-DD. If you don't find this date, return "-"`,
-            // model: 'gpt-4',
-          },
-          numberOfShares: {
-            label: 'Number of shares',
-            question:
-              'How many shares does the company have the ability to offer? Return only the number without commas. If there are no numbers in your answer, return "-"',
-            // model: 'gpt-4',
-          },
-          parValuePerShare: {
-            label: 'Par value per share',
-            question:
-              'What is the par value per share? Return only the number without commas. If there are no numbers in your answer, return "-"',
-            // process: (val: string) => val,
-            // validate: (val: string) => true,
-            //model: 'gpt-4',
-          },
-          incorporationJurisdiction: {
-            label: 'Jurisdiction of incorporation',
-            question:
-              'What is the jurisdiction of incorporation? Answer only with the jurisdiction',
-            //model: 'gpt-4',
-          },
-        },
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      documentId: z.string(),
-    }),
-  },
-
-  TRIAL_BALANCE: {
-    name: 'Trial Balance',
-    group: 'Accounting Information',
-    description: '',
-    form: {
+  ),
+  generateRequestType(
+    {
+      id: 'trial-balance',
+      name: 'Trial Balance',
+      group: 'Accounting Information',
+    },
+    {
       documentId: {
         label: 'Upload the Trial Balance',
         extensions: ['XLS', 'XLSX', 'CSV'],
-        maxFilesizeMB: 10,
         input: 'fileupload',
-        defaultValue: '',
         aiClassificationType: 'TRIAL_BALANCE',
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      documentId: z.string(),
-    }),
-  },
+  ),
 
-  CHART_OF_ACCOUNTS: {
-    name: 'Chart of Accounts',
-    group: 'Accounting Information',
-    description: '',
-    form: {
+  generateRequestType(
+    {
+      id: 'chart-of-accounts',
+      name: 'Chart of Accounts',
+      group: 'Accounting Information',
+    },
+    {
       documentId: {
         label: "Upload the company's Chart of Accounts",
         extensions: ['XLS', 'XLSX', 'CSV'],
-        maxFilesizeMB: 10,
         input: 'fileupload',
-        defaultValue: '',
         aiClassificationType: 'CHART_OF_ACCOUNTS',
         aiClassificationHint:
           'Chart of Accounts aka a complete listing, by category, of every account in the general ledger of a company. It can include an account name, identifier, account type, additional description, and sometimes the total balance for that account.',
-        aiQuestions: {
-          accountNameColumn: {
-            preProcess: (val: string) => head(val, 10),
-            question: stripIndent`
-              In this CSV content which column number contains account names? Think carefully before answering.
-              We don't want account types or any other. Return JSON with "columnName" and "columnNum".
-              If you are unsure return "-" for values
-              `,
-            //model: 'gpt-4',
-          },
-          accountMapping: {
-            question: stripIndent`
-            For each row in the Chart of Accounts CSV, perform the following steps to generate a JSON-formatted output:
-
-            1. Account Name/ID
-            Look for the 'Account Name' in columns such as 'Full name,' 'Account Name,' 'Account /Parent Account,' etc.
-            If an 'Account ID' exists in columns like 'Account Number,' include it in the JSON object under the key id.
-
-            2. Type of Account
-            Use conditional logic to classify the type of account to one of the following ACCOUNT_TYPE:
-             ${balanceSheetTypeKeys.join(', ')}
-
-            If unable to classify to one of these types, flag the entry for manual review.
-
-            For example:
-                If 'Account Subtype' or 'Account Sub Type' is 'Cash on hand,' classify as ASSET_CASH.
-                If 'Account Name' contains 'Receivable,' classify as LIABILITY_ACCOUNTS_PAYABLE.
-                If there is a negative balance for the account, it is likely a LIABILITY_* type. If there is a positive balance, it is likely an ASSET_* type.
-            Utilize the 'Account Description' and any other info in the row if available for additional context.
-            If unable to classify with confidence to an [ACCOUNT_TYPE], set it to '-'
-
-            Output Format:
-
-            Output should be in JSON format using the following structure:
-
-              If 'Account ID' exists:
-
-              json
-                [{ "id": "[ACCOUNT_ID]", "name": "[ACCOUNT_NAME]", "type": "[ACCOUNT_TYPE]"}, ...]
-
-            Otherwise:
-
-              json
-                [{ "name": "[ACCOUNT_NAME]", "type": "[ACCOUNT_TYPE]}", ...]
-
-
-              `,
-            model: 'gpt-3.5-turbo-16k',
-          },
-        },
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      documentId: z.string(),
-    }),
-  },
+  ),
 
-  ASC_606_ANALYSIS: {
-    name: ' ASC 606 Analysis',
-    group: 'Accounting Information',
-    description: '',
-    form: {
+  generateRequestType(
+    {
+      id: 'asc-606-analysis',
+      name: ' ASC 606 Analysis',
+      group: 'Accounting Information',
+    },
+    {
       hasCompletedASC606Analysis: {
         input: 'boolean',
         label: 'Has the company completed ASC 606 Analysis?',
-        defaultValue: false,
       },
       asc606DocumentId: {
         label: 'ASC 606 Analysis Document',
         extensions: ['PDF', 'DOC', 'DOCX'],
-        maxFilesizeMB: 10,
         input: 'fileupload',
-        defaultValue: '',
         dependsOn: 'hasCompletedASC606Analysis',
         aiClassificationType: 'ASC_606_ANALYSIS',
         aiClassificationHint:
@@ -504,68 +497,52 @@ export const requestTypes: {
         dependsOn: { field: 'hasCompletedASC606Analysis', state: false },
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      hasCompletedASC606Analysis: z.coerce.boolean(),
-      asc606DocumentId: z.string(),
-      revenueRecognitionProcess: z.string(),
-    }),
-  },
+  ),
 
-  LEASES: {
-    name: 'Leases',
-    group: 'Accounting Information',
-    description: '',
-    form: {
+  generateRequestType(
+    {
+      id: 'leases',
+      name: 'Leases',
+      group: 'Accounting Information',
+    },
+    {
       hasLeases: {
         input: 'boolean',
         label: 'Does the company have any leases?',
-        defaultValue: false,
       },
       didPerformASC842Analysis: {
         input: 'boolean',
         label: 'Did the company perform a ASC 842 analysis?',
-        defaultValue: false,
         dependsOn: 'hasLeases',
       },
       yearOfASC842Analysis: {
         input: 'year',
         label: 'Which year did the company first perform a ASC 842 analysis?',
-        defaultValue: '',
         dependsOn: 'didPerformASC842Analysis',
       },
       asc842DocumentId: {
         label: 'ASC 842 Memo',
         extensions: ['PDF', 'DOC', 'DOCX'],
-        maxFilesizeMB: 10,
         input: 'fileupload',
-        defaultValue: '',
         dependsOn: 'didPerformASC842Analysis',
         aiClassificationType: 'ASC_842_MEMO',
         aiClassificationHint:
           'Asc 842 memo. This document identifies leases and states “ASC 842” within the document.',
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      hasLeases: z.coerce.boolean(),
-      didPerformASC842Analysis: z.coerce.boolean(),
-      yearOfASC842Analysis: z.string(),
-      asc842DocumentId: z.string(),
-    }),
-  },
+  ),
 
-  EQUITY: {
-    name: 'Equity',
-    group: 'Accounting Information',
-    description: '',
-    form: {
+  generateRequestType(
+    {
+      id: 'equity',
+      name: 'Equity',
+      group: 'Accounting Information',
+    },
+    {
       capTableDetailDocumentId: {
         label: 'Cap Table Detail',
         extensions: ['PDF', 'DOC', 'DOCX'],
-        maxFilesizeMB: 10,
         input: 'fileupload',
-        defaultValue: '',
         aiClassificationType: 'CAP_TABLE',
         aiClassificationHint:
           'Cap table. The cap table will itemize the number of shares by shareholder. The shares are typically identified as common or preferred shares.',
@@ -573,9 +550,7 @@ export const requestTypes: {
       certificateTransactionDocumentId: {
         label: 'Certificate Transaction',
         extensions: ['PDF', 'DOC', 'DOCX'],
-        maxFilesizeMB: 10,
         input: 'fileupload',
-        defaultValue: '',
         aiClassificationType: 'CERTIFICATE_TRANSACTION',
         aiClassificationHint:
           'Certificate transaction. The certificate transaction report will itemize the share count, cost, and unique identifier for each shareholder.',
@@ -583,168 +558,130 @@ export const requestTypes: {
       hasEmployeeStockPlan: {
         input: 'boolean',
         label: 'Does the company issue stock to employees?',
-        defaultValue: false,
       },
       employeeStockPlanDocumentId: {
         label: 'Stock Option Plan & Amendments',
         extensions: ['PDF', 'DOC', 'DOCX'],
-        maxFilesizeMB: 10,
         input: 'fileupload',
-        defaultValue: '',
         dependsOn: 'hasEmployeeStockPlan',
         aiClassificationType: 'STOCK_PLAN',
         aiClassificationHint:
           'Stock Option Plan & Amendments. This includes the terms and definitions of stated with an equity incentive plan.',
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      capTableDetailDocumentId: z.string(),
-      certificateTransactionDocumentId: z.string(),
-      hasEmployeeStockPlan: z.coerce.boolean(),
-      employeeStockPlanDocumentId: z.string(),
-    }),
-  },
+  ),
 
-  MATERIAL_CHANGES_POST_AUDIT: {
-    name: 'Post-audit changes',
-    group: 'Business Operations',
-    description: '',
-    form: {
+  generateRequestType(
+    {
+      id: 'material-changes-post-audit',
+      name: 'Post-audit changes',
+      group: 'Business Operations',
+    },
+    {
       hasPostAuditChanges: {
         input: 'boolean',
         label:
           'Have there been any material changes to the operations of the business following the period being audited?',
-        defaultValue: false,
       },
       postAuditChanges: {
         input: 'textarea',
         label: 'What are those changes?',
-        defaultValue: '',
         dependsOn: 'hasPostAuditChanges',
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      hasPostAuditChanges: z.coerce.boolean(),
-      postAuditChanges: z.string(),
-    }),
-  },
+  ),
 
-  OUTSTANDING_LEGAL_MATTERS: {
-    name: 'Outstanding legal matters',
-    group: 'Business Operations',
-    description: '',
-    form: {
+  generateRequestType(
+    {
+      id: 'outstanding-legal-matters',
+      name: 'Outstanding legal matters',
+      group: 'Business Operations',
+    },
+    {
       hasLegalMatters: {
         input: 'boolean',
         label:
           'Does the company know of any outstanding material legal matters?',
-        defaultValue: false,
       },
       legalMatters: {
         input: 'textarea',
         label: 'Please disclose the outstanding material legal matters',
-        defaultValue: '',
         dependsOn: 'hasLegalMatters',
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      hasLegalMatters: z.coerce.boolean(),
-      legalMatters: z.string(),
-    }),
-  },
+  ),
 
-  RELATED_PARTY_TRANSACTIONS: {
-    name: 'Related party transactions ',
-    group: 'Business Operations',
-    description: '',
-    form: {
+  generateRequestType(
+    {
+      id: 'relatedPartyTransactions',
+      name: 'Related party transactions ',
+      group: 'Business Operations',
+    },
+    {
       hasRelatedPartyTransactions: {
         input: 'boolean',
         label: 'Is the company aware of any related party transactions? ',
-        defaultValue: false,
       },
       relatedPartyTransactions: {
         input: 'textarea',
         label: 'Please disclose the related party transactions',
-        defaultValue: '',
         dependsOn: 'hasRelatedPartyTransactions',
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      hasRelatedPartyTransactions: z.coerce.boolean(),
-      relatedPartyTransactions: z.string(),
-    }),
-  },
+  ),
 
-  EMPLOYEE_401K: {
-    name: '401k plan',
-    group: 'Business Operations',
-    description: '',
-    form: {
+  generateRequestType(
+    {
+      id: 'employee-401k',
+      name: '401k plan',
+      group: 'Business Operations',
+    },
+    {
       has401K: {
         input: 'boolean',
         label: 'Does the company provide a 401k plan to employee?',
-        defaultValue: false,
       },
       doesMatch: {
         input: 'boolean',
         label: 'Does the company match contributions?',
-        defaultValue: false,
         dependsOn: 'has401K',
       },
       pctMatch: {
         input: 'text',
         label: 'What % does the company match?',
-        defaultValue: '',
         dependsOn: 'doesMatch',
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      has401K: z.coerce.boolean(),
-      doesMatch: z.coerce.boolean(),
-      pctMatch: z.string(),
-    }),
-  },
+  ),
 
-  AUDIT_YEAR_TAX_PROVISION: {
-    name: 'Audit year tax provision',
-    group: 'Accounting Information',
-    description: '',
-    form: {
+  generateRequestType(
+    {
+      id: 'audit-year-tax-provision',
+      name: 'Audit year tax provision',
+      group: 'Accounting Information',
+    },
+    {
       documentId: {
         label: 'Upload the Audit year tax provision',
         extensions: ['XLS', 'XLSX', 'CSV'],
-        maxFilesizeMB: 10,
         input: 'fileupload',
-        defaultValue: '',
         aiClassificationType: 'AUDIT_YEAR_TAX_PROVISION',
       },
     },
-    completeOnSet: true,
-    schema: z.object({
-      documentId: z.string(),
-    }),
-  },
+  ),
 
-  USER_REQUESTED: {
-    name: '???',
-    description: '',
-    form: {
-      value: {
-        input: 'textarea',
-        defaultValue: '',
-      },
-    },
-    completeOnSet: false,
-    schema: z.object({
-      value: z.string(),
-    }),
-  },
-} as const;
+  // generateRequestType(
+  //   {
+  //     id: 'user-requested',
+  //     name: '???',
+  //     group: 'Other',
+  //   },
+  //   {
+  //     value: {
+  //       input: 'textarea',
+  //     },
+  //   },
+  // ),
+] as const;
 
-export type RequestTypeKey = keyof typeof requestTypes;
+//export type RequestTypeKey = keyof typeof requestTypes;

@@ -6,9 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import Header from '@/components/header';
 
-import type { Audit } from '@/types';
-
-type Props = { audit: Audit };
+type Props = { audit: { id: string; name: string; year: string } };
 export function AuditHeader(props: Props) {
   const pathname = usePathname();
   const router = useRouter();

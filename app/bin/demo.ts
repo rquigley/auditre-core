@@ -2,9 +2,8 @@ import { program } from 'commander';
 
 import { create as createAudit } from '@/controllers/audit';
 import { create as createInvitation } from '@/controllers/invitation';
-//import prompts from 'prompts';
 import { create as createOrg } from '@/controllers/org';
-import { upsertDefault } from '@/controllers/request';
+import { saveRequestData } from '@/controllers/request';
 import { db } from '@/lib/db';
 
 import type { OrgId } from '@/types';
@@ -24,18 +23,50 @@ async function setupAccount(): Promise<OrgId> {
 }
 
 async function setupAudit(orgId: OrgId) {
-  const audit1 = await createAudit({
+  const audit = await createAudit({
     orgId,
     name: 'Initial Audit',
-    year: 2023,
   });
-  await upsertDefault({ auditId: audit1.id, orgId: orgId });
-  // const audit2 = await createAudit({
-  //   orgId,
-  //   name: 'Old Audit',
-  //   year: 2022,
-  // });
-  // await upsertDefault({ auditId: audit2.id, orgId: orgId });
+
+  let rdP = [
+    saveRequestData({
+      auditId: audit.id,
+      requestType: 'basic-info',
+      data: {
+        businessName: 'AuditRe, Inc.',
+        description:
+          'Audit readiness for startups and small businesses. They generate audit-ready financial statements in a matter of days instead of months – at a fraction of the cost – by bringing technology to the traditional audit process.',
+        businessModels: ['SOFTWARE_AS_A_SERVICE'],
+        chiefDecisionMaker: 'Jason Gordon',
+      },
+    }),
+    saveRequestData({
+      auditId: audit.id,
+      requestType: 'audit-info',
+      data: {
+        year: '2021',
+        fiscalYearMonthEnd: '12',
+        hasBeenAudited: false,
+      },
+    }),
+    saveRequestData({
+      auditId: audit.id,
+      requestType: 'asc-606-analysis',
+      data: {
+        hasCompletedASC606Analysis: false,
+        revenueRecognitionProcess: 'We do not recognize reveune yet',
+      },
+    }),
+    saveRequestData({
+      auditId: audit.id,
+      requestType: 'leases',
+      data: {
+        hasLeases: false,
+        didPerformASC842Analysis: false,
+      },
+    }),
+  ];
+  await Promise.all(rdP);
 }
 
 async function main() {
