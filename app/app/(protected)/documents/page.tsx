@@ -15,13 +15,13 @@ export default async function DocumentsPage() {
   //     const audit = await getAuditById(request.auditId, {
   //       includeDeleted: true,
   //     });
-  //     // @ts-ignore
+  //     // @ts-expect-error
   //     document.auditName = audit && !audit.isDeleted ? audit.name : '';
-  //     // @ts-ignore
+  //     // @ts-expect-error
   //     document.requestName = audit && !audit.isDeleted ? request.name : '';
   //   }
   //   // TODO: look into FF and dayjs date handling.
-  //   // @ts-ignore
+  //   // @ts-expect-error
   //   document.createdAt = document.createdAt.toString();
   // }
   // const clientSafeDocuments = clientSafe(documents) as ClientSafeDocument[] &
