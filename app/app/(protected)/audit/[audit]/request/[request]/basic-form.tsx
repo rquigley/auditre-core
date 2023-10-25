@@ -17,6 +17,7 @@ import {
   Textarea,
   Year,
 } from '@/components/form-fields';
+import { nl2br } from '@/components/nl2br';
 import SaveNotice from '@/components/save-notice';
 import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
 import { classNames, delay, isFieldVisible } from '@/lib/util';
@@ -132,7 +133,7 @@ export default function BasicForm({
                   </label>
                   {fieldConfig.description && (
                     <div className="text-xs text-gray-500">
-                      {fieldConfig.description}
+                      {nl2br(fieldConfig.description)}
                     </div>
                   )}
                   <div className="pt-2">
