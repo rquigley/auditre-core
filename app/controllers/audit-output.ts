@@ -8,11 +8,13 @@ import {
   getData as getDocData,
 } from '@/controllers/document-query';
 import { getAllByAuditId } from '@/controllers/request';
+import { getDataForAuditId } from '@/controllers/request-data';
 import { requestTypes } from '@/lib/request-types';
+import { kebabToCamel } from '@/lib/util';
 import { get as getBalanceSheetData } from './financial-statement/balance-sheet';
 import * as t from './financial-statement/template';
 
-import type { AuditRequestData, RequestTypeKey } from '@/lib/request-types';
+// import type { AuditRequestData, RequestTypeKey } from '@/lib/request-types';
 import type { AuditId, RequestData } from '@/types';
 
 const {
@@ -46,52 +48,41 @@ const {
   // } from 'docx';
 } = require('docx');
 
-export type AuditData = AuditRequestData & { balanceSheet: any } & any;
+export type AuditData = Record<string, any>;
+//  & {
+//   balanceSheet: ReturnType<typeof getBalanceSheetData>;
+// };
 export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   // const audit = await getAuditById(auditId);
 
-  const requests = await getAllByAuditId(auditId);
+  // const requests = await getAllByAuditId(auditId);
+  const requestData = await getDataForAuditId(auditId);
   const documents = await getAllDocumentsByAuditId(auditId);
 
-  let aiData = new Map();
+  let aiData: Record<string, Record<string, string | undefined>> = {};
   for (const document of documents) {
-    const docData = await getDocData(document.id);
-    const request = requests.find((r) => r.id === document.requestId);
-
-    aiData.set(request?.type, {
-      ...aiData.get(request?.type),
-      ...docData,
-    });
+    aiData[document.id] = await getDocData(document.id);
   }
 
-  const data = Object.keys(requestTypes).reduce((acc, k) => {
-    const request = requests.find((r) => r.type === k);
-
-    // @ts-ignore
-    acc[k] = {
-      // @ts-ignore
-      ...getDefaultValuesForRequestType(requestTypes[k]),
-      ...(request?.data || {}),
-      ...aiData.get(k),
-    };
-    return acc;
-  }, {});
+  const data: Record<string, unknown> = {};
+  for (const [key, fields] of Object.entries(requestData)) {
+    let fieldsData = fields.data;
+    for (const [field, fieldVal] of Object.entries(fieldsData)) {
+      if (field.includes('ocumentId') && fieldVal) {
+        fieldsData = {
+          ...fieldsData,
+          ...aiData[fieldVal as string],
+        };
+      }
+    }
+    data[kebabToCamel(key)] = fieldsData;
+  }
 
   const balanceSheet = await getBalanceSheetData(auditId);
 
-  // @ts-ignore
   data.balanceSheet = balanceSheet;
 
-  // @ts-ignore
   return data;
-}
-
-function getDefaultValuesForRequestType(requestType: any) {
-  const ret: Record<string, any> = {};
-  for (const field of Object.keys(requestType.form)) {
-    ret[field] = requestType.form[field].defaultValue;
-  }
-  return ret;
 }
 
 export async function generate(auditId: AuditId) {
@@ -248,17 +239,17 @@ export async function generate(auditId: AuditId) {
   });
   return {
     document,
-    documentName: `Financial Statement - ${data.BASIC_INFO.businessName} - ${audit.year}.docx`,
+    documentName: `Financial Statement - ${data.basicInfo.businessName} - ${data.auditInfo.year}.docx`,
   };
 }
 
 function titlePage(data: AuditData) {
-  const yearEnd = dayjs(data.AUDIT_INFO.fiscalYearEnd).format('MMMM D, YYYY');
+  const yearEnd = dayjs(data.auditInfo.fiscalYearEnd).format('MMMM D, YYYY');
   return {
     ...getPageProperties(),
     children: [
       new Paragraph({
-        text: data.BASIC_INFO.businessName,
+        text: data.basicInfo.businessName,
         heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
