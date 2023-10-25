@@ -286,7 +286,7 @@ export async function getDataWithLabels(
   }
   let res: FormattedQueryDataWithLabels = {};
   defaultQuestions.questions.forEach((q) => {
-    const answered = answeredQuestions.find((q) => q.identifier === q.id);
+    const answered = answeredQuestions.find((aq) => aq.identifier === q.id);
     res[q.id] = {
       value: answered?.result,
       label: q.label,
@@ -307,7 +307,7 @@ export async function getData(
   }
   let res: FormattedQueryData = {};
   defaultQuestions.questions.forEach((q) => {
-    const answered = answeredQuestions.find((q) => q.identifier === q.id);
+    const answered = answeredQuestions.find((aq) => aq.identifier === q.id);
     res[q.id] = answered?.result;
   });
 

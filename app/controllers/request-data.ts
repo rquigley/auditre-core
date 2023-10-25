@@ -67,7 +67,7 @@ export async function getDataForRequestAttribute(
 
 export async function getDataForAuditId(
   auditId: AuditId,
-  includeDefaultValues: boolean = true,
+  // includeDefaultValues: boolean = true,
 ) {
   const rows = await db
     .selectFrom('requestData')
@@ -76,6 +76,7 @@ export async function getDataForAuditId(
     .where('auditId', '=', auditId)
     .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
     .execute();
+
   let ret: Record<
     string,
     {

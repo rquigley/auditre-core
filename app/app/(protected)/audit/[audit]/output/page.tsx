@@ -16,11 +16,10 @@ export default async function AuditPage({
 }) {
   const user = await getCurrent();
   const audit = await getByIdForClient(id);
-
-  const data = await getAuditData(audit.id);
   if (audit.orgId !== user.orgId) {
     return notFound();
   }
+  const auditData = await getAuditData(audit.id);
 
   const documents = await getAllByAuditId(id);
 
@@ -84,7 +83,7 @@ export default async function AuditPage({
             </div>
           </div>
         </div>
-        <DataModal auditId={audit.id} />
+        <DataModal auditId={audit.id} auditData={auditData} />
       </div>
     </>
   );

@@ -29,11 +29,11 @@ export function organization1(data: AuditData): Template {
     header: 'Description of Business',
     body: stripIndent`
       [${
-        data.BASIC_INFO.businessName
+        data.basicInfo.businessName
       }]. (the “Company”) was incorporated in the State of [${
-        data.ARTICLES_OF_INCORPORATION.incorporationJurisdiction
-      }] on [${toDate(data.ARTICLES_OF_INCORPORATION.incorporationDate)}]. [${
-        data.BASIC_INFO.description
+        data.articlesOfIncorporation.incorporationJurisdiction
+      }] on [${toDate(data.articlesOfIncorporation.incorporationDate)}]. [${
+        data.basicInfo.description
       }]. [The Company has wholly owned subsidiaries], [SUBSIDIARY 1], [SUBSIDIARY 2].
     `,
   };
@@ -44,7 +44,7 @@ export function organization2(data: AuditData): Template {
     header: 'Going Concern and Liquidity',
     body: stripIndent`
       The Company has incurred recurring losses and negative cash flows from operating activities since inception. As of [${toDate(
-        data.AUDIT_INFO.fiscalYearEnd,
+        data.auditInfo.fiscalYearEnd,
       )}], the Company had cash of [${pp(
         data.balanceSheet.assets.currentAssets.cash,
       )}] and an accumulated deficit of [${pp(
@@ -74,7 +74,7 @@ export function summarySigAccountPractices2(data: AuditData): Template {
     header: 'Foreign Currencies',
     body: stripIndent`
       Gains and losses resulting from foreign currency transactions are included in other income, net within the consolidated statement of operations. For the year ended ${toDate(
-        data.AUDIT_INFO.fiscalYearEnd,
+        data.auditInfo.fiscalYearEnd,
       )}, the impact from foreign currency transactions was immaterial.
     `,
   };
@@ -172,10 +172,10 @@ export function summarySigAccountPractices8(data: AuditData): Template {
 }
 
 export function summarySigAccountPractices9(data: AuditData): Template {
-  if (!data.LEASES.hasLeases || !data.LEASES.didPerformASC842Analysis) {
+  if (!data.leases.hasLeases || !data.leases.didPerformASC842Analysis) {
     return {
       header: 'Leases',
-      body: '[NOT SHOWING: !data.LEASES.hasLeases || !data.LEASES.didPerformASC842Analysis]',
+      body: '[NOT SHOWING: !data.leases.hasLeases || !data.leases.didPerformASC842Analysis]',
     };
   }
   return {
@@ -191,10 +191,10 @@ export function summarySigAccountPractices9(data: AuditData): Template {
 }
 
 export function summarySigAccountPractices10(data: AuditData): Template {
-  if (!data.LEASES.hasLeases || !data.LEASES.didPerformASC842Analysis) {
+  if (!data.leases.hasLeases || !data.leases.didPerformASC842Analysis) {
     return {
       header: 'Impairment of Long-Lived Assets',
-      body: '[NOT SHOWING: !data.LEASES.hasLeases || !data.LEASES.didPerformASC842Analysis]',
+      body: '[NOT SHOWING: !data.leases.hasLeases || !data.leases.didPerformASC842Analysis]',
     };
   }
   return {
@@ -230,10 +230,10 @@ export function summarySigAccountPractices12(data: AuditData): Template {
 export function summarySigAccountPractices13(data: AuditData): Template {
   //[if answered yes to "if the company isssued stock to employees"]
   // return null
-  if (!data.EQUITY.hasEmployeeStockPlan) {
+  if (!data.equity.hasEmployeeStockPlan) {
     return {
       header: 'Stock-Based Compensation',
-      body: '[NOT SHOWING: !data.EQUITY.hasEmployeeStockPlan]',
+      body: '[NOT SHOWING: !data.equity.hasEmployeeStockPlan]',
     };
   }
 

@@ -126,5 +126,7 @@ export function camelToKebab(input: string): string {
 }
 
 export function kebabToCamel(input: string): string {
-  return input.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+  return input
+    .replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+    .replaceAll('-', '');
 }
