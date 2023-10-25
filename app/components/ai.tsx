@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 
 import CopyToClipboard from '@/components/copy-to-clipboard';
+import { nl2br } from '@/components/nl2br';
 import { askQuestion, getAllByDocumentId } from '@/controllers/document-query';
 import { OpenAIModel } from '@/types';
 import AIForm from './ai-form';
@@ -70,15 +71,4 @@ export default async function AI({ document }: { document: Document }) {
       <AIForm saveData={saveData} />
     </div>
   );
-}
-
-function nl2br(str: string) {
-  return str.split('\n').map((item, key) => {
-    return (
-      <span key={key}>
-        {item}
-        <br />
-      </span>
-    );
-  });
 }
