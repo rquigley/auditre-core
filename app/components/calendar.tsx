@@ -1,25 +1,25 @@
-import { useRef } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
 import {
   createCalendar,
-  getWeeksInMonth,
   endOfMonth,
-  isSameDay,
   getDayOfWeek,
+  getWeeksInMonth,
+  isSameDay,
   isSameMonth,
   parseDate,
 } from '@internationalized/date';
-import { mergeProps } from '@react-aria/utils';
 import { useButton } from '@react-aria/button';
 import {
   useCalendar,
   useCalendarCell,
   useCalendarGrid,
 } from '@react-aria/calendar';
-import { useCalendarState } from '@react-stately/calendar';
-import { useDateFormatter, useLocale } from '@react-aria/i18n';
 import { useFocusRing } from '@react-aria/focus';
+import { useDateFormatter, useLocale } from '@react-aria/i18n';
+import { mergeProps } from '@react-aria/utils';
 import { VisuallyHidden } from '@react-aria/visually-hidden';
+import { useCalendarState } from '@react-stately/calendar';
+import { useRef } from 'react';
 
 export default function Calendar({
   value,
@@ -52,7 +52,7 @@ export default function Calendar({
   );
 
   return (
-    //@ts-ignore
+    // @ts-expect-error
     <div {...calendarProps} ref={ref} className="inline-block text-gray-800">
       <CalendarHeader
         state={state}
@@ -66,11 +66,11 @@ export default function Calendar({
     </div>
   );
 }
-//@ts-ignore
+// @ts-expect-error
 export function CalendarCell({ state, date, currentMonth }) {
   let ref = useRef();
   let { cellProps, buttonProps, isSelected, isDisabled, formattedDate } =
-    //@ts-ignore
+    // @ts-expect-error
     useCalendarCell({ date }, state, ref);
 
   let isOutsideMonth = !isSameMonth(currentMonth, date);
@@ -107,7 +107,7 @@ export function CalendarCell({ state, date, currentMonth }) {
     >
       <div
         {...mergeProps(buttonProps, focusProps)}
-        //@ts-ignore
+        // @ts-expect-error
         ref={ref}
         hidden={isOutsideMonth}
         className={`w-10 h-10 outline-none group ${
@@ -146,7 +146,7 @@ export function CalendarCell({ state, date, currentMonth }) {
   );
 }
 
-//@ts-ignore
+// @ts-expect-error
 export function CalendarGrid({ state, offset = {} }) {
   let { locale } = useLocale();
   let startDate = state.visibleRange.start.add(offset);
@@ -154,7 +154,7 @@ export function CalendarGrid({ state, offset = {} }) {
   let { gridProps, headerProps, weekDays } = useCalendarGrid(
     {
       startDate,
-      //@ts-ignore
+      // @ts-expect-error
       endDate,
     },
     state,
@@ -174,11 +174,11 @@ export function CalendarGrid({ state, offset = {} }) {
       </thead>
       <tbody>
         {
-          //@ts-ignore
+          // @ts-expect-error
           [...new Array(weeksInMonth).keys()].map((weekIndex) => (
             <tr key={weekIndex}>
               {state.getDatesInWeek(weekIndex, startDate).map(
-                //@ts-ignore
+                // @ts-expect-error
                 (date, i) =>
                   date ? (
                     <CalendarCell
@@ -200,13 +200,13 @@ export function CalendarGrid({ state, offset = {} }) {
 }
 
 export function CalendarHeader({
-  //@ts-ignore
+  // @ts-expect-error
   state,
-  //@ts-ignore
+  // @ts-expect-error
   calendarProps,
-  //@ts-ignore
+  // @ts-expect-error
   prevButtonProps,
-  //@ts-ignore
+  // @ts-expect-error
   nextButtonProps,
 }) {
   let monthDateFormatter = useDateFormatter({
@@ -254,16 +254,16 @@ export function CalendarHeader({
   );
 }
 
-//@ts-ignore
+// @ts-expect-error
 export function Button(props) {
   let ref = useRef();
-  //@ts-ignore
+  // @ts-expect-error
   let { buttonProps } = useButton(props, ref);
   let { focusProps, isFocusVisible } = useFocusRing();
   return (
     <button
       {...mergeProps(buttonProps, focusProps)}
-      //@ts-ignore
+      // @ts-expect-error
       ref={ref}
       className={`p-2 rounded-full ${props.isDisabled ? 'text-gray-400' : ''} ${
         !props.isDisabled ? 'hover:bg-violet-100 active:bg-violet-200' : ''
