@@ -559,6 +559,13 @@ export const requestTypes = [
         input: 'boolean',
         label: 'Does the company issue stock to employees?',
       },
+      stockBasedCompDocumentId: {
+        label: 'Stock based compensation report',
+        extensions: ['PDF', 'DOC', 'DOCX'],
+        input: 'fileupload',
+        dependsOn: 'hasEmployeeStockPlan',
+        aiClassificationType: 'STOCK_BASED_COMPENSATION_REPORT',
+      },
       employeeStockPlanDocumentId: {
         label: 'Stock Option Plan & Amendments',
         extensions: ['PDF', 'DOC', 'DOCX'],
