@@ -1,5 +1,3 @@
-//import 'server-only';
-
 import {
   CamelCasePlugin,
   Kysely,
@@ -87,7 +85,7 @@ if (process.env.LOG_QUERIES) {
       console.log(
         pc.red('ERROR\n'),
         pc.red(`SQL Query: ${event.query.sql}\n`),
-        // @ts-ignore
+        // @ts-expect-error: message is not defined on {}
         pc.red(` message: ${event.error?.message}\n`),
 
         process.env.LOG_QUERIES

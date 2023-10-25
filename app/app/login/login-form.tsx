@@ -37,7 +37,7 @@ export default function Form() {
           redirect: false,
           email: e.currentTarget.email.value,
           password: e.currentTarget.password.value,
-          // @ts-ignore
+          // @ts-expect-error
         }).then(({ error }) => {
           if (error) {
             setLoading(false);

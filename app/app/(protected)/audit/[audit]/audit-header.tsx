@@ -35,7 +35,7 @@ export function AuditHeader(props: Props) {
             id="current-tab"
             name="current-tab"
             className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-sky-700 focus:outline-none focus:ring-sky-700 sm:text-sm"
-            // @ts-ignore
+            // @ts-expect-error
             defaultValue={tabs.find((tab) => pathname === tab.href).name}
           >
             {tabs.map((tab) => (
