@@ -27,7 +27,7 @@ export default async function RequestPage({
   const breadcrumbs = [
     { name: 'Audits', href: '/audits' },
     {
-      name: `${audit.name} (${audit.year})`,
+      name: audit.year ? `${audit.name} (${audit.year})` : audit.name,
       href: `/audit/${audit.id}`,
     },
   ];

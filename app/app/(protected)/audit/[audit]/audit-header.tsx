@@ -18,15 +18,17 @@ export function AuditHeader(props: Props) {
     // { name: 'Documents', href: `/audit/${audit.id}/documents` },
     { name: 'Settings', href: `/audit/${audit.id}/settings` },
   ] as const;
+
+  const title = audit.year ? `${audit.name} (${audit.year})` : audit.name;
+
   return (
     <>
       <Header
-        title={`${audit.name} (${audit.year})`}
-        //subtitle={audit.year ? String(audit.year) : undefined}
+        title={title}
         breadcrumbs={[{ name: 'Audits', href: '/audits' }]}
       />
 
-      <div className="mt-4 sm:mt-3">
+      <div className="mt-4 sm:mt-3 border-b border-gray-200 pb-5 sm:pb-0">
         <div className="sm:hidden">
           <label htmlFor="current-tab" className="sr-only">
             Select a tab
