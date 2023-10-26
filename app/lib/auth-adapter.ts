@@ -172,7 +172,7 @@ export function AuthAdapter(): Adapter {
     },
 
     updateSession: async (data) => {
-      const session = await updateSession(data.sessionToken, {
+      await updateSession(data.sessionToken, {
         expires: data.expires,
       });
 
