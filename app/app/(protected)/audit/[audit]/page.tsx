@@ -9,20 +9,21 @@ import { AuditHeader } from './audit-header';
 import Row from './row';
 
 export default async function AuditPage({
-  params: { audit: id },
+  params: { audit: auditId },
 }: {
   params: { audit: string };
 }) {
-  const user = await getCurrent();
-  const audit = await getByIdForClient(id);
+  const userP = await getCurrent();
+  const auditP = await getByIdForClient(auditId);
+  const requestsP = await getAllByAuditId(auditId);
+
+  const [user, audit, requests] = await Promise.all([userP, auditP, requestsP]);
 
   if (audit.orgId !== user.orgId) {
     return notFound();
   }
 
-  const requests = await getAllByAuditId(audit.id);
-
-  const statusesP = getStatusesForAuditId(audit.id);
+  const statusesP = getStatusesForAuditId(auditId);
 
   const groupedRequests = sortRows(requests, [
     'Background',
