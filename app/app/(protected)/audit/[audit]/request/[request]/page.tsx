@@ -15,9 +15,11 @@ export default async function RequestPage({
 }: {
   params: { audit: AuditId; request: string };
 }) {
-  const user = await getCurrent();
-  const audit = await getAuditById(auditId);
-  const request = await getRequestBySlug(auditId, requestSlug);
+  const userP = getCurrent();
+  const auditP = getAuditById(auditId);
+  const requestP = getRequestBySlug(auditId, requestSlug);
+  const [user, audit, request] = await Promise.all([userP, auditP, requestP]);
+
   if (!request || !audit || request.orgId !== user.orgId) {
     return notFound();
   }
