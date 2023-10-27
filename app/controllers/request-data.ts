@@ -11,7 +11,13 @@ import type {
   RequestType,
   RequestTypeStatus,
 } from '@/lib/request-types';
-import type { AuditId, NewRequestData, RequestData, UserId } from '@/types';
+import type {
+  AuditId,
+  DocumentId,
+  NewRequestData,
+  RequestData,
+  UserId,
+} from '@/types';
 
 export async function create(
   requestData: NewRequestData,
@@ -26,12 +32,7 @@ export async function create(
 export async function getDataForRequestType(
   auditId: AuditId,
   rt: Pick<RequestType, 'id' | 'form'>,
-): Promise<{
-  data: Record<string, unknown>;
-
-  // If we haven't yet saved data to a field ensure that it gets saved
-  uninitializedFields: Array<string>;
-}> {
+) {
   const rows = await db
     .selectFrom('requestData as rd')
     .leftJoin('requestDataDocument as rdd', 'rd.id', 'rdd.requestDataId')
@@ -113,13 +114,7 @@ export async function getDataForAuditId(auditId: AuditId) {
     ])
     .execute();
 
-  let ret: Record<
-    string,
-    {
-      data: Record<string, unknown>;
-      uninitializedFields: Array<string>;
-    }
-  > = {};
+  let ret: Record<string, ReturnType<typeof normalizeRequestData>> = {};
   const allDefaultValues = getAllDefaultValues();
   for (const rt of Object.keys(allDefaultValues)) {
     const requestRows = rows.filter((r) => r.requestType === rt);
@@ -132,15 +127,18 @@ export async function getDataForAuditId(auditId: AuditId) {
 
 export type DataObj = {
   requestId: string;
-  data: Record<string, unknown> | null;
-  documentIds: Array<string> | null;
+  data: RequestData['data'];
+  documentIds: Array<string | null> | null;
 };
+type NormalizedData =
+  | { isDocuments: true; documentIds: DocumentId[] }
+  | unknown;
 export function normalizeRequestData(
   rt: string,
-  defaultValues: Record<string, FormField['defaultValue']>,
+  defaultValues: Record<string, unknown>,
   data: Array<DataObj>,
 ): {
-  data: Record<string, unknown>;
+  data: Record<string, NormalizedData>;
   uninitializedFields: Array<string>;
 } {
   const form = getRequestTypeForId(rt).form;
@@ -152,14 +150,14 @@ export function normalizeRequestData(
     dataMatchesConfig = false;
   }
 
-  const ret: Record<string, unknown> = {};
+  const ret: Record<string, NormalizedData> = {};
   for (const key of Object.keys(defaultValues)) {
     const d = data.find((r) => r.requestId === key);
     if (!d) {
       dataMatchesConfig = false;
       uninitializedFields.push(key);
 
-      ret[key] = defaultValues[key];
+      ret[key] = defaultValues[key] as NormalizedData;
     } else if (form[key].input === 'fileupload') {
       let documentIds = d.documentIds || [];
       // the ARRAY_AGG in the query returns [null] if there are no documents
@@ -168,7 +166,7 @@ export function normalizeRequestData(
       }
       ret[key] = {
         isDocuments: true,
-        documentIds,
+        documentIds: documentIds as Array<DocumentId>,
       };
     } else if (d.data && 'value' in d.data) {
       ret[key] = d.data.value;
