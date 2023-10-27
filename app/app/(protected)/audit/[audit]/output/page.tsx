@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { getByIdForClient } from '@/controllers/audit';
 import { getAuditData } from '@/controllers/audit-output';
@@ -84,7 +85,9 @@ export default async function AuditPage({
           </div>
         </div>
         <DataModal>
-          <AuditData auditId={audit.id} />
+          <Suspense fallback={null}>
+            <AuditData auditId={audit.id} />
+          </Suspense>
         </DataModal>
       </div>
     </>
@@ -118,17 +121,44 @@ function RequestType({
     <div className="my-4">
       <div className="font-semibold text-sm">{name}</div>
       <ul>
-        {Object.keys(data).map((key) => {
-          const isMissing =
-            data[key] === null || data[key] === undefined || data[key] === '';
-
-          return (
-            <li key={key} className={clsx(isMissing ? 'text-red-600' : '')}>
-              {key}: {data[key] ? data[key].toString() : ''}
-            </li>
-          );
-        })}
+        {Object.keys(data).map((requestId) => (
+          <RowValOutput
+            key={requestId}
+            name={requestId}
+            val={data[requestId]}
+          />
+        ))}
       </ul>
     </div>
+  );
+}
+
+function RowValOutput({ name, val }: { name: string; val: unknown }) {
+  let out = '';
+  let isMissing = false;
+  if (val === null) {
+    out = 'null';
+    isMissing = true;
+  } else if (
+    typeof val == 'object' &&
+    // @ts-expect-error
+    val?.isDocuments === true
+  ) {
+    // @ts-expect-error
+    if (val.documentIds.length === 0) {
+      isMissing = true;
+    }
+    // @ts-expect-error
+    out = val.documentIds.join(',');
+  } else if (val === '' || val === undefined) {
+    isMissing = true;
+  } else {
+    out = val.toString();
+  }
+
+  return (
+    <li className={clsx(isMissing ? 'text-red-600' : '')}>
+      {name}: {isMissing ? 'MISSING' : out}
+    </li>
   );
 }

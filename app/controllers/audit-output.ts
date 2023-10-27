@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import dayjs from 'dayjs';
 
 import { getById as getAuditById } from '@/controllers/audit';
@@ -15,7 +14,7 @@ import { get as getBalanceSheetData } from './financial-statement/balance-sheet'
 import * as t from './financial-statement/template';
 
 // import type { AuditRequestData, RequestTypeKey } from '@/lib/request-types';
-import type { AuditId, RequestData } from '@/types';
+import type { AuditId, DocumentId } from '@/types';
 
 const {
   // import {
@@ -53,9 +52,6 @@ export type AuditData = Record<string, any>;
 //   balanceSheet: ReturnType<typeof getBalanceSheetData>;
 // };
 export async function getAuditData(auditId: AuditId): Promise<AuditData> {
-  // const audit = await getAuditById(auditId);
-
-  // const requests = await getAllByAuditId(auditId);
   const requestData = await getDataForAuditId(auditId);
   const documents = await getAllDocumentsByAuditId(auditId);
 
@@ -68,11 +64,15 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   for (const [key, fields] of Object.entries(requestData)) {
     let fieldsData = fields.data;
     for (const [field, fieldVal] of Object.entries(fieldsData)) {
-      if (field.includes('ocumentId') && fieldVal) {
-        fieldsData = {
-          ...fieldsData,
-          ...aiData[fieldVal as string],
-        };
+      if (fields.form[field].input === 'fileupload') {
+        // @ts-expect-error
+        const documentIds = fieldVal?.documentIds as DocumentId[];
+        documentIds.forEach((id) => {
+          fieldsData = {
+            ...fieldsData,
+            ...aiData[id],
+          };
+        });
       }
     }
     data[kebabToCamel(key)] = fieldsData;
