@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { notFound } from 'next/navigation';
 
 import { getByIdForClient } from '@/controllers/audit';
@@ -19,7 +20,6 @@ export default async function AuditPage({
   if (audit.orgId !== user.orgId) {
     return notFound();
   }
-  const auditData = await getAuditData(audit.id);
 
   const documents = await getAllByAuditId(id);
 
@@ -83,8 +83,52 @@ export default async function AuditPage({
             </div>
           </div>
         </div>
-        <DataModal auditId={audit.id} auditData={auditData} />
+        <DataModal>
+          <AuditData auditId={audit.id} />
+        </DataModal>
       </div>
     </>
+  );
+}
+
+async function AuditData({ auditId }: { auditId: string }) {
+  const auditData = await getAuditData(auditId);
+  return (
+    <div className="w-full h-full">
+      Data:
+      <br />
+      {/* {data ? JSON.stringify(data) : null} */}
+      {auditData
+        ? Object.keys(auditData).map((key) => {
+            return <RequestType key={key} name={key} data={auditData[key]} />;
+          })
+        : null}
+    </div>
+  );
+}
+
+function RequestType({
+  name,
+  data,
+}: {
+  name: string;
+  data: Record<string, any>;
+}) {
+  return (
+    <div className="my-4">
+      <div className="font-semibold text-sm">{name}</div>
+      <ul>
+        {Object.keys(data).map((key) => {
+          const isMissing =
+            data[key] === null || data[key] === undefined || data[key] === '';
+
+          return (
+            <li key={key} className={clsx(isMissing ? 'text-red-600' : '')}>
+              {key}: {data[key] ? data[key].toString() : ''}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
