@@ -140,6 +140,8 @@ export function normalizeRequestData(
 ): {
   data: Record<string, NormalizedData>;
   uninitializedFields: Array<string>;
+  form: Record<string, FormField>;
+  requestType: string;
 } {
   const form = getRequestTypeForId(rt).form;
   let dataMatchesConfig = true;
@@ -176,6 +178,8 @@ export function normalizeRequestData(
   return {
     data: ret,
     uninitializedFields,
+    form,
+    requestType: rt,
   };
 }
 
