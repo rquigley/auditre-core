@@ -134,6 +134,7 @@ export async function createDocument(file: S3File) {
     mimeType: file.type,
     fileLastModified: new Date(file.lastModified),
     orgId: user.orgId,
+    uploadedByUserId: user.id,
     //requestId: request.id,
   });
 

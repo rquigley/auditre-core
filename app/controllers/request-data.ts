@@ -33,12 +33,31 @@ export async function getDataForRequestType(
   uninitializedFields: Array<string>;
 }> {
   const rows = await db
-    .selectFrom('requestData')
-    .select(['requestId', 'data', 'documentId'])
-    .distinctOn(['auditId', 'requestType', 'requestId'])
-    .where('auditId', '=', auditId)
-    .where('requestType', '=', rt.id)
-    .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
+    .selectFrom('requestData as rd')
+    .leftJoin('requestDataDocument as rdd', 'rd.id', 'rdd.requestDataId')
+    .select(({ fn, val, ref }) => [
+      'rd.requestId',
+      'rd.data',
+
+      fn.agg<string[]>('array_agg', ['rdd.documentId']).as('documentIds'),
+    ])
+
+    .distinctOn(['rd.auditId', 'rd.requestType', 'rd.requestId'])
+    .where('rd.auditId', '=', auditId)
+    .where('rd.requestType', '=', rt.id)
+    .groupBy([
+      'rd.auditId',
+      'rd.requestType',
+      'rd.requestId',
+      'rd.data',
+      'rd.createdAt',
+    ])
+    .orderBy([
+      'rd.auditId',
+      'rd.requestType',
+      'rd.requestId',
+      'rd.createdAt desc',
+    ])
     .execute();
 
   const defaultValues = getDefaultValues(rt);
@@ -53,10 +72,10 @@ export async function getDataForRequestAttribute(
   auditId: AuditId,
   requestType: string,
   requestId: string,
-) {
+): Promise<Pick<RequestData, 'id' | 'data'> | undefined> {
   return await db
     .selectFrom('requestData')
-    .select(['data', 'documentId'])
+    .select(['id', 'data'])
     .where('auditId', '=', auditId)
     .where('requestType', '=', requestType)
     .where('requestId', '=', requestId)
@@ -65,16 +84,33 @@ export async function getDataForRequestAttribute(
     .executeTakeFirst();
 }
 
-export async function getDataForAuditId(
-  auditId: AuditId,
-  // includeDefaultValues: boolean = true,
-) {
+export async function getDataForAuditId(auditId: AuditId) {
   const rows = await db
-    .selectFrom('requestData')
-    .select(['requestType', 'requestId', 'data', 'documentId'])
-    .distinctOn(['auditId', 'requestType', 'requestId'])
-    .where('auditId', '=', auditId)
-    .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
+    .selectFrom('requestData as rd')
+    .leftJoin('requestDataDocument as rdd', 'rd.id', 'rdd.requestDataId')
+    .select(({ fn, val, ref }) => [
+      'rd.requestType',
+      'rd.requestId',
+      'rd.data',
+
+      fn.agg<string[]>('array_agg', ['rdd.documentId']).as('documentIds'),
+    ])
+
+    .distinctOn(['rd.auditId', 'rd.requestType', 'rd.requestId'])
+    .where('rd.auditId', '=', auditId)
+    .groupBy([
+      'rd.auditId',
+      'rd.requestType',
+      'rd.requestId',
+      'rd.data',
+      'rd.createdAt',
+    ])
+    .orderBy([
+      'rd.auditId',
+      'rd.requestType',
+      'rd.requestId',
+      'rd.createdAt desc',
+    ])
     .execute();
 
   let ret: Record<
@@ -97,7 +133,7 @@ export async function getDataForAuditId(
 export type DataObj = {
   requestId: string;
   data: Record<string, unknown> | null;
-  documentId: string | null;
+  documentIds: Array<string> | null;
 };
 export function normalizeRequestData(
   rt: string,
@@ -125,7 +161,15 @@ export function normalizeRequestData(
 
       ret[key] = defaultValues[key];
     } else if (form[key].input === 'fileupload') {
-      ret[key] = d.documentId;
+      let documentIds = d.documentIds || [];
+      // the ARRAY_AGG in the query returns [null] if there are no documents
+      if (documentIds.length === 1 && documentIds[0] === null) {
+        documentIds = [];
+      }
+      ret[key] = {
+        isDocuments: true,
+        documentIds,
+      };
     } else if (d.data && 'value' in d.data) {
       ret[key] = d.data.value;
     }
@@ -172,4 +216,31 @@ export async function getChangesForRequestType(
     .orderBy(['requestData.createdAt desc'])
     .execute();
   return rows;
+}
+
+export async function createRequestDataDocument({
+  requestDataId,
+  documentId,
+}: {
+  requestDataId: string;
+  documentId: string;
+}) {
+  return await db
+    .insertInto('requestDataDocument')
+    .values({ requestDataId, documentId })
+    .execute();
+}
+
+export async function deleteRequestDataDocument({
+  requestDataId,
+  documentId,
+}: {
+  requestDataId: string;
+  documentId: string;
+}) {
+  return await db
+    .deleteFrom('requestDataDocument')
+    .where('requestDataId', '=', requestDataId)
+    .where('documentId', '=', documentId)
+    .execute();
 }

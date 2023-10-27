@@ -132,8 +132,13 @@ export interface RequestDataTable {
   orgId: OrgId;
   requestType: string;
   requestId: string;
-  data: { value: any } | null;
-  documentId: DocumentId | null;
+  data:
+    | { value: unknown }
+    // We save documentIds here in addition to RequestDataDocumentTable to reflect that a change
+    // has occurred. I don't love that we're duplicating data here, but the simplicity tradeoff
+    // feels worth it.
+    | { isDocuments: true; documentIds: DocumentId[] }
+    | null;
   actorUserId: UserId | null;
   createdAt: ColumnType<Date, Date | undefined, never>;
   // isDeleted: ColumnType<boolean, never, boolean>;
@@ -142,6 +147,16 @@ export interface RequestDataTable {
 export type RequestDataUpdate = Updateable<RequestDataTable>;
 export type NewRequestData = Insertable<RequestDataTable>;
 export type RequestData = Selectable<RequestDataTable>;
+
+export interface RequestDataDocumentTable {
+  id: Generated<string>;
+  requestDataId: RequestId;
+  documentId: DocumentId;
+  createdAt: ColumnType<Date, Date | undefined, never>;
+}
+
+export type NewRequestDataDocument = Insertable<RequestDataDocumentTable>;
+export type RequestDataDocument = Selectable<RequestDataDocumentTable>;
 
 export interface DocumentTable {
   id: Generated<string>;
@@ -166,7 +181,7 @@ export interface DocumentTable {
   isProcessed: ColumnType<boolean, never, boolean>;
   fileLastModified: Date;
   orgId: OrgId;
-  requestId: RequestId | null;
+  uploadedByUserId: UserId | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
 }
@@ -297,6 +312,7 @@ export interface Database extends Kysely<Database> {
   invitation: InvitationTable;
   org: OrgTable;
   requestData: RequestDataTable;
+  requestDataDocument: RequestDataDocumentTable;
   session: SessionTable;
   user: UserTable;
   verificationToken: VerificationTokenTable;
