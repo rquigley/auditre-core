@@ -38,12 +38,8 @@ export default async function FormContainer({ request, user, audit }: Props) {
 
   let documents: BasicFormProps['documents'] = {};
   for (const field of Object.keys(requestData)) {
-    if (
-      typeof requestData[field] !== 'object' ||
-      requestData[field] === null ||
-      // @ts-expect-error
-      !requestData[field].isDocuments
-    ) {
+    // @ts-expect-error
+    if (!requestData[field]?.isDocuments) {
       continue;
     }
     const data = requestData[field] as {
