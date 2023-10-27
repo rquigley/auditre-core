@@ -9,6 +9,12 @@ import type { ClientSafeRequest } from '@/controllers/request';
 
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
+    case 'loading':
+      return (
+        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium">
+          &nbsp;
+        </span>
+      );
     case 'todo':
       return (
         <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
@@ -51,8 +57,8 @@ export default function Row({
 }) {
   return (
     <tr key={request.id} className="hover:bg-gray-100">
-      <td className="whitespace-nowrap pl-4 sm:pl-2 py-5 text-sm text-gray-500">
-        <Suspense fallback={null}>
+      <td className="pl-4 sm:pl-2 py-5 text-sm text-gray-500">
+        <Suspense fallback={<StatusBadge status="loading" />}>
           <Await promise={statusesP}>
             {(s) => <StatusBadge status={s[request.id].status} />}
           </Await>
