@@ -2,7 +2,6 @@
 const nextConfig = {
   output: 'standalone',
   experimental: {
-    serverActions: true,
     // logging: {
     //   level: 'verbose',
     //   fullUrl: true,
@@ -17,6 +16,11 @@ const nextConfig = {
         // port: '',
         // pathname: '',
       },
+      // Uncomment if needed in dev
+      // {
+      //   protocol: 'https',
+      //   hostname: 'images.unsplash.com',
+      // },
     ],
   },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
