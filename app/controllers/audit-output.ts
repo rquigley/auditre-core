@@ -9,7 +9,7 @@ import {
 import { getAllByAuditId } from '@/controllers/request';
 import { getDataForAuditId } from '@/controllers/request-data';
 import { requestTypes } from '@/lib/request-types';
-import { kebabToCamel } from '@/lib/util';
+import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
 import { get as getBalanceSheetData } from './financial-statement/balance-sheet';
 import * as t from './financial-statement/template';
 
@@ -81,6 +81,16 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   const balanceSheet = await getBalanceSheetData(auditId);
 
   data.balanceSheet = balanceSheet;
+  data.fiscalYearEnd = `${getMonthName(
+    // @ts-expect-error
+    data.auditInfo.fiscalYearMonthEnd,
+  )} ${getLastDayOfMonth(
+    // @ts-expect-error
+    data.auditInfo.fiscalYearMonthEnd,
+    // @ts-expect-error
+    data.auditInfo.year,
+    // @ts-expect-error
+  )}, ${data.auditInfo.year}`;
 
   return data;
 }
@@ -199,36 +209,9 @@ export async function generate(auditId: AuditId) {
             },
           },
         },
-        // {
-        //   id: 'HighlightForHuman',
-        //   name: 'Highlight For Human',
-        //   basedOn: 'Normal',
-        //   quickFormat: true,
-        //   run: {
-        //     strike: true,
-        //     color: 'FF0000',
-        //     highlight: 'yellow',
-        //   },
-        // },
       ],
     },
-    // numbering: {
-    //   config: [
-    //     {
-    //       reference: 'doc-numbering',
-    //       levels: [
-    //         {
-    //           level: 0,
-    //           //format: LevelFormat.UPPER_ROMAN,
-    //           //text: '%1',
-    //           //format: LevelFormat.LOWER_LETTER,
-    //           //text: '%1)',
-    //           alignment: AlignmentType.LEFT,
-    //         },
-    //       ],
-    //     },
-    //   ],
-    // },
+
     sections: [
       titlePage(data),
       tableOfContents(),
@@ -244,7 +227,6 @@ export async function generate(auditId: AuditId) {
 }
 
 function titlePage(data: AuditData) {
-  const yearEnd = dayjs(data.auditInfo.fiscalYearEnd).format('MMMM D, YYYY');
   return {
     ...getPageProperties(),
     children: [
@@ -257,7 +239,7 @@ function titlePage(data: AuditData) {
         //heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
-        text: `Year Ended ${yearEnd}`,
+        text: `Year Ended ${data.fiscalYearEnd}`,
         //heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
@@ -293,27 +275,9 @@ function independentAuditorsReport(data: AuditData) {
       new Paragraph({
         text: "Independent Auditor's Report",
         heading: HeadingLevel.HEADING_1,
-        //pageBreakBefore: true,
       }),
       new Paragraph({ children: [t1] }),
       new Paragraph({ children: [t1], pageBreakBefore: true }),
-
-      // new Paragraph({
-      //   text: 'Header #2',
-      //   heading: HeadingLevel.HEADING_1,
-      //   pageBreakBefore: true,
-      // }),
-      // new Paragraph("I'm a other text very nicely written.'"),
-      // new Paragraph({
-      //   text: 'Header #2.1',
-      //   heading: HeadingLevel.HEADING_2,
-      // }),
-      // new Paragraph("I'm a another text very nicely written.'"),
-      // new Paragraph({
-      //   text: 'My Spectacular Style #1',
-      //   style: 'MySpectacularStyle',
-      //   pageBreakBefore: true,
-      // }),
     ],
   };
 }
@@ -333,6 +297,13 @@ function consolidatedFinancialStatements(data: AuditData) {
   //   highlight: 'yellow',
   // });
 
+  const fiscalCloseStr = `As of ${getMonthName(
+    data.auditInfo.fiscalYearMonthEnd,
+  )} ${getLastDayOfMonth(
+    data.auditInfo.fiscalYearMonthEnd,
+    data.auditInfo.year,
+  )},`;
+
   const table = new Table({
     borders: {
       top: { style: BorderStyle.NONE },
@@ -340,19 +311,11 @@ function consolidatedFinancialStatements(data: AuditData) {
       left: { style: BorderStyle.NONE },
       right: { style: BorderStyle.NONE },
     },
-    // width: {
-    //   size: '6in',
-    //   //type: WidthType.DXA,
-    // },
-    // width: {
-    //   size: 100,
-    //   type: WidthType.PERCENTAGE,
-    // },
     columnWidths: [7505, 1505],
     rows: [
       getRow({
-        name: 'As of December 31,',
-        value: '2022',
+        name: fiscalCloseStr,
+        value: data.auditInfo.year,
         bold: true,
         borderBottom: true,
       }),
@@ -577,36 +540,15 @@ function getPageProperties() {
       //   },
       // },
     },
-    // headers: {
-    //   default: new Header({
-    //     children: [
-    //       new Paragraph({
-    //         children: [
-    //           new TextRun('Foo Bar corp. '),
-    //           new TextRun({
-    //             children: ['Page Number ', PageNumber.CURRENT],
-    //           }),
-    //           new TextRun({
-    //             children: [' to ', PageNumber.TOTAL_PAGES],
-    //           }),
-    //         ],
-    //       }),
-    //     ],
-    //   }),
-    // },
     footers: {
       default: new Footer({
         children: [
           new Paragraph({
             alignment: AlignmentType.RIGHT,
             children: [
-              //new TextRun('Foo Bar corp. '),
               new TextRun({
                 children: ['Page ', PageNumber.CURRENT],
               }),
-              // new TextRun({
-              //   children: [' to ', PageNumber.TOTAL_PAGES],
-              // }),
             ],
           }),
         ],
@@ -648,7 +590,7 @@ function formatBodyText(text: string): (typeof TextRun)[] {
 
   return textRuns;
 }
-function templateToParagraph(template: t.Template) {
+function templateToParagraph(template: t.Template, pageBreakBefore = false) {
   if (!template) {
     return [];
   }
@@ -659,6 +601,7 @@ function templateToParagraph(template: t.Template) {
     new Paragraph({
       text: template.header,
       heading: HeadingLevel.HEADING_2,
+      pageBreakBefore,
     }),
     ...paragraphs,
   ];
@@ -679,6 +622,9 @@ function notes(data: AuditData) {
       ...templateToParagraph(t.organization2(data)),
 
       new Paragraph({
+        text: '',
+      }),
+      new Paragraph({
         text: '2. Summary of Significant Accounting Policies',
         heading: HeadingLevel.HEADING_1,
       }),
@@ -698,6 +644,20 @@ function notes(data: AuditData) {
       ...templateToParagraph(t.summarySigAccountPractices14(data)),
       ...templateToParagraph(t.summarySigAccountPractices15(data)),
       ...templateToParagraph(t.summarySigAccountPractices16(data)),
+
+      ...templateToParagraph(t.summarySigAccountPractices17(data), true),
+
+      ...templateToParagraph(t.summarySigAccountPractices18(data), true),
+
+      ...templateToParagraph(t.summarySigAccountPractices19(data), true),
+      ...templateToParagraph(t.summarySigAccountPractices20(data), true),
+      ...templateToParagraph(t.summarySigAccountPractices21(data), true),
+      ...templateToParagraph(t.summarySigAccountPractices22(data), true),
+      ...templateToParagraph(t.summarySigAccountPractices23(data), true),
+      ...templateToParagraph(t.summarySigAccountPractices24(data), true),
+      ...templateToParagraph(t.summarySigAccountPractices25(data), true),
+      ...templateToParagraph(t.summarySigAccountPractices26(data), true),
+      ...templateToParagraph(t.summarySigAccountPractices27(data), true),
     ],
   };
 }
