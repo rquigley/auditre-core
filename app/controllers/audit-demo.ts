@@ -5,6 +5,7 @@ import { getById } from '@/controllers/audit';
 import { create as createDocument } from '@/controllers/document';
 import { create as createDocumentQuery } from '@/controllers/document-query';
 import { saveRequestData } from '@/controllers/request';
+import { getDataForRequestAttribute } from '@/controllers/request-data';
 import { documentAiQuestions } from '@/lib/document-ai-questions';
 
 import type { OpenAIMessage } from '@/lib/ai';
@@ -19,20 +20,29 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
     requestType: 'basic-info',
     data: {
       businessName: 'AuditRe, Inc.',
-      description: 'This is a description of the business',
+      description:
+        'Audit readiness for startups and small businesses. They generate audit-ready financial statements in a matter of days instead of months – at a fraction of the cost – by bringing technology to the traditional audit process.',
       businessModels: ['SOFTWARE_AS_A_SERVICE'],
       chiefDecisionMaker: 'Jason Gordon',
     },
     actorUserId,
   });
+  const existingYear = await getDataForRequestAttribute(
+    auditId,
+    'audit-info',
+    'year',
+  );
+  console.log(existingYear);
   await saveRequestData({
     auditId,
     requestType: 'audit-info',
     data: {
-      // year: '2002',
+      // year might be saved at creation.
+      // @ts-expect-error
+      year: existingYear?.data?.value || '2015',
       fiscalYearMonthEnd: '12',
       hasBeenAudited: false,
-      // previousAuditDocumentId: '',
+      previousAuditDocumentId: { isDocuments: true, documentIds: [] },
     },
     actorUserId,
   });
