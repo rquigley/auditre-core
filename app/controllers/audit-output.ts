@@ -590,6 +590,7 @@ function formatBodyText(text: string): (typeof TextRun)[] {
 
   return textRuns;
 }
+
 function templateToParagraph(template: t.Template, pageBreakBefore = false) {
   if (!template) {
     return [];
@@ -606,6 +607,22 @@ function templateToParagraph(template: t.Template, pageBreakBefore = false) {
     ...paragraphs,
   ];
 }
+function templateToParagraph2(
+  template: t.Template & { pageBreakBefore: boolean },
+): Array<unknown> {
+  const ret = [
+    new Paragraph({
+      text: template.header,
+      heading: HeadingLevel.HEADING_2,
+      pageBreakBefore: template.pageBreakBefore,
+    }),
+  ];
+  template.body.split('\n').forEach((p) => {
+    ret.push(new Paragraph({ children: formatBodyText(p) }));
+  });
+
+  return ret;
+}
 
 function notes(data: AuditData) {
   return {
@@ -618,8 +635,11 @@ function notes(data: AuditData) {
         pageBreakBefore: true,
       }),
 
-      ...templateToParagraph(t.organization1(data)),
-      ...templateToParagraph(t.organization2(data)),
+      ...t.sectionsToBody(
+        t.getOrganizationSections(),
+        data,
+        templateToParagraph2,
+      ),
 
       new Paragraph({
         text: '',
@@ -628,36 +648,8 @@ function notes(data: AuditData) {
         text: '2. Summary of Significant Accounting Policies',
         heading: HeadingLevel.HEADING_1,
       }),
-      ...templateToParagraph(t.summarySigAccountPractices1(data)),
-      ...templateToParagraph(t.summarySigAccountPractices2(data)),
-      ...templateToParagraph(t.summarySigAccountPractices3(data)),
-      ...templateToParagraph(t.summarySigAccountPractices4(data)),
-      ...templateToParagraph(t.summarySigAccountPractices5(data)),
-      ...templateToParagraph(t.summarySigAccountPractices6(data)),
-      ...templateToParagraph(t.summarySigAccountPractices7(data)),
-      ...templateToParagraph(t.summarySigAccountPractices8(data)),
-      ...templateToParagraph(t.summarySigAccountPractices9(data)),
-      ...templateToParagraph(t.summarySigAccountPractices10(data)),
-      ...templateToParagraph(t.summarySigAccountPractices11(data)),
-      ...templateToParagraph(t.summarySigAccountPractices12(data)),
-      ...templateToParagraph(t.summarySigAccountPractices13(data)),
-      ...templateToParagraph(t.summarySigAccountPractices14(data)),
-      ...templateToParagraph(t.summarySigAccountPractices15(data)),
-      ...templateToParagraph(t.summarySigAccountPractices16(data)),
 
-      ...templateToParagraph(t.summarySigAccountPractices17(data), true),
-
-      ...templateToParagraph(t.summarySigAccountPractices18(data), true),
-
-      ...templateToParagraph(t.summarySigAccountPractices19(data), true),
-      ...templateToParagraph(t.summarySigAccountPractices20(data), true),
-      ...templateToParagraph(t.summarySigAccountPractices21(data), true),
-      ...templateToParagraph(t.summarySigAccountPractices22(data), true),
-      ...templateToParagraph(t.summarySigAccountPractices23(data), true),
-      ...templateToParagraph(t.summarySigAccountPractices24(data), true),
-      ...templateToParagraph(t.summarySigAccountPractices25(data), true),
-      ...templateToParagraph(t.summarySigAccountPractices26(data), true),
-      ...templateToParagraph(t.summarySigAccountPractices27(data), true),
+      ...t.sectionsToBody(t.getPolicySections(), data, templateToParagraph2),
     ],
   };
 }

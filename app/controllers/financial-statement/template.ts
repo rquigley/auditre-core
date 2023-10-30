@@ -21,13 +21,66 @@ export type Template = {
   body: string;
 } | null;
 
-//
-// Organization
-//
-export function organization1(data: AuditData): Template {
+export type Section = {
+  header: string;
+  isShowing: (data: AuditData) => boolean;
+  slug: string;
+  body: (data: AuditData) => string;
+  pageBreakBefore: boolean;
+};
+
+function generateSection({
+  header,
+  isShowing = () => true,
+  body,
+  pageBreakBefore = false,
+}: {
+  header: string;
+  isShowing?: (data: AuditData) => boolean;
+  body: (data: AuditData) => string;
+  pageBreakBefore?: boolean;
+}): Section {
   return {
+    header,
+    isShowing,
+    slug: header.toLowerCase().replace(/ /g, '-'),
+    body,
+    pageBreakBefore,
+  };
+}
+
+export function sectionsToBody<T>(
+  sections: Section[],
+  data: AuditData,
+  wrapper: ({
+    header,
+    body,
+    pageBreakBefore = false,
+  }: {
+    header: string;
+    body: string;
+    pageBreakBefore: boolean;
+  }) => T[],
+) {
+  const ret = [];
+  for (const s in sections) {
+    if (sections[s].isShowing(data)) {
+      ret.push(
+        ...wrapper({
+          header: sections[s].header,
+          body: stripIndent(sections[s].body(data)),
+          pageBreakBefore: sections[s].pageBreakBefore,
+        }),
+      );
+    }
+  }
+  return ret;
+}
+
+export const getOrganizationSections = () => [
+  generateSection({
     header: 'Description of Business',
-    body: stripIndent`
+    body: (data) => `
       [${
         data.basicInfo.businessName
       }]. (the “Company”) was incorporated in the State of [${
@@ -36,13 +89,11 @@ export function organization1(data: AuditData): Template {
         data.basicInfo.description
       }]. [TODO: The Company has wholly owned subsidiaries], [SUBSIDIARY 1, SUBSIDIARY 2...].
     `,
-  };
-}
+  }),
 
-export function organization2(data: AuditData): Template {
-  return {
+  generateSection({
     header: 'Going Concern and Liquidity',
-    body: stripIndent`
+    body: (data) => `
       The Company has incurred recurring losses and negative cash flows from operating activities since inception. As of [${
         data.fiscalYearEnd
       }], the Company had cash of [${pp(
@@ -53,55 +104,40 @@ export function organization2(data: AuditData): Template {
 
       The ability to continue as a going concern is dependent upon the Company obtaining necessary financing to meet its obligations and repay its liabilities arising from normal business operations when they come due. The Company may raise additional capital through the issuance of equity securities, debt financings or other sources in order to further implement its business plan. However, if such financing is not available when needed and at adequate levels, the Company will need to reevaluate its operating plan and may be required to delay the development of its products.
     `,
-  };
-}
+  }),
+];
 
-//
-// Summary of Significant Accounting Policies
-// See source at https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=999975059
-//
-export function summarySigAccountPractices1(data: AuditData): Template {
-  return {
+export const getPolicySections = () => [
+  generateSection({
     header: 'Basis of Presentation',
-    body: stripIndent`
+    body: (data) => `
       The accompanying consolidated financial statements, which include the accounts of the Company and its wholly owned subsidiaries, have been prepared in conformity with accounting principles generally accepted in the United States of America (“US GAAP”). All significant intercompany transactions and balances have been eliminated in consolidation.
     `,
-  };
-}
+  }),
 
-export function summarySigAccountPractices2(data: AuditData): Template {
-  return {
+  generateSection({
     header: 'Foreign Currencies',
-    body: stripIndent`
+    body: (data) => `
       Gains and losses resulting from foreign currency transactions are included in other income, net within the consolidated statement of operations. For the year ended [${data.fiscalYearEnd}], the impact from foreign currency transactions was immaterial.
     `,
-  };
-}
-
-export function summarySigAccountPractices3(data: AuditData): Template {
-  return {
+  }),
+  generateSection({
     header: 'Use of Estimates',
-    body: stripIndent`
+    body: (data) => `
       The preparation of consolidated financial statements in conformity with US GAAP requires the Company to make estimates, judgments, and assumptions that affect the reported amounts of assets, liabilities, expenses and the amounts disclosed in the related notes to the consolidated financial statements. Significant estimates and assumptions used in these consolidated financial statements include, but are not limited to, useful lives and recoverability of long-lived assets, the fair value of the Company's common stock, the fair value of derivative liability, stock-based compensation and the accounting for income taxes and related valuation allowances. The Company evaluates its estimates and assumptions on an ongoing basis using historical experience and other factors and adjusts those estimates and assumptions when facts and circumstances dictate. Actual results could materially differ from those estimates.
-`,
-  };
-}
-
-export function summarySigAccountPractices4(data: AuditData): Template {
-  return {
+    `,
+  }),
+  generateSection({
     header: 'Concentration of Credit Risk and Other Risks and Uncertainties',
-    body: stripIndent`
+    body: (data) => `
       Financial instruments that potentially subject the Company to credit risk consist principally of cash held by financial institutions. Substantially all of the Company's cash is held at one financial institution that management believes is of high credit quality. Such deposits may, at times, exceed federally insured limits.
 
       The Company is dependent on key suppliers for certain laboratory materials. An interruption in the supply of these materials would temporarily impact the Company's ability to perform development and testing related to its products.
     `,
-  };
-}
-
-export function summarySigAccountPractices5(data: AuditData): Template {
-  return {
+  }),
+  generateSection({
     header: 'Fair Value Measurements',
-    body: stripIndent`
+    body: (data) => `
       The carrying value of the Company's cash, prepaid expenses and other current assets, accounts payable and  accrued liabilities approximate fair value due to the short-term nature of these items.
 
       Fair value is defined as the exchange price that would be received for an asset or an exit price paid to transfer a liability in the principal or most advantageous market for the asset or liability in an orderly transaction between market participants on the measurement date.
@@ -110,35 +146,25 @@ export function summarySigAccountPractices5(data: AuditData): Template {
 
       The fair value hierarchy defines a three-level valuation hierarchy for disclosure of fair value measurements as follows:
 
-        •	 	Level 1—Unadjusted quoted prices in active markets for identical assets or liabilities;
-
-        •	 	Level 2—Inputs other than quoted prices included within Level 1 that are observable, unadjusted quoted prices in markets that are not active, or other inputs that are observable or can be corroborated by observable market data for substantially the full term of the related assets or liabilities; and
-
-        •	 	Level 3—Unobservable inputs that are supported by little or no market activity for the related assets or liabilities.
-
+          • Level 1 - Unadjusted quoted prices in active markets for identical assets or liabilities;
+          • Level 2 - Inputs other than quoted prices included within Level 1 that are observable, unadjusted quoted prices in markets that are not active, or other inputs that are observable or can be corroborated by observable market data for substantially the full term of the related assets or liabilities; and
+          • Level 3 - Unobservable inputs that are supported by little or no market activity for the related assets or liabilities.
 
       The categorization of a financial instrument within the valuation hierarchy is based upon the lowest level of input that is significant to the fair value measurement.
 
       The Company's derivative liability is measured at fair value on a recurring basis and are classified as Level 3 liabilities. The Company records subsequent adjustments to reflect the increase or decrease in estimated fair value at each reporting date in current period earnings.
     `,
-  };
-}
-
-export function summarySigAccountPractices6(data: AuditData): Template {
-  return {
+  }),
+  generateSection({
     header: 'Cash',
-    body: stripIndent`
+    body: (data) => `
       The Company considers highly liquid investments purchased with a remaining maturity date upon acquisition of three months or less to be cash equivalents and are stated at cost, which approximates fair value. As of [${data.fiscalYearEnd}], there were no cash equivalents.
     `,
-  };
-}
-
-export function summarySigAccountPractices7(data: AuditData): Template {
-  //[If the trial balance has a field referencing "fixed assets']
-  // return null
-  return {
+  }),
+  generateSection({
     header: 'Property and Equipment',
-    body: stripIndent`
+    isShowing: (data) => true, // [no show If the trial balance has a field referencing "fixed assets']
+    body: (data) => `
       Property and equipment are stated at cost, net of depreciation. Depreciation is computed using the straight-line method over the estimated useful lives of the assets. Leasehold improvements are amortized on a straight-line basis over the lesser of the estimated useful life of the asset or the remaining term of the related lease. Maintenance and repairs are charged to expense as incurred, and improvements and betterments are capitalized.
 
       When assets are retired or otherwise disposed of, the cost and accumulated depreciation are removed from the balance sheet and any resulting gain or loss is reflected in other income or expense in the statement of operations in the period realized.
@@ -155,145 +181,86 @@ export function summarySigAccountPractices7(data: AuditData): Template {
       3 – 10
       Remaining life of the lease
     `,
-  };
-}
-
-export function summarySigAccountPractices8(data: AuditData): Template {
-  //[If the trial balance has a field referencing "intangible assets']
-  // return null
-  return {
+  }),
+  generateSection({
     header: 'Intangible Assets',
-    body: stripIndent`
+    isShowing: (data) => true, // [If the trial balance has a field referencing "intangible assets']
+    body: (data) => `
       Intangible assets consist of patents and are stated at cost, net of amortization. Amortization is computed using the straight-line method over an estimated useful life of approximately five to seventeen years.
     `,
-  };
-}
-
-export function summarySigAccountPractices9(data: AuditData): Template {
-  if (!data.leases.hasLeases || !data.leases.didPerformASC842Analysis) {
-    return {
-      header: 'Leases',
-      body: '[NOT SHOWING: !data.leases.hasLeases || !data.leases.didPerformASC842Analysis]',
-    };
-  }
-  return {
+  }),
+  generateSection({
     header: 'Leases',
-    body: stripIndent`
-    The Company determines if an arrangement is a lease at inception and if so, determines whether the lease qualifies as operating or finance. Operating leases are included in operating lease right-of-use (“ROU”) assets and operating lease liabilities in the consolidated balance sheet. The Company does not have any finance leases as of [${data.fiscalYearEnd}].
+    isShowing: (data) =>
+      data.leases.hasLeases && data.leases.didPerformASC842Analysis,
+    body: (data) => `
+      The Company determines if an arrangement is a lease at inception and if so, determines whether the lease qualifies as operating or finance. Operating leases are included in operating lease right-of-use (“ROU”) assets and operating lease liabilities in the consolidated balance sheet. The Company does not have any finance leases as of [${data.fiscalYearEnd}].
 
-    ROU assets represent the right to use an underlying asset for the lease term and lease liabilities represent the obligation to make lease payments arising from the lease. ROU assets are calculated and recognized at lease commencement date based on the present value of lease payments over the lease term adjusted for any lease payments paid to the lessor at or before the commencement date and initial direct costs incurred by the Company and excludes any lease incentives received from the lessor. When the implicit rate is not readily available, the Company has made an accounting policy election to use to the risk-free rate to determine the present value of lease payments for its property leases. The Company's lease terms may include options to extend or terminate the lease when it is reasonably certain that it will exercise that option.
+      ROU assets represent the right to use an underlying asset for the lease term and lease liabilities represent the obligation to make lease payments arising from the lease. ROU assets are calculated and recognized at lease commencement date based on the present value of lease payments over the lease term adjusted for any lease payments paid to the lessor at or before the commencement date and initial direct costs incurred by the Company and excludes any lease incentives received from the lessor. When the implicit rate is not readily available, the Company has made an accounting policy election to use to the risk-free rate to determine the present value of lease payments for its property leases. The Company's lease terms may include options to extend or terminate the lease when it is reasonably certain that it will exercise that option.
 
-    Lease expense for lease payments is recognized on a straight-line basis over the lease term. The Company has elected not to recognize ROU asset and lease obligations for its short-term leases, which are defined as leases with an initial term of 12 months or less. The Company elected to not separate lease and non-lease components for all of its property leases. For leases in which the lease and non-lease components have been combined, the variable lease expense includes expenses such as common area maintenance, utilities, repairs and maintenance and are expensed as incurred.
+      Lease expense for lease payments is recognized on a straight-line basis over the lease term. The Company has elected not to recognize ROU asset and lease obligations for its short-term leases, which are defined as leases with an initial term of 12 months or less. The Company elected to not separate lease and non-lease components for all of its property leases. For leases in which the lease and non-lease components have been combined, the variable lease expense includes expenses such as common area maintenance, utilities, repairs and maintenance and are expensed as incurred.
     `,
-  };
-}
-
-export function summarySigAccountPractices10(data: AuditData): Template {
-  if (!data.leases.hasLeases || !data.leases.didPerformASC842Analysis) {
-    return {
-      header: 'Impairment of Long-Lived Assets',
-      body: '[NOT SHOWING: !data.leases.hasLeases || !data.leases.didPerformASC842Analysis]',
-    };
-  }
-  return {
+  }),
+  generateSection({
     header: 'Impairment of Long-Lived Assets',
-    body: stripIndent`
+    isShowing: (data) =>
+      data.leases.hasLeases && data.leases.didPerformASC842Analysis,
+    body: (data) => `
       The Company periodically evaluates the recoverability of its long-lived assets that include property and equipment, intangible assets and ROU assets for impairment whenever events or changes in circumstances indicate that the carrying amount of an asset may not be recoverable. Recoverability is measured by comparison of the carrying amount to the future net cash flows, which the assets are expected to generate. If such assets are considered to be impaired, the impairment to be recognized is measured by the amount by which the carrying amount of the assets exceeds the projected discounted future net cash flows arising from the asset. No impairment loss was recognized for the year ended [${data.fiscalYearEnd}].
     `,
-  };
-}
-
-export function summarySigAccountPractices11(data: AuditData): Template {
-  //[if there's a field called "research and development" from the trial balance]
-  // return null
-  return {
+  }),
+  generateSection({
     header: 'Research and Development',
-    body: stripIndent`
+    isShowing: (data) => true, // [if there's a field called "research and development" from the trial balance]
+    body: (data) => `
       Costs associated with research and development activities are expensed as incurred and include, but are not limited to, personnel-related expenses including stock-based compensation expense, materials, laboratory supplies, consulting costs, and allocated overhead including rent and utilities.
     `,
-  };
-}
-
-export function summarySigAccountPractices12(data: AuditData): Template {
-  //[if there's a field called "marketing" or "advertising" from the trial balance]
-  // return null
-  return {
+  }),
+  generateSection({
     header: 'Advertising and Marketing Costs',
-    body: stripIndent`
+    isShowing: (data) => true, // [if there's a field called "marketing" or "advertising" from the trial balance]
+    body: (data) => `
       Costs associated with advertising and marketing activities are expensed as incurred. Total advertising and marketing costs amounted to [marketing cost, $XX,XXX] for the year ended [${data.fiscalYearEnd}] and are included in general and administrative expenses in the consolidated statement of operations.
     `,
-  };
-}
-
-export function summarySigAccountPractices13(data: AuditData): Template {
-  //[if answered yes to "if the company isssued stock to employees"]
-  // return null
-  if (!data.equity.hasEmployeeStockPlan) {
-    return {
-      header: 'Stock-Based Compensation',
-      body: '[NOT SHOWING: !data.equity.hasEmployeeStockPlan]',
-    };
-  }
-
-  return {
+  }),
+  generateSection({
     header: 'Stock-Based Compensation',
-    body: stripIndent`
+    isShowing: (data) => data.equity.hasEmployeeStockPlan,
+    body: (data) => `
       The Company estimates the fair value of stock based payment awards on the date of grant using the Black Scholes Merton option pricing model. The model requires management to make a number of assumptions, including the fair value of the Company's common stock, expected volatility, expected life, risk free interest rate and expected dividends. The value of awards that are ultimately expected to vest is recognized ratably over the requisite service periods in the Company's consolidated statement of operations. Forfeitures are accounted for as they occur.
     `,
-  };
-}
-
-export function summarySigAccountPractices14(data: AuditData): Template {
-  return {
+  }),
+  generateSection({
     header: 'Income Taxes',
-    body: stripIndent`
+    body: (data) => `
       The Company accounts for income taxes using the liability method whereby deferred tax asset and liability account balances are determined based on differences between the financial reporting and tax basis of assets and liabilities and are measured using the enacted tax rates and laws that will be in effect when the differences are expected to reverse. The Company provides a valuation allowance, if necessary, to reduce deferred tax assets to their estimated realizable value.
 
       In evaluating the ability to recover its deferred income tax assets, the Company considers all available positive and negative evidence, including its operating results, ongoing tax planning, and forecasts of future taxable income on a jurisdiction-by-jurisdiction basis. In the event the Company determines that it would be able to realize its deferred income tax assets in the future in excess of their net recorded amount, it would make an adjustment to the valuation allowance that would reduce the provision for income taxes. Conversely, in the event that all or part of the net deferred tax assets are determined not to be realizable in the future, an adjustment to the valuation allowance would be charged to earnings in the period such determination is made.
 
       It is the Company's policy to include penalties and interest expense related to income taxes as a component of other expense and interest expense, respectively, as necessary.
     `,
-  };
-}
-
-export function summarySigAccountPractices15(data: AuditData): Template {
-  return {
+  }),
+  generateSection({
     header: 'Recent Accounting Pronouncements',
-    body: stripIndent`
+    body: (data) => `
       From time to time, new accounting pronouncements, or Accounting Standard Updates (“ASU”) are issued by the Financial Accounting Standards Board (“FASB”), or other standard setting bodies and adopted by the Company as of the specified effective date. Unless otherwise discussed, the impact of recently issued standards that are not yet effective will not have a material impact on the Company's financial position or results of operations upon adoption.
     `,
-  };
-}
-
-export function summarySigAccountPractices16(data: AuditData): Template {
-  if (!data.leases.didPerformASC842Analysis) {
-    return {
-      header: 'Recently Adopted Accounting Pronouncements',
-      body: '[NOT SHOWING: !data.leases.didPerformASC842Analysis]',
-    };
-  }
-  return {
+  }),
+  generateSection({
     header: 'Recently Adopted Accounting Pronouncements',
-    body: stripIndent`
+    isShowing: (data) => data.leases.didPerformASC842Analysis,
+    body: (data) => `
       In February 2016, the FASB issued ASU No. 2016-02, Leases (Topic 842), (“ASC 842”). The amendments in this update increase transparency and comparability among organizations by recognizing lease assets and lease liabilities on the balance sheet and disclosing key information about leasing arrangements. The amendments in this update are effective for private entities for fiscal years beginning after [${data.leases.yearOfASC842Analysis}].
 
       The Company adopted ASC 842 using the cumulative effect adjustment approach as of [${data.leases.yearOfASC842Analysis}]. The Company elected the package of practical expedients permitted under the transition guidance within ASC 842, which allowed the Company to carry forward the historical lease classification, retain the initial direct costs for any leases that existed prior to the adoption of the standard and not reassess whether any contracts entered into prior to the adoption are leases. The Company did not elect the hindsight practical expedient to reassess the lease term for leases within the Company's lease population.
 
       Upon adoption, the Company recognized operating lease right-of-use assets of [insert right of use from trial balance] and operating lease liabilities of [insert lease liabilities from trial balance] . In addition, the Company reclassified deferred rent of [number]. There was no cumulative-effect adjustment to the opening balance of retained earnings from the adoption of ASC 842. The additional disclosures required by the new standard have been included in Note 2, “Summary of  Significant Accounting Policies” and Note 5, “Leases.”
     `,
-  };
-}
-
-export function summarySigAccountPractices17(data: AuditData): Template {
-  if (!data.leases.didPerformASC842Analysis) {
-    return {
-      header: 'Fair Value Measurements',
-      body: '[NOT SHOWING: !data.leases.didPerformASC842Analysis]',
-    };
-  }
-  return {
+  }),
+  generateSection({
     header: 'Fair Value Measurements',
-    body: stripIndent`
+    isShowing: (data) => data.leases.didPerformASC842Analysis,
+    body: (data) => `
       The following tables summarize the Company’s financial liabilities measured at fair value on a recurring basis by level within the fair value hierarchy as of [insert December 31, 2022]:
 
       [TABLE https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=2072488138&range=A6]
@@ -304,51 +271,28 @@ export function summarySigAccountPractices17(data: AuditData): Template {
 
       [TABLE https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=2072488138&range=A12]
     `,
-  };
-}
-
-export function summarySigAccountPractices18(data: AuditData): Template {
-  if (!data.leases.didPerformASC842Analysis) {
-    return {
-      header: 'Property and equipment, net',
-      body: '[NOT SHOWING: !data.leases.didPerformASC842Analysis]',
-    };
-  }
-  return {
+    pageBreakBefore: true,
+  }),
+  generateSection({
     header: 'Property and equipment, net',
-    body: stripIndent`
+    isShowing: (data) => data.leases.didPerformASC842Analysis,
+    body: (data) => `
       [TABLE] https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=586543814&range=A4
-
     `,
-  };
-}
-
-export function summarySigAccountPractices19(data: AuditData): Template {
-  if (!data.leases.didPerformASC842Analysis) {
-    return {
-      header: 'Leases',
-      body: '[NOT SHOWING: !data.leases.didPerformASC842Analysis]',
-    };
-  }
-  return {
+    pageBreakBefore: true,
+  }),
+  generateSection({
     header: 'Leases',
-    body: stripIndent`
+    isShowing: (data) => data.leases.didPerformASC842Analysis,
+    body: (data) => `
       [TABLE] https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=406550412&range=A2
-
     `,
-  };
-}
-
-export function summarySigAccountPractices20(data: AuditData): Template {
-  // if (!data.leases.didPerformASC842Analysis) {
-  //   return {
-  //     header: 'Convertible Note Payable',
-  //     body: '[NOT SHOWING: !data.leases.didPerformASC842Analysis]',
-  //   };
-  // }
-  return {
+    pageBreakBefore: true,
+  }),
+  generateSection({
     header: 'Convertible Note Payable',
-    body: stripIndent`
+    isShowing: (data) => true, // [if there answered there's a field called "convertible note" on the trial balance"]
+    body: (data) => `
       [if there answered there's a field called "convertible note" on the trial balance"] Note - this will also prompt the user to upload the equity/debt deal
 
       On [insert issue date of contract, Month, Day, Year (i.e. December 31, 2023)], the Company entered into [Type of Financing Document]  (the “[Type of Financing Document]”) with several lenders (the “Lenders”). The Lenders provided the Company an aggregate cash consideration of [aggregate amount raised, $XX,XXX], net of issuance costs of [provided by the company]. The [Type of Financing Document] accrue interest at [insert annual insert rate] per annum, which is accrued on the note balance. All unpaid interest and principal are due and payable upon maturity on [insert maturity date, Month, Day, Year (i.e. December 31, 2023] (“Maturity Date”). In addition, at the election of the holders of a majority of the outstanding principal amount of the [Type of Financing Document], the outstanding principal balance of the [Type of Financing Document] is convertible at any time after the Maturity Date into shares of the Company’s Series A preferred stock at a conversion price equal to [number] per share.
@@ -363,94 +307,79 @@ export function summarySigAccountPractices20(data: AuditData): Template {
 
       As of [${data.fiscalYearEnd}], the fair value of the derivative liability was [$___]. During the year ended [${data.fiscalYearEnd}], the Company recorded [$___] for the remeasurement of the derivative liability as a component of other income (expense), net in the statement of operations.
     `,
-  };
-}
-
-export function summarySigAccountPractices21(data: AuditData): Template {
-  // if (!data.leases.didPerformASC842Analysis) {
-  //   return {
-  //     header: 'Convertible Note Payable',
-  //     body: '[NOT SHOWING: !data.leases.didPerformASC842Analysis]',
-  //   };
-  // }
-  return {
+    pageBreakBefore: true,
+  }),
+  generateSection({
     header: `Stockholder's Equity (Deficit)`,
-    body: stripIndent`
-    Convertible Preferred Stock
+    body: (data) => `
+      Convertible Preferred Stock
 
-    As of [${data.fiscalYearEnd}], the Company was authorized to issue [insert Variable 1 from Carta Certificate Transaction Report] shares of $0.00001 par value convertible preferred stock.
+      As of [${data.fiscalYearEnd}], the Company was authorized to issue [insert Variable 1 from Carta Certificate Transaction Report] shares of $0.00001 par value convertible preferred stock.
 
-    As of [${data.fiscalYearEnd}], the Company’s convertible preferred stock consisted of the following:
+      As of [${data.fiscalYearEnd}], the Company’s convertible preferred stock consisted of the following:
 
-    [Insert Table A from Carta Certificate Transaction Report]
+      [Insert Table A from Carta Certificate Transaction Report]
 
-    [TABLE Convertible Preferred Stock]
+      [TABLE Convertible Preferred Stock]
 
-    The significant rights and preferences of the Company’s convertible preferred stock are as follows:
+      The significant rights and preferences of the Company’s convertible preferred stock are as follows:
 
-    Dividends
+      Dividends
 
-    [Use extractions from https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=181359587&range=B22]
-    "The Company shall not declare, pay or set aside any dividends on shares of the Company unless the holders of outstanding convertible preferred stock first receive, or simultaneously receive, a dividend in an amount equal to (i) in the case of a dividend on common stock or any class or series that is convertible into common stock, a dividend per share of the convertible preferred stock equal to the product of (A) the dividend payable on each share of such class as if all shares of such class had been converted into common stock and (B) the number of shares of common stock issuable upon conversion of a share of such convertible preferred stock or (ii) in the case of a dividend on any class or series that is not convertible into common stock, at a rate per share of the convertible preferred stock determined by (A) dividing the amount of the dividend payable on each share of such class of capital stock by the original issuance price of such class of capital stock and (B) multiplying such fraction by an amount equal to the applicable original issue price of [number] and [number] per share of Series Seed and Series A convertible preferred stock, respectively. If the Company declares, pays, or sets aside a dividend on shares of more than one class of capital stock, the dividend payable to the holders convertible preferred stock shall be calculated based upon the dividend on the class capital stock that would result in the highest dividend for such series of convertible preferred stock.
+      [Use extractions from https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=181359587&range=B22]
+      "The Company shall not declare, pay or set aside any dividends on shares of the Company unless the holders of outstanding convertible preferred stock first receive, or simultaneously receive, a dividend in an amount equal to (i) in the case of a dividend on common stock or any class or series that is convertible into common stock, a dividend per share of the convertible preferred stock equal to the product of (A) the dividend payable on each share of such class as if all shares of such class had been converted into common stock and (B) the number of shares of common stock issuable upon conversion of a share of such convertible preferred stock or (ii) in the case of a dividend on any class or series that is not convertible into common stock, at a rate per share of the convertible preferred stock determined by (A) dividing the amount of the dividend payable on each share of such class of capital stock by the original issuance price of such class of capital stock and (B) multiplying such fraction by an amount equal to the applicable original issue price of [number] and [number] per share of Series Seed and Series A convertible preferred stock, respectively. If the Company declares, pays, or sets aside a dividend on shares of more than one class of capital stock, the dividend payable to the holders convertible preferred stock shall be calculated based upon the dividend on the class capital stock that would result in the highest dividend for such series of convertible preferred stock.
 
-    As of December 31, 2022, no dividends have been declared. "
-
-
-    Liquidation
-    "In the event of any voluntary or involuntary liquidation, dissolution, or winding-up of the Company or a Deemed Liquidation Event (as defined below), the holders of each series of convertible preferred stock shall be entitled to receive an amount per share equal to the greater of (i) one times original issue price plus any declared but unpaid dividends, or (ii) such amount per share as would have been payable had all shares of such series of convertible preferred stock been converted into common stock. Following the satisfaction of the convertible preferred stock liquidation preference, all holders of shares of common stock would participate in any remaining distribution on a pro rata basis based on the number of shares held.
-
-    As of December 31, 2022, each of the following events was considered a “Deemed Liquidation Event” unless the holders of a majority of the outstanding shares of convertible preferred stock elect by written notice sent to the Company at least 10 days prior to the effective date of any such event:
-
-    (a)	a merger or consolidation in which (i) the Company is a constituent party or (ii) a subsidiary of the Company is a constituent party and the Company issues shares of its capital stock pursuant to such merger or consolidation, except any such merger or consolidation involving the Company or a subsidiary in which the shares of capital stock of the Company outstanding immediately prior to such merger or consolidation continue to represent, or are converted into or exchanged for shares of capital stock that represent, immediately following such merger or consolidation, at least a majority, by voting power, of the capital stock of (1) the surviving or resulting corporation; or (2) if the surviving or resulting corporation is a wholly owned subsidiary of another corporation immediately following such merger or consolidation, the parent corporation of such surviving or resulting corporation; or
-
-    (b)	(1) the sale, lease, transfer, exclusive license or other disposition, in a single transaction or series of related transactions, by the Company or any subsidiary of the Company of all or substantially all the assets of the Company and its subsidiaries taken as a whole, or (2) the sale or disposition (whether by merger, consolidation or otherwise, and whether in a single transaction or a series of related transactions) of one or more subsidiaries of the Company if substantially all of the assets of the Company and its subsidiaries taken as a whole are held by such subsidiary or subsidiaries, except where such sale, lease, transfer, exclusive license or other disposition is to a wholly owned subsidiary of the Company."
-
-    Conversion
-    Each share of convertible preferred stock is convertible into common stock at the option of the holder, at any time after the date of issuance, at the then effective conversion rate by dividing the original issue price by the conversion price. The conversion price per share shall be the original issue price subject to adjustment for stock splits and certain dividends and distributions to holders of common stock.
-
-    All outstanding shares of convertible preferred stock shall automatically be converted into shares of common stock at the then effective conversion rate (discussed above) upon  (i) upon the vote or written consent of the holders of at least a majority of the outstanding shares of convertible preferred stock, or (ii) the closing of the sale of shares of common stock to the public in a firm-commitment underwritten public offering including, but not limited to an initial public offering or special purpose acquisition company listed and related private investment in public equity transaction.
-
-    The following table summarizes the number of shares of common stock into which each share of convertible preferred stock can be converted as of [${data.fiscalYearEnd}]:
-
-    [Insert Table B from Carta Certificate Transaction Report]
+      As of December 31, 2022, no dividends have been declared. "
 
 
-    Series Seed
-    Series A
+      Liquidation
+      "In the event of any voluntary or involuntary liquidation, dissolution, or winding-up of the Company or a Deemed Liquidation Event (as defined below), the holders of each series of convertible preferred stock shall be entitled to receive an amount per share equal to the greater of (i) one times original issue price plus any declared but unpaid dividends, or (ii) such amount per share as would have been payable had all shares of such series of convertible preferred stock been converted into common stock. Following the satisfaction of the convertible preferred stock liquidation preference, all holders of shares of common stock would participate in any remaining distribution on a pro rata basis based on the number of shares held.
+
+      As of December 31, 2022, each of the following events was considered a “Deemed Liquidation Event” unless the holders of a majority of the outstanding shares of convertible preferred stock elect by written notice sent to the Company at least 10 days prior to the effective date of any such event:
+
+      (a)	a merger or consolidation in which (i) the Company is a constituent party or (ii) a subsidiary of the Company is a constituent party and the Company issues shares of its capital stock pursuant to such merger or consolidation, except any such merger or consolidation involving the Company or a subsidiary in which the shares of capital stock of the Company outstanding immediately prior to such merger or consolidation continue to represent, or are converted into or exchanged for shares of capital stock that represent, immediately following such merger or consolidation, at least a majority, by voting power, of the capital stock of (1) the surviving or resulting corporation; or (2) if the surviving or resulting corporation is a wholly owned subsidiary of another corporation immediately following such merger or consolidation, the parent corporation of such surviving or resulting corporation; or
+
+      (b)	(1) the sale, lease, transfer, exclusive license or other disposition, in a single transaction or series of related transactions, by the Company or any subsidiary of the Company of all or substantially all the assets of the Company and its subsidiaries taken as a whole, or (2) the sale or disposition (whether by merger, consolidation or otherwise, and whether in a single transaction or a series of related transactions) of one or more subsidiaries of the Company if substantially all of the assets of the Company and its subsidiaries taken as a whole are held by such subsidiary or subsidiaries, except where such sale, lease, transfer, exclusive license or other disposition is to a wholly owned subsidiary of the Company."
+
+      Conversion
+      Each share of convertible preferred stock is convertible into common stock at the option of the holder, at any time after the date of issuance, at the then effective conversion rate by dividing the original issue price by the conversion price. The conversion price per share shall be the original issue price subject to adjustment for stock splits and certain dividends and distributions to holders of common stock.
+
+      All outstanding shares of convertible preferred stock shall automatically be converted into shares of common stock at the then effective conversion rate (discussed above) upon  (i) upon the vote or written consent of the holders of at least a majority of the outstanding shares of convertible preferred stock, or (ii) the closing of the sale of shares of common stock to the public in a firm-commitment underwritten public offering including, but not limited to an initial public offering or special purpose acquisition company listed and related private investment in public equity transaction.
+
+      The following table summarizes the number of shares of common stock into which each share of convertible preferred stock can be converted as of [${data.fiscalYearEnd}]:
+
+      [Insert Table B from Carta Certificate Transaction Report]
 
 
-    Voting
-    The holder of each share of convertible preferred stock is entitled to one vote for each share of common stock into which it would convert. As long as [number] shares of convertible preferred stock are outstanding, the holders of such shares shall be entitled to elect one director. The holders of shares of common stock shall be entitled to elect two directors. The holders of shares of convertible preferred stock and common stock, voting together as a single class and on an as converted to Common Stock basis, shall be entitled to elect two directors.
+      Series Seed
+      Series A
 
-    Redemption
-    The convertible preferred stock is not redeemable at the option of the holders.
 
-    Common Stock
-    "As of [${data.fiscalYearEnd}], the Company was authorized to issue [insert number from carta export] shares of $0.00001 par value common stock.
+      Voting
+      The holder of each share of convertible preferred stock is entitled to one vote for each share of common stock into which it would convert. As long as [number] shares of convertible preferred stock are outstanding, the holders of such shares shall be entitled to elect one director. The holders of shares of common stock shall be entitled to elect two directors. The holders of shares of convertible preferred stock and common stock, voting together as a single class and on an as converted to Common Stock basis, shall be entitled to elect two directors.
 
-    Common stockholders are entitled to dividends as and when declared, subject to the rights of holders of all classes of stock outstanding having priority rights as to dividends. There have been no dividends declared to date. The holder of each share of common stock is entitled to one vote.
+      Redemption
+      The convertible preferred stock is not redeemable at the option of the holders.
 
-    The Company had common shares reserved for future issuance upon the exercise or conversion of the following:"
+      Common Stock
+      "As of [${data.fiscalYearEnd}], the Company was authorized to issue [insert number from carta export] shares of $0.00001 par value common stock.
 
-    [Insert Table C from Carta Certificate Transaction Report]
-    As of [Fiscal End Month & Day, December 31]
-    Convertible preferred stock
-    Common stock options outstanding
-    Common stock options available for future grant
-    Total
+      Common stockholders are entitled to dividends as and when declared, subject to the rights of holders of all classes of stock outstanding having priority rights as to dividends. There have been no dividends declared to date. The holder of each share of common stock is entitled to one vote.
+
+      The Company had common shares reserved for future issuance upon the exercise or conversion of the following:"
+
+      [Insert Table C from Carta Certificate Transaction Report]
+      As of [Fiscal End Month & Day, December 31]
+      Convertible preferred stock
+      Common stock options outstanding
+      Common stock options available for future grant
+      Total
     `,
-  };
-}
-export function summarySigAccountPractices22(data: AuditData): Template {
-  // if (!data.leases.didPerformASC842Analysis) {
-  //   return {
-  //     header: 'Equity Incentive Plan',
-  //     body: '[NOT SHOWING: !data.leases.didPerformASC842Analysis]',
-  //   };
-  // }
-  return {
+    pageBreakBefore: true,
+  }),
+  generateSection({
     header: 'Equity Incentive Plan',
-    body: stripIndent`
+    body: (data) => `
       [TABLE] https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=485990093&range=A2
 
       On [insert adoption date from ESOP document "January 15, 20XX"], the Company adopted the [insert title from ESOP document] (“Equity Incentive Plan”) to permit the grant of share-based awards, such as stock grants and incentive and non-statutory stock options to employees, directors and consultants. As of [${data.fiscalYearEnd}], a total of [insert stock subject to this plan] shares of the Company’s common stock were reserved for issuance under the Equity Incentive Plan, of which [insert number from Carta] were available for grant.
@@ -519,19 +448,11 @@ export function summarySigAccountPractices22(data: AuditData): Template {
       Common Stock Price
       Share-based awards are granted at fair value as determined by the board of directors at the date of grant based on information available at that time, including valuation analyses performed by an independent valuation expert.
     `,
-  };
-}
-
-export function summarySigAccountPractices23(data: AuditData): Template {
-  // if (!data.leases.didPerformASC842Analysis) {
-  //   return {
-  //     header: 'Income Taxes',
-  //     body: '[NOT SHOWING: !data.leases.didPerformASC842Analysis]',
-  //   };
-  // }
-  return {
+    pageBreakBefore: true,
+  }),
+  generateSection({
     header: 'Income Taxes',
-    body: stripIndent`
+    body: (data) => `
       [if accumulated deficit <$0]
       The Company has incurred net operating losses since inception for both federal and state purposes and, as a result, has paid no federal and only minimal state income taxes.
 
@@ -555,48 +476,36 @@ export function summarySigAccountPractices23(data: AuditData): Template {
 
       The Company’s income tax returns for all years remain open to examination by federal and state taxing authorities due to the carryforward of tax attributes.
     `,
-  };
-}
-
-export function summarySigAccountPractices24(data: AuditData): Template {
-  let body;
-  if (data.outstandingLegalMatters.hasLegalMatters) {
-    body = `From time to time, the Company may become involved in various litigation and administrative proceedings relating to claims arising from its operations in the normal course of business. Currently management [${data.outstandingLegalMatters.legalMatters}]`;
-  } else {
-    body = `From time to time, the Company may become involved in various litigation and administrative proceedings relating to claims arising from its operations in the normal course of business. Management is not currently aware of any matters that may have a material adverse impact on the Company’s business, financial position, results of operations or cash flows.`;
-  }
-  return {
+    pageBreakBefore: true,
+  }),
+  generateSection({
     header: 'Commitments and Contingencies',
-    body: stripIndent`
-      Legal Matters
-      ${body}
-    `,
-  };
-}
-
-export function summarySigAccountPractices25(data: AuditData): Template {
-  let body;
-  if (data.relatedPartyTransactions.hasRelatedPartyTransactions) {
-    body = `The company [${data.relatedPartyTransactions.relatedPartyTransactions}].`;
-  } else {
-    body = `The company has no related party transactions, druing the year ending [${data.fiscalYearEnd}]`;
-  }
-  return {
+    body: (data) => {
+      if (data.outstandingLegalMatters.hasLegalMatters) {
+        return `Legal Matters
+          From time to time, the Company may become involved in various litigation and administrative proceedings relating to claims arising from its operations in the normal course of business. Currently management [${data.outstandingLegalMatters.legalMatters}]`;
+      } else {
+        return `Legal Matters
+          From time to time, the Company may become involved in various litigation and administrative proceedings relating to claims arising from its operations in the normal course of business. Management is not currently aware of any matters that may have a material adverse impact on the Company’s business, financial position, results of operations or cash flows.`;
+      }
+    },
+    pageBreakBefore: true,
+  }),
+  generateSection({
     header: 'Related Party Transactions',
-    body,
-  };
-}
-
-export function summarySigAccountPractices26(data: AuditData): Template {
-  if (!data.employee401k.has401K) {
-    return {
-      header: 'Employee Benefit Plan',
-      body: '[NOT SHOWING: !data.employee401k.has401K]',
-    };
-  }
-  return {
+    body: (data) => {
+      if (data.relatedPartyTransactions.hasRelatedPartyTransactions) {
+        return `The company [${data.relatedPartyTransactions.relatedPartyTransactions}].`;
+      } else {
+        return `The company has no related party transactions, druing the year ending [${data.fiscalYearEnd}]`;
+      }
+    },
+    pageBreakBefore: true,
+  }),
+  generateSection({
     header: 'Employee Benefit Plan',
-    body: stripIndent`
+    isShowing: (data) => data.employee401k.has401K,
+    body: (data) => `
       The Company maintains a 401(k) plan that covers substantially all of its employees.
 
       ${
@@ -605,18 +514,17 @@ export function summarySigAccountPractices26(data: AuditData): Template {
           : ''
       }
     `,
-  };
-}
-
-export function summarySigAccountPractices27(data: AuditData): Template {
-  let body;
-  if (data.materialChangesPostAudit.hasPostAuditChanges) {
-    body = `The Company has completed an evaluation of all subsequent events through [published date of financial statements. Month, Day, Year (i.e. December 31, 2022)], the date on which the consolidated financial statements were issued. During which time, the company has [insert users's reponse from questionarie].`;
-  } else {
-    body = `The Company has completed an evaluation of all subsequent events through [published date of financial statements. Month, Day, Year (i.e. December 31, 2022)], the date on which the consolidated financial statements were issued, during which time nothing has occurred outside the normal course of business operations that would require disclosure other than the events disclosed below.`;
-  }
-  return {
+    pageBreakBefore: true,
+  }),
+  generateSection({
     header: 'Subsequent Events',
-    body,
-  };
-}
+    body: (data) => {
+      if (data.materialChangesPostAudit.hasPostAuditChanges) {
+        return `The Company has completed an evaluation of all subsequent events through [published date of financial statements. Month, Day, Year (i.e. December 31, 2022)], the date on which the consolidated financial statements were issued. During which time, the company has [insert users's reponse from questionarie].`;
+      } else {
+        return `The Company has completed an evaluation of all subsequent events through [published date of financial statements. Month, Day, Year (i.e. December 31, 2022)], the date on which the consolidated financial statements were issued, during which time nothing has occurred outside the normal course of business operations that would require disclosure other than the events disclosed below.`;
+      }
+    },
+    pageBreakBefore: true,
+  }),
+];
