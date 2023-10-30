@@ -7,7 +7,7 @@ import { Fragment, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { Text, Year } from '@/components/form-fields';
+import { BooleanField, Text, Year } from '@/components/form-fields';
 import { createAudit } from '@/lib/actions';
 import { classNames } from '@/lib/util';
 
@@ -16,12 +16,13 @@ import { classNames } from '@/lib/util';
 const newAuditSchema = z.object({
   name: z.string().min(3).max(72),
   year: z.string().min(1),
+  hasDemoData: z.coerce.boolean(),
 });
 
 export default function NewAuditModal() {
   const searchParams = useSearchParams();
 
-  const { formState, register, handleSubmit } = useForm<
+  const { formState, register, handleSubmit, getValues, setValue } = useForm<
     z.infer<typeof newAuditSchema>
   >({
     resolver: zodResolver(newAuditSchema),
@@ -29,6 +30,7 @@ export default function NewAuditModal() {
     defaultValues: {
       name: '',
       year: '',
+      hasDemoData: false,
     },
   });
   const router = useRouter();
@@ -40,6 +42,7 @@ export default function NewAuditModal() {
     const audit = await createAudit({
       name: data.name,
       year: data.year,
+      hasDemoData: data.hasDemoData,
     });
     router.push(`/audit/${audit.id}`);
   }
@@ -78,7 +81,7 @@ export default function NewAuditModal() {
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                 <form onSubmit={handleSubmit(onSubmit)}>
                   <div>
-                    <div className="mt-3 text-center sm:mt-5">
+                    <div className="mt-3 sm:mt-5">
                       <Dialog.Title
                         as="h3"
                         className="text-base font-semibold leading-6 text-gray-900"
@@ -86,9 +89,9 @@ export default function NewAuditModal() {
                         Create a new audit
                       </Dialog.Title>
                       <div className="mt-2">
-                        <div>
+                        <div className="block">
                           <label
-                            htmlFor={'name'}
+                            htmlFor="name"
                             className="block text-sm font-medium leading-6 text-gray-900 text-left"
                           >
                             Name
@@ -104,9 +107,9 @@ export default function NewAuditModal() {
                             }}
                           />
                         </div>
-                        <div>
+                        <div className="align-left">
                           <label
-                            htmlFor={'name'}
+                            htmlFor="name"
                             className="block text-sm font-medium leading-6 text-gray-900 text-left"
                           >
                             Year
@@ -119,6 +122,27 @@ export default function NewAuditModal() {
                               input: 'year',
                               label: 'Year',
                               defaultValue: '',
+                            }}
+                          />
+                        </div>
+                        <div className="">
+                          <label
+                            htmlFor="hasDemoData"
+                            className="block text-sm font-medium leading-6 text-gray-900 text-left"
+                          >
+                            Add demo data
+                          </label>
+                          <BooleanField
+                            field="hasDemoData"
+                            register={register}
+                            formState={formState}
+                            getValues={getValues}
+                            // @ts-expect-error
+                            setValue={setValue}
+                            config={{
+                              input: 'boolean',
+                              label: 'Add demo data',
+                              defaultValue: false,
                             }}
                           />
                         </div>
