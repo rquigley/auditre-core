@@ -43,7 +43,7 @@ export default function Row({ document }: { document: OrgDocument }) {
       </td>
 
       <td className="relative whitespace-nowrap py-5 pr-4 sm:pr-2 text-right text-sm">
-        {document.auditId && (
+        {/* {document.auditId && (
           <>
             <span className="text-xs">
               {document.auditName}
@@ -56,7 +56,7 @@ export default function Row({ document }: { document: OrgDocument }) {
               </Link>
             </span>
           </>
-        )}
+        )} */}
       </td>
     </tr>
   );
