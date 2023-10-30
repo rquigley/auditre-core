@@ -176,6 +176,7 @@ export function getDefaultValues(
 export function getRequestTypeForId(id: string): RequestType {
   const rt = requestTypes.find((rt) => rt.id === id);
   if (!rt) {
+    console.log(requestTypes);
     throw new Error(`Invalid request type: ${id}`);
   }
   return rt;
@@ -208,15 +209,26 @@ export function getStatusForRequestType(
     });
   } else {
     completedTasks = totalTasks - parsedRes.error.issues.length;
+    // This is a brittle test, but it's the best I can think of for now.
+    // If there are unititialized fields, we want the user to to review before
+    // marking the request as complete. However, we don't want the number of
+    // unitialized fields to reduce the number of completed tasks to < 0, which
+    // would have the unintended consequence of marking the request as not have
+    // been started. We work around this by only reducing the count of completed
+    // tasks by a max of 1 which prevents it from being marked complete, but outside
+    // of an edge case of a request with only 1 field, it will still be marked as
+    // partially complete.
+    let uninitializedFieldNotInIssues = false;
     requestData.uninitializedFields.forEach((field) => {
-      // if field is not in the error issues, still subtract from completedTasks
-      for (const issue of parsedRes.error.issues) {
-        if (issue.path[0] === field) {
-          completedTasks -= 1;
-          break;
-        }
+      const isInIssues =
+        parsedRes.error.issues.find((i) => i.path[0] === field) !== undefined;
+      if (!isInIssues) {
+        uninitializedFieldNotInIssues = true;
       }
     });
+    if (uninitializedFieldNotInIssues) {
+      completedTasks -= 1;
+    }
   }
 
   if (completedTasks === totalTasks) {
