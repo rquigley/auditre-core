@@ -170,7 +170,7 @@ export interface DocumentTable {
   //   never,
   //   DocumentType
   // >;
-  classifiedType: ColumnType<string | 'UNCLASSIFIED', never, string>;
+  classifiedType: ColumnType<string, string | undefined, string>;
   extracted: string | null;
   usage: {
     extractMs: number;
@@ -178,7 +178,7 @@ export interface DocumentTable {
     askQuestionsMs: number;
     numQuestions: number;
   } | null;
-  isProcessed: ColumnType<boolean, never, boolean>;
+  isProcessed: ColumnType<boolean, boolean | undefined, boolean>;
   fileLastModified: Date;
   orgId: OrgId;
   uploadedByUserId: UserId | null;

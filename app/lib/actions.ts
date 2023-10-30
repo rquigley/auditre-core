@@ -14,6 +14,7 @@ import {
   getById as getAuditById,
   update as updateAuditById,
 } from '@/controllers/audit';
+import { addDemoData } from '@/controllers/audit-demo';
 import { generate as _generateFinancialStatement } from '@/controllers/audit-output';
 import {
   create as _createDocument,
@@ -54,9 +55,14 @@ export async function deletePostAuthUrl() {
 const newAuditSchema = z.object({
   name: z.string().min(3).max(72),
   year: z.string().min(1).max(4),
+  hasDemoData: z.coerce.boolean(),
 });
 
-export async function createAudit(rawData: { name: string; year: string }) {
+export async function createAudit(rawData: {
+  name: string;
+  year: string;
+  hasDemoData: boolean;
+}) {
   const user = await getCurrent();
 
   const data = newAuditSchema.parse(rawData);
@@ -78,6 +84,10 @@ export async function createAudit(rawData: { name: string; year: string }) {
     data: { value: data.year },
     actorUserId: user.id,
   });
+
+  if (data.hasDemoData) {
+    await addDemoData(audit.id, user.id);
+  }
 
   revalidatePath('/');
   return audit;
