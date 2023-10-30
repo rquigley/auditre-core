@@ -59,6 +59,11 @@ export async function saveRequestData({
   const createdAt = new Date();
 
   for (const key of Object.keys(requestData)) {
+    // don't try and save data if keys aren't included. The user might
+    // only be seeing a subset of the fields.
+    if (!newData.hasOwnProperty(key)) {
+      continue;
+    }
     if (rt.form[key].input === 'fileupload') {
       // @ts-expect-error
       const oldDocumentIds = requestData[key]?.documentIds;
