@@ -1,12 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  experimental: {
-    // logging: {
-    //   level: 'verbose',
-    //   fullUrl: true,
-    // },
-  },
+  //experimental: {},
+  // logging: {
+  //   level: 'verbose',
+  //   fullUrl: true,
+  // },
   images: {
     remotePatterns: [
       // OAuth User Profile Images
