@@ -12,9 +12,9 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.430.0",
-    "@aws-sdk/credential-providers": "3.430.0",
-    "@aws-sdk/s3-request-presigner": "3.430.0",
+    "@aws-sdk/client-s3": "3.438.0",
+    "@aws-sdk/credential-providers": "3.438.0",
+    "@aws-sdk/s3-request-presigner": "3.438.0",
     "@headlessui/react": "1.7.17",
     "@heroicons/react": "2.0.18",
     "@hookform/resolvers": "3.3.2",
@@ -32,7 +32,7 @@
     "mime-types": "2.1.35",
     "next": "14.0.0",
     "next-auth": "5.0.0-beta.3",
-    "openai": "4.14.0",
+    "openai": "4.14.2",
     "pg": "8.11.3",
     "picocolors": "1.0.0",
     "postcss": "8.4.31",
