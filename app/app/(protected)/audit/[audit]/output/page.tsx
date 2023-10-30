@@ -100,7 +100,6 @@ async function AuditData({ auditId }: { auditId: string }) {
     <div className="w-full h-full">
       Data:
       <br />
-      {/* {data ? JSON.stringify(data) : null} */}
       {auditData
         ? Object.keys(auditData).map((key) => {
             return <RequestType key={key} name={key} data={auditData[key]} />;
@@ -120,15 +119,20 @@ function RequestType({
   return (
     <div className="my-4">
       <div className="font-semibold text-sm">{name}</div>
-      <ul>
-        {Object.keys(data).map((requestId) => (
-          <RowValOutput
-            key={requestId}
-            name={requestId}
-            val={data[requestId]}
-          />
-        ))}
-      </ul>
+      {/* shortcuts added by us */}
+      {typeof data === 'string' ? (
+        <div>{data}</div>
+      ) : (
+        <ul>
+          {Object.keys(data).map((requestId) => (
+            <RowValOutput
+              key={requestId}
+              name={requestId}
+              val={data[requestId]}
+            />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
