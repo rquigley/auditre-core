@@ -667,7 +667,7 @@ export const requestTypes = [
 
   generateRequestType(
     {
-      id: 'relatedPartyTransactions',
+      id: 'related-party-transactions',
       name: 'Related party transactions ',
       group: 'Business Operations',
     },
