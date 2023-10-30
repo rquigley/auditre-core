@@ -23,20 +23,7 @@ const nextConfig = {
       // },
     ],
   },
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // https://github.com/aws/aws-sdk-js-v3/issues/5216
-    // https://github.com/aws/aws-sdk-js-v3/pull/5225
-    // https://github.com/aws/aws-sdk-js-v3/issues/5135
-    config.externals.push({
-      '@aws-sdk/signature-v4-multi-region':
-        'commonjs @aws-sdk/signature-v4-multi-region',
-    });
-    config.plugins.push(
-      new webpack.IgnorePlugin({ resourceRegExp: /^aws-crt$/ }),
-    );
-
-    return config;
-  },
+  // webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
   // The webpack config below is to allow pdfjs to work. It otherwise kills the server
   // saying canvas is not found.
   // webpack: (config) => {
