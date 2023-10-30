@@ -9,7 +9,6 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-
 CREATE TABLE "org" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "name" text,
@@ -153,10 +152,10 @@ CREATE TABLE "comment" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "audit_id" uuid REFERENCES "audit" ("id"),
-  "request_type" text NOT NULL,
+  "request_type" text,
+  "document_id" uuid REFERENCES "document" ("id"),
   "user_id" uuid NOT NULL REFERENCES "user" ("id"),
   "comment" text,
-  "document_id" uuid REFERENCES "document" ("id"),
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
@@ -169,7 +168,8 @@ CREATE TABLE "account_mapping" (
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
   "account_id" text NOT NULL,
-  "account_mapped_to" text,
+  "account_name" text, -- for when id and name are separate
+  "mapped_to" text,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
