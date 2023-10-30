@@ -34,31 +34,12 @@ export async function getDataForRequestType(
   rt: Pick<RequestType, 'id' | 'form'>,
 ) {
   const rows = await db
-    .selectFrom('requestData as rd')
-    .leftJoin('requestDataDocument as rdd', 'rd.id', 'rdd.requestDataId')
-    .select(({ fn, val, ref }) => [
-      'rd.requestId',
-      'rd.data',
-
-      fn.agg<string[]>('array_agg', ['rdd.documentId']).as('documentIds'),
-    ])
-
-    .distinctOn(['rd.auditId', 'rd.requestType', 'rd.requestId'])
-    .where('rd.auditId', '=', auditId)
-    .where('rd.requestType', '=', rt.id)
-    .groupBy([
-      'rd.auditId',
-      'rd.requestType',
-      'rd.requestId',
-      'rd.data',
-      'rd.createdAt',
-    ])
-    .orderBy([
-      'rd.auditId',
-      'rd.requestType',
-      'rd.requestId',
-      'rd.createdAt desc',
-    ])
+    .selectFrom('requestData')
+    .select(['requestId', 'data'])
+    .distinctOn(['auditId', 'requestType', 'requestId'])
+    .where('auditId', '=', auditId)
+    .where('requestType', '=', rt.id)
+    .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
     .execute();
 
   const defaultValues = getDefaultValues(rt);
@@ -87,31 +68,11 @@ export async function getDataForRequestAttribute(
 
 export async function getDataForAuditId(auditId: AuditId) {
   const rows = await db
-    .selectFrom('requestData as rd')
-    .leftJoin('requestDataDocument as rdd', 'rd.id', 'rdd.requestDataId')
-    .select(({ fn, val, ref }) => [
-      'rd.requestType',
-      'rd.requestId',
-      'rd.data',
-
-      fn.agg<string[]>('array_agg', ['rdd.documentId']).as('documentIds'),
-    ])
-
-    .distinctOn(['rd.auditId', 'rd.requestType', 'rd.requestId'])
-    .where('rd.auditId', '=', auditId)
-    .groupBy([
-      'rd.auditId',
-      'rd.requestType',
-      'rd.requestId',
-      'rd.data',
-      'rd.createdAt',
-    ])
-    .orderBy([
-      'rd.auditId',
-      'rd.requestType',
-      'rd.requestId',
-      'rd.createdAt desc',
-    ])
+    .selectFrom('requestData')
+    .select(['requestType', 'requestId', 'data'])
+    .distinctOn(['auditId', 'requestType', 'requestId'])
+    .where('auditId', '=', auditId)
+    .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
     .execute();
 
   let ret: Record<string, ReturnType<typeof normalizeRequestData>> = {};
@@ -128,7 +89,6 @@ export async function getDataForAuditId(auditId: AuditId) {
 export type DataObj = {
   requestId: string;
   data: RequestData['data'];
-  documentIds: Array<string | null> | null;
 };
 type NormalizedData =
   | { isDocuments: true; documentIds: DocumentId[] }
@@ -161,14 +121,10 @@ export function normalizeRequestData(
 
       ret[key] = defaultValues[key] as NormalizedData;
     } else if (form[key].input === 'fileupload') {
-      let documentIds = d.documentIds || [];
-      // the ARRAY_AGG in the query returns [null] if there are no documents
-      if (documentIds.length === 1 && documentIds[0] === null) {
-        documentIds = [];
-      }
       ret[key] = {
         isDocuments: true,
-        documentIds: documentIds as Array<DocumentId>,
+        // @ts-expect-error
+        documentIds: d.data?.documentIds as Array<DocumentId>,
       };
     } else if (d.data && 'value' in d.data) {
       ret[key] = d.data.value;
