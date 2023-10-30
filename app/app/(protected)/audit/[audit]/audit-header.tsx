@@ -14,8 +14,8 @@ export function AuditHeader(props: Props) {
   const { audit } = props;
   const tabs = [
     { name: 'Requests', href: `/audit/${audit.id}` },
+    { name: 'Preview', href: `/audit/${audit.id}/preview` },
     { name: 'Output', href: `/audit/${audit.id}/output` },
-    // { name: 'Documents', href: `/audit/${audit.id}/documents` },
     { name: 'Settings', href: `/audit/${audit.id}/settings` },
   ] as const;
 
