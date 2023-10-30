@@ -6,6 +6,9 @@ import {
 } from '@/lib/request-types';
 import {
   create as addRequestData,
+  createRequestDataDocument,
+  deleteRequestDataDocument,
+  getDataForRequestAttribute,
   getDataForRequestType,
 } from './request-data';
 
@@ -56,29 +59,69 @@ export async function saveRequestData({
   const createdAt = new Date();
 
   for (const key of Object.keys(requestData)) {
-    if (
+    if (rt.form[key].input === 'fileupload') {
+      // @ts-expect-error
+      const oldDocumentIds = requestData[key]?.documentIds;
+      const newDocumentIds = newData[key].documentIds;
+      const mods = getDocumentIdMods(oldDocumentIds, newDocumentIds);
+      if (
+        mods.toDelete.length === 0 &&
+        mods.toAdd.length === 0 &&
+        !uninitializedFields.includes(key)
+      ) {
+        continue;
+      }
+      const oldRdObj = await getDataForRequestAttribute(auditId, rt.id, key);
+      const rdObj = await addRequestData({
+        auditId: auditId,
+        orgId: audit.orgId,
+        requestType: rt.id,
+        requestId: key,
+        // We save documentIds here in addition to RequestDataDocuments to reflect that a change
+        // has occurred. I don't love that we're duplicating data here, but the simplicity tradeoff
+        // feels worth it.
+        data: { isDocuments: true, documentIds: newDocumentIds } as const,
+        actorUserId,
+        createdAt,
+      });
+
+      for (const documentId of mods.toAdd) {
+        await createRequestDataDocument({
+          documentId,
+          requestDataId: rdObj.id,
+        });
+      }
+      if (oldRdObj) {
+        for (const documentId of mods.toDelete) {
+          await deleteRequestDataDocument({
+            documentId,
+            requestDataId: oldRdObj.id,
+          });
+        }
+      }
+    } else if (
       uninitializedFields.includes(key) ||
       (newData[key] !== undefined && newData[key] !== requestData[key])
     ) {
-      let data = null;
-      let documentId = null;
-      if (rt.form[key].input === 'fileupload') {
-        documentId = newData[key] || null;
-      } else {
-        data = { value: newData[key] };
-      }
       await addRequestData({
         auditId: auditId,
         orgId: audit.orgId,
         requestType: rt.id,
         requestId: key,
-        data,
-        documentId,
+        data: { value: newData[key] },
         actorUserId,
         createdAt,
       });
     }
   }
+}
+function getDocumentIdMods(
+  oldDocumentIds: string[],
+  newDocumentIds: string[],
+): { toDelete: string[]; toAdd: string[] } {
+  const toDelete = oldDocumentIds.filter((id) => !newDocumentIds.includes(id));
+  const toAdd = newDocumentIds.filter((id) => !oldDocumentIds.includes(id));
+  return { toDelete, toAdd };
 }
 
 export type Request = Pick<

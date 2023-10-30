@@ -1,12 +1,41 @@
+'use client';
+
+import clsx from 'clsx';
+import { usePathname, useRouter } from 'next/navigation';
+
 import { FiletypeIcon } from '@/components/filetype-icon';
 
-export function Document({ docKey, name }: { docKey: string; name: string }) {
+export function Document({
+  documentId,
+  docKey,
+  name,
+}: {
+  documentId?: string;
+  docKey: string;
+  name: string;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+
   return (
-    <div className="h-12 flex items-center">
-      <div className="flex items-center border border-white hover:border-slate-300 p-1 cursor-pointer">
+    <div className="mb-1">
+      <button
+        type="button"
+        onClick={() => {
+          if (documentId) {
+            router.replace(pathname + '?show-document-id=' + documentId);
+          }
+        }}
+        disabled={!documentId}
+        className={clsx(
+          documentId ? 'hover:border-slate-300' : 'cursor-auto',
+          'flex items-center h-9 border border-white  p-1 cursor-pointer',
+        )}
+      >
         <FiletypeIcon filename={docKey} />
         <span className="ml-1.5 text-sm text-slate-700">{name}</span>
-      </div>
+      </button>
+      {/* <div className="text-xs text-slate-500 ml-9">Uploaded Dec 24, 2023</div> */}
     </div>
   );
 }

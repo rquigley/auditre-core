@@ -3,7 +3,6 @@
 import * as Sentry from '@sentry/node';
 
 import { create as createMapping } from '@/controllers/account-mapping';
-import { getById as getAuditById } from '@/controllers/audit';
 import {
   askDefaultQuestions,
   classifyDocument,
@@ -13,7 +12,6 @@ import { getExtractedContent, NoSuchKey } from '@/lib/aws';
 import { db } from '@/lib/db';
 import { delay } from '@/lib/util';
 import { getAllByDocumentId } from './document-queue';
-import { getAllByAuditId as getAllRequestsByAuditId } from './request';
 
 import type {
   AccountType,
@@ -23,7 +21,6 @@ import type {
   DocumentUpdate,
   NewDocument,
   OrgId,
-  RequestId,
 } from '@/types';
 
 export async function create(document: NewDocument): Promise<Document> {
@@ -43,28 +40,13 @@ export async function getById(id: DocumentId): Promise<Document> {
     .executeTakeFirstOrThrow();
 }
 
-export type OrgDocument = Pick<Document, 'id' | 'createdAt' | 'name'> & {
-  requestType: string | null;
-  requestId: string | null;
-  auditId: string | null;
-  auditName: string | null;
-};
+export type OrgDocument = Pick<Document, 'id' | 'createdAt' | 'name'>;
 export async function getAllByOrgId(orgId: OrgId): Promise<OrgDocument[]> {
   return await db
     .selectFrom('document')
-    .leftJoin('requestData', 'document.id', 'requestData.documentId')
-    .leftJoin('audit', 'requestData.auditId', 'audit.id')
-    .select([
-      'document.id',
-      'document.createdAt',
-      'document.name',
-      'audit.id as auditId',
-      'audit.name as auditName',
-      'requestData.requestType',
-      'requestData.requestId',
-    ])
-    .where('document.orgId', '=', orgId)
-    .where('document.isDeleted', '=', false)
+    .select(['id', 'createdAt', 'name'])
+    .where('orgId', '=', orgId)
+    .where('isDeleted', '=', false)
     .execute();
 }
 
@@ -79,33 +61,13 @@ export async function getAllByAuditId(
   auditId: AuditId,
 ): Promise<DocumentWithRequestData[]> {
   return await db
-    .selectFrom('document')
-    .innerJoin('requestData', 'document.id', 'requestData.documentId')
-    .select([
-      'document.id',
-      'document.createdAt',
-      'document.name',
-      'requestData.requestType',
-      'requestData.requestId',
-    ])
-    .distinctOn([
-      'requestData.auditId',
-      'requestData.requestType',
-      'requestData.requestId',
-    ])
-    .where('requestData.auditId', '=', auditId)
+    .selectFrom('document as d')
+    .innerJoin('requestDataDocument as rdd', 'd.id', 'rdd.documentId')
+    .innerJoin('requestData as rd', 'rdd.requestDataId', 'rd.id')
+    .select(['d.id', 'd.createdAt', 'd.name', 'rd.requestType', 'rd.requestId'])
+    .distinctOn(['rd.auditId', 'rd.requestType', 'rd.requestId'])
+    .where('rd.auditId', '=', auditId)
     .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
-    .execute();
-}
-
-export async function getAllByRequestId(
-  requestId: RequestId,
-): Promise<Document[]> {
-  return await db
-    .selectFrom('document')
-    .where('requestId', '=', requestId)
-    .where('isDeleted', '=', false)
-    .selectAll()
     .execute();
 }
 

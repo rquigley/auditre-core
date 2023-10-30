@@ -5,10 +5,11 @@ import { Await } from '@/components/await';
 import { Document } from '@/components/document';
 import { getById as getDocumentById } from '@/controllers/document';
 import { getDataWithLabels } from '@/controllers/document-query';
-import { getDocumentIds, saveRequestData } from '@/controllers/request';
+import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestType } from '@/controllers/request-data';
-import BasicForm from './basic-form';
+import { BasicForm } from './basic-form';
 
+import type { Props as BasicFormProps } from './basic-form';
 import type { Request } from '@/controllers/request';
 import type { Audit, DocumentId, User } from '@/types';
 
@@ -34,17 +35,24 @@ export default async function FormContainer({ request, user, audit }: Props) {
 
   const { data: requestData, uninitializedFields } =
     await getDataForRequestType(request.auditId, request);
-  let documents: Record<
-    string,
-    { id: DocumentId; doc: JSX.Element; data: JSX.Element }
-  > = {};
-  getDocumentIds(request, requestData).forEach((row) => {
-    documents[row.field] = {
-      id: row.documentId,
-      doc: <AwaitDocument documentId={row.documentId} />,
-      data: <DocumentData documentId={row.documentId} />,
+
+  let documents: BasicFormProps['documents'] = {};
+  for (const field of Object.keys(requestData)) {
+    // @ts-expect-error
+    if (!requestData[field]?.isDocuments) {
+      continue;
+    }
+    const data = requestData[field] as {
+      documentIds: DocumentId[];
+      isDocuments: true;
     };
-  });
+
+    documents[field] = data.documentIds.map((id: DocumentId) => ({
+      id,
+      doc: <AwaitDocument documentId={id} />,
+      data: <DocumentData documentId={id} />,
+    }));
+  }
 
   return (
     <BasicForm
@@ -64,7 +72,9 @@ function AwaitDocument({ documentId }: { documentId: DocumentId }) {
   return (
     <Suspense fallback={<div className="h-12 flex items-center"></div>}>
       <Await promise={getDocumentById(documentId)}>
-        {(d) => <Document docKey={d.key} name={d.name} />}
+        {(d) => (
+          <Document documentId={documentId} docKey={d.key} name={d.name} />
+        )}
       </Await>
     </Suspense>
   );

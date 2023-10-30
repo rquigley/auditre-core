@@ -7,6 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 import * as Sentry from '@sentry/react';
 import clsx from 'clsx';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import Calendar from '@/components/calendar';
@@ -327,13 +328,13 @@ export function FileUpload({
   getValues,
   formState: { isSubmitSuccessful },
   config,
-  document,
+  documents,
   resetField,
 }: FormFieldProps & {
   config: FormFieldFile;
   setValue: (key: string, val: any, opts: any) => void;
   getValues: (key?: string) => any;
-  document: { id: DocumentId; doc: JSX.Element; data: JSX.Element } | null;
+  documents: { id: DocumentId; doc: JSX.Element; data: JSX.Element }[];
   resetField: (field: string) => void;
 }) {
   const [fileState, setFileState] = useState<FileState>({ state: 'idle' });
@@ -356,15 +357,18 @@ export function FileUpload({
       contentType: file.type,
     });
 
-    // For visual effect, ensure uplading takes at least 3s. This also
+    // For visual effect, ensure uplading takes at least 2s. This also
     // reduces the perception of the processing time, which can currently go > 20s
     const { promise, resolve } = pWithResolvers();
-    delay(3000).then(resolve);
+    delay(2000).then(resolve);
 
+    setFileState({
+      state: 'uploading',
+      pct: 1,
+    });
     const resp = await fetchWithProgress(signedUrl.url, file, async (ev) => {
       if (ev.lengthComputable) {
         if (ev.loaded === ev.total) {
-          await promise;
           setFileState({ state: 'uploaded', pct: 100 });
         } else {
           setFileState({
@@ -388,9 +392,7 @@ export function FileUpload({
 
       const { id, name, key } = await createDocument(toSave);
 
-      // Same as above, reduce perception of processing time
       await promise;
-      await delay(2000);
 
       setFileState({
         state: 'processing',
@@ -429,13 +431,21 @@ export function FileUpload({
         });
       }
 
-      setValue(field, id, { shouldDirty: true, shouldTouch: true });
+      const documentIds = getValues(field).documentIds || [];
+
+      setValue(
+        field,
+        { isDocuments: true, documentIds: [...documentIds, id] },
+        { shouldDirty: true, shouldTouch: true },
+      );
     } else {
       setFileState({ state: 'error', message: 'Error uploading file' });
       Sentry.captureException('Error uploading file');
     }
   }
-  const currentDocumentId = getValues(field);
+
+  const currentDocumentIds = getValues(field).documentIds || [];
+
   return (
     <>
       <div className="flex">
@@ -448,7 +458,7 @@ export function FileUpload({
               fileState.state === 'readyToSave'
               ? 'cursor-not-allowed hover:bg-white'
               : 'hover:bg-gray-50 cursor-pointer',
-            ' inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300',
+            ' inline-flex items-center mb-2 rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300',
           )}
         >
           {fileState.state === 'uploading' ||
@@ -489,7 +499,11 @@ export function FileUpload({
               Ready to save
             </>
           ) : (
-            <>{currentDocumentId ? 'Replace document' : 'Add document'}</>
+            <>
+              {currentDocumentIds.length > 0 && !config.allowMultiple
+                ? 'Replace document'
+                : 'Add document'}
+            </>
           )}
           <input
             id={`${field}-file`}
@@ -524,40 +538,69 @@ export function FileUpload({
           </a>
         ) : null}
       </div>
-      {/* {state.state === 'uploading' && <div className="mt-2">{state.pct}%</div>} */}
+
       <input {...register(field, { required: true })} type="hidden" />
-      {fileState.state === 'processing' ||
-      fileState.state === 'readyToSave' ||
-      fileState.state === 'classifyTypeMismatch' ? (
-        <div className="flex items-center">
-          <Document docKey={fileState.key} name={fileState.name} />
-          {document && document.doc ? (
-            <div
-              className={clsx(
-                fileState.state === 'classifyTypeMismatch' ? 'opacity-20' : '',
-                'flex items-center',
-              )}
-            >
-              <div className="flex text-xs mx-4 text-slate-500">
-                <div>to replace</div>
-                <ArrowLongRightIcon className="h-4 ml-1" />
-              </div>
-              {document.doc}
-            </div>
+
+      {config.allowMultiple ? (
+        <>
+          {fileState.state === 'processing' ||
+          fileState.state === 'readyToSave' ||
+          fileState.state === 'classifyTypeMismatch' ? (
+            <Document
+              documentId={fileState.documentId}
+              docKey={fileState.key}
+              name={fileState.name}
+            />
           ) : null}
-        </div>
-      ) : document ? (
-        <div
-          className={clsx(
-            fileState.state === 'uploading' || fileState.state === 'uploaded'
-              ? 'opacity-20'
-              : '',
-            'flex items-center',
-          )}
-        >
-          {document.doc}
-        </div>
-      ) : null}
+          {documents.map((d, idx) => (
+            <div key={idx}>
+              {d.doc}
+              {/* {d.data} */}
+            </div>
+          ))}
+        </>
+      ) : (
+        <>
+          {fileState.state === 'processing' ||
+          fileState.state === 'readyToSave' ||
+          fileState.state === 'classifyTypeMismatch' ? (
+            <div className="flex items-center">
+              <Document docKey={fileState.key} name={fileState.name} />
+
+              {documents[0] ? (
+                <div
+                  className={clsx(
+                    fileState.state === 'classifyTypeMismatch'
+                      ? 'opacity-20'
+                      : '',
+                    'hidden sm:flex',
+                  )}
+                >
+                  <div className="flex items-center text-xs mx-4 text-slate-500">
+                    <div>to replace</div>
+                    <ArrowLongRightIcon className="h-4 ml-1" />
+                  </div>
+                  {documents[0].doc}
+                </div>
+              ) : null}
+            </div>
+          ) : documents[0] ? (
+            <>
+              <div
+                className={clsx(
+                  fileState.state === 'uploading' ||
+                    fileState.state === 'uploaded'
+                    ? 'opacity-20'
+                    : '',
+                )}
+              >
+                {documents[0].doc}
+                {/* {documents[0].data} */}
+              </div>
+            </>
+          ) : null}
+        </>
+      )}
 
       {/* <p className="text-xs leading-5 text-gray-600">
           {config.extensions.join(', ')} up to {config.maxFilesizeMB}MB
@@ -581,9 +624,9 @@ export function FileUpload({
             </p>
           </div>
         )} */}
-      <div className={fileState.state !== 'idle' ? 'opacity-20' : ''}>
-        {document ? document.data : null}
-      </div>
+      {/* <div className={fileState.state !== 'idle' ? 'opacity-20' : ''}>
+        {documents[0] ? documents[0].data : null}
+      </div> */}
     </>
   );
 }
