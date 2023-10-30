@@ -1,19 +1,10 @@
 'use client';
 
 import { Dialog, Transition } from '@headlessui/react';
-import clsx from 'clsx';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Fragment, useRef } from 'react';
 
-import type { AuditId } from '@/types';
-
-export default function DataModal({
-  auditId,
-  auditData,
-}: {
-  auditId: AuditId;
-  auditData: any;
-}) {
+export default function DataModal({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
 
   const router = useRouter();
@@ -21,8 +12,10 @@ export default function DataModal({
 
   const cancelButtonRef = useRef(null);
 
+  const showModal = searchParams.get('view-data') === '1';
+
   return (
-    <Transition.Root show={searchParams.get('view-data') === '1'} as={Fragment}>
+    <Transition.Root show={showModal} as={Fragment}>
       <Dialog
         as="div"
         className="relative z-50"
@@ -53,53 +46,12 @@ export default function DataModal({
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6">
-                <div className="w-full h-full">
-                  Data:
-                  <br />
-                  {/* {data ? JSON.stringify(data) : null} */}
-                  {auditData
-                    ? Object.keys(auditData).map((key) => {
-                        return (
-                          <RequestType
-                            key={key}
-                            name={key}
-                            data={auditData[key]}
-                          />
-                        );
-                      })
-                    : null}
-                </div>
+                {showModal ? children : null}
               </Dialog.Panel>
             </Transition.Child>
           </div>
         </div>
       </Dialog>
     </Transition.Root>
-  );
-}
-
-function RequestType({
-  name,
-  data,
-}: {
-  name: string;
-  data: Record<string, any>;
-}) {
-  return (
-    <div className="my-4">
-      <div className="font-semibold text-sm">{name}</div>
-      <ul>
-        {Object.keys(data).map((key) => {
-          const isMissing =
-            data[key] === null || data[key] === undefined || data[key] === '';
-
-          return (
-            <li key={key} className={clsx(isMissing ? 'text-red-600' : '')}>
-              {key}: {data[key] ? data[key].toString() : ''}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
   );
 }

@@ -32,6 +32,7 @@ CREATE TABLE "user" (
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "user" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
+
 CREATE TABLE "invitation" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
@@ -87,8 +88,8 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "audit" FOR EACH ROW 
 
 CREATE TABLE "document" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  --"request_id" uuid REFERENCES "request" ("id"),
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
+  "uploaded_by_user_id" uuid REFERENCES "user" ("id"),
   "key" text NOT NULL UNIQUE,
   "bucket" text NOT NULL,
   "name" text,
@@ -139,6 +140,14 @@ CREATE TABLE "request_data" (
   "created_at" timestamptz DEFAULT now() NOT NULL
 );
 CREATE INDEX idx_request_data_1 ON request_data (audit_id, request_type, request_id, created_at DESC);
+
+CREATE TABLE "request_data_document" (
+  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "request_data_id" uuid NOT NULL REFERENCES "request_data" ("id"),
+  "document_id" uuid NOT NULL REFERENCES "document" ("id"),
+  "created_at" timestamptz DEFAULT now() NOT NULL
+);
+CREATE INDEX idx_request_data_document_1 ON request_data_document (request_data_id, document_id);
 
 CREATE TABLE "comment" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

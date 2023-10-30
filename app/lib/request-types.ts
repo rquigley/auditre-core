@@ -48,7 +48,8 @@ export interface FormFieldFile extends _FormFieldBase {
   input: 'fileupload';
   extensions: readonly string[];
   maxFilesizeMB: number;
-  defaultValue: null;
+  defaultValue: { isDocuments: true; documentIds: readonly string[] };
+  allowMultiple?: true;
   aiClassificationType: string;
   aiClassificationHint?: string;
 }
@@ -101,14 +102,20 @@ function generateFormField(config: Partial<FormField>) {
       validationSchema = z.string().array().nonempty();
       break;
     case 'fileupload':
-      config.defaultValue = null;
+      config.defaultValue = { isDocuments: true, documentIds: [] } as const;
       if (!config.aiClassificationType) {
         throw new Error(`Fileupload 'aiClassificationType' must be provided.`);
       }
       config.maxFilesizeMB = 10;
       config.extensions ??= ['PDF', 'DOC', 'DOCX', 'XLSX', 'XLS', 'CSV'];
-      schema = z.string().max(256).nullable();
-      validationSchema = z.string().min(1);
+      schema = z.object({
+        isDocuments: z.literal(true),
+        documentIds: z.array(z.string().optional()),
+      });
+      validationSchema = z.object({
+        isDocuments: z.literal(true),
+        documentIds: z.array(z.string()).min(1),
+      });
       break;
     case undefined:
       throw new Error(`'input' must be provided.`);
@@ -190,24 +197,34 @@ export function getStatusForRequestType(
   const parsedRes = validationSchema.safeParse(requestData.data);
 
   const totalTasks = Object.keys(validationSchema.shape).length;
-  let completedTasks;
+  let completedTasks = 0;
 
-  if (requestData.uninitializedFields.length > 0) {
-    status = 'todo';
-    completedTasks = 0;
+  if (parsedRes.success) {
+    completedTasks = Object.keys(parsedRes.data).length;
+    requestData.uninitializedFields.forEach((field) => {
+      if (parsedRes.data.hasOwnProperty(field)) {
+        completedTasks -= 1;
+      }
+    });
   } else {
-    let numIssues = 0;
-    if (!parsedRes.success) {
-      numIssues = parsedRes.error.issues.length;
-    }
-    completedTasks = totalTasks - numIssues;
-    if (numIssues === 0) {
-      status = 'complete';
-    } else if (completedTasks > 0) {
-      status = 'started';
-    } else {
-      status = 'todo';
-    }
+    completedTasks = totalTasks - parsedRes.error.issues.length;
+    requestData.uninitializedFields.forEach((field) => {
+      // if field is not in the error issues, still subtract from completedTasks
+      for (const issue of parsedRes.error.issues) {
+        if (issue.path[0] === field) {
+          completedTasks -= 1;
+          break;
+        }
+      }
+    });
+  }
+
+  if (completedTasks === totalTasks) {
+    status = 'complete';
+  } else if (completedTasks > 0) {
+    status = 'started';
+  } else {
+    status = 'todo';
   }
 
   return {
@@ -471,7 +488,7 @@ export const requestTypes = [
   generateRequestType(
     {
       id: 'asc-606-analysis',
-      name: ' ASC 606 Analysis',
+      name: 'ASC 606 Analysis',
       group: 'Accounting Information',
     },
     {
@@ -495,6 +512,32 @@ export const requestTypes = [
           'Provide a summary of how your company determines whether or not to recognize revenue and the associated COGS. For example, the company’s revenue is direct from the sale of product/service. The company recognizes revenue when the product/service has been shipped/executed to the customer.',
         defaultValue: '',
         dependsOn: { field: 'hasCompletedASC606Analysis', state: false },
+      },
+    },
+  ),
+
+  generateRequestType(
+    {
+      id: 'financing-documents',
+      name: 'Financing Documents',
+      group: 'Accounting Information',
+    },
+    {
+      equityFinancingDocumentIds: {
+        label: 'Upload all Equity Financing documents',
+        extensions: ['PDF', 'DOC', 'DOCX'],
+        input: 'fileupload',
+        allowMultiple: true,
+        aiClassificationType: 'EQUITY_FINANCING',
+        aiClassificationHint: 'Equity Financing Documents',
+      },
+      debtFinancingAgreementDocumentIds: {
+        label: 'Debt Financing Agreements',
+        extensions: ['PDF', 'DOC', 'DOCX'],
+        input: 'fileupload',
+        allowMultiple: true,
+        aiClassificationType: 'DEBT_FINANCING_AGREEMENT',
+        aiClassificationHint: 'Equity Financing Documents',
       },
     },
   ),

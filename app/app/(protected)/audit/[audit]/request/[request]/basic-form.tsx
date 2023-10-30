@@ -23,9 +23,6 @@ import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
 import { classNames, delay, isFieldVisible } from '@/lib/util';
 
 import type { Request } from '@/controllers/request';
-//import type { UseFormRegister, FieldErrors } from 'react-hook-form';
-//import type { RequestTypeWithData } from '@/controllers/request';
-// import type { RequestType } from '@/lib/request-types';
 import type { DocumentId, RequestData } from '@/types';
 
 export type Props = {
@@ -34,11 +31,15 @@ export type Props = {
   dataMatchesConfig: boolean;
   saveData: (data: RequestData) => void;
   documents: {
-    [key: string]: { id: DocumentId; doc: JSX.Element; data: JSX.Element };
+    [key: string]: Array<{
+      id: DocumentId;
+      doc: JSX.Element;
+      data: JSX.Element;
+    }>;
   };
 };
 
-export default function BasicForm({
+export function BasicForm({
   request,
   requestData,
   dataMatchesConfig,
@@ -70,12 +71,13 @@ export default function BasicForm({
   }, [formState.isSubmitSuccessful, reset]);
 
   async function onSubmit(data: z.infer<typeof schema>) {
-    const p = Promise.all([saveData(data), delay(700)]);
+    // const p = Promise.all([saveData(data), delay(700)]);
+    const p = Promise.all([saveData(data)]);
 
     toast.promise(p, {
       loading: 'Saving...',
       success: async (data) => {
-        await delay(1000);
+        //await delay(1000);
         router.push(`/audit/${request.auditId}`);
         return `Data saved`;
       },
@@ -146,7 +148,7 @@ export default function BasicForm({
                         setValue={setValue}
                         getValues={getValues}
                         resetField={resetField}
-                        document={documents[field]}
+                        documents={documents[field]}
                       />
                     ) : fieldConfig.input === 'checkbox' ? (
                       <Checkbox

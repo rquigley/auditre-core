@@ -39,6 +39,7 @@ export async function getByIdForClient(auditId: AuditId) {
     'audit-info',
     'year',
   );
+  // @ts-expect-error
   const year = yearRes?.data?.value as string;
   return {
     ...audit,
@@ -72,6 +73,7 @@ export async function getAllByOrgId(
       'audit-info',
       'year',
     );
+    // @ts-expect-error
     const year = yearRes?.data?.value as string | '';
     const statuses = await getStatusesForAuditId(audit.id);
     ret.push({

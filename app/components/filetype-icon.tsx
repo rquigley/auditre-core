@@ -6,9 +6,10 @@ export function FiletypeIcon({ filename }: { filename: string }) {
   const fileExt = filename.split('.').pop();
   const dim = 32;
   const className = 'w-6';
+  let icon;
   switch (fileExt) {
     case 'pdf':
-      return (
+      icon = (
         <Image
           src="/icons/filetype/pdf.png"
           width={dim}
@@ -17,10 +18,11 @@ export function FiletypeIcon({ filename }: { filename: string }) {
           className={className}
         />
       );
+      break;
 
     case 'doc':
     case 'docx':
-      return (
+      icon = (
         <Image
           src="/icons/filetype/doc.png"
           width={dim}
@@ -29,9 +31,10 @@ export function FiletypeIcon({ filename }: { filename: string }) {
           className={className}
         />
       );
+      break;
     case 'xls':
     case 'xlsx':
-      return (
+      icon = (
         <Image
           src="/icons/filetype/xls.png"
           width={dim}
@@ -40,7 +43,9 @@ export function FiletypeIcon({ filename }: { filename: string }) {
           className={className}
         />
       );
+      break;
     default:
-      return <div className={className}>{fileExt}</div>;
+      icon = <div className={className}>{fileExt}</div>;
   }
+  return <div className="h-6 w-6">{icon}</div>;
 }

@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { Suspense } from 'react';
 import { Toaster } from 'sonner';
 
+import { DocumentOverlay } from '@/components/document-overlay';
 import Navbar from '@/components/navbar';
 import { getCurrent } from '@/controllers/session-user';
 import { setPostAuthUrl } from '@/lib/actions';
@@ -45,6 +46,7 @@ export default async function RootLayout({
           </div>
         </div>
         <Toaster />
+        <DocumentOverlay />
       </body>
     </html>
   );
