@@ -19,6 +19,7 @@ import * as lambdaNodeJs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
 
 import { SSMParameterReader } from './ssm-parameter-reader';
@@ -73,9 +74,30 @@ export class OpsMarketingStack extends Stack {
       },
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: RemovalPolicy.DESTROY, // NOT recommended for production code
-      autoDeleteObjects: true, // NOT recommended for production code
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
     });
+
+    // MTA STS
+    const mtaStsBucket = new s3.Bucket(this, 'MtaStsBucket', {
+      bucketName: 'mta-sts.auditre.co',
+
+      publicReadAccess: false,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      // websiteIndexDocument: 'mta-sts.txt',
+    });
+
+    const mtaStsDeployment = new s3deploy.BucketDeployment(
+      this,
+      'DeployMtaSts',
+      {
+        sources: [s3deploy.Source.asset('./mta-sts-assets')],
+        destinationBucket: mtaStsBucket,
+        //destinationKeyPrefix: '.well-known',
+      },
+    );
 
     const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
       this,
@@ -95,7 +117,7 @@ export class OpsMarketingStack extends Stack {
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       certificate: certificate,
       defaultRootObject: 'index.html',
-      domainNames: [domainName, domainNameWithWWW],
+      domainNames: [domainName, domainNameWithWWW, 'mta-sts.auditre.co'],
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
       errorResponses: [
         {
@@ -115,6 +137,16 @@ export class OpsMarketingStack extends Stack {
       },
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
     });
+
+    distribution.addBehavior(
+      '.well-known/mta-sts.txt',
+      new cloudfrontOrigins.S3Origin(mtaStsBucket),
+      {
+        compress: true,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+        cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
+      },
+    );
 
     const table = new dynamoDb.Table(this, 'MailingListDyanamoDb', {
       partitionKey: { name: 'email', type: dynamoDb.AttributeType.STRING },
@@ -171,6 +203,14 @@ export class OpsMarketingStack extends Stack {
 
     new route53.ARecord(this, 'WWWSiteAliasRecord', {
       recordName: domainNameWithWWW,
+      target: route53.RecordTarget.fromAlias(
+        new targets.CloudFrontTarget(distribution),
+      ),
+      zone,
+    });
+
+    new route53.ARecord(this, 'MTASTSAliasRecord', {
+      recordName: 'mta-sts',
       target: route53.RecordTarget.fromAlias(
         new targets.CloudFrontTarget(distribution),
       ),
