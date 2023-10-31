@@ -42,11 +42,48 @@ export class OpsCertificateStack extends cdk.Stack {
       ttl: cdk.Duration.minutes(5),
     });
 
-    // Google Workplace verification
     new route53.CnameRecord(this, `CnameApiRecord`, {
       recordName: 'stiab5cgdxvs.auditre.co',
       zone: parentZone,
       domainName: 'gv-zuztxdn3ubnirt.dv.googlehosted.com',
+      comment: 'Google Workplace verification',
+    });
+
+    new route53.TxtRecord(this, `DKIMTxtRecord`, {
+      recordName: 'google._domainkey',
+      zone: parentZone,
+      values: [
+        'v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAi/Zt6DhzSYaZDY5Nx6DLyeAop9qqdeJTzvKqk1Xa8CFV7PFXASijJfIPOxXqNHOUUFI6BKO7uodo+ew9hjuAVvbZV0PD4UM+9D/aCzU/6u+t0qQsURnrK6oYb5vsVn8ktOAD8nmhAgiHWKOnhHdj9nHJNBHQxvTnIIQ+ostxDJNdF8+My8ArOMKn2fDltNTeKedMHsthlurYtIHSRodNp7ydu/uCbjA+QdwRwDhbVnWYGfzy6eWKoip2z2bDW6isPdGblLaGzKbhwsJ+KvYHQRP8x90tPMoHoUR9r6M+u1+1LfWR7sWWbS5GaIgNQr+lzctQDSuvkMasn+GGgwr+pQIDAQAB',
+      ],
+      comment: 'Google Workplace DKIM',
+    });
+
+    new route53.TxtRecord(this, `SMTPTLSTxtRecord`, {
+      recordName: '_smtp._tls',
+      zone: parentZone,
+      values: ['v=TLSRPTv1; rua=mailto:tls-reports@auditre.co'],
+      comment: 'SMTP TLS reporting',
+    });
+
+    new route53.TxtRecord(this, `MTASTSTxtRecord`, {
+      recordName: '_mta-sts',
+      zone: parentZone,
+      values: ['v=STSv1; id=20231931104300'],
+      comment: 'MTA STS',
+    });
+
+    new route53.TxtRecord(this, `DMARCTxtRecord`, {
+      recordName: '_dmarc',
+      zone: parentZone,
+      values: [
+        'v=DMARC1; p=none; rua=mailto:dmarc-reports@auditre.co; pct=100; adkim=r; aspf=r',
+      ],
+      comment: 'DMARC',
+    });
+
+    new route53.TxtRecord(this, `ApexTxtRecord`, {
+      zone: parentZone,
+      values: ['v=spf1 include:_spf.google.com ~all'],
     });
 
     const zone = route53.HostedZone.fromHostedZoneId(
