@@ -1,3 +1,5 @@
+import { unstable_cache } from 'next/cache';
+
 import { db } from '@/lib/db';
 import {
   getDataForRequestAttribute,
@@ -46,6 +48,13 @@ export async function getByIdForClient(auditId: AuditId) {
     year,
   };
 }
+export const getByIdForClientCached = unstable_cache(
+  async (auditId: AuditId) => getByIdForClient(auditId),
+  ['audit-getByIdForClient'],
+  {
+    tags: [`client-audit`],
+  },
+);
 
 export type AuditWithRequestCounts = Pick<
   Audit,

@@ -5,7 +5,7 @@ import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'path';
 import retry from 'async-retry';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
 import * as z from 'zod';
 
@@ -110,6 +110,7 @@ export async function updateAudit(auditId: AuditId, rawData: { name: string }) {
     name: data.name,
   });
 
+  revalidateTag('client-audit');
   revalidatePath('/');
   return;
 }

@@ -1,4 +1,5 @@
 import DataLoader from 'dataloader';
+import { unstable_cache } from 'next/cache';
 
 import { db, sql } from '@/lib/db';
 
@@ -112,6 +113,15 @@ async function getBySessionTokens(sessionTokenArgs: string[]) {
   return ret;
 }
 
+export const getBySessionTokenCached = unstable_cache(
+  async (sessionTokenArg: string) => getBySessionToken(sessionTokenArg),
+  ['session-token-user'],
+  {
+    revalidate: 60,
+    tags: ['session-token-user'],
+  },
+);
+
 export async function getBySessionToken(sessionTokenArg: string) {
   const res = await db
     .selectFrom('session')
@@ -138,7 +148,14 @@ export async function getBySessionToken(sessionTokenArg: string) {
   const { sessionId, userId, sessionToken, expires, ...user } = res;
   return {
     user: { ...user },
-    session: { id: sessionId, userId: user.id, sessionToken, expires },
+    session: {
+      id: sessionId,
+      userId: user.id,
+      sessionToken,
+      // Cast this to string to allow it to be cached by next/cache unstable_cache.
+      // See https://github.com/vercel/next.js/issues/51613
+      expires: expires.toISOString(),
+    },
   };
 }
 

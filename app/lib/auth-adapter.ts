@@ -1,3 +1,5 @@
+import { revalidateTag } from 'next/cache';
+
 import { create as createAccount, deleteAccount } from '@/controllers/account';
 import {
   getByEmail as getInviteByEmail,
@@ -10,10 +12,10 @@ import {
 } from '@/controllers/session';
 import {
   createUser,
+  getBySessionTokenCached,
   getByAccountProviderAndProviderId as getUserByAccountProviderAndProviderId,
   getByEmail as getUserByEmail,
   getById as getUserById,
-  sessionUserLoader,
   updateUser,
 } from '@/controllers/user';
 import {
@@ -146,14 +148,20 @@ export function AuthAdapter(): Adapter {
     },
 
     getSessionAndUser: async (sessionToken) => {
-      const userAndSession = await sessionUserLoader.load(sessionToken);
+      const userAndSession = await getBySessionTokenCached(sessionToken);
       if (!userAndSession) {
         return null;
       }
       const { user, session } = userAndSession;
+      // expires is cast to string to allow it to be cached by next/cache unstable_cache.
+      // See https://github.com/vercel/next.js/issues/51613
+      const expires = new Date(session.expires);
       return {
         user: user as AdapterUser,
-        session: session as AdapterSession,
+        session: {
+          ...session,
+          expires,
+        } as AdapterSession,
       };
     },
 
@@ -176,6 +184,8 @@ export function AuthAdapter(): Adapter {
         expires: data.expires,
       });
 
+      revalidateTag('session-token-user');
+
       return {
         sessionToken: data.sessionToken,
         userId: data.userId,
@@ -185,6 +195,7 @@ export function AuthAdapter(): Adapter {
 
     deleteSession: async (sessionToken) => {
       await deleteSession(sessionToken);
+      revalidateTag('session-token-user');
     },
 
     createVerificationToken: async (data) => {

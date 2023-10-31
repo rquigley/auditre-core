@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Fragment } from 'react';
 
-import { getByIdForClient } from '@/controllers/audit';
+import { getByIdForClientCached } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/request';
 import { getStatusesForAuditId } from '@/controllers/request-data';
 import { getCurrent } from '@/controllers/session-user';
@@ -14,7 +14,7 @@ export default async function AuditPage({
   params: { audit: string };
 }) {
   const userP = await getCurrent();
-  const auditP = await getByIdForClient(auditId);
+  const auditP = await getByIdForClientCached(auditId);
   const requestsP = await getAllByAuditId(auditId);
 
   const [user, audit, requests] = await Promise.all([userP, auditP, requestsP]);
