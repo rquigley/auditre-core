@@ -86,18 +86,12 @@ export class OpsMarketingStack extends Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
-      // websiteIndexDocument: 'mta-sts.txt',
     });
 
-    const mtaStsDeployment = new s3deploy.BucketDeployment(
-      this,
-      'DeployMtaSts',
-      {
-        sources: [s3deploy.Source.asset('./mta-sts-assets')],
-        destinationBucket: mtaStsBucket,
-        //destinationKeyPrefix: '.well-known',
-      },
-    );
+    new s3deploy.BucketDeployment(this, 'DeployMtaSts', {
+      sources: [s3deploy.Source.asset('./mta-sts-assets')],
+      destinationBucket: mtaStsBucket,
+    });
 
     const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
       this,
