@@ -2,8 +2,7 @@ import clsx from 'clsx';
 import { stripIndent } from 'common-tags';
 import { notFound } from 'next/navigation';
 
-import { nl2br } from '@/components/nl2br';
-import { getByIdForClient } from '@/controllers/audit';
+import { getByIdForClientCached } from '@/controllers/audit';
 import { getAuditData } from '@/controllers/audit-output';
 import {
   getOrganizationSections,
@@ -23,7 +22,7 @@ export default async function AuditPage({
   params: { audit: string };
 }) {
   const user = await getCurrent();
-  const audit = await getByIdForClient(auditId);
+  const audit = await getByIdForClientCached(auditId);
   if (audit.orgId !== user.orgId) {
     return notFound();
   }

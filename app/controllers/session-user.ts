@@ -1,4 +1,4 @@
-import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 
 import { auth } from '@/lib/auth';
 import { getByEmail } from './user';
@@ -24,6 +24,10 @@ export async function getCurrent(): Promise<User> {
   throw new Error('No session found');
 }
 
-const getByEmailCached = cache(async (email: string) => {
-  return await getByEmail(email, { comment: 'getByEmailCached' });
-});
+const getByEmailCached = unstable_cache(
+  async (email) => getByEmail(email, { comment: 'getByEmailCached' }),
+  ['user-by-email'],
+  {
+    revalidate: 60 * 5,
+  },
+);

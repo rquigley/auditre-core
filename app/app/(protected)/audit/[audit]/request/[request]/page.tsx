@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
 import Header from '@/components/header';
-import { getByIdForClient as getAuditById } from '@/controllers/audit';
+import { getByIdForClientCached as getAuditById } from '@/controllers/audit';
 import { getRequestBySlug } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
 import Activity from './activity';

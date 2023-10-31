@@ -1,4 +1,4 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { Suspense } from 'react';
 
 import { Await } from '@/components/await';
@@ -31,6 +31,8 @@ export default async function FormContainer({ request, user, audit }: Props) {
     });
 
     revalidatePath(`/audit/${audit.id}/request/${request.id}`);
+    // audit-info.year is cached for the audit header
+    revalidateTag('client-audit');
   }
 
   const { data: requestData, uninitializedFields } =
