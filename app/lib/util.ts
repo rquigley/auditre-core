@@ -77,10 +77,11 @@ export function isFieldVisible(
   formConfig: any,
 ) {
   let isVisible = true;
+  let currentField = field;
 
   for (let n = 0, len = isVisibleA.length; n < len; n++) {
-    const parentVal = isVisibleA.shift();
-    let fieldConfig = formConfig[field];
+    const parentVal = isVisibleA[n];
+    const fieldConfig = formConfig[currentField];
     if (
       typeof fieldConfig.dependsOn === 'object' &&
       fieldConfig.dependsOn.state === false
@@ -89,11 +90,11 @@ export function isFieldVisible(
     } else if (parentVal === false) {
       isVisible = false;
     }
-    if (typeof fieldConfig.dependsOn === 'object') {
-      field = fieldConfig.dependsOn.field;
-    } else if (fieldConfig.dependsOn) {
-      field = fieldConfig.dependsOn;
-    }
+    currentField = fieldConfig.dependsOn
+      ? typeof fieldConfig.dependsOn === 'object'
+        ? fieldConfig.dependsOn.field
+        : fieldConfig.dependsOn
+      : currentField;
   }
   return isVisible;
 }
@@ -126,9 +127,17 @@ export function camelToKebab(input: string): string {
 }
 
 export function kebabToCamel(input: string): string {
-  return input
-    .replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-    .replaceAll('-', '');
+  let result = '';
+  let shouldCapitalize = false;
+  for (let i = 0; i < input.length; i++) {
+    if (input[i] === '-') {
+      shouldCapitalize = true;
+    } else {
+      result += shouldCapitalize ? input[i].toUpperCase() : input[i];
+      shouldCapitalize = false;
+    }
+  }
+  return result;
 }
 
 export function getLastDayOfMonth(month: string, year: string) {

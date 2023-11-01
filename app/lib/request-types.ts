@@ -289,7 +289,7 @@ export function isFieldEnabled(
   let isFieldEnabled = true;
 
   for (let n = 0, len = deps.length; n < len; n++) {
-    const parentField = deps.shift() as string;
+    const parentField = deps[n];
     const parentVal = data[parentField];
     if (typeof parentVal !== 'boolean') {
       throw new Error(`Field "${parentField}" must be a boolean`);
