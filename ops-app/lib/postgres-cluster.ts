@@ -1,11 +1,6 @@
 import * as path from 'path';
 import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-import * as rds from 'aws-cdk-lib/aws-rds';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import {
   InstanceClass,
   InstanceSize,
@@ -14,6 +9,11 @@ import {
   SubnetType,
   Vpc,
 } from 'aws-cdk-lib/aws-ec2';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as rds from 'aws-cdk-lib/aws-rds';
+import { Construct } from 'constructs';
 
 export interface PostgresClusterProps {
   vpc: Vpc;
@@ -128,8 +128,8 @@ export class PostgresCluster extends Construct {
       parameterGroup,
       securityGroups: [securityGroup],
       caCertificate: rds.CaCertificate.RDS_CA_RDS2048_G1,
-      // storageEncrypted: true,
-      // storageEncryptionKey:
+      enablePerformanceInsights: true,
+      storageEncrypted: true,
     });
 
     const lambdaRole = new iam.Role(this, 'LambdaExecutionRole', {
