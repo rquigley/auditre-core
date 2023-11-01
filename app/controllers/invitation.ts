@@ -15,7 +15,7 @@ export async function create(invitation: NewInvitation): Promise<Invitation> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getById(id: string): Promise<Invitation | undefined> {
+export async function getById(id: number): Promise<Invitation | undefined> {
   return await db
     .selectFrom('invitation')
     .where('id', '=', id)
@@ -45,7 +45,7 @@ export async function getAllByOrgId(orgId: OrgId): Promise<Invitation[]> {
     .execute();
 }
 
-export async function update(id: string, updateWith: InvitationUpdate) {
+export async function update(id: number, updateWith: InvitationUpdate) {
   return await db
     .updateTable('invitation')
     .set(updateWith)
@@ -53,6 +53,6 @@ export async function update(id: string, updateWith: InvitationUpdate) {
     .execute();
 }
 
-export async function deleteInvitation(id: string) {
+export async function deleteInvitation(id: number) {
   return await db.deleteFrom('invitation').where('id', '=', id).execute();
 }

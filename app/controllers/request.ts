@@ -79,7 +79,6 @@ export async function saveRequestData({
       const oldRdObj = await getDataForRequestAttribute(auditId, rt.id, key);
       const rdObj = await addRequestData({
         auditId: auditId,
-        orgId: audit.orgId,
         requestType: rt.id,
         requestId: key,
         // We save documentIds here in addition to RequestDataDocuments to reflect that a change
@@ -110,7 +109,6 @@ export async function saveRequestData({
     ) {
       await addRequestData({
         auditId: auditId,
-        orgId: audit.orgId,
         requestType: rt.id,
         requestId: key,
         data: { value: newData[key] },

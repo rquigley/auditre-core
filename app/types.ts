@@ -1,4 +1,3 @@
-//import type { DocumentType } from './controllers/document-query';
 import type { OpenAIMessage } from './lib/ai';
 import type {
   ColumnType,
@@ -11,16 +10,15 @@ import type {
 } from 'kysely';
 
 export type OrgId = string;
+export type AccountId = number;
 export type CommentId = string;
 export type DocumentId = string;
 export type DocumentQueryId = string;
-export type DocumentQueueId = string;
+export type DocumentQueueId = number;
 export type UserId = string;
 export type AuditId = string;
 export type AccountMappingId = string;
-export type RequestId = string;
-
-type ClientSafeOmitTypes = 'orgId';
+export type RequestDataId = number;
 
 export interface OrgTable {
   id: GeneratedAlways<string>;
@@ -36,7 +34,7 @@ export type Org = Selectable<OrgTable>;
 export type Actor = { userId: UserId; type: 'USER' } | { type: 'SYSTEM' };
 
 export interface UserTable {
-  id: GeneratedAlways<string>;
+  id: GeneratedAlways<UserId>;
   orgId: OrgId;
   name: string | null;
   email: string | null;
@@ -49,10 +47,9 @@ export interface UserTable {
 export type UserUpdate = Updateable<UserTable>;
 export type NewUser = Insertable<UserTable>;
 export type User = Selectable<UserTable>;
-export type ClientSafeUser = Omit<Selectable<UserTable>, ClientSafeOmitTypes>;
 
 export interface InvitationTable {
-  id: GeneratedAlways<string>;
+  id: GeneratedAlways<number>;
   orgId: OrgId;
   email: string;
   createdAt: ColumnType<Date, string | undefined, never>;
@@ -63,13 +60,9 @@ export interface InvitationTable {
 export type InvitationUpdate = Updateable<InvitationTable>;
 export type NewInvitation = Insertable<InvitationTable>;
 export type Invitation = Selectable<InvitationTable>;
-export type ClientSafeInvitation = Omit<
-  Selectable<InvitationTable>,
-  ClientSafeOmitTypes
->;
 
 export interface AccountTable {
-  id: GeneratedAlways<string>;
+  id: GeneratedAlways<AccountId>;
   userId: UserId;
   type: string;
   provider: string;
@@ -88,7 +81,7 @@ export type NewAccount = Insertable<AccountTable>;
 export type Account = Selectable<AccountTable>;
 
 export interface SessionTable {
-  id: GeneratedAlways<string>;
+  id: GeneratedAlways<number>;
   sessionToken: ColumnType<string, string | undefined, never>;
   userId: UserId;
   expires: Date;
@@ -117,7 +110,6 @@ export interface AuditTable {
 export type AuditUpdate = Updateable<AuditTable>;
 export type NewAudit = Insertable<AuditTable>;
 export type Audit = Selectable<AuditTable>;
-export type ClientSafeAudit = Omit<Selectable<AuditTable>, ClientSafeOmitTypes>;
 
 export type RequestStatus = 'requested' | 'complete' | 'overdue';
 export type RequestGroup =
@@ -127,9 +119,8 @@ export type RequestGroup =
   | 'Other';
 
 export interface RequestDataTable {
-  id: Generated<RequestId>;
+  id: Generated<RequestDataId>;
   auditId: AuditId;
-  orgId: OrgId;
   requestType: string;
   requestId: string;
   data:
@@ -141,7 +132,6 @@ export interface RequestDataTable {
     | null;
   actorUserId: UserId | null;
   createdAt: ColumnType<Date, Date | undefined, never>;
-  // isDeleted: ColumnType<boolean, never, boolean>;
 }
 
 export type RequestDataUpdate = Updateable<RequestDataTable>;
@@ -149,8 +139,8 @@ export type NewRequestData = Insertable<RequestDataTable>;
 export type RequestData = Selectable<RequestDataTable>;
 
 export interface RequestDataDocumentTable {
-  id: Generated<string>;
-  requestDataId: RequestId;
+  id: Generated<number>;
+  requestDataId: RequestDataId;
   documentId: DocumentId;
   createdAt: ColumnType<Date, Date | undefined, never>;
 }
@@ -189,10 +179,6 @@ export interface DocumentTable {
 export type DocumentUpdate = Updateable<DocumentTable>;
 export type NewDocument = Insertable<DocumentTable>;
 export type Document = Selectable<DocumentTable>;
-export type ClientSafeDocument = Omit<
-  Selectable<DocumentTable>,
-  ClientSafeOmitTypes
->;
 
 export type DocumentStatus =
   | 'TO_EXTRACT'
@@ -201,7 +187,7 @@ export type DocumentStatus =
   | 'START_ASK_DEFAULT_QUESTIONS'
   | 'ERROR';
 export interface DocumentQueueTable {
-  id: GeneratedAlways<string>;
+  id: GeneratedAlways<number>;
   documentId: DocumentId;
   status: DocumentStatus;
   createdAt: ColumnType<Date, string | undefined, never>;

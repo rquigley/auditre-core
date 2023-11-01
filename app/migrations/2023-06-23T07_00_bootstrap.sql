@@ -9,8 +9,32 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+create or replace function uuid_generate_v7()
+returns uuid
+as $$
+begin
+  -- use random v4 uuid as starting point (which has the same variant we need)
+  -- then overlay timestamp
+  -- then set version 7 by flipping the 2 and 1 bit in the version 4 string
+  return encode(
+    set_bit(
+      set_bit(
+        overlay(uuid_send(gen_random_uuid())
+                placing substring(int8send(floor(extract(epoch from clock_timestamp()) * 1000)::bigint) from 3)
+                from 1 for 6
+        ),
+        52, 1
+      ),
+      53, 1
+    ),
+    'hex')::uuid;
+end
+$$
+language plpgsql
+volatile;
+
 CREATE TABLE "org" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "name" text,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
@@ -19,7 +43,7 @@ CREATE TABLE "org" (
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "org" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "user" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "name" text,
   "email" text UNIQUE,
@@ -33,7 +57,7 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "user" FOR EACH ROW E
 
 
 CREATE TABLE "invitation" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "email" text UNIQUE,
   "created_at" timestamptz DEFAULT now() NOT NULL,
@@ -44,7 +68,7 @@ CREATE TABLE "invitation" (
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "invitation" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "account" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "user_id" uuid NOT NULL REFERENCES "user" ("id"),
   "type" text NOT NULL,
   "provider" text NOT NULL,
@@ -62,21 +86,21 @@ CREATE TABLE "account" (
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "session" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "session_token" text NOT NULL UNIQUE,
   "user_id" uuid NOT NULL REFERENCES "user" ("id"),
   "expires" timestamp without time zone NOT NULL
 );
 
 CREATE TABLE "verification_token" (
-  "identifier" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "identifier" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "token" text NOT NULL UNIQUE,
   "session_token" text NOT NULL UNIQUE,
   "expires" timestamp without time zone NOT NULL
 );
 
 CREATE TABLE "audit" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "name" text,
   "created_at" timestamptz DEFAULT now() NOT NULL,
@@ -86,7 +110,7 @@ CREATE TABLE "audit" (
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "audit" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "document" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "uploaded_by_user_id" uuid REFERENCES "user" ("id"),
   "key" text NOT NULL UNIQUE,
@@ -106,7 +130,7 @@ CREATE TABLE "document" (
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "document" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "document_query" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "document_id" uuid REFERENCES "document" ("id"),
   "model" text,
   "identifier" text,
@@ -118,7 +142,7 @@ CREATE TABLE "document_query" (
 );
 
 CREATE TABLE "document_queue" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "document_id" uuid REFERENCES "document" ("id"),
   "status" text NOT NULL,
   "created_at" timestamptz DEFAULT now() NOT NULL,
@@ -128,28 +152,27 @@ CREATE TABLE "document_queue" (
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "document_queue" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "request_data" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
-  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
+  -- "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "request_type" text NOT NULL,
   "request_id" text NOT NULL,
   "data" jsonb,
-  "document_id" uuid REFERENCES "document" ("id"),
   "actor_user_id" uuid REFERENCES "user" ("id"),
   "created_at" timestamptz DEFAULT now() NOT NULL
 );
 CREATE INDEX idx_request_data_1 ON request_data (audit_id, request_type, request_id, created_at DESC);
 
 CREATE TABLE "request_data_document" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  "request_data_id" uuid NOT NULL REFERENCES "request_data" ("id"),
+  "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  "request_data_id" bigint NOT NULL REFERENCES "request_data" ("id"),
   "document_id" uuid NOT NULL REFERENCES "document" ("id"),
   "created_at" timestamptz DEFAULT now() NOT NULL
 );
 CREATE INDEX idx_request_data_document_1 ON request_data_document (request_data_id, document_id);
 
 CREATE TABLE "comment" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "audit_id" uuid REFERENCES "audit" ("id"),
   "request_type" text,
@@ -163,7 +186,7 @@ CREATE TABLE "comment" (
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "comment" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "account_mapping" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "document_id" uuid REFERENCES "document" ("id"), -- only present if coming from a document
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),

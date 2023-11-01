@@ -16,6 +16,7 @@ import type {
   DocumentId,
   NewRequestData,
   RequestData,
+  RequestDataId,
   UserId,
 } from '@/types';
 
@@ -180,7 +181,7 @@ export async function createRequestDataDocument({
   requestDataId,
   documentId,
 }: {
-  requestDataId: string;
+  requestDataId: RequestDataId;
   documentId: string;
 }) {
   return await db
@@ -193,7 +194,7 @@ export async function deleteRequestDataDocument({
   requestDataId,
   documentId,
 }: {
-  requestDataId: string;
+  requestDataId: RequestDataId;
   documentId: string;
 }) {
   return await db
