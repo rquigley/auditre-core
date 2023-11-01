@@ -107,10 +107,14 @@ function formatBodyText(section: Section, data: AuditData): React.ReactNode {
 
     // Check if the match is a newline character
     if (match[0] === '\n') {
-      output.push(<br />);
+      output.push(<br key={match.index} />);
     } else {
       // Append JSX span element
-      output.push(<span className="text-yellow-500">{match[1]}</span>);
+      output.push(
+        <span key={match.index} className="text-yellow-500">
+          {match[1]}
+        </span>,
+      );
     }
 
     lastIndex = regex.lastIndex;
