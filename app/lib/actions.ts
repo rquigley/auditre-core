@@ -78,7 +78,6 @@ export async function createAudit(rawData: {
   }
   await addRequestData({
     auditId: audit.id,
-    orgId: audit.orgId,
     requestType: 'audit-info',
     requestId: 'year',
     data: { value: data.year },
