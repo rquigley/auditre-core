@@ -74,7 +74,10 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
     filename: 'Chart-of-accounts.xlsx',
     classifiedType: 'CHART_OF_ACCOUNTS',
     actorUserId,
-    ai: {},
+    ai: {
+      accountNameColumn: 'foo',
+      accountMapping: 'bar',
+    },
   });
   await saveRequestData({
     auditId,
