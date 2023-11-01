@@ -32,7 +32,6 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
     'audit-info',
     'year',
   );
-  console.log(existingYear);
   await saveRequestData({
     auditId,
     requestType: 'audit-info',
