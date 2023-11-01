@@ -20,7 +20,7 @@ export async function deleteSession(
     .executeTakeFirst();
 }
 
-export async function getById(id: string): Promise<Session> {
+export async function getById(id: number): Promise<Session> {
   return await db
     .selectFrom('session')
     .where('id', '=', id)

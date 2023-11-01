@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 
-import type { Account, AccountUpdate, NewAccount } from '@/types';
+import type { Account, AccountId, AccountUpdate, NewAccount } from '@/types';
 
 export async function create(user: NewAccount): Promise<Account> {
   return await db
@@ -21,7 +21,7 @@ export async function deleteAccount(
     .returningAll()
     .executeTakeFirst();
 }
-export async function getById(id: string): Promise<Account> {
+export async function getById(id: AccountId): Promise<Account> {
   return await db
     .selectFrom('account')
     .where('id', '=', id)
@@ -29,7 +29,7 @@ export async function getById(id: string): Promise<Account> {
     .executeTakeFirstOrThrow();
 }
 
-export async function update(id: string, updateWith: AccountUpdate) {
+export async function update(id: AccountId, updateWith: AccountUpdate) {
   return await db
     .updateTable('account')
     .set(updateWith)
