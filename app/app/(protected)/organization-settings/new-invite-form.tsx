@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  // @ts-expect-error
-  experimental_useFormState as useFormState,
-  // @ts-expect-error
-  experimental_useFormStatus as useFormStatus,
-} from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 
 import { classNames } from '@/lib/util';
 

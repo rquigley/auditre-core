@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 
 import type {
   Invitation,
+  InvitationId,
   InvitationUpdate,
   NewInvitation,
   OrgId,
@@ -15,7 +16,9 @@ export async function create(invitation: NewInvitation): Promise<Invitation> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getById(id: number): Promise<Invitation | undefined> {
+export async function getById(
+  id: InvitationId,
+): Promise<Invitation | undefined> {
   return await db
     .selectFrom('invitation')
     .where('id', '=', id)
@@ -45,7 +48,7 @@ export async function getAllByOrgId(orgId: OrgId): Promise<Invitation[]> {
     .execute();
 }
 
-export async function update(id: number, updateWith: InvitationUpdate) {
+export async function update(id: InvitationId, updateWith: InvitationUpdate) {
   return await db
     .updateTable('invitation')
     .set(updateWith)
@@ -53,6 +56,6 @@ export async function update(id: number, updateWith: InvitationUpdate) {
     .execute();
 }
 
-export async function deleteInvitation(id: number) {
+export async function deleteInvitation(id: InvitationId) {
   return await db.deleteFrom('invitation').where('id', '=', id).execute();
 }

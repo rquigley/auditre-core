@@ -57,7 +57,7 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "user" FOR EACH ROW E
 
 
 CREATE TABLE "invitation" (
-  "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "email" text UNIQUE,
   "created_at" timestamptz DEFAULT now() NOT NULL,

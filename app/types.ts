@@ -9,16 +9,17 @@ import type {
   Updateable,
 } from 'kysely';
 
-export type OrgId = string;
 export type AccountId = number;
+export type AccountMappingId = string;
+export type AuditId = string;
 export type CommentId = string;
 export type DocumentId = string;
 export type DocumentQueryId = string;
 export type DocumentQueueId = number;
-export type UserId = string;
-export type AuditId = string;
-export type AccountMappingId = string;
+export type InvitationId = string;
+export type OrgId = string;
 export type RequestDataId = number;
+export type UserId = string;
 
 export interface OrgTable {
   id: GeneratedAlways<string>;
@@ -49,7 +50,7 @@ export type NewUser = Insertable<UserTable>;
 export type User = Selectable<UserTable>;
 
 export interface InvitationTable {
-  id: GeneratedAlways<number>;
+  id: GeneratedAlways<InvitationId>;
   orgId: OrgId;
   email: string;
   createdAt: ColumnType<Date, string | undefined, never>;
