@@ -67,7 +67,7 @@ CREATE TABLE "invitation" (
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "invitation" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
-CREATE TABLE "account" (
+CREATE TABLE "user_account" (
   "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "user_id" uuid NOT NULL REFERENCES "user" ("id"),
   "type" text NOT NULL,
@@ -83,7 +83,7 @@ CREATE TABLE "account" (
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL
 );
-CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "user_account" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "session" (
   "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

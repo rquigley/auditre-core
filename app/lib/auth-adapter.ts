@@ -1,6 +1,5 @@
 import { revalidateTag } from 'next/cache';
 
-import { create as createAccount, deleteAccount } from '@/controllers/account';
 import {
   getByEmail as getInviteByEmail,
   update as updateInvite,
@@ -18,6 +17,10 @@ import {
   getById as getUserById,
   updateUser,
 } from '@/controllers/user';
+import {
+  createUserAccount,
+  deleteUserAccount,
+} from '@/controllers/user-account';
 import {
   createVerificationToken,
   deleteVerificationToken,
@@ -127,7 +130,7 @@ export function AuthAdapter(): Adapter {
         userId,
       } = account;
       const user = await getUserById(userId);
-      return createAccount({
+      return createUserAccount({
         userId: user.id,
         type,
         provider,
@@ -141,7 +144,7 @@ export function AuthAdapter(): Adapter {
     },
 
     unlinkAccount: ({ provider, providerAccountId }) => {
-      return deleteAccount(
+      return deleteUserAccount(
         provider,
         providerAccountId,
       ) as unknown as AdapterAccount;
