@@ -119,7 +119,9 @@ function prettyStack(error: any) {
   return lines.join('\n           ');
 }
 
+export let shuttingDown = false;
 process.on('SIGTERM', async () => {
+  shuttingDown = true;
   console.log('The service is about to shut down!');
 
   if (pgPool) {
