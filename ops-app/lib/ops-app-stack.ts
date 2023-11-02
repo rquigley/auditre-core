@@ -367,7 +367,8 @@ export class OpsAppStack extends Stack {
       ),
     );
 
-    // appService.grantConnectionsToSecurityGroups(db.instance.connections);
+    // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_elasticloadbalancingv2.HealthCheck.html
+    // health return 200, unhealthy: anything else
     appService.targetGroup.configureHealthCheck({
       path: '/api/app-cont-health',
       healthyThresholdCount: 2,
@@ -377,10 +378,40 @@ export class OpsAppStack extends Stack {
       '10',
     );
 
+    const appCachePolicy = new cloudfront.CachePolicy(this, 'AppCachePolicy', {
+      headerBehavior: cloudfront.CacheHeaderBehavior.allowList(
+        'Host',
+        'Origin',
+      ),
+      cookieBehavior: cloudfront.CacheCookieBehavior.all(),
+      queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
+      defaultTtl: Duration.seconds(0),
+      minTtl: Duration.seconds(0),
+      maxTtl: Duration.seconds(1),
+      enableAcceptEncodingBrotli: true,
+      enableAcceptEncodingGzip: true,
+    });
+
+    const cachePolicyNextStatic = new cloudfront.CachePolicy(
+      this,
+      'CachePolicyNextStatic',
+      {
+        cachePolicyName: 'next-static',
+        defaultTtl: Duration.seconds(86400),
+        maxTtl: Duration.seconds(31536000),
+        minTtl: Duration.seconds(2),
+        cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+        headerBehavior: cloudfront.CacheHeaderBehavior.none(),
+        queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
+        enableAcceptEncodingBrotli: true,
+        enableAcceptEncodingGzip: true,
+      },
+    );
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       certificate: certificate,
       domainNames: ['ci.auditre.co', 'app.ci.auditre.co'],
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+      priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       // errorResponses: [
       //   {
       //     httpStatus: 403,
@@ -397,16 +428,7 @@ export class OpsAppStack extends Stack {
         compress: true,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        cachePolicy: new cloudfront.CachePolicy(this, 'AppCachePolicy', {
-          headerBehavior: cloudfront.CacheHeaderBehavior.allowList('Host'),
-          cookieBehavior: cloudfront.CacheCookieBehavior.all(),
-          queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
-          defaultTtl: Duration.seconds(5),
-          minTtl: Duration.seconds(5),
-          maxTtl: Duration.seconds(5),
-          enableAcceptEncodingBrotli: true,
-          enableAcceptEncodingGzip: true,
-        }),
+        cachePolicy: appCachePolicy,
         originRequestPolicy: new cloudfront.OriginRequestPolicy(
           this,
           'AppOriginPolicy',
@@ -419,6 +441,24 @@ export class OpsAppStack extends Stack {
         ),
       },
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
+      additionalBehaviors: {
+        '/_next/static/*': {
+          origin: new cloudfrontOrigins.LoadBalancerV2Origin(loadbalancer, {
+            protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+          }),
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+          cachePolicy: cachePolicyNextStatic,
+          compress: true,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
+        // '/api/*': {
+        //     allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        //     cachePolicy: cloudfront.CachePolicy.fromCachePolicyId(this, 'ApiCachePolicy', '4135ea2d-6df8-44a3-9df3-4b5a84be39ad'),
+        //     compress: true,
+        //     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
+        // }
+      },
     });
 
     new CfnOutput(this, 'DistributionId', {
