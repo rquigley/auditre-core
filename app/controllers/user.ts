@@ -69,9 +69,9 @@ export async function getByAccountProviderAndProviderId(
 ): Promise<User | undefined> {
   return await db
     .selectFrom('user')
-    .innerJoin('account', 'account.userId', 'user.id')
-    .where('account.provider', '=', provider)
-    .where('account.providerAccountId', '=', providerAccountId)
+    .innerJoin('userAccount as ua', 'ua.userId', 'user.id')
+    .where('ua.provider', '=', provider)
+    .where('ua.providerAccountId', '=', providerAccountId)
     .selectAll('user')
     .executeTakeFirst();
 }

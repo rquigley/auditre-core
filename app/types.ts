@@ -9,7 +9,6 @@ import type {
   Updateable,
 } from 'kysely';
 
-export type AccountId = number;
 export type AccountMappingId = string;
 export type AuditId = string;
 export type CommentId = string;
@@ -19,6 +18,7 @@ export type DocumentQueueId = number;
 export type InvitationId = string;
 export type OrgId = string;
 export type RequestDataId = number;
+export type UserAccountId = number;
 export type UserId = string;
 
 export interface OrgTable {
@@ -62,8 +62,8 @@ export type InvitationUpdate = Updateable<InvitationTable>;
 export type NewInvitation = Insertable<InvitationTable>;
 export type Invitation = Selectable<InvitationTable>;
 
-export interface AccountTable {
-  id: GeneratedAlways<AccountId>;
+export interface UserAccountTable {
+  id: GeneratedAlways<UserAccountId>;
   userId: UserId;
   type: string;
   provider: string;
@@ -77,9 +77,9 @@ export interface AccountTable {
   session_state: string | null;
   createdAt: ColumnType<Date, string | undefined, never>;
 }
-export type AccountUpdate = Updateable<AccountTable>;
-export type NewAccount = Insertable<AccountTable>;
-export type Account = Selectable<AccountTable>;
+export type UserAccountUpdate = Updateable<UserAccountTable>;
+export type NewUserAccount = Insertable<UserAccountTable>;
+export type UserAccount = Selectable<UserAccountTable>;
 
 export interface SessionTable {
   id: GeneratedAlways<number>;
@@ -289,19 +289,19 @@ export type NewAccountMapping = Insertable<AccountMappingTable>;
 export type AccountMapping = Selectable<AccountMappingTable>;
 
 export interface Database extends Kysely<Database> {
-  account: AccountTable;
-  audit: AuditTable;
   accountMapping: AccountMappingTable;
+  audit: AuditTable;
   comment: CommentTable;
   document: DocumentTable;
-  documentQueue: DocumentQueueTable;
   documentQuery: DocumentQueryTable;
+  documentQueue: DocumentQueueTable;
   invitation: InvitationTable;
   org: OrgTable;
   requestData: RequestDataTable;
   requestDataDocument: RequestDataDocumentTable;
   session: SessionTable;
   user: UserTable;
+  userAccount: UserAccountTable;
   verificationToken: VerificationTokenTable;
 }
 
