@@ -5,7 +5,7 @@ import {
   ArrowLongRightIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
-import * as Sentry from '@sentry/react';
+import * as Sentry from '@sentry/nextjs';
 import clsx from 'clsx';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
