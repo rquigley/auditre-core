@@ -75,6 +75,13 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
+      - name: Upload _next/static to S3
+        run: |
+          docker run -d --name nextjs-app-container $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker cp nextjs-app-container:/app/.next/static ./_next/static
+          docker stop nextjs-app-container
+        # aws s3 sync ./app/.next/static s3://auditre-static-assets/.next/static
+
       - name: Fill in the new image ID in the AWS ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -85,7 +92,7 @@ jobs:
 
       # upload db migrations to s3
       # run db migration lambda task
-  
+
       - name: Deploy AWS ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
