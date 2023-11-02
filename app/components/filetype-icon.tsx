@@ -45,7 +45,7 @@ export function FiletypeIcon({ filename }: { filename: string }) {
       );
       break;
     default:
-      icon = <div className={className}>{fileExt}</div>;
+      icon = <div className="text-xs">{fileExt}</div>;
   }
   return <div className="h-6 w-6">{icon}</div>;
 }
