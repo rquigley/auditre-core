@@ -254,7 +254,7 @@ export class OpsAppStack extends Stack {
 
     const db = new PostgresCluster(this, 'PostgresCluster', {
       vpc,
-      instanceIdentifier: 'app-psql',
+      instanceIdentifier: 'app-psql2',
       dbName: 'auditre',
       dbUsername: 'arroot',
       isProd,
