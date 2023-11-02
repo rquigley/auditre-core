@@ -1,3 +1,6 @@
+import { Suspense } from 'react';
+
+import { Await } from '@/components/await';
 import Header from '@/components/header';
 import { getAllByOrgId } from '@/controllers/audit';
 import { getCurrent } from '@/controllers/session-user';
@@ -5,9 +8,11 @@ import NewAuditButton from './new-audit-button';
 import NewAuditModal from './new-audit-modal';
 import Row from './row';
 
+import type { AuditWithRequestCounts } from '@/controllers/audit';
+
 export default async function AuditsPage() {
   const user = await getCurrent();
-  const audits = await getAllByOrgId(user.orgId);
+  const audits = getAllByOrgId(user.orgId);
 
   return (
     <>
@@ -46,9 +51,17 @@ export default async function AuditsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {audits.map((audit) => (
-                  <Row audit={audit} key={audit.id} />
-                ))}
+                <Suspense fallback={null}>
+                  <Await promise={audits}>
+                    {(rows) => (
+                      <>
+                        {rows.map((audit) => (
+                          <Row audit={audit} key={audit.id} />
+                        ))}
+                      </>
+                    )}
+                  </Await>
+                </Suspense>
               </tbody>
             </table>
             <div className="mt-4">
