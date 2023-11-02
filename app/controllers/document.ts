@@ -1,6 +1,6 @@
 // import { inferSchema, initParser } from 'udsv';
 // import { string } from 'zod';
-import * as Sentry from '@sentry/node';
+import * as Sentry from '@sentry/nextjs';
 
 import { create as createMapping } from '@/controllers/account-mapping';
 import {
