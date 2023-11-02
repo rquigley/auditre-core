@@ -86,7 +86,7 @@ jobs:
           docker run -d --name nextjs-app-container $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker cp nextjs-app-container:/app/.next/static ./app_static_assets
           docker stop nextjs-app-container
-          aws s3 sync ./app_static_assets s3://auditre-app-static-assets-dev/.next/static --cache-control "max-age=31536000,public,immutable"
+          aws s3 sync ./app_static_assets s3://auditre-app-static-assets-dev/_next/static --cache-control "max-age=31536000,public,immutable"
 
       - name: Fill in the new image ID in the AWS ECS task definition
         id: task-def
