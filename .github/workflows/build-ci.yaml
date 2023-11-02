@@ -5,6 +5,7 @@ on:
       - main
     paths:
       - 'app/**'
+      - '.github/**'
 
 jobs:
   build-and-deploy:
