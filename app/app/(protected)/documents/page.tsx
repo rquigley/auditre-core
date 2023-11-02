@@ -1,13 +1,14 @@
+import { Suspense } from 'react';
+
+import { Await } from '@/components/await';
 import Header from '@/components/header';
-// import { getById as getAuditById } from '@/controllers/audit';
 import { getAllByOrgId } from '@/controllers/document';
-// import { getById as getRequestById } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
 import Row from './row';
 
 export default async function DocumentsPage() {
   const user = await getCurrent();
-  const documents = await getAllByOrgId(user.orgId);
+  const documents = getAllByOrgId(user.orgId);
 
   // for (const document of documents) {
   //   if (document.requestId) {
@@ -67,9 +68,17 @@ export default async function DocumentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {documents.map((document) => (
-                  <Row document={document} key={document.id} />
-                ))}
+                <Suspense fallback={null}>
+                  <Await promise={documents}>
+                    {(rows) => (
+                      <>
+                        {rows.map((document) => (
+                          <Row document={document} key={document.id} />
+                        ))}
+                      </>
+                    )}
+                  </Await>
+                </Suspense>
               </tbody>
             </table>
           </div>
