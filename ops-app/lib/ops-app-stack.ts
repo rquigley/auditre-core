@@ -32,7 +32,12 @@ import {
 import { ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
-import { Bucket, EventType, HttpMethods } from 'aws-cdk-lib/aws-s3';
+import {
+  BlockPublicAccess,
+  Bucket,
+  EventType,
+  HttpMethods,
+} from 'aws-cdk-lib/aws-s3';
 import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
 import { Topic } from 'aws-cdk-lib/aws-sns';
 import { UrlSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
@@ -106,6 +111,7 @@ export class OpsAppStack extends Stack {
       //filter: "ref:refs/tags/v*", // JWT sub suffix filter, defaults to '*'
     });
     deployRole.addManagedPolicy(policy);
+
     //iam.ManagedPolicy.fromManagedPolicyArn
     //fromAwsManagedPolicyName('AppDeployAccess'),
     //);
@@ -114,18 +120,21 @@ export class OpsAppStack extends Stack {
       value: deployRole.roleArn,
     });
 
+    let appDomainName;
     let removalPolicy;
     let allowedOrigins;
     let autoDeleteObjects;
     let objectLockEnabled;
     if (isProd) {
+      appDomainName = 'app.auditre.co';
       removalPolicy = RemovalPolicy.RETAIN;
-      allowedOrigins = ['https://app.auditre.co'];
+      allowedOrigins = [`https://${appDomainName}`];
       autoDeleteObjects = false;
       objectLockEnabled = true;
     } else {
+      appDomainName = 'app.ci.auditre.co';
       removalPolicy = RemovalPolicy.DESTROY;
-      allowedOrigins = ['http://localhost:3000', 'https://app.ci.auditre.co'];
+      allowedOrigins = ['http://localhost:3000', `https://${appDomainName}`];
       autoDeleteObjects = true;
       objectLockEnabled = false;
     }
@@ -144,6 +153,7 @@ export class OpsAppStack extends Stack {
       ],
       autoDeleteObjects,
       objectLockEnabled,
+      //intelligentTieringConfigurations:
     });
 
     const lxmlLayer = new LayerVersion(this, 'LXMLLayer', {
@@ -264,6 +274,34 @@ export class OpsAppStack extends Stack {
       value: db.instance.instanceEndpoint.hostname,
     });
 
+    const dbMigrationsBucket = new Bucket(this, 'DBMigrationsS3Bucket', {
+      bucketName: `auditre-app-db-migrations-${isProd ? 'prod' : 'dev'}`,
+
+      publicReadAccess: false,
+      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+      removalPolicy: RemovalPolicy.DESTROY, // NOT recommended for production code
+      autoDeleteObjects: true, // NOT recommended for production code
+    });
+    dbMigrationsBucket.grantReadWrite(deployRole);
+
+    const staticAssetBucket = new Bucket(this, 'StaticAssetS3Bucket', {
+      bucketName: `auditre-app-static-assets-${isProd ? 'prod' : 'dev'}`,
+
+      publicReadAccess: false,
+      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+      removalPolicy: RemovalPolicy.DESTROY, // NOT recommended for production code
+      autoDeleteObjects: true, // NOT recommended for production code
+    });
+    staticAssetBucket.grantReadWrite(deployRole);
+
+    const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
+      this,
+      'cloudfront-OAI',
+      {
+        comment: `OAI for ${appDomainName}`,
+      },
+    );
+
     // const repo = new ecr.Repository(this, 'Repo', {
     //   repositoryName: 'auditre-fargate-app',
     // });
@@ -308,6 +346,7 @@ export class OpsAppStack extends Stack {
           environment: {
             NEXT_PUBLIC_ROOT_DOMAIN: 'app.ci.auditre.co',
             NEXTAUTH_URL: 'https://app.ci.auditre.co',
+            NEXT_RUNTIME: 'nodejs',
             GOOGLE_CLIENT_ID:
               '274008686939-oejqk1po6q1qd8krlcqsgk3brih10qgm.apps.googleusercontent.com',
             AWS_S3_BUCKET: s3Bucket.bucketName,
@@ -407,6 +446,7 @@ export class OpsAppStack extends Stack {
         enableAcceptEncodingGzip: true,
       },
     );
+
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       certificate: certificate,
       domainNames: ['ci.auditre.co', 'app.ci.auditre.co'],
@@ -443,8 +483,14 @@ export class OpsAppStack extends Stack {
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
       additionalBehaviors: {
         '/_next/static/*': {
-          origin: new cloudfrontOrigins.LoadBalancerV2Origin(loadbalancer, {
-            protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+          // Use the Fargate service as an origin
+          // origin: new cloudfrontOrigins.LoadBalancerV2Origin(loadbalancer, {
+          //   protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+          // }),
+
+          // OR use S3 bucket as an origin
+          origin: new cloudfrontOrigins.S3Origin(staticAssetBucket, {
+            originAccessIdentity: cloudfrontOAI,
           }),
           allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
           cachePolicy: cachePolicyNextStatic,
