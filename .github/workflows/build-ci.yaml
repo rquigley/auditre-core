@@ -84,9 +84,9 @@ jobs:
         working-directory: ./app
         run: |
           docker run -d --name nextjs-app-container $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker cp nextjs-app-container:/app/.next/static ./_next/static
+          docker cp nextjs-app-container:/app/.next/static ./app_static_assets
           docker stop nextjs-app-container
-        # aws s3 sync ./app/.next/static s3://auditre-static-assets/.next/static
+          aws s3 sync ./app_static_assets s3://auditre-app-static-assets-dev/.next/static --cache-control "max-age=31536000,public,immutable"
 
       - name: Fill in the new image ID in the AWS ECS task definition
         id: task-def
@@ -96,8 +96,12 @@ jobs:
           container-name: nodejs-app-container
           image: ${{ steps.build-image.outputs.image }}
 
-      # upload db migrations to s3
-      # run db migration lambda task
+      - name: Upload DB migrations to S3
+        working-directory: ./app
+        run: |
+          aws s3 sync ./migrations s3://auditre-app-db-migrations-dev/migrations
+
+        # run db migration lambda task
 
       - name: Deploy AWS ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
