@@ -77,6 +77,11 @@ jobs:
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
       - name: Upload _next/static to S3
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: auditre-fargate-app
+          IMAGE_TAG: latest
+        working-directory: ./app
         run: |
           docker run -d --name nextjs-app-container $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker cp nextjs-app-container:/app/.next/static ./_next/static
