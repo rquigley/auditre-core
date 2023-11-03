@@ -9,6 +9,7 @@ import {
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import Image from 'next/image';
+import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Fragment, Suspense, useState } from 'react';
 import useSWR from 'swr';
@@ -137,7 +138,9 @@ function Document({
           <div className="flex items-center justify-between">
             <Dialog.Title className="text-base font-semibold leading-6 text-slate-700 flex">
               <FiletypeIcon filename={document.key} />
-              <span className="ml-2">{document.name}</span>
+              <Link href={`/document/${document.id}`} className="ml-2">
+                {document.name}
+              </Link>
             </Dialog.Title>
             <div className="ml-3 flex h-7 items-center">
               <button
