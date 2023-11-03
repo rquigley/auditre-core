@@ -433,10 +433,15 @@ export function FileUpload({
       }
 
       const documentIds = getValues(field).documentIds || [];
-
+      let newDocumentIds;
+      if (config.allowMultiple) {
+        newDocumentIds = [...documentIds, id];
+      } else {
+        newDocumentIds = [id];
+      }
       setValue(
         field,
-        { isDocuments: true, documentIds: [...documentIds, id] },
+        { isDocuments: true, documentIds: newDocumentIds },
         { shouldDirty: true, shouldTouch: true },
       );
     } else {
