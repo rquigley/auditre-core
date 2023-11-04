@@ -32,7 +32,7 @@ export default function Navbar({
 
   const navigation = [
     {
-      name: 'Dashboard',
+      name: 'Home',
       href: '/',
       icon: HomeIcon,
     },
@@ -110,8 +110,8 @@ export default function Navbar({
                   </div>
                 </Transition.Child>
                 {/* Sidebar component, swap this element with another sidebar if you like */}
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 py-2">
-                  <div className="flex h-16 w-auto shrink-0 items-center">
+                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white py-2">
+                  <div className="flex h-16 w-auto shrink-0 items-center pl-6">
                     <Image
                       width="100"
                       height="26"
@@ -122,7 +122,7 @@ export default function Navbar({
                   <nav className="flex flex-1 flex-col">
                     <ul role="list" className="flex flex-1 flex-col gap-y-7">
                       <li>
-                        <ul role="list" className="-mx-2 space-y-1">
+                        <ul role="list">
                           {navigation.map((item) => (
                             <NavItem
                               key={item.name}
@@ -145,14 +145,14 @@ export default function Navbar({
       {/* Static sidebar for desktop */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-55 lg:flex-col">
         {/* Sidebar component, swap this element with another sidebar if you like */}
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
-          <div className="flex mt-4 h-16 w-auto shrink-0 items-center">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white">
+          <div className="flex mt-4 h-16 w-auto shrink-0 items-center pl-6 pr-10">
             <Image width="100" height="26" src="/auditre.svg" alt="AuditRe" />
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
               <li>
-                <ul role="list" className="-mx-2 space-y-1">
+                <ul role="list">
                   {navigation.map((item) => (
                     <NavItem
                       key={item.name}
@@ -163,10 +163,10 @@ export default function Navbar({
                   ))}
                 </ul>
               </li>
-              <li className="-mx-6 mt-auto">
+              <li className=" mt-auto">
                 <Menu as="div" className="flex relative text-left">
                   <div>
-                    <Menu.Button className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900 hover:bg-gray-50">
+                    <Menu.Button className="flex items-center gap-x-4 px-6 py-3 text-xs font-medium leading-6 text-gray-900 hover:bg-gray-50">
                       {userImage && (
                         <div className="h-8 w-8 rounded-full bg-gray-50 overflow-hidden">
                           <Image
@@ -178,7 +178,12 @@ export default function Navbar({
                         </div>
                       )}
                       <span className="sr-only">Your profile</span>
-                      <span aria-hidden="true">{userName || ''}</span>
+                      <span
+                        aria-hidden="true"
+                        className=" text-ellipsis w-20 overflow-hidden whitespace-nowrap"
+                      >
+                        {userName || ''}
+                      </span>
                     </Menu.Button>
                   </div>
                   <AccountMenuItems />
@@ -301,18 +306,23 @@ function NavItem({
   const isSelected = matchingPaths.includes(rootPathname);
 
   return (
-    <li key={item.name}>
+    <li
+      key={item.name}
+      className={classNames(
+        isSelected ? 'border-l-sky-700 border-l-2' : 'border-l-2',
+      )}
+    >
       <Link
         href={item.href}
         onClick={() => setSidebarOpen(false)}
         className={classNames(
           isSelected
-            ? 'bg-gray-50 text-sky-700'
+            ? ' text-sky-700'
             : 'text-gray-700 hover:text-sky-700 hover:bg-gray-50',
-          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
+          'group pl-6 flex gap-x-3 rounded-md p-1 text-sm leading-6 font-medium transition-colors',
         )}
       >
-        <item.icon
+        {/* <item.icon
           className={classNames(
             isSelected
               ? 'text-sky-700'
@@ -320,7 +330,7 @@ function NavItem({
             'h-6 w-6 shrink-0',
           )}
           aria-hidden="true"
-        />
+        /> */}
         {item.name}
       </Link>
     </li>
