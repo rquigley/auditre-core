@@ -11,32 +11,32 @@ import { BasicForm } from './basic-form';
 
 import type { Props as BasicFormProps } from './basic-form';
 import type { Request } from '@/controllers/request';
-import type { Audit, DocumentId, User } from '@/types';
+import type { AuditId, DocumentId, User } from '@/types';
 
 type Props = {
   request: Request;
   user: User;
-  audit: { id: Audit['id'] };
+  auditId: AuditId;
 };
 
-export default async function FormContainer({ request, user, audit }: Props) {
+export default async function FormContainer({ request, user, auditId }: Props) {
   async function saveData(data: Record<string, unknown>) {
     'use server';
 
     await saveRequestData({
-      auditId: audit.id,
+      auditId: auditId,
       requestType: request.id,
       data: data,
       actorUserId: user.id,
     });
 
-    revalidatePath(`/audit/${audit.id}/request/${request.id}`);
+    revalidatePath(`/audit/${auditId}/request/${request.id}`);
     // audit-info.year is cached for the audit header
     revalidateTag('client-audit');
   }
 
   const { data: requestData, uninitializedFields } =
-    await getDataForRequestType(request.auditId, request);
+    await getDataForRequestType(auditId, request);
 
   let documents: BasicFormProps['documents'] = {};
   for (const field of Object.keys(requestData)) {
@@ -58,6 +58,7 @@ export default async function FormContainer({ request, user, audit }: Props) {
 
   return (
     <BasicForm
+        auditId={auditId}
       request={request}
       requestData={requestData}
       dataMatchesConfig={uninitializedFields.length === 0}

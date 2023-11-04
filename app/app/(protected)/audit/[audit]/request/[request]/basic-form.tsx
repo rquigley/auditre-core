@@ -23,9 +23,10 @@ import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
 import { classNames, delay, isFieldVisible } from '@/lib/util';
 
 import type { Request } from '@/controllers/request';
-import type { DocumentId, RequestData } from '@/types';
+import type { AuditId, DocumentId, RequestData } from '@/types';
 
 export type Props = {
+  auditId: AuditId;
   request: Request;
   requestData: Record<string, unknown>;
   dataMatchesConfig: boolean;
@@ -40,6 +41,7 @@ export type Props = {
 };
 
 export function BasicForm({
+  auditId,
   request,
   requestData,
   dataMatchesConfig,
@@ -78,7 +80,7 @@ export function BasicForm({
       loading: 'Saving...',
       success: async (data) => {
         //await delay(1000);
-        router.push(`/audit/${request.auditId}`);
+        router.push(`/audit/${auditId}`);
         return `Data saved`;
       },
       error: 'Error',
