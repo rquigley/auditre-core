@@ -1,7 +1,19 @@
-export function Spinner() {
+export function PageSpinner() {
+  return (
+    <div className="flex items-center justify-center my-6">
+      <Spinner textColorClass="text-slate-700" />
+    </div>
+  );
+}
+
+export function Spinner({
+  textColorClass = 'text-green-700',
+}: {
+  textColorClass?: string;
+}) {
   return (
     <svg
-      className="mr-3 h-5 w-5 animate-spin text-green-700"
+      className={`mr-3 h-5 w-5 animate-spin ${textColorClass}`}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"

@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 
 import { Await } from '@/components/await';
 import Header from '@/components/header';
+import { PageSpinner } from '@/components/spinner';
 import { getAllByOrgId } from '@/controllers/document';
 import { getCurrent } from '@/controllers/session-user';
 import Row from './row';
@@ -68,7 +69,15 @@ export default async function DocumentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                <Suspense fallback={null}>
+                <Suspense
+                  fallback={
+                    <tr>
+                      <td colSpan={4}>
+                        <PageSpinner />
+                      </td>
+                    </tr>
+                  }
+                >
                   <Await promise={documents}>
                     {(rows) => (
                       <>
