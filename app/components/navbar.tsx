@@ -1,14 +1,7 @@
 'use client';
 
 import { Dialog, Menu, Transition } from '@headlessui/react';
-import {
-  Bars3Icon,
-  BuildingLibraryIcon,
-  DocumentDuplicateIcon,
-  HomeIcon,
-  UsersIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { signOut } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,8 +9,6 @@ import { usePathname } from 'next/navigation';
 import { Fragment, useState } from 'react';
 
 import { classNames } from '@/lib/util';
-
-import type { IconProps } from '@/types';
 
 export default function Navbar({
   userName,
@@ -34,24 +25,20 @@ export default function Navbar({
     {
       name: 'Home',
       href: '/',
-      icon: HomeIcon,
     },
     {
       name: 'Audits',
       href: '/audits',
       altRoots: ['/request', '/audit'],
-      icon: BuildingLibraryIcon,
     },
     {
       name: 'Documents',
       href: '/documents',
       altRoots: ['/document'],
-      icon: DocumentDuplicateIcon,
     },
     {
       name: 'Organization',
       href: '/organization-settings',
-      icon: UsersIcon,
     },
   ];
 
@@ -287,7 +274,6 @@ function AccountMenuItems() {
 type NavItemProps = {
   name: string;
   href: string;
-  icon: React.FC<IconProps>;
   altRoots?: string[];
 };
 function NavItem({
@@ -322,15 +308,6 @@ function NavItem({
           'group pl-6 flex gap-x-3 rounded-md p-1 text-sm leading-6 font-medium transition-colors',
         )}
       >
-        {/* <item.icon
-          className={classNames(
-            isSelected
-              ? 'text-sky-700'
-              : 'text-gray-400 group-hover:text-sky-700',
-            'h-6 w-6 shrink-0',
-          )}
-          aria-hidden="true"
-        /> */}
         {item.name}
       </Link>
     </li>
