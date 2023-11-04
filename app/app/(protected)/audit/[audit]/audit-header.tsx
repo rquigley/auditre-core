@@ -37,8 +37,7 @@ export function AuditHeader(props: Props) {
             id="current-tab"
             name="current-tab"
             className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-sky-700 focus:outline-none focus:ring-sky-700 sm:text-sm"
-            // @ts-expect-error
-            defaultValue={tabs.find((tab) => pathname === tab.href).name}
+            defaultValue={tabs.find((tab) => pathname === tab.href)?.name}
           >
             {tabs.map((tab) => (
               <option key={tab.name} onClick={() => router.push(tab.href)}>
@@ -57,7 +56,7 @@ export function AuditHeader(props: Props) {
                   pathname === tab.href
                     ? 'border-sky-700 text-sky-700'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-                  'whitespace-nowrap border-b-2 px-1 pb-4 text-sm font-medium',
+                  'whitespace-nowrap border-b-2 px-1 pb-4 text-sm font-medium transition-all',
                 )}
                 aria-current={pathname === tab.href ? 'page' : undefined}
               >
