@@ -103,10 +103,10 @@ export async function updateAudit(auditId: AuditId, rawData: { name: string }) {
     throw new Error('Unauthorized');
   }
 
-  const data = auditSchema.parse(rawData);
+  const { name } = auditSchema.parse(rawData);
 
   await updateAuditById(auditId, {
-    name: data.name,
+    name,
   });
 
   revalidateTag('client-audit');
@@ -128,24 +128,29 @@ export async function deleteAudit(auditId: AuditId) {
   return;
 }
 
+const fileSchema = z.object({
+  documentId: z.string(),
+  key: z.string(),
+  bucket: z.string(),
+  name: z.string(),
+  size: z.number(),
+  type: z.string(),
+  lastModified: z.number(),
+});
 export async function createDocument(file: S3File) {
   const user = await getCurrent();
-  // const request = await getRequestById(requestId);
-  // if (request.orgId !== user.orgId) {
-  //   throw new Error('Unauthorized');
-  // }
 
+  const data = fileSchema.parse(file);
   const doc = await _createDocument({
-    id: file.documentId,
-    key: file.key,
-    bucket: file.bucket,
-    name: file.name,
-    size: file.size,
-    mimeType: file.type,
-    fileLastModified: new Date(file.lastModified),
+    id: data.documentId,
+    key: data.key,
+    bucket: data.bucket,
+    name: data.name,
+    size: data.size,
+    mimeType: data.type,
+    fileLastModified: new Date(data.lastModified),
     orgId: user.orgId,
     uploadedByUserId: user.id,
-    //requestId: request.id,
   });
 
   // Kick processing off in the background. Do not await
