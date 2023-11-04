@@ -16,6 +16,7 @@ import useSWR from 'swr';
 
 import { Await } from '@/components/await';
 import { FiletypeIcon } from '@/components/filetype-icon';
+import { PageSpinner } from '@/components/spinner';
 import Datetime from './datetime';
 
 import type { DocumentDetails } from '@/app/(protected)/document/[document]/detail/route';
@@ -85,14 +86,16 @@ export function DocumentOverlay() {
                 leaveTo="translate-x-full"
               >
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-md">
-                  {currentDocumentId ? (
-                    <Suspense fallback={null}>
-                      <Document
-                        documentId={currentDocumentId}
-                        onClose={onClose}
-                      />{' '}
-                    </Suspense>
-                  ) : null}
+                  <div className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl">
+                    {currentDocumentId ? (
+                      <Suspense fallback={<PageSpinner />}>
+                        <Document
+                          documentId={currentDocumentId}
+                          onClose={onClose}
+                        />{' '}
+                      </Suspense>
+                    ) : null}
+                  </div>
                 </Dialog.Panel>
               </Transition.Child>
             </div>
@@ -132,7 +135,7 @@ function Document({
   const { document, isLoading, isError } = useDocument(documentId);
 
   return (
-    <form className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl">
+    <div className="flex h-full flex-col divide-y divide-gray-200">
       <div className="h-0 flex-1 overflow-y-auto">
         <div className="bg-white px-4 py-6 sm:px-6 pt-24 lg:pt-6">
           <div className="flex items-center justify-between">
@@ -406,7 +409,7 @@ function Document({
           Save
         </button>
       </div>
-    </form>
+    </div>
   );
 }
 

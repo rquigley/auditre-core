@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 
 import { Await } from '@/components/await';
 import Header from '@/components/header';
+import { PageSpinner } from '@/components/spinner';
 import { getAllByOrgId } from '@/controllers/audit';
 import { getCurrent } from '@/controllers/session-user';
 import NewAuditButton from './new-audit-button';
@@ -51,7 +52,15 @@ export default async function AuditsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                <Suspense fallback={null}>
+                <Suspense
+                  fallback={
+                    <tr>
+                      <td colSpan={4}>
+                        <PageSpinner />
+                      </td>
+                    </tr>
+                  }
+                >
                   <Await promise={audits}>
                     {(rows) => (
                       <>
