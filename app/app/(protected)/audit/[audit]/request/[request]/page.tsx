@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
 import Header from '@/components/header';
+import { PageSpinner } from '@/components/spinner';
 import { getByIdForClientCached as getAuditById } from '@/controllers/audit';
 import { getRequestBySlug } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
@@ -20,7 +21,7 @@ export default async function RequestPage({
   const requestP = getRequestBySlug(auditId, requestSlug);
   const [user, audit, request] = await Promise.all([userP, auditP, requestP]);
 
-  if (!request || !audit || request.orgId !== user.orgId) {
+  if (!request || !audit || audit.orgId !== user.orgId) {
     return notFound();
   }
 
@@ -38,15 +39,15 @@ export default async function RequestPage({
       <div className=" max-w-7xl px-4 py-16 sm:px-1 lg:px-1">
         <div className=" grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
           <div className="-mx-4 px-4 py-8 shadow-sm ring-1 ring-gray-900/5 sm:mx-0 sm:rounded-lg sm:px-8 sm:pb-14 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:px-16 xl:pb-20 xl:pt-16">
-            <Suspense fallback={<div></div>}>
-              <FormContainer request={request} user={user} audit={audit} />
+            <Suspense fallback={<PageSpinner />}>
+              <FormContainer request={request} user={user} auditId={auditId} />
             </Suspense>
           </div>
           <div className="lg:col-start-3">
             <h2 className="text-sm font-semibold leading-6 text-gray-900">
               Activity
             </h2>
-            <Suspense fallback={<div></div>}>
+            <Suspense fallback={<PageSpinner />}>
               <Activity request={request} user={user} />
             </Suspense>
           </div>
