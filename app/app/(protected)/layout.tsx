@@ -45,7 +45,7 @@ export default async function RootLayout({
             <Suspense fallback="">{children}</Suspense>
           </div>
         </div>
-        <Toaster />
+        <Toaster richColors />
         <DocumentOverlay />
       </body>
     </html>

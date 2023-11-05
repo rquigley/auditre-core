@@ -30,7 +30,7 @@ export type Props = {
   request: Request;
   requestData: Record<string, unknown>;
   dataMatchesConfig: boolean;
-  saveData: (data: RequestData) => void;
+  saveData: (data: RequestData) => Promise<void>;
   documents: {
     [key: string]: Array<{
       id: DocumentId;
@@ -73,18 +73,9 @@ export function BasicForm({
   }, [formState.isSubmitSuccessful, reset]);
 
   async function onSubmit(data: z.infer<typeof schema>) {
-    // const p = Promise.all([saveData(data), delay(700)]);
-    const p = Promise.all([saveData(data)]);
-
-    toast.promise(p, {
-      loading: 'Saving...',
-      success: async (data) => {
-        //await delay(1000);
-        router.push(`/audit/${auditId}`);
-        return `Data saved`;
-      },
-      error: 'Error',
-    });
+    await saveData(data);
+    toast.success('Request saved');
+    router.push(`/audit/${auditId}`);
   }
 
   let enableSubmit;
