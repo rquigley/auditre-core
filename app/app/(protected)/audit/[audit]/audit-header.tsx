@@ -37,10 +37,11 @@ export function AuditHeader(props: Props) {
             id="current-tab"
             name="current-tab"
             className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-sky-700 focus:outline-none focus:ring-sky-700 sm:text-sm"
-            defaultValue={tabs.find((tab) => pathname === tab.href)?.name}
+            defaultValue={pathname}
+            onChange={(e) => router.push(e.target.value)}
           >
             {tabs.map((tab) => (
-              <option key={tab.name} onClick={() => router.push(tab.href)}>
+              <option key={tab.name} value={tab.href}>
                 {tab.name}
               </option>
             ))}
