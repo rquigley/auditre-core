@@ -87,6 +87,7 @@ jobs:
           docker cp nextjs-app-container:/app/.next/static ./app_static_assets
           docker stop nextjs-app-container
           aws s3 sync ./app_static_assets s3://auditre-app-static-assets-dev/_next/static --cache-control "max-age=31536000,public,immutable"
+          aws s3 sync ./public/img s3://auditre-app-static-assets-dev/img --cache-control "max-age=31536000,public,immutable"
 
       - name: Fill in the new image ID in the AWS ECS task definition
         id: task-def
