@@ -30,7 +30,7 @@ export default function AI({
 
     defaultValues: {
       query: '',
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4-1106-preview',
     },
   });
 
@@ -47,7 +47,12 @@ export default function AI({
       onSubmit(getValues());
     }
   }
-  const models = ['gpt-3.5-turbo', 'gpt-3.5-turbo-16k', 'gpt-4'];
+  const models = [
+    'gpt-3.5-turbo',
+    'gpt-3.5-turbo-16k',
+    'gpt-4',
+    'gpt-4-1106-preview',
+  ];
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-12">

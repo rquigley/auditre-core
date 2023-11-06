@@ -1,7 +1,7 @@
 import { stripIndent } from 'common-tags';
 
 import { getById as getDocumentById } from '@/controllers/document';
-import { call } from '@/lib/ai';
+import { call, DEFAULT_OPENAI_MODEL } from '@/lib/ai';
 import { db } from '@/lib/db';
 import { documentAiQuestions } from '@/lib/document-ai-questions';
 import { requestTypes } from '@/lib/request-types';
@@ -80,7 +80,7 @@ export async function askQuestion({
   document,
   question,
   identifier,
-  model = 'gpt-3.5-turbo',
+  model = DEFAULT_OPENAI_MODEL,
   preProcess,
 }: {
   document: Document;
@@ -168,10 +168,7 @@ function getDocumentTypes(config: typeof requestTypes): {
 
 const documentTypes = getDocumentTypes(requestTypes);
 
-export async function classifyDocument(
-  document: Document,
-  isRetryWithGPT4?: boolean,
-): Promise<string> {
+export async function classifyDocument(document: Document): Promise<string> {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
   }
@@ -187,8 +184,14 @@ export async function classifyDocument(
       Here are the document types:
       ${documentTypes.str}
 
-        Attempt to identify it as one of the listed types. Return the [identifier] e.g. if the content can be identified e.g. "Stock Option Plan & Amendments" returns "STOCK_PLAN"
-        If it cannot be identifed with confidence, return UNKNOWN
+        Attempt to identify it as one of the listed types. Return the [identifier] e.g. if the content can be identified along with your reasoning within parenthesis like
+        \`\`\`
+        STOCK_PLAN (The document is a stock option plan because it includes a breakdown of the number of shares, the vesting schedule, and the exercise price)
+        \`\`\`
+        If it cannot be identifed with confidence, return UNKNOWN along with the reasoning like
+        \`\`\`
+        UNKNOWN (It appears to be an order confirmation email with details about the items purchased, shipping information, and payment details.)
+        \`\`\`
     `,
     },
     {
@@ -201,17 +204,17 @@ export async function classifyDocument(
     {
       role: 'system',
       content:
-        "Does your response only include the document's type? If there is any extraneous text, remove it",
+        "Does your response only include the document's type and the reasoning in parenthesis? If there is any extraneous text, remove it",
     },
   ];
 
-  let requestedModel: OpenAIModel = 'gpt-3.5-turbo';
-  if (isRetryWithGPT4) {
-    requestedModel = 'gpt-4';
-  }
+  let requestedModel: OpenAIModel = DEFAULT_OPENAI_MODEL;
+
   const resp = await call({
     requestedModel,
     messages,
+    // https://twitter.com/mattshumer_/status/1720108414049636404
+    stopSequences: ['('],
   });
 
   await create({
@@ -223,22 +226,20 @@ export async function classifyDocument(
     result: resp.message,
   });
 
-  const documentType = resp.message.toUpperCase() as string;
-
+  const [documentTypeRaw, ...reasoningA] = resp.message.split(' ');
+  const documentType = documentTypeRaw.toUpperCase();
+  // This only works if stopSequesnces is commented out above
+  const reasoning = reasoningA.join(' ').trim() as string;
   if (documentType in documentTypes.lookup === false) {
-    if (!isRetryWithGPT4) {
-      console.log(
-        `Invalid document type "${documentType}." Retrying with GPT-4`,
-      );
-
-      return await classifyDocument(document, true);
-    }
-    throw new Error(`Invalid document type ${documentType}`);
-  } else if (documentType === 'UNKNOWN' && !isRetryWithGPT4) {
-    console.log('Unknown. Retrying with GPT-4');
-    return await classifyDocument(document, true);
+    throw new Error('Invalid document type');
   }
-  console.log(`Classified as "${documentType}"`);
+  if (reasoning) {
+    console.log(
+      `doc_classification: classified as "${documentType}". Reasoning is: "${reasoning}"`,
+    );
+  } else {
+    console.log(`doc_classification: classified as "${documentType}"`);
+  }
 
   return documentType as string;
 }

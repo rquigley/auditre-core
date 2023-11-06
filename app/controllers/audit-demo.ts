@@ -339,7 +339,7 @@ async function createDemoDocument({
       }
       await createDocumentQuery({
         documentId: doc.id,
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4',
         query: { messages },
         identifier: qConfig.id,
         usage: {
