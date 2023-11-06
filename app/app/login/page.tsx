@@ -24,7 +24,7 @@ export default async function Login() {
             <Image
               width="134"
               height="50"
-              src="/auditre.svg"
+              src="/img/auditre.svg"
               className="h-10 w-auto"
               alt="AuditRe"
             />
