@@ -102,7 +102,7 @@ export default function Navbar({
                     <Image
                       width="100"
                       height="26"
-                      src="/auditre.svg"
+                      src="/img/auditre.svg"
                       alt="AuditRe"
                     />
                   </div>
@@ -134,7 +134,12 @@ export default function Navbar({
         {/* Sidebar component, swap this element with another sidebar if you like */}
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white">
           <div className="flex mt-4 h-16 w-auto shrink-0 items-center pl-6 pr-10">
-            <Image width="100" height="26" src="/auditre.svg" alt="AuditRe" />
+            <Image
+              width="100"
+              height="26"
+              src="/img/auditre.svg"
+              alt="AuditRe"
+            />
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -191,7 +196,7 @@ export default function Navbar({
           <Bars3Icon className="h-6 w-6" aria-hidden="true" />
         </button>
         <div className="flex-1 text-sm font-semibold leading-6 text-gray-900">
-          Dashboard
+          {/* Dashboard */}
         </div>
         <a href="#">
           <span className="sr-only">Your profile</span>
