@@ -29,6 +29,7 @@ export default async function RootLayout({
   if (!user) {
     return (
       <html lang="en" className={inter.className}>
+        <link rel="icon shortcut" href="/img/favicon.ico" type="image/x-icon" />
         <body className="h-full bg-slate-100">
           <Redirector setPostAuthUrl={setPostAuthUrl} />
         </body>
@@ -38,6 +39,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={inter.className}>
+      <link rel="icon shortcut" href="/img/favicon.ico" type="image/x-icon" />
       <body className="h-full bg-slate-100">
         <Navbar userName={user.name} userImage={user.image} />
         <div className="py-5 lg:pl-48 px-4 sm:px-6 bg-slate-100">
