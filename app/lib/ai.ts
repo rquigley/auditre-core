@@ -35,9 +35,11 @@ export type OpenAIMessage = {
 export async function call({
   messages,
   requestedModel,
+  stopSequences,
 }: {
   messages: OpenAIMessage[];
   requestedModel: OpenAIModel;
+  stopSequences?: string[];
 }): Promise<{
   message: string;
   model: OpenAIModel;
@@ -54,6 +56,7 @@ export async function call({
     resp = await openai.chat.completions.create({
       model: requestedModel,
       messages,
+      stop: stopSequences || undefined,
     });
   } catch (error) {
     if (error instanceof OpenAI.APIError) {
