@@ -6,10 +6,12 @@ import { DocumentQueryUsage, OpenAIModel } from '@/types';
 
 const openaiConfig = z.string().min(3).max(255);
 
+export const DEFAULT_OPENAI_MODEL = 'gpt-4-1106-preview';
+
 export async function askQuestion({
   question,
   content,
-  model = 'gpt-3.5-turbo',
+  model = DEFAULT_OPENAI_MODEL,
 }: {
   question: string;
   content: string;
@@ -67,7 +69,7 @@ export async function call({
         if (requestedModel === 'gpt-3.5-turbo') {
           return await call({
             messages,
-            requestedModel: 'gpt-3.5-turbo-16k',
+            requestedModel: DEFAULT_OPENAI_MODEL,
           });
         }
       }
