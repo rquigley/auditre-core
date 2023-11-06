@@ -11,7 +11,7 @@ export function FiletypeIcon({ filename }: { filename: string }) {
     case 'pdf':
       icon = (
         <Image
-          src="/icons/filetype/pdf.png"
+          src="/img/icons/filetype/pdf.png"
           width={dim}
           height={dim}
           alt={fileExt}
@@ -24,7 +24,7 @@ export function FiletypeIcon({ filename }: { filename: string }) {
     case 'docx':
       icon = (
         <Image
-          src="/icons/filetype/doc.png"
+          src="/img/icons/filetype/doc.png"
           width={dim}
           height={dim}
           alt={fileExt}
@@ -36,7 +36,7 @@ export function FiletypeIcon({ filename }: { filename: string }) {
     case 'xlsx':
       icon = (
         <Image
-          src="/icons/filetype/xls.png"
+          src="/img/icons/filetype/xls.png"
           width={dim}
           height={dim}
           alt={fileExt}
