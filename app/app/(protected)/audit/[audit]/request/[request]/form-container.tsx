@@ -8,6 +8,7 @@ import { getDataWithLabels } from '@/controllers/document-query';
 import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestType } from '@/controllers/request-data';
 import { BasicForm } from './basic-form';
+import { ChartOfAccounts } from './chart-of-accounts';
 
 import type { Props as BasicFormProps } from './basic-form';
 import type { Request } from '@/controllers/request';
@@ -55,16 +56,34 @@ export default async function FormContainer({ request, user, auditId }: Props) {
       data: <DocumentData documentId={id} />,
     }));
   }
+  let secondaryCmp;
 
+  if (request.id === 'chart-of-accounts') {
+    const selectedDocumentId = documents.documentId[0]?.id;
+    if (!selectedDocumentId) {
+      secondaryCmp = null;
+    } else {
+      secondaryCmp = (
+        <Suspense fallback={null}>
+          <ChartOfAccounts auditId={auditId} documentId={selectedDocumentId} />
+        </Suspense>
+      );
+    }
+  } else {
+    secondaryCmp = null;
+  }
   return (
-    <BasicForm
+    <>
+      <BasicForm
         auditId={auditId}
-      request={request}
-      requestData={requestData}
-      dataMatchesConfig={uninitializedFields.length === 0}
-      saveData={saveData}
-      documents={documents}
-    />
+        request={request}
+        requestData={requestData}
+        dataMatchesConfig={uninitializedFields.length === 0}
+        saveData={saveData}
+        documents={documents}
+      />
+      {secondaryCmp}
+    </>
   );
 }
 

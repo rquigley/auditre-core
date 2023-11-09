@@ -75,7 +75,7 @@ export function BasicForm({
   async function onSubmit(data: z.infer<typeof schema>) {
     await saveData(data);
     toast.success('Request saved');
-    router.push(`/audit/${auditId}`);
+    // router.push(`/audit/${auditId}`);
   }
 
   let enableSubmit;

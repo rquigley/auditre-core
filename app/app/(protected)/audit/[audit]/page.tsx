@@ -5,7 +5,6 @@ import { getByIdForClientCached } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/request';
 import { getStatusesForAuditId } from '@/controllers/request-data';
 import { getCurrent } from '@/controllers/session-user';
-import { AuditHeader } from './audit-header';
 import Row from './row';
 
 export default async function AuditPage({
@@ -32,64 +31,54 @@ export default async function AuditPage({
     'Other',
   ]);
   return (
-    <>
-      <AuditHeader audit={audit} />
+    <table className="min-w-full divide-y divide-gray-300">
+      <thead>
+        <tr>
+          <th
+            scope="col"
+            className="w-20 pl-4 sm:pl-2 py-3.5 text-left text-sm font-semibold text-gray-900"
+          >
+            Status
+          </th>
+          <th
+            scope="col"
+            className="py-3.5 text-left text-sm font-semibold text-gray-900"
+          >
+            Request
+          </th>
 
-      <div className="mt-8 flow-root">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <table className="min-w-full divide-y divide-gray-300">
-              <thead>
-                <tr>
-                  <th
-                    scope="col"
-                    className="w-20 pl-4 sm:pl-2 py-3.5 text-left text-sm font-semibold text-gray-900"
-                  >
-                    Status
-                  </th>
-                  <th
-                    scope="col"
-                    className="py-3.5 text-left text-sm font-semibold text-gray-900"
-                  >
-                    Request
-                  </th>
-
-                  <th
-                    scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                  >
-                    Owners
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {groupedRequests.map((group) => {
-                  if (group.rows.length === 0) {
-                    return null;
-                  }
-                  return (
-                    <Fragment key={group.name}>
-                      <tr className="border-t border-gray-200">
-                        <th
-                          colSpan={3}
-                          scope="colgroup"
-                          className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-normal text-gray-900 sm:pl-3"
-                        >
-                          {group.name}
-                        </th>
-                      </tr>
-                      {group.rows.map((row) => (
-                        <Row request={row} statusesP={statusesP} key={row.id} />
-                      ))}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </>
+          <th
+            scope="col"
+            className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+          >
+            Owners
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-200 bg-white">
+        {groupedRequests.map((group) => {
+          if (group.rows.length === 0) {
+            return null;
+          }
+          return (
+            <Fragment key={group.name}>
+              <tr className="border-t border-gray-200">
+                <th
+                  colSpan={3}
+                  scope="colgroup"
+                  className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-normal text-gray-900 sm:pl-3"
+                >
+                  {group.name}
+                </th>
+              </tr>
+              {group.rows.map((row) => (
+                <Row request={row} statusesP={statusesP} key={row.id} />
+              ))}
+            </Fragment>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 

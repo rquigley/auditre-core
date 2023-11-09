@@ -1,70 +1,61 @@
 'use client';
 
 import { CalendarIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
+import { Breadcrumbs } from '@sentry/nextjs';
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
+import { balanceSheetTypes } from '@/lib/consolidated-balance-sheet';
 
 type Props = {
   title: string;
   subtitle?: string;
-  breadcrumbs?: Breadcrumb[];
+  breadcrumbs?: { name: string; href: string }[];
 };
 
 export default function Header({ title, subtitle, breadcrumbs }: Props) {
+  // return null;
   return (
-    <div className="lg:flex lg:items-center lg:justify-between">
-      <div className="min-w-0 flex-1">
-        <nav className="flex" aria-label="Breadcrumb">
-          <ol role="list" className="flex items-center space-x-4">
-            {breadcrumbs
-              ? breadcrumbs.map(({ name, href }, idx) => (
-                  <BreadcrumbItem name={name} href={href} key={idx} idx={idx} />
-                ))
-              : null}
-          </ol>
-        </nav>
-        <h2 className="mt-2 text-2xl font-semibold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-          {title}
-        </h2>
-        {subtitle && (
-          <div className="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
-            <div className="mt-2 flex items-center text-sm text-gray-500">
-              <CalendarIcon
-                className="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400"
-                aria-hidden="true"
-              />
-              {subtitle}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+    <div className="w-screen bg-white h-14 fixed border-b border-gray-200 pl-14 lg:pl-4 flex lg:pr-56 items-center justify-between">
+      <h2 className="text-sm sm:truncate sm:tracking-tight text-gray-700 flex-0">
+        {breadcrumbs &&
+          breadcrumbs.map((b, idx) => (
+            <span key={b.name}>
+              {idx > 0 ? (
+                <ChevronRightIcon
+                  className="h-4 w-4 text-gray-400 inline"
+                  aria-hidden="true"
+                />
+              ) : null}
+              <a href={b.href} className="hover:text-gray-600">
+                {b.name}
+                {idx === breadcrumbs.length - 1 ? ': ' : ''}
+              </a>
+            </span>
+          ))}
 
-type Breadcrumb = { name: string; href?: string };
-function BreadcrumbItem({ name, href, idx }: Breadcrumb & { idx: number }) {
-  return (
-    <li>
-      <div className={idx === 0 ? 'flex' : 'flex items-center'}>
-        {idx !== 0 ? (
-          <ChevronRightIcon
-            className="h-5 w-5 flex-shrink-0 text-gray-400"
-            aria-hidden="true"
+        {title}
+        {subtitle && <span className="text-gray-400"> - {subtitle}</span>}
+      </h2>
+      <div className="flex-0">
+        <label htmlFor="search" className="sr-only">
+          Search
+        </label>
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            {/* <MagnifyingGlassIcon
+              className="h-5 w-5 text-gray-400"
+              aria-hidden="true"
+            /> */}
+          </div>
+          <input
+            id="search"
+            name="search"
+            className="block w-full rounded-md border-0 bg-white py-1.5 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+            placeholder="Search"
+            type="search"
           />
-        ) : null}
-        <a
-          href={href ? href : '#'}
-          className={classNames(
-            idx !== 0 ? 'ml-4' : '',
-            'text-sm font-medium text-gray-500 hover:text-gray-700',
-          )}
-        >
-          {name}
-        </a>
+        </div>
       </div>
-    </li>
+      <div>{/* Options here */}</div>
+    </div>
   );
 }
