@@ -12,7 +12,7 @@ export async function Content({
   return (
     <div
       className={clsx(
-        pad ? 'p-5' : '',
+        pad ? 'p-5 pt-20' : '',
         'pt-14 h-screen flow-root overflow-y-scroll',
       )}
     >

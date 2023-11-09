@@ -121,19 +121,15 @@ export function Navbar({
             </Menu>
           </div>
           <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
-              <li>
-                <ul role="list">
-                  {navigation.map((item) => (
-                    <NavItem
-                      key={item.name}
-                      item={item}
-                      rootPathname={rootPathname}
-                      setSidebarOpen={setSidebarOpen}
-                    />
-                  ))}
-                </ul>
-              </li>
+            <ul role="list" className="flex flex-1 flex-col gap-y-0">
+              {navigation.map((item) => (
+                <NavItem
+                  key={item.name}
+                  item={item}
+                  rootPathname={rootPathname}
+                  setSidebarOpen={setSidebarOpen}
+                />
+              ))}
             </ul>
           </nav>
         </div>
@@ -269,18 +265,19 @@ function NavItem({
   return (
     <li
       key={item.name}
-      className={classNames(
-        isSelected ? 'border-l-sky-700 border-l-2' : 'border-l-2',
-      )}
+      // className={classNames(
+      //   isSelected ? 'border-l-sky-700 border-l-2' : 'border-l-2',
+      // )}
+      className="px-2"
     >
       <Link
         href={item.href}
         onClick={() => setSidebarOpen(false)}
         className={classNames(
           isSelected
-            ? ' text-sky-700'
-            : 'text-gray-700 hover:text-sky-700 hover:bg-gray-50',
-          'group pl-5 flex gap-x-3 rounded-md p-1 text-sm leading-6 transition-colors',
+            ? ' bg-slate-200 '
+            : 'text-gray-500 hover:bg-slate-200 active:bg-slate-300 active-text-gray-400',
+          'group w-full flex gap-x-3 rounded-md py-1 px-3 text-sm text-gray-700 leading-6 transition-colors select-none',
         )}
       >
         {item.name}
