@@ -7,16 +7,11 @@ export async function Content({
   children: React.ReactNode;
   pad?: boolean;
 }) {
-  //   return <div className="mt-14 h-full flow-root">{children}</div>;
-  //   return <div className="mt-14  h-[calc(100vh-14)] flow-root">{children}</div>;
   return (
-    <div
-      className={clsx(
-        pad ? 'p-5 pt-20' : '',
-        'pt-14 h-screen flow-root overflow-y-scroll',
-      )}
-    >
-      {children}
+    <div className="my-14 pb-14 w-full h-full flex flex-col">
+      <div className="overflow-auto h-full">
+        {pad ? <div className="m-5">{children}</div> : children}
+      </div>
     </div>
   );
 }

@@ -3,9 +3,7 @@ import { notFound } from 'next/navigation';
 import { Content } from '@/components/content';
 import Header from '@/components/header';
 import { getByIdForClientCached } from '@/controllers/audit';
-import { getFirstRequestId } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
-import { AuditHeader } from './audit-header';
 
 export default async function AuditLayout({
   params: { audit: auditId },
@@ -24,7 +22,10 @@ export default async function AuditLayout({
 
   return (
     <>
-      <Header title={audit.name} />
+      <Header
+        title={audit.name}
+        breadcrumbs={[{ name: 'Audits', href: '/audits' }]}
+      />
 
       <Content>{children}</Content>
     </>

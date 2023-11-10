@@ -51,7 +51,7 @@ export default async function RootLayout({
             userName={user.name}
             userImage={user.image}
           />
-          <div className="lg:pl-56 w-screen h-screen flow-root bg-white overflow-y-hidden">
+          <div className="lg:pl-56 w-screen bg-white h-screen bg-blue-300 overflow-clip ">
             <Suspense fallback={<PageSpinner />}>{children}</Suspense>
           </div>
         </div>

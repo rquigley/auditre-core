@@ -27,7 +27,14 @@ export default function Header({ title, subtitle, breadcrumbs }: Props) {
               ) : null}
               <a href={b.href} className="hover:text-gray-600">
                 {b.name}
-                {idx === breadcrumbs.length - 1 ? ': ' : ''}
+                {idx === breadcrumbs.length - 1 ? (
+                  <ChevronRightIcon
+                    className="h-4 w-4 text-gray-400 inline"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  ''
+                )}
               </a>
             </span>
           ))}
