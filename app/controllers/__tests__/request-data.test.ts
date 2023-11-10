@@ -11,71 +11,91 @@ describe('normalizeRequestData', () => {
 
   it('should return default values when no data is provided', () => {
     const data: Array<DataObj> = [];
-    const { data: normalizedData } = normalizeRequestData(defaultValues, data);
+    const { data: normalizedData } = normalizeRequestData(
+      'some-rt',
+      defaultValues,
+      data,
+    );
     expect(normalizedData).toEqual(defaultValues);
   });
 
   it('should return data when all fields are initialized', () => {
     const data: Array<DataObj> = [
-      { requestId: 'foo', data: { value: 'foo value' }, documentId: null },
-      { requestId: 'bar', data: null, documentId: 'bar document id' },
-      { requestId: 'baz', data: { value: 'baz value' }, documentId: null },
+      { requestId: 'foo', data: { value: 'foo value' }, documentIds: [] },
+      { requestId: 'bar', data: { value: 'bar value' }, documentIds: [] },
+      { requestId: 'baz', data: { value: 'baz value' }, documentIds: [] },
     ];
-    const { data: normalizedData } = normalizeRequestData(defaultValues, data);
+    const { data: normalizedData } = normalizeRequestData(
+      'some-rt',
+      defaultValues,
+      data,
+    );
     expect(normalizedData).toEqual({
       foo: 'foo value',
-      bar: 'bar document id',
+      bar: 'bar value',
       baz: 'baz value',
     });
   });
 
   it('should return default values for uninitialized fields', () => {
     const data: Array<DataObj> = [
-      { requestId: 'foo', data: { value: 'foo value' }, documentId: null },
-      { requestId: 'baz', data: { value: 'baz value' }, documentId: null },
+      { requestId: 'foo', data: { value: 'foo value' }, documentIds: [] },
+      { requestId: 'baz', data: { value: 'baz value' }, documentIds: [] },
     ];
     const { data: normalizedData, uninitializedFields } = normalizeRequestData(
+      'some-rt',
       defaultValues,
       data,
     );
     expect(normalizedData).toEqual({
+      foo: 'foo value',
       bar: 'default bar value',
       baz: 'baz value',
-      foo: 'foo value',
     });
     expect(uninitializedFields).toEqual(['bar']);
   });
 
-  it('should return documentId for fields with documentId data', () => {
+  it('should return documentIds for fields with documentIds data', () => {
     const data: Array<DataObj> = [
-      { requestId: 'foo', data: { value: 'foo value' }, documentId: null },
-      { requestId: 'bar', data: null, documentId: 'document id' },
-      { requestId: 'baz', data: { value: 'baz value' }, documentId: null },
+      { requestId: 'foo', data: { value: 'foo value' }, documentIds: [] },
+      {
+        requestId: 'bar',
+        data: { value: 'bar value' },
+        documentIds: ['doc1', 'doc2'],
+      },
+      { requestId: 'baz', data: { value: 'baz value' }, documentIds: [] },
     ];
-    const { data: normalizedData } = normalizeRequestData(defaultValues, data);
+    const { data: normalizedData } = normalizeRequestData(
+      'some-rt',
+      defaultValues,
+      data,
+    );
     expect(normalizedData).toEqual({
       foo: 'foo value',
-      bar: 'document id',
+      bar: {
+        isDocuments: true,
+        documentIds: ['doc1', 'doc2'],
+      },
       baz: 'baz value',
     });
   });
 
-  // TODO: I don't think we care about this, currently...
-  //   it('should return default values for fields with invalid data', () => {
-  //     const data: Array<DataObj> = [
-  //       { requestId: 'foo', data: { value: 'foo value' }, documentId: null },
-  //       //   { requestId: 'bar', data: 'invalid data' },
-  //       { requestId: 'baz', data: { value: 'baz value' }, documentId: null },
-  //     ];
-  //     const { data: normalizedData, uninitializedFields } = normalizeRequestData(
-  //       defaultValues,
-  //       data,
-  //     );
-  //     expect(normalizedData).toEqual({
-  //       foo: 'foo value',
-  //       bar: 'default bar value',
-  //       baz: 'baz value',
-  //     });
-  //     expect(uninitializedFields).toEqual(['bar']);
+  // it('should return default values for fields with invalid data', () => {
+  //   const data: Array<DataObj> = [
+  //     { requestId: 'foo', data: { value: 'foo value' }, documentIds: [] },
+  //     { requestId: 'bar', data: { value: 'bar value' }, documentIds: [] },
+  //     { requestId: 'baz', data: 'invalid data', documentIds: [] },
+  //   ];
+  //   const { data: normalizedData, uninitializedFields } = normalizeRequestData(
+  //     'some-rt',
+  //     defaultValues,
+  //     data,
+  //   );
+  //   expect(normalizedData).toEqual({
+  //     foo: 'foo value',
+  //     bar: 'bar value',
+  //     baz: 'default baz value',
   //   });
+  //   expect(uninitializedFields).toEqual(['baz']);
+  // });
 });

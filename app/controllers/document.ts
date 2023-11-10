@@ -1,8 +1,8 @@
-// import { inferSchema, initParser } from 'udsv';
 // import { string } from 'zod';
 import * as Sentry from '@sentry/nextjs';
+import { inferSchema, initParser } from 'udsv';
 
-import { create as createMapping } from '@/controllers/account-mapping';
+import { createAccountMapping } from '@/controllers/account-mapping';
 import {
   askDefaultQuestions,
   classifyDocument,
@@ -52,7 +52,7 @@ export async function getAllByOrgId(orgId: OrgId): Promise<OrgDocument[]> {
 
 export type DocumentWithRequestData = Pick<
   Document,
-  'id' | 'createdAt' | 'name'
+  'id' | 'createdAt' | 'name' | 'key'
 > & {
   requestType: string;
   requestId: string;
@@ -64,7 +64,14 @@ export async function getAllByAuditId(
     .selectFrom('document as d')
     .innerJoin('requestDataDocument as rdd', 'd.id', 'rdd.documentId')
     .innerJoin('requestData as rd', 'rdd.requestDataId', 'rd.id')
-    .select(['d.id', 'd.createdAt', 'd.name', 'rd.requestType', 'rd.requestId'])
+    .select([
+      'd.id',
+      'd.createdAt',
+      'd.name',
+      'd.key',
+      'rd.requestType',
+      'rd.requestId',
+    ])
     .distinctOn(['rd.auditId', 'rd.requestType', 'rd.requestId'])
     .where('rd.auditId', '=', auditId)
     .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
@@ -137,6 +144,7 @@ export async function process(id: DocumentId): Promise<void> {
 
     const classifiedType = await classifyDocument(extractedDoc);
     usage.classifyMs = Date.now() - t0;
+    console.log('Document classified', usage);
 
     await update(id, { classifiedType, usage });
 
@@ -184,22 +192,84 @@ export async function getStatus(
   };
 }
 
-export async function extractChartOfAccountsMapping(
-  document: Document,
-  auditId: AuditId,
-) {
+// See PAGE_DELIMITER in core/ops-app/packages/extract-content-lambda/lambda_function.py
+const PAGE_DELIMITER = '-'.repeat(30) + '@@' + '-'.repeat(30);
+
+function getSheetData(document: Document) {
   if (!document.extracted) {
-    return;
+    throw new Error('Document has no extracted content');
   }
-  const mappingQuery = await getByDocumentIdAndIdentifier(
-    document.id,
-    'ACCOUNT_MAPPING',
-  );
-  if (!mappingQuery || !mappingQuery.result) {
-    return;
+  let sheets = document.extracted.split(PAGE_DELIMITER);
+  let csvData;
+  let meta;
+  if (sheets.length === 1) {
+    // This is a CSV
+    csvData = sheets[0];
+    meta = {};
+  } else {
+    sheets = sheets.slice(1);
+    const lines = sheets[0].trim().split('\n');
+    const metaLine = lines[0];
+    if (metaLine.slice(0, 5) !== 'META:') {
+      throw new Error('Line 1 must be meta data');
+    }
+    meta = JSON.parse(metaLine.slice(5));
+    csvData = lines.slice(1).join('\n');
   }
 
-  // const accountNameColumn = await getByDocumentIdAndIdentifier(
+  const schema = inferSchema(csvData);
+  const colIdxs = getColIdxs(schema);
+
+  const parser = initParser(schema);
+  const rows = parser.stringArrs(csvData);
+
+  return { meta, colIdxs, rows };
+}
+
+function getColIdxs(schema: ReturnType<typeof inferSchema>) {
+  if ('cols' in schema === false) {
+    throw new Error('Invalid schema');
+  }
+  const cols = schema.cols;
+  // TODO
+  return {
+    accountNumber: 0,
+    accountName: 1,
+  };
+}
+
+export async function extractChartOfAccountsMapping(
+  documentId: DocumentId,
+  auditId: AuditId,
+) {
+  const document = await getById(documentId);
+
+  if (document.classifiedType !== 'CHART_OF_ACCOUNTS') {
+    throw new Error('Invalid classified type');
+  }
+
+  const { meta, rows, colIdxs } = getSheetData(document);
+
+  let insertP = [];
+  for (const row of rows) {
+    const accountNumber = row[colIdxs.accountNumber];
+    const accountName = row[colIdxs.accountName];
+    if (!accountNumber || !accountName) {
+      continue;
+    }
+    insertP.push(
+      createAccountMapping({
+        auditId: auditId,
+        accountNumber,
+        accountName,
+        documentId: document.id,
+      }),
+    );
+  }
+  await Promise.allSettled(insertP);
+  await Promise.all(insertP);
+  // return;
+  // const mappingQuery = await getByDocumentIdAndIdentifier(
   //   document.id,
   //   'ACCOUNT_MAPPING',
   // );
@@ -207,38 +277,46 @@ export async function extractChartOfAccountsMapping(
   //   return;
   // }
 
-  // let schema = inferSchema(document.extracted);
-  // let parser = initParser(schema);
+  // // const accountNameColumn = await getByDocumentIdAndIdentifier(
+  // //   document.id,
+  // //   'ACCOUNT_MAPPING',
+  // // );
+  // // if (!mappingQuery || !mappingQuery.result) {
+  // //   return;
+  // // }
 
-  // let stringArrs = parser.stringArrs(document.extracted);
+  // // let schema = inferSchema(document.extracted);
+  // // let parser = initParser(schema);
 
-  // console.log(stringArrs);
+  // // let stringArrs = parser.stringArrs(document.extracted);
 
-  let mapping;
-  try {
-    mapping = JSON.parse(mappingQuery.result) as {
-      name: string;
-      type: AccountType | null;
-    }[];
-  } catch (e) {
-    if (e instanceof SyntaxError) {
-      throw new Error('Invalid JSON');
-    }
-  }
-  if (!mapping || !mapping.length) {
-    return;
-  }
+  // // console.log(stringArrs);
 
-  const amPromises = mapping.map(({ name, type }) => {
-    return createMapping({
-      documentId: document.id,
-      orgId: document.orgId,
-      auditId: auditId,
-      accountId: name,
-      accountMappedTo: type,
-    });
-  });
+  // let mapping;
+  // try {
+  //   mapping = JSON.parse(mappingQuery.result) as {
+  //     name: string;
+  //     type: AccountType | null;
+  //   }[];
+  // } catch (e) {
+  //   if (e instanceof SyntaxError) {
+  //     throw new Error('Invalid JSON');
+  //   }
+  // }
+  // if (!mapping || !mapping.length) {
+  //   return;
+  // }
 
-  await Promise.allSettled(amPromises);
-  await Promise.all(amPromises);
+  // const amPromises = mapping.map(({ name, type }) => {
+  //   return createMapping({
+  //     documentId: document.id,
+  //     // orgId: document.orgId,
+  //     auditId: auditId,
+  //     accountId: name,
+  //     accountType: type,
+  //   });
+  // });
+
+  // await Promise.allSettled(amPromises);
+  // await Promise.all(amPromises);
 }
