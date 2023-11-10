@@ -21,6 +21,23 @@ jobs:
         with:
           show-progress: false
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # This might only work for dev?
+          role-to-assume: arn:aws:iam::258343757818:role/AppDeployRole
+          aws-region: us-east-2
+
+      - name: Login to Amazon ECR Private
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: 'true'
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition fargate-node-task-defn --query taskDefinition > task-definition.json
+
       - name: Create .env.local
         working-directory: ./app
         run: |
@@ -57,26 +74,6 @@ jobs:
         run: |
           docker build --build-arg SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-
-      - name: Configure AWS Credentials
-        if: github.ref == 'refs/heads/main'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          # This might only work for dev?
-          role-to-assume: arn:aws:iam::258343757818:role/AppDeployRole
-          aws-region: us-east-2
-
-      - name: Login to Amazon ECR Private
-        if: github.ref == 'refs/heads/main'
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-        with:
-          mask-password: 'true'
-
-      - name: Download task definition
-        if: github.ref == 'refs/heads/main'
-        run: |
-          aws ecs describe-task-definition --task-definition fargate-node-task-defn --query taskDefinition > task-definition.json
 
       - name: Push image to AWS
         if: github.ref == 'refs/heads/main'
