@@ -32,7 +32,7 @@ export default async function AuditPage({
   const auditData = await getAuditData(auditId);
 
   return (
-    <>
+    <div className="m-5">
       <div className="mb-4">
         <ViewDataButton />
       </div>
@@ -76,7 +76,7 @@ export default async function AuditPage({
             : null}
         </div>
       </DataModal>
-    </>
+    </div>
   );
 }
 

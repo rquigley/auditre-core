@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 
 import AI from '@/components/ai';
 import { Content } from '@/components/content';
-import Header from '@/components/header';
+import { Header } from '@/components/header';
 import { getById } from '@/controllers/document';
 import { getCurrent } from '@/controllers/session-user';
 import { Document } from '@/types';
@@ -19,10 +19,7 @@ export default async function DocumentPage({
     return notFound();
   }
 
-  const breadcrumbs = [
-    { name: 'Documents', href: '/documents' },
-    { name: 'Documents', href: '/documents' },
-  ];
+  const breadcrumbs = [{ name: 'Documents', href: '/documents' }];
 
   return (
     <>

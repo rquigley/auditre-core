@@ -18,11 +18,11 @@ export default async function AuditPage({
   }
 
   return (
-    <>
+    <div className="m-5">
       <SettingsForm audit={audit} />
       <div className="mt-4">
         <DeleteAuditButton auditId={audit.id} />
       </div>
-    </>
+    </div>
   );
 }

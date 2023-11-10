@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 
 import { Await } from '@/components/await';
 import { Content } from '@/components/content';
-import Header from '@/components/header';
+import { Header } from '@/components/header';
 import { PageSpinner } from '@/components/spinner';
 import { getAllByOrgId } from '@/controllers/document';
 import { getCurrent } from '@/controllers/session-user';
@@ -39,30 +39,24 @@ export default async function DocumentsPage() {
       <Content>
         <table className="min-w-full divide-y divide-gray-300">
           <thead>
-            <tr>
+            <tr className="text-xs font-normal text-gray-900">
               <th
                 scope="col"
-                className="py-3.5 pl-4 sm:pl-2 pr-3 text-left text-sm font-semibold text-gray-900"
+                className="py-3.5 pl-5 pr-3 text-left font-normal"
               >
                 Name
               </th>
-              <th
-                scope="col"
-                className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-              >
+              <th scope="col" className="px-3 py-3.5 text-left font-normal">
                 Created
               </th>
               {/* <th
                     scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    className="px-3 py-3.5 text-left font-normal"
                   >
                     Last modified
                   </th> */}
 
-              <th
-                scope="col"
-                className="pr-4 sm:pr-2 py-3.5 text-right text-sm font-semibold text-gray-900"
-              >
+              <th scope="col" className="pr-5 py-3.5 text-right font-normal">
                 Uploaded
               </th>
             </tr>

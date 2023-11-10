@@ -43,15 +43,14 @@ export default async function RootLayout({
   return (
     <html lang="en" className={inter.className}>
       <link rel="icon shortcut" href="/img/favicon.ico" type="image/x-icon" />
-      <body className="bg-red-300">
-        {/* <div className="h-100vh flex overflow-hidden min-h-100vh items-stretch"> */}
-        <div className="h-screen flex bg-green-300">
+      <body className="bg-white">
+        <div className="h-screen flex">
           <Navbar
             orgName={org.name || ''}
             userName={user.name}
             userImage={user.image}
           />
-          <div className="lg:pl-56 w-screen bg-white h-screen bg-blue-300 overflow-clip ">
+          <div className="lg:pl-56 w-screen bg-white h-screen overflow-clip ">
             <Suspense fallback={<PageSpinner />}>{children}</Suspense>
           </div>
         </div>

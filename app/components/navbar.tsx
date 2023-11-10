@@ -1,15 +1,12 @@
 'use client';
 
-import { Dialog, Menu, Transition } from '@headlessui/react';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Menu, Transition } from '@headlessui/react';
 import clsx from 'clsx';
 import { signOut } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Fragment, useState } from 'react';
-
-import { classNames } from '@/lib/util';
 
 export function Navbar({
   userName,
@@ -155,7 +152,7 @@ function OrgMenuItems() {
             {({ active }) => (
               <Link
                 href="#"
-                className={classNames(
+                className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                   'block px-4 py-2 text-xs',
                 )}
@@ -168,7 +165,7 @@ function OrgMenuItems() {
             {({ active }) => (
               <Link
                 href="/organization-settings"
-                className={classNames(
+                className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                   'block px-4 py-2 text-xs',
                 )}
@@ -200,7 +197,7 @@ function AccountMenuItems() {
             {({ active }) => (
               <Link
                 href="/settings"
-                className={classNames(
+                className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                   'block px-4 py-2 text-xs',
                 )}
@@ -213,7 +210,7 @@ function AccountMenuItems() {
             {({ active }) => (
               <Link
                 href="/support"
-                className={classNames(
+                className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                   'block px-4 py-2 text-xs',
                 )}
@@ -227,7 +224,7 @@ function AccountMenuItems() {
               <a
                 href="#"
                 onClick={() => signOut()}
-                className={classNames(
+                className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                   'block w-full px-4 py-2 text-left text-xs',
                 )}
@@ -265,7 +262,7 @@ function NavItem({
   return (
     <li
       key={item.name}
-      // className={classNames(
+      // className={clsx(
       //   isSelected ? 'border-l-sky-700 border-l-2' : 'border-l-2',
       // )}
       className="px-2"
@@ -273,7 +270,7 @@ function NavItem({
       <Link
         href={item.href}
         onClick={() => setSidebarOpen(false)}
-        className={classNames(
+        className={clsx(
           isSelected
             ? ' bg-slate-200 '
             : 'text-gray-500 hover:bg-slate-200 active:bg-slate-300 active-text-gray-400',

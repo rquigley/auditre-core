@@ -7,7 +7,6 @@ import Request from './request';
 import type { AuditId } from '@/types';
 
 export async function Requests({ auditId }: { auditId: AuditId }) {
-  console.log('RERENDER');
   const requestsP = await getAllByAuditId(auditId);
 
   const [requests] = await Promise.all([requestsP]);
@@ -72,7 +71,7 @@ function sortRows<T extends Row>(
   // Sort each group by 'name'
   for (const group of Object.keys(groupMap)) {
     groupMap[group] = groupMap[group].sort((a, b) =>
-      a.name.localeCompare(b.name),
+      b.name.localeCompare(a.name),
     );
   }
 

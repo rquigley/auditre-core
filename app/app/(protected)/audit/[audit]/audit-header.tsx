@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-import Header from '@/components/header';
+import { Header } from '@/components/header';
 
 type Props = {
   audit: { id: string; name: string; year: string };
@@ -23,7 +23,7 @@ export function AuditHeader(props: Props) {
     },
     { name: 'Preview', href: `/audit/${audit.id}/preview` },
     { name: 'Output', href: `/audit/${audit.id}/output` },
-    { name: 'Settings', href: `/audit/${audit.id}/settings` },
+    // { name: 'Settings', href: `/audit/${audit.id}/settings` },
   ] as const;
 
   const title = audit.year ? `${audit.name} (${audit.year})` : audit.name;
@@ -34,14 +34,7 @@ export function AuditHeader(props: Props) {
   )?.href;
 
   return (
-    <div className="mt-12">
-      <div className="pt-4 pl-4">
-        <Header
-          title={title}
-          breadcrumbs={[{ name: 'Audits', href: '/audits' }]}
-        />
-      </div>
-
+    <div className="">
       <div className="mt-4 sm:mt-3 border-b border-gray-200 pb-5 sm:pb-0 pl-4">
         <div className="sm:hidden">
           <label htmlFor="current-tab" className="sr-only">
@@ -71,7 +64,7 @@ export function AuditHeader(props: Props) {
                   matchPath === tab.href
                     ? 'border-sky-700 text-sky-700'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-                  'whitespace-nowrap border-b-2 px-1 pb-2 text-sm select-none transition-all',
+                  'whitespace-nowrap border-b-2 px-1 pb-2 text-xs select-none transition-all',
                 )}
                 aria-current={matchPath === tab.href ? 'page' : undefined}
               >

@@ -1,9 +1,12 @@
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 
 import { Content } from '@/components/content';
-import Header from '@/components/header';
+import { DeleteModal } from '@/components/delete-modal';
+import { AuditSettings, Header } from '@/components/header';
 import { getByIdForClientCached } from '@/controllers/audit';
 import { getCurrent } from '@/controllers/session-user';
+import { deleteAudit } from '@/lib/actions';
+import { AuditHeader } from './audit-header';
 
 export default async function AuditLayout({
   params: { audit: auditId },
@@ -24,10 +27,26 @@ export default async function AuditLayout({
     <>
       <Header
         title={audit.name}
+        subtitle={audit.year}
         breadcrumbs={[{ name: 'Audits', href: '/audits' }]}
+        settings={<AuditSettings auditId={auditId} />}
       />
 
-      <Content>{children}</Content>
+      <Content>
+        {' '}
+        <AuditHeader audit={audit} request0Slug="basic-info" />
+        {children}
+      </Content>
+
+      <DeleteModal
+        toDelete="audit"
+        description="Are you sure you want to delete this audit? It cannot be undone"
+        action={async () => {
+          'use server';
+          await deleteAudit(auditId);
+        }}
+        postActionUrl="/audits"
+      />
     </>
   );
 }

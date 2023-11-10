@@ -15,17 +15,23 @@ export default function Datetime({
   dateTime: Date;
   className?: string;
 }) {
-  const [showRelative, setShowRelative] = useState(true);
+  const [showInitial, setShowInitial] = useState(true);
   const dt = dayjs(dateTime);
-  const relative = dt.fromNow();
+  let initial;
+  if (dt.isBefore(dayjs().subtract(2, 'day'))) {
+    initial = dt.format('M/D/YY');
+  } else {
+    initial = dt.fromNow();
+  }
+
   const absolute = dt.format('M/D/YY H:ma');
   return (
     <time
-      onClick={() => setShowRelative(!showRelative)}
+      onClick={() => setShowInitial(!showInitial)}
       dateTime={absolute}
       className={className}
     >
-      {showRelative ? relative : absolute}
+      {showInitial ? initial : absolute}
     </time>
   );
 }

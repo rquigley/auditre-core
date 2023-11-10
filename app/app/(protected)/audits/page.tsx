@@ -2,13 +2,13 @@ import { Suspense } from 'react';
 
 import { Await } from '@/components/await';
 import { Content } from '@/components/content';
-import Header from '@/components/header';
+import { Header } from '@/components/header';
+import NewAuditButton from '@/components/new-audit-button';
+import NewAuditModal from '@/components/new-audit-modal';
 import { PageSpinner } from '@/components/spinner';
 import { getAllByOrgId } from '@/controllers/audit';
 import { getFirstRequestId } from '@/controllers/request';
 import { getCurrent } from '@/controllers/session-user';
-import NewAuditButton from './new-audit-button';
-import NewAuditModal from './new-audit-modal';
 import Row from './row';
 
 export default async function AuditsPage() {
@@ -23,54 +23,29 @@ export default async function AuditsPage() {
           <NewAuditButton />
         </div>
 
-        <table className="min-w-full divide-y divide-gray-300">
-          <thead>
-            <tr className="text-xs font-normal text-gray-900">
-              <th
-                scope="col"
-                className="py-3.5 pl-5 pr-3 text-left font-normal"
-              >
-                Name
-              </th>
-
-              <th scope="col" className="px-3 py-3.5 text-left font-normal">
-                Created
-              </th>
-
-              <th
-                scope="col"
-                className="w-20 pr-5 py-3.5 text-right font-normal"
-              >
-                Progress
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            <Suspense
-              fallback={
-                <tr>
-                  <td colSpan={4}>
-                    <PageSpinner />
-                  </td>
-                </tr>
-              }
-            >
-              <Await promise={audits}>
-                {(rows) => (
-                  <>
-                    {rows.map((audit) => {
-                      const a = {
-                        ...audit,
-                        firstRequestSlug: getFirstRequestId(audit.id),
-                      };
-                      return <Row audit={a} key={audit.id} />;
-                    })}
-                  </>
-                )}
-              </Await>
-            </Suspense>
-          </tbody>
-        </table>
+        <ul className="min-w-full border-t border-gray-200 ">
+          <Suspense
+            fallback={
+              <li>
+                <PageSpinner />
+              </li>
+            }
+          >
+            <Await promise={audits}>
+              {(rows) => (
+                <>
+                  {rows.map((audit) => {
+                    const a = {
+                      ...audit,
+                      firstRequestSlug: getFirstRequestId(audit.id),
+                    };
+                    return <Row audit={a} key={audit.id} />;
+                  })}
+                </>
+              )}
+            </Await>
+          </Suspense>
+        </ul>
       </Content>
 
       <NewAuditModal />

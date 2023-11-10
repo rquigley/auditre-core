@@ -92,7 +92,6 @@ export default function Request({
       href={`/audit/${request.auditId}/request/${request.id}`}
       //   className="hover:underline hover:text-blue-500"
       scroll={false}
-      className=""
       key={request.id}
     >
       <li

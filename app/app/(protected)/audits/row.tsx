@@ -13,33 +13,22 @@ export default function Row({
 }) {
   const pctComplete = (audit.numCompletedRequests / audit.numRequests) * 100;
   return (
-    <tr key={audit.id} className="hover:bg-gray-100">
-      <td className="py-5 px-5 text-sm">
-        <Link
-          href={`/audit/${audit.id}/request/${audit.firstRequestSlug}`}
-          className="flex items-center gap-x-1"
-        >
-          <span className="text-gray-900 font-normal">
-            {audit.name} ({audit.year})
-          </span>
-        </Link>
-      </td>
+    <Link
+      href={`/audit/${audit.id}/request/${audit.firstRequestSlug}`}
+      // className="flex items-center gap-x-1"
+    >
+      <li className="border-b border-gray-200 flex items-center p-0 pl-4 hover:bg-gray-100 text-gray-500">
+        <span className="py-2 text-sm">
+          {audit.name} ({audit.year})
+        </span>
 
-      <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-        <Datetime
-          className="py-0.5 text-sm text-gray-500"
-          dateTime={audit.createdAt}
-        />
-      </td>
-
-      <td className="w-20 whitespace-nowrap items-center flex px-5 py-5 text-sm text-gray-500">
-        <div className="ml-auto mt-2 h-1 w-20 bg-gray-200">
+        {/* <div className="ml-auto mt-2 h-1 w-20 bg-gray-200">
           <div
             className="h-1 bg-sky-700"
             style={{ width: `${pctComplete}%` }}
           ></div>
-        </div>
-      </td>
-    </tr>
+        </div> */}
+      </li>
+    </Link>
   );
 }
