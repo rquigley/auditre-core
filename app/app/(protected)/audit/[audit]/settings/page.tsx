@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 
 import { getByIdForClientCached } from '@/controllers/audit';
 import { getCurrent } from '@/controllers/session-user';
-import { DeleteAuditButton } from './delete-audit-button';
 import { SettingsForm } from './settings-form';
 
 export default async function AuditPage({
@@ -20,9 +19,6 @@ export default async function AuditPage({
   return (
     <div className="m-5">
       <SettingsForm audit={audit} />
-      <div className="mt-4">
-        <DeleteAuditButton auditId={audit.id} />
-      </div>
     </div>
   );
 }
