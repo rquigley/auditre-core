@@ -34,7 +34,7 @@ export default async function RequestPage({
         Activity
       </h2>
       <Suspense fallback={<PageSpinner />}>
-        <Activity request={request} user={user} />
+        <Activity auditId={auditId} request={request} user={user} />
       </Suspense>
     </div>
   );
