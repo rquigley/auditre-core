@@ -124,7 +124,7 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Use of Estimates',
     body: (data) => `
-      The preparation of consolidated financial statements in conformity with US GAAP requires the Company to make estimates, judgments, and assumptions that affect the reported amounts of assets, liabilities, expenses and the amounts disclosed in the related notes to the consolidated financial statements. Significant estimates and assumptions used in these consolidated financial statements include, but are not limited to, useful lives and recoverability of long-lived assets, the fair value of the Company's common stock, the fair value of derivative liability, stock-based compensation and the accounting for income taxes and related valuation allowances. The Company evaluates its estimates and assumptions on an ongoing basis using historical experience and other factors and adjusts those estimates and assumptions when facts and circumstances dictate. Actual results could materially differ from those estimates.
+      The preparation of consolidated financial statements in conformity with US GAAP requires the Company to make estimates, judgments, and assumptions that affect the reported amounts of assets, liabilities, expenses, and the amounts disclosed in the related notes to the consolidated financial statements. Significant estimates and assumptions used in these consolidated financial statements include, but are not limited to, useful lives and recoverability of long-lived assets, the fair value of the Company's common stock, the fair value of derivative liability, stock-based compensation and the accounting for income taxes and related valuation allowances. The Company evaluates its estimates and assumptions on an ongoing basis using historical experience and other factors and adjusts those estimates and assumptions when facts and circumstances dictate. Actual results could materially differ from those estimates.
     `,
   }),
   generateSection({
@@ -138,7 +138,7 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Fair Value Measurements',
     body: (data) => `
-      The carrying value of the Company's cash, prepaid expenses and other current assets, accounts payable and  accrued liabilities approximate fair value due to the short-term nature of these items.
+      The carrying value of the Company's cash, prepaid expenses and other current assets, accounts payable and accrued liabilities approximate fair value due to the short-term nature of these items.
 
       Fair value is defined as the exchange price that would be received for an asset or an exit price paid to transfer a liability in the principal or most advantageous market for the asset or liability in an orderly transaction between market participants on the measurement date.
 
@@ -314,7 +314,7 @@ export const getPolicySections = () => [
     body: (data) => `
       Convertible Preferred Stock
 
-      As of [${data.fiscalYearEnd}], the Company was authorized to issue [insert Variable 1 from Carta Certificate Transaction Report] shares of $0.00001 par value convertible preferred stock.
+      As of [${data.fiscalYearEnd}], the Company was authorized to issue [insert Variable 1 from Carta Certificate Transaction Report] shares of [$${data.articlesOfIncorporation.parValuePerShare}] par value convertible preferred stock.
 
       As of [${data.fiscalYearEnd}], the Company’s convertible preferred stock consisted of the following:
 
@@ -362,7 +362,7 @@ export const getPolicySections = () => [
       The convertible preferred stock is not redeemable at the option of the holders.
 
       Common Stock
-      "As of [${data.fiscalYearEnd}], the Company was authorized to issue [insert number from carta export] shares of $0.00001 par value common stock.
+      "As of [${data.fiscalYearEnd}], the Company was authorized to issue [insert number from carta export] shares of [$${data.articlesOfIncorporation.parValuePerShare}] par value common stock.
 
       Common stockholders are entitled to dividends as and when declared, subject to the rights of holders of all classes of stock outstanding having priority rights as to dividends. There have been no dividends declared to date. The holder of each share of common stock is entitled to one vote.
 

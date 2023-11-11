@@ -4,8 +4,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { z } from 'zod';
 
+import { Content } from '@/components/content';
 import Datetime from '@/components/datetime';
-import Header from '@/components/header';
+import { Header } from '@/components/header';
 import {
   create as createInvitation,
   deleteInvitation,
@@ -52,12 +53,19 @@ export default async function OrganizationSettingsPage() {
   return (
     <>
       <Header title="Organization Settings" />
-      <div className="mt-8 flow-root">Users</div>
-      <Users users={users} />
+      <Content pad={true}>
+        <div className="mb-4">
+          <div className="font-lg border-b pb-1 mb-3">Users</div>
 
-      <div className="mt-8 flow-root">Invitations</div>
-      <Invitations invitations={invitations} />
-      <NewInviteForm createInvite={createInvite} />
+          <Users users={users} />
+        </div>
+
+        <div className="mb-4">
+          <div className="font-lg border-b pb-1 mb-3">Invitations</div>
+          <Invitations invitations={invitations} />
+          <NewInviteForm createInvite={createInvite} />
+        </div>
+      </Content>
     </>
   );
 }

@@ -140,6 +140,13 @@ export function kebabToCamel(input: string): string {
   return result;
 }
 
+export function kebabToHuman(input: string): string {
+  let lowerCaseInput = input.toLowerCase();
+  let capitalized =
+    lowerCaseInput.charAt(0).toUpperCase() + lowerCaseInput.slice(1);
+  return capitalized.replace(/-/g, ' ');
+}
+
 export function getLastDayOfMonth(month: string, year: string) {
   const numericalYear = parseInt(year, 10);
   const isLeapYear =

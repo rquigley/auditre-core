@@ -1,21 +1,21 @@
 'use client';
 
-import { Dialog, Menu, Transition } from '@headlessui/react';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Menu, Transition } from '@headlessui/react';
+import clsx from 'clsx';
 import { signOut } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Fragment, useState } from 'react';
 
-import { classNames } from '@/lib/util';
-
-export default function Navbar({
+export function Navbar({
   userName,
   userImage,
+  orgName,
 }: {
   userName: string | null;
   userImage: string | null;
+  orgName: string;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
@@ -36,184 +36,147 @@ export default function Navbar({
       href: '/documents',
       altRoots: ['/document'],
     },
-    {
-      name: 'Organization',
-      href: '/organization-settings',
-    },
+    // {
+    //   name: 'Organization',
+    //   href: '/organization-settings',
+    // },
   ];
 
   return (
     <>
-      <Transition.Root show={sidebarOpen} as={Fragment}>
-        <Dialog
-          as="div"
-          className="relative z-40 lg:hidden"
-          onClose={setSidebarOpen}
+      {/* Menu button */}
+      <button
+        className="lg:hidden fixed z-50 p-5"
+        type="button"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          className="w-4 h-4 bg-white"
         >
-          <Transition.Child
-            as={Fragment}
-            enter="transition-opacity ease-linear duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="transition-opacity ease-linear duration-300"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-gray-900/80" />
-          </Transition.Child>
+          <path
+            fillRule="evenodd"
+            d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10zm0 5.25a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75a.75.75 0 01-.75-.75z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </button>
 
-          <div className="fixed inset-0 flex">
-            <Transition.Child
-              as={Fragment}
-              enter="transition ease-in-out duration-300 transform"
-              enterFrom="-translate-x-full"
-              enterTo="translate-x-0"
-              leave="transition ease-in-out duration-300 transform"
-              leaveFrom="translate-x-0"
-              leaveTo="-translate-x-full"
-            >
-              <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
-                <Transition.Child
-                  as={Fragment}
-                  enter="ease-in-out duration-300"
-                  enterFrom="opacity-0"
-                  enterTo="opacity-100"
-                  leave="ease-in-out duration-300"
-                  leaveFrom="opacity-100"
-                  leaveTo="opacity-0"
-                >
-                  <div className="absolute left-full top-0 flex w-16 justify-center pt-5">
-                    <button
-                      type="button"
-                      className="-m-2.5 p-2.5"
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <span className="sr-only">Close sidebar</span>
-                      <XMarkIcon
-                        className="h-6 w-6 text-white"
-                        aria-hidden="true"
-                      />
-                    </button>
-                  </div>
-                </Transition.Child>
-                {/* Sidebar component, swap this element with another sidebar if you like */}
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white py-2">
-                  <div className="flex h-16 w-auto shrink-0 items-center pl-6">
+      {/* Full background on limited width screen when menu enabled */}
+      <div
+        className={clsx(
+          sidebarOpen
+            ? 'inset-0 h-screen w-screen opacity-100 absolute'
+            : 'opacity-0 w-0',
+          'bg-gray-200 opacity-40 z-30 lg:hidden transition-opacity',
+        )}
+      ></div>
+
+      {/* Sidebar */}
+      <div
+        className={clsx(
+          sidebarOpen
+            ? 'left-0'
+            : ' -left-72 overflow-hidden lg:overflow-visible',
+          'h-screen lg:left-0 w-56 fixed z-40 transition-[left]',
+        )}
+      >
+        <div className="flex w-56 grow flex-col h-full border-r border-gray-200 bg-gray-50 transition-none shadow-md">
+          <div className="flex justify-between mt-8 lg:mt-0 h-14 w-full shrink-0 items-center pl-5 pr-1">
+            <Menu as="div">
+              <Menu.Button className="flex hover:bg-slate-100 cursor-pointer select-none rounded-md p-2 -ml-2">
+                <Image
+                  width="28"
+                  height="30"
+                  src="/img/auditre_mark.svg"
+                  alt="AuditRe"
+                  className="w-5 h-5"
+                />
+                <div className="ml-2 text-sm text-gray-600 whitespace-nowrap">
+                  {orgName}
+                </div>
+              </Menu.Button>
+              <OrgMenuItems />
+            </Menu>
+            <Menu as="div" className="relative">
+              <Menu.Button className="p-3 hover:bg-gray-50">
+                {userImage && (
+                  <div className="h-5 w-5 rounded-full bg-gray-50 overflow-hidden">
                     <Image
-                      width="100"
-                      height="26"
-                      src="/img/auditre.svg"
-                      alt="AuditRe"
+                      width="36"
+                      height="36"
+                      src={userImage}
+                      alt={userName || ''}
                     />
                   </div>
-                  <nav className="flex flex-1 flex-col">
-                    <ul role="list" className="flex flex-1 flex-col gap-y-7">
-                      <li>
-                        <ul role="list">
-                          {navigation.map((item) => (
-                            <NavItem
-                              key={item.name}
-                              item={item}
-                              rootPathname={rootPathname}
-                              setSidebarOpen={setSidebarOpen}
-                            />
-                          ))}
-                        </ul>
-                      </li>
-                    </ul>
-                  </nav>
-                </div>
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
-        </Dialog>
-      </Transition.Root>
-
-      {/* Static sidebar for desktop */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-55 lg:flex-col">
-        {/* Sidebar component, swap this element with another sidebar if you like */}
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white">
-          <div className="flex mt-4 h-16 w-auto shrink-0 items-center pl-6 pr-10">
-            <Image
-              width="100"
-              height="26"
-              src="/img/auditre.svg"
-              alt="AuditRe"
-            />
+                )}
+                <span className="sr-only">Your profile</span>
+              </Menu.Button>
+              <AccountMenuItems />
+            </Menu>
           </div>
           <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
-              <li>
-                <ul role="list">
-                  {navigation.map((item) => (
-                    <NavItem
-                      key={item.name}
-                      item={item}
-                      rootPathname={rootPathname}
-                      setSidebarOpen={setSidebarOpen}
-                    />
-                  ))}
-                </ul>
-              </li>
-              <li className=" mt-auto">
-                <Menu as="div" className="flex relative text-left">
-                  <div>
-                    <Menu.Button className="flex items-center gap-x-4 px-6 py-3 text-xs font-medium leading-6 text-gray-900 hover:bg-gray-50">
-                      {userImage && (
-                        <div className="h-8 w-8 rounded-full bg-gray-50 overflow-hidden">
-                          <Image
-                            width="36"
-                            height="36"
-                            src={userImage}
-                            alt={userName || ''}
-                          />
-                        </div>
-                      )}
-                      <span className="sr-only">Your profile</span>
-                      <span
-                        aria-hidden="true"
-                        className=" text-ellipsis w-20 overflow-hidden whitespace-nowrap"
-                      >
-                        {userName || ''}
-                      </span>
-                    </Menu.Button>
-                  </div>
-                  <AccountMenuItems />
-                </Menu>
-              </li>
+            <ul role="list" className="flex flex-1 flex-col gap-y-0">
+              {navigation.map((item) => (
+                <NavItem
+                  key={item.name}
+                  item={item}
+                  rootPathname={rootPathname}
+                  setSidebarOpen={setSidebarOpen}
+                />
+              ))}
             </ul>
           </nav>
         </div>
       </div>
-
-      <div className="sticky top-0 z-30 flex items-center gap-x-6 bg-white px-4 py-4 shadow-sm sm:px-6 lg:hidden">
-        <button
-          type="button"
-          className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
-          onClick={() => setSidebarOpen(true)}
-        >
-          <span className="sr-only">Open sidebar</span>
-          <Bars3Icon className="h-6 w-6" aria-hidden="true" />
-        </button>
-        <div className="flex-1 text-sm font-semibold leading-6 text-gray-900">
-          {/* Dashboard */}
-        </div>
-        <a href="#">
-          <span className="sr-only">Your profile</span>
-          {userImage && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <div className="h-8 w-8 rounded-full bg-gray-50 overflow-hidden">
-              <Image
-                width="36"
-                height="36"
-                src={userImage}
-                alt={userName || ''}
-              />
-            </div>
-          )}
-        </a>
-      </div>
     </>
+  );
+}
+
+function OrgMenuItems() {
+  return (
+    <Transition
+      as={Fragment}
+      enter="transition ease-out duration-100"
+      enterFrom="transform opacity-0 scale-95"
+      enterTo="transform opacity-100 scale-100"
+      leave="transition ease-in duration-75"
+      leaveFrom="transform opacity-100 scale-100"
+      leaveTo="transform opacity-0 scale-95"
+    >
+      <Menu.Items className="absolute left-4 z-10 mt-2 w-52 origin-top-left  rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <div className="py-1">
+          <Menu.Item>
+            {({ active }) => (
+              <Link
+                href="#"
+                className={clsx(
+                  active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                  'block px-4 py-2 text-xs',
+                )}
+              >
+                Switch workspace
+              </Link>
+            )}
+          </Menu.Item>
+          <Menu.Item>
+            {({ active }) => (
+              <Link
+                href="/organization-settings"
+                className={clsx(
+                  active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                  'block px-4 py-2 text-xs',
+                )}
+              >
+                Workplace settings
+              </Link>
+            )}
+          </Menu.Item>
+        </div>
+      </Menu.Items>
+    </Transition>
   );
 }
 
@@ -228,15 +191,15 @@ function AccountMenuItems() {
       leaveFrom="transform opacity-100 scale-100"
       leaveTo="transform opacity-0 scale-95"
     >
-      <Menu.Items className="absolute right-0 z-10 mt-2 w-50 origin-top-right bottom-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+      <Menu.Items className="absolute left-4 z-10 mt-2 w-52 origin-top-left  rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
         <div className="py-1">
           <Menu.Item>
             {({ active }) => (
               <Link
                 href="/settings"
-                className={classNames(
+                className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block px-4 py-2 text-sm',
+                  'block px-4 py-2 text-xs',
                 )}
               >
                 Account settings
@@ -247,9 +210,9 @@ function AccountMenuItems() {
             {({ active }) => (
               <Link
                 href="/support"
-                className={classNames(
+                className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block px-4 py-2 text-sm',
+                  'block px-4 py-2 text-xs',
                 )}
               >
                 Support
@@ -261,9 +224,9 @@ function AccountMenuItems() {
               <a
                 href="#"
                 onClick={() => signOut()}
-                className={classNames(
+                className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block w-full px-4 py-2 text-left text-sm',
+                  'block w-full px-4 py-2 text-left text-xs',
                 )}
               >
                 Sign out
@@ -299,18 +262,19 @@ function NavItem({
   return (
     <li
       key={item.name}
-      className={classNames(
-        isSelected ? 'border-l-sky-700 border-l-2' : 'border-l-2',
-      )}
+      // className={clsx(
+      //   isSelected ? 'border-l-sky-700 border-l-2' : 'border-l-2',
+      // )}
+      className="px-2"
     >
       <Link
         href={item.href}
         onClick={() => setSidebarOpen(false)}
-        className={classNames(
+        className={clsx(
           isSelected
-            ? ' text-sky-700'
-            : 'text-gray-700 hover:text-sky-700 hover:bg-gray-50',
-          'group pl-6 flex gap-x-3 rounded-md p-1 text-sm leading-6 font-medium transition-colors',
+            ? ' bg-slate-200 '
+            : 'text-gray-500 hover:bg-slate-200 active:bg-slate-300 active-text-gray-400',
+          'group w-full flex gap-x-3 rounded-md py-1 px-3 text-sm text-gray-700 leading-6 transition-colors select-none',
         )}
       >
         {item.name}

@@ -125,6 +125,9 @@ export async function deleteAudit(auditId: AuditId) {
     isDeleted: true,
   });
 
+  revalidateTag('client-audit');
+  revalidatePath('/');
+
   return;
 }
 
@@ -237,23 +240,23 @@ export async function getPresignedUploadUrl({
   };
 }
 
-export async function processChartOfAccounts(
-  id: DocumentId,
-  auditId: AuditId,
-): Promise<void> {
-  const user = await getCurrent();
-  const document = await getDocumentById(id);
-  if (document.orgId !== user.orgId) {
-    throw new Error('Unauthorized');
-  }
+// export async function processChartOfAccounts(
+//   id: DocumentId,
+//   auditId: AuditId,
+// ): Promise<void> {
+//   const user = await getCurrent();
+//   const document = await getDocumentById(id);
+//   if (document.orgId !== user.orgId) {
+//     throw new Error('Unauthorized');
+//   }
 
-  if (document.classifiedType !== 'CHART_OF_ACCOUNTS') {
-    throw new Error(
-      `Invalid document type for Chart of Accounts: ${document.classifiedType}`,
-    );
-  }
-  await extractChartOfAccountsMapping(document, auditId);
-}
+//   if (document.classifiedType !== 'CHART_OF_ACCOUNTS') {
+//     throw new Error(
+//       `Invalid document type for Chart of Accounts: ${document.classifiedType}`,
+//     );
+//   }
+//   await extractChartOfAccountsMapping(document, auditId);
+// }
 
 // export async function selectDocumentForRequest(
 //   id: DocumentId,
@@ -285,4 +288,15 @@ export async function processChartOfAccounts(
 
 export async function generateFinancialStatement(auditId: AuditId) {
   await _generateFinancialStatement(auditId);
+}
+
+export async function extractAccountMapping({
+  documentId,
+  auditId,
+}: {
+  documentId: DocumentId;
+  auditId: AuditId;
+}) {
+  await extractChartOfAccountsMapping(documentId, auditId);
+  revalidatePath('/audit/[id]');
 }

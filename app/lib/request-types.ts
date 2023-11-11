@@ -176,7 +176,6 @@ export function getDefaultValues(
 export function getRequestTypeForId(id: string): RequestType {
   const rt = requestTypes.find((rt) => rt.id === id);
   if (!rt) {
-    console.log(requestTypes);
     throw new Error(`Invalid request type: ${id}`);
   }
   return rt;
@@ -476,6 +475,11 @@ export const requestTypes = [
         input: 'fileupload',
         aiClassificationType: 'TRIAL_BALANCE',
       },
+      // accounts: {
+      //   label: 'Upload the Trial Balance',
+      //   input: 'table',
+
+      // },
     },
   ),
 

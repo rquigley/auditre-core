@@ -187,17 +187,17 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "comment" FOR EACH RO
 
 CREATE TABLE "account_mapping" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
-  "document_id" uuid REFERENCES "document" ("id"), -- only present if coming from a document
-  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
-  "account_id" text NOT NULL,
-  "account_name" text, -- for when id and name are separate
-  "mapped_to" text,
+  --"org_id" uuid NOT NULL REFERENCES "org" ("id"),
+  "account_number" text,
+  "account_name" text,
+  "account_type" text,
+  "document_id" uuid REFERENCES "document" ("id"), -- only present if coming from a document
   "created_at" timestamptz DEFAULT now() NOT NULL,
-  "updated_at" timestamptz DEFAULT now() NOT NULL,
+  -- "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
-ALTER TABLE "account_mapping" ADD CONSTRAINT constraint_account_id_audit_id_document_id UNIQUE (account_id, audit_id, document_id);
+ALTER TABLE "account_mapping" ADD CONSTRAINT constraint_unique_account_mapping UNIQUE (audit_id, account_number, account_name, document_id);
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account_mapping" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 -- CREATE TABLE "log" (

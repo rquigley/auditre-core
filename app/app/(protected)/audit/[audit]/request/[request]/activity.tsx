@@ -12,20 +12,22 @@ import { getChangesForRequestType } from '@/controllers/request-data';
 import CommentForm from './comment-form';
 
 import type { Request } from '@/controllers/request';
-import type { User } from '@/types';
+import type { AuditId, User } from '@/types';
 
 const schema = z.object({
   comment: z.string().max(500),
 });
 
 export default async function Activity({
+  auditId,
   request,
   user,
 }: {
+  auditId: AuditId;
   request: Request;
   user: User;
 }) {
-  const feed = await getFeed(request);
+  const feed = await getFeed(auditId, request);
 
   async function saveData(dataRaw: z.infer<typeof schema>) {
     'use server';
@@ -34,12 +36,12 @@ export default async function Activity({
 
     await createComment({
       orgId: user.orgId,
-      auditId: request.auditId,
+      auditId,
       requestType: request.id,
       comment: data.comment,
       userId: user.id,
     });
-    revalidatePath(`/audit/${request.auditId}/request/${request.id}`);
+    revalidatePath(`/audit/${auditId}/request/${request.id}`);
   }
 
   return (
@@ -142,12 +144,9 @@ export type Change = {
   comment?: string;
 };
 
-async function getFeed(request: Request) {
-  const rawChanges = await getChangesForRequestType(request.auditId, request);
-  const rawComments = await getAllCommentsForRequest(
-    request.auditId,
-    request.id,
-  );
+async function getFeed(auditId: AuditId, request: Request) {
+  const rawChanges = await getChangesForRequestType(auditId, request);
+  const rawComments = await getAllCommentsForRequest(auditId, request.id);
 
   let ret: Change[] = [];
 

@@ -1,8 +1,8 @@
 name: Build and Deploy to AWS
 on:
   push:
-    branches:
-      - main
+    # branches:
+    #   - main
     paths:
       - 'app/**'
       - '.github/**'
@@ -20,6 +20,23 @@ jobs:
         uses: actions/checkout@v4
         with:
           show-progress: false
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # This might only work for dev?
+          role-to-assume: arn:aws:iam::258343757818:role/AppDeployRole
+          aws-region: us-east-2
+
+      - name: Login to Amazon ECR Private
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: 'true'
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition fargate-node-task-defn --query taskDefinition > task-definition.json
 
       - name: Create .env.local
         working-directory: ./app
@@ -46,24 +63,7 @@ jobs:
           echo org=${{ vars.SENTRY_ORG }} >> .sentryclirc
           echo project=app >> .sentryclirc
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          # This might only work for dev?
-          role-to-assume: arn:aws:iam::258343757818:role/AppDeployRole
-          aws-region: us-east-2
-
-      - name: Login to Amazon ECR Private
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-        with:
-          mask-password: 'true'
-
-      - name: Download task definition
-        run: |
-          aws ecs describe-task-definition --task-definition fargate-node-task-defn --query taskDefinition > task-definition.json
-
-      - name: Build, tag, and push image to Amazon
+      - name: Build image
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -73,23 +73,26 @@ jobs:
         working-directory: ./app
         run: |
           docker build --build-arg SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-      - name: Upload _next/static to S3
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: auditre-fargate-app
-          IMAGE_TAG: latest
+      - name: Push image to AWS
+        if: github.ref == 'refs/heads/main'
         working-directory: ./app
         run: |
-          docker run -d --name nextjs-app-container $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push ${{ steps.build-image.outputs.image }}
+
+      - name: Upload _next/static to S3
+        if: github.ref == 'refs/heads/main'
+        working-directory: ./app
+        run: |
+          docker run -d --name nextjs-app-container ${{ steps.build-image.outputs.image }}
           docker cp nextjs-app-container:/app/.next/static ./app_static_assets
           docker stop nextjs-app-container
           aws s3 sync ./app_static_assets s3://auditre-app-static-assets-dev/_next/static --cache-control "max-age=31536000,public,immutable"
           aws s3 sync ./public/img s3://auditre-app-static-assets-dev/img --cache-control "max-age=31536000,public,immutable"
 
       - name: Fill in the new image ID in the AWS ECS task definition
+        if: github.ref == 'refs/heads/main'
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
@@ -98,6 +101,7 @@ jobs:
           image: ${{ steps.build-image.outputs.image }}
 
       - name: Upload DB migrations to S3
+        if: github.ref == 'refs/heads/main'
         working-directory: ./app
         run: |
           aws s3 sync ./migrations s3://auditre-app-db-migrations-dev/migrations
@@ -105,6 +109,7 @@ jobs:
         # run db migration lambda task
 
       - name: Deploy AWS ECS task definition
+        if: github.ref == 'refs/heads/main'
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
@@ -114,6 +119,7 @@ jobs:
           # wait-for-service-stability: true
 
       - name: Post to a Slack channel
+        if: github.ref == 'refs/heads/main'
         id: slack
         uses: slackapi/slack-github-action@v1.24.0
         with:
@@ -136,16 +142,3 @@ jobs:
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
-
-#  uses: actions/cache@v3
-# with:
-#   # See here for caching with `yarn` https://github.com/actions/cache/blob/main/examples.md#node---yarn or you can leverage caching with actions/setup-node https://github.com/actions/setup-node
-#   path: |
-#     ~/.npm
-#     ${{ github.workspace }}/.next/cache
-#   # Generate a new cache whenever packages or source files change.
-#   key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.[jt]s', '**/*.[jt]sx') }}
-#   # If source files changed but packages didn't, rebuild from a prior cache.
-#   restore-keys: |
-#     ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
