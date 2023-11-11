@@ -5,7 +5,7 @@ import { useFormState, useFormStatus } from 'react-dom';
 import { classNames } from '@/lib/util';
 
 const initialState = {
-  message: null,
+  email: '',
 };
 
 function SubmitButton() {
@@ -34,6 +34,7 @@ export default function NewInviteForm({
     formData: FormData,
   ) => Promise<{ message: string }>;
 }) {
+  // @ts-expect-error
   const [state, formAction] = useFormState(createInvite, initialState);
 
   return (
