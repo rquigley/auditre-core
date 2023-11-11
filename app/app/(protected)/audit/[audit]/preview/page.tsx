@@ -9,7 +9,6 @@ import {
   getPolicySections,
 } from '@/controllers/financial-statement/template';
 import { getCurrent } from '@/controllers/session-user';
-import { AuditHeader } from '../audit-header';
 import DataModal from './data-modal';
 import { ViewDataButton } from './view-data-button';
 
@@ -33,58 +32,51 @@ export default async function AuditPage({
   const auditData = await getAuditData(auditId);
 
   return (
-    <>
-      <AuditHeader audit={audit} />
-
-      <div className="mt-8 flow-root">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="mb-4">
-              <ViewDataButton />
-            </div>
-
-            <div className="mb-4">
-              <div className="font-lg">Organization</div>
-              {orgSettings.map((section, idx) => (
-                <div key={idx} className="my-4 text-sm">
-                  <div className="font-semibold">{section.header}</div>
-                  <div className="text-gray-700">
-                    {formatBodyText(section, auditData)}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mb-4">
-              <div className="font-lg">
-                Summary of Significant Accounting Policies
-              </div>
-              {policySettings.map((section, idx) => (
-                <div key={idx} className="my-4 text-sm">
-                  <div className="font-bold text-black">{section.header}</div>
-                  <div className="text-gray-700">
-                    {formatBodyText(section, auditData)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        <DataModal>
-          <div className="w-full h-full">
-            Data:
-            <br />
-            {auditData
-              ? Object.keys(auditData).map((key) => {
-                  return (
-                    <RequestType key={key} name={key} data={auditData[key]} />
-                  );
-                })
-              : null}
-          </div>
-        </DataModal>
+    <div className="m-5">
+      <div className="mb-4">
+        <ViewDataButton />
       </div>
-    </>
+
+      <div className="mb-4">
+        <div className="font-lg">Organization</div>
+        {orgSettings.map((section, idx) => (
+          <div key={idx} className="my-4 text-sm">
+            <div className="font-semibold">{section.header}</div>
+            <div className="text-gray-700">
+              {formatBodyText(section, auditData)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-4">
+        <div className="font-lg">
+          Summary of Significant Accounting Policies
+        </div>
+        {policySettings.map((section, idx) => (
+          <div key={idx} className="my-4 text-sm">
+            <div className="font-bold text-black">{section.header}</div>
+            <div className="text-gray-700">
+              {formatBodyText(section, auditData)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <DataModal>
+        <div className="w-full h-full">
+          Data:
+          <br />
+          {auditData
+            ? Object.keys(auditData).map((key) => {
+                return (
+                  <RequestType key={key} name={key} data={auditData[key]} />
+                );
+              })
+            : null}
+        </div>
+      </DataModal>
+    </div>
   );
 }
 

@@ -9,7 +9,7 @@ import type { OrgDocument } from '@/controllers/document';
 export default function Row({ document }: { document: OrgDocument }) {
   return (
     <tr key={document.id} className="hover:bg-gray-100">
-      <td className="py-5 pl-4 sm:pl-2 pr-3 text-sm">
+      <td className="py-5 pl-5 pr-3 text-sm">
         <Link href={`/document/${document.id}`}>
           <span className="text-gray-900">{document.name}</span>
         </Link>
@@ -42,7 +42,7 @@ export default function Row({ document }: { document: OrgDocument }) {
         />
       </td>
 
-      <td className="relative whitespace-nowrap py-5 pr-4 sm:pr-2 text-right text-sm">
+      <td className="relative whitespace-nowrap py-5 pr-5 text-right text-sm">
         {/* {document.auditId && (
           <>
             <span className="text-xs">

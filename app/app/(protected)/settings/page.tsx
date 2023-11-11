@@ -1,4 +1,5 @@
-import Header from '@/components/header';
+import { Content } from '@/components/content';
+import { Header } from '@/components/header';
 import { getCurrent } from '@/controllers/session-user';
 
 export default async function SettingsPage() {
@@ -7,7 +8,10 @@ export default async function SettingsPage() {
   return (
     <>
       <Header title="Account Settings" />
-      <div className="mt-8 flow-root">todo</div>
+      <Content pad={true}>
+        <div>- Change name</div>
+        <div>- Show login methods</div>
+      </Content>
     </>
   );
 }

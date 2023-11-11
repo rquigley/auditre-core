@@ -1,5 +1,6 @@
 import { AccountType } from '@/types';
 
+// move to account-mapping
 export const balanceSheetTypes: Record<AccountType, string> = {
   ASSET_CASH: 'Cash',
   ASSET_PREPAID_EXPENSES: 'Prepaid expenses and other current assets',

@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 
+import { PrimaryButton } from '@/components/button';
 import { getByIdForClientCached } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/document';
 import { getCurrent } from '@/controllers/session-user';
-import { AuditHeader } from '../audit-header';
 import Row from './row';
 
 export default async function AuditPage({
@@ -20,65 +20,23 @@ export default async function AuditPage({
   const documents = await getAllByAuditId(id);
 
   return (
-    <>
-      <AuditHeader audit={audit} />
-
-      <div className="mt-8 flow-root">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <table className="min-w-full divide-y divide-gray-300">
-              <thead>
-                <tr>
-                  <th
-                    scope="col"
-                    className="py-3.5 pl-4 sm:pl-2 pr-3 text-left text-sm font-semibold text-gray-900"
-                  >
-                    Name
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                  >
-                    Created
-                  </th>
-                  {/* <th
-                    scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                  >
-                    Last modified
-                  </th> */}
-
-                  <th
-                    scope="col"
-                    className="pr-4 sm:pr-2 py-3.5 text-right text-sm font-semibold text-gray-900"
-                  >
-                    Uploaded
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {documents.map((document) => (
-                  <Row
-                    auditId={audit.id}
-                    document={document}
-                    key={document.id}
-                  />
-                ))}
-              </tbody>
-            </table>
-
-            <div className="mt-4 flex">
-              <a
-                type="button"
-                href={`/audit/${audit.id}/generate`}
-                className="rounded-full bg-white px-3.5 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-              >
-                Generate Financial Statement
-              </a>
-            </div>
-          </div>
-        </div>
+    <div className="m-5">
+      <div className="mt-4 flex">
+        <PrimaryButton
+          href={`/audit/${audit.id}/generate`}
+          label="Generate Financial Statement"
+        />
       </div>
-    </>
+
+      <div className="mt-4">
+        <div className="font-lg border-b pb-1 mb-3">Documents</div>
+        {documents.map((document) => (
+          <>
+            <Row auditId={audit.id} document={document} key={document.id} />
+            <div className="w-48 border-b my-4"></div>
+          </>
+        ))}
+      </div>
+    </div>
   );
 }

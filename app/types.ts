@@ -278,12 +278,13 @@ export type AccountType =
   | 'EQUITY_ACCUMULATED_DEFICIT';
 
 export interface AccountMappingTable {
-  id: GeneratedAlways<string>;
-  documentId: DocumentId | null;
-  orgId: OrgId;
+  id: GeneratedAlways<AccountMappingId>;
   auditId: AuditId;
-  accountId: string;
-  accountMappedTo: AccountType | null;
+  // orgId: OrgId;
+  accountNumber: string;
+  accountName: string;
+  accountType: AccountType | null;
+  documentId: DocumentId | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
 }

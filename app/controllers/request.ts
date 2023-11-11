@@ -37,6 +37,10 @@ export async function getAllByAuditId(auditId: AuditId) {
   });
 }
 
+export function getFirstRequestId(auditId: AuditId) {
+  return requestTypes[0].id;
+}
+
 export async function saveRequestData({
   auditId,
   requestType,
@@ -130,18 +134,11 @@ function getDocumentIdMods(
 export type Request = Pick<
   RequestType,
   'id' | 'name' | 'group' | 'description' | 'form'
-> & {
-  auditId: AuditId;
-  orgId: OrgId;
-};
+>;
 export async function getRequestBySlug(
   auditId: AuditId,
   slug: string,
 ): Promise<Request | false> {
-  const audit = await getAuditById(auditId);
-  if (!audit) {
-    return false;
-  }
   const rt = getRequestTypeForId(slug);
 
   return {
@@ -150,8 +147,6 @@ export async function getRequestBySlug(
     group: rt.group,
     description: rt.description,
     form: rt.form,
-    auditId: audit.id,
-    orgId: audit.orgId,
   };
 }
 

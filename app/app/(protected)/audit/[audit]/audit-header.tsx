@@ -4,31 +4,38 @@ import clsx from 'clsx';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-import Header from '@/components/header';
+import { Header } from '@/components/header';
 
-type Props = { audit: { id: string; name: string; year: string } };
+type Props = {
+  audit: { id: string; name: string; year: string };
+  request0Slug: string;
+};
 export function AuditHeader(props: Props) {
   const pathname = usePathname();
   const router = useRouter();
 
   const { audit } = props;
   const tabs = [
-    { name: 'Requests', href: `/audit/${audit.id}` },
+    {
+      name: 'Requests',
+      href: `/audit/${audit.id}/request/${props.request0Slug}`,
+      matchHref: `/audit/${audit.id}/request`,
+    },
     { name: 'Preview', href: `/audit/${audit.id}/preview` },
     { name: 'Output', href: `/audit/${audit.id}/output` },
-    { name: 'Settings', href: `/audit/${audit.id}/settings` },
+    // { name: 'Settings', href: `/audit/${audit.id}/settings` },
   ] as const;
 
   const title = audit.year ? `${audit.name} (${audit.year})` : audit.name;
 
-  return (
-    <>
-      <Header
-        title={title}
-        breadcrumbs={[{ name: 'Audits', href: '/audits' }]}
-      />
+  const matchPath = tabs.find((tab) =>
+    // @ts-expect-error
+    pathname.startsWith(tab?.matchHref || tab.href),
+  )?.href;
 
-      <div className="mt-4 sm:mt-3 border-b border-gray-200 pb-5 sm:pb-0">
+  return (
+    <div className="">
+      <div className="mt-4 sm:mt-3 border-b border-gray-200 pb-5 sm:pb-0 pl-4">
         <div className="sm:hidden">
           <label htmlFor="current-tab" className="sr-only">
             Select a tab
@@ -37,7 +44,7 @@ export function AuditHeader(props: Props) {
             id="current-tab"
             name="current-tab"
             className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-sky-700 focus:outline-none focus:ring-sky-700 sm:text-sm"
-            defaultValue={pathname}
+            defaultValue={matchPath}
             onChange={(e) => router.push(e.target.value)}
           >
             {tabs.map((tab) => (
@@ -54,12 +61,12 @@ export function AuditHeader(props: Props) {
                 key={tab.name}
                 href={tab.href}
                 className={clsx(
-                  pathname === tab.href
+                  matchPath === tab.href
                     ? 'border-sky-700 text-sky-700'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-                  'whitespace-nowrap border-b-2 px-1 pb-4 text-sm font-medium transition-all',
+                  'whitespace-nowrap border-b-2 px-1 pb-2 text-xs select-none transition-all',
                 )}
-                aria-current={pathname === tab.href ? 'page' : undefined}
+                aria-current={matchPath === tab.href ? 'page' : undefined}
               >
                 {tab.name}
               </Link>
@@ -67,6 +74,6 @@ export function AuditHeader(props: Props) {
           </nav>
         </div>
       </div>
-    </>
+    </div>
   );
 }

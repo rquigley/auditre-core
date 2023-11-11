@@ -1,10 +1,15 @@
-import Header from '@/components/header';
+import { Content } from '@/components/content';
+import { Header } from '@/components/header';
 
 export default async function SupportPage() {
   return (
     <>
       <Header title="Support" />
-      <div className="mt-8 flow-root">todo</div>
+      <Content pad={true}>
+        <div>- Show contact form</div>
+        <div>- Show contact info</div>
+        <div>- Feature request</div>
+      </Content>
     </>
   );
 }
