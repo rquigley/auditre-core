@@ -447,6 +447,20 @@ export class OpsAppStack extends Stack {
       },
     );
 
+    const xForwardedForFunc = new cloudfront.Function(
+      this,
+      'XForwardedHostFunc',
+      {
+        code: cloudfront.FunctionCode.fromInline(`
+        function handler(event) {
+          var request = event.request;
+          request.headers['x-forwarded-host'] = request.headers.host;
+          return request;
+        }
+      `),
+      },
+    );
+
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       certificate: certificate,
       domainNames: ['ci.auditre.co', 'app.ci.auditre.co'],
@@ -465,6 +479,12 @@ export class OpsAppStack extends Stack {
           // TODO: Switch back to HTTPS
           protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
         }),
+        functionAssociations: [
+          {
+            function: xForwardedForFunc,
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+          },
+        ],
         compress: true,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
