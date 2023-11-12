@@ -503,12 +503,27 @@ export class OpsAppStack extends Stack {
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
       additionalBehaviors: {
         '/_next/static/*': {
-          // Use the Fargate service as an origin
-          // origin: new cloudfrontOrigins.LoadBalancerV2Origin(loadbalancer, {
-          //   protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
-          // }),
-
-          // OR use S3 bucket as an origin
+          origin: new cloudfrontOrigins.S3Origin(staticAssetBucket, {
+            originAccessIdentity: cloudfrontOAI,
+          }),
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+          cachePolicy: cachePolicyNextStatic,
+          compress: true,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
+        '/favicon.ico': {
+          origin: new cloudfrontOrigins.S3Origin(staticAssetBucket, {
+            originAccessIdentity: cloudfrontOAI,
+            originPath: '/img',
+          }),
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+          cachePolicy: cachePolicyNextStatic,
+          compress: true,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
+        '/img/*': {
           origin: new cloudfrontOrigins.S3Origin(staticAssetBucket, {
             originAccessIdentity: cloudfrontOAI,
           }),
