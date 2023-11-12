@@ -113,7 +113,7 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: fargate-node-service
+          service: fargate-node-service-v2
           cluster: fargate-node-cluster
           # TODO: use AWS alerting rather than GitHub actions
           # wait-for-service-stability: true
