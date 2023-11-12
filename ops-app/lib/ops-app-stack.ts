@@ -41,6 +41,7 @@ import {
 import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
 import { Topic } from 'aws-cdk-lib/aws-sns';
 import { UrlSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 
 import { PostgresCluster } from './postgres-cluster';
@@ -352,19 +353,31 @@ export class OpsAppStack extends Stack {
             AWS_S3_BUCKET: s3Bucket.bucketName,
             ENVIRONMENT: 'production',
             NODE_ENV: 'production',
-
-            // move to secrets
-            NEXTAUTH_SECRET:
-              '263dfdaa81588b662f576fa193e3f8f36c92096eae99814f0d9fc1b3907afa77',
-            GOOGLE_CLIENT_SECRET: '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',
-            OPENAI_API_KEY:
-              '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',
           },
           secrets: {
             AWS_RDS_DB_CREDS: ecs.Secret.fromSecretsManager(db.creds),
-            //NEXTAUTH_SECRET: ecs.Secret.fromSecretsManager(),
-            //GOOGLE_CLIENT_SECRET: ecs.Secret.fromSecretsManager(),
-            //OPENAI_API_KEY: ecs.Secret.fromSecretsManager(),
+
+            NEXTAUTH_SECRET: ecs.Secret.fromSsmParameter(
+              StringParameter.fromStringParameterName(
+                this,
+                'AppNextAuthParameter',
+                '/app/NEXTAUTH_SECRET',
+              ),
+            ),
+            GOOGLE_CLIENT_SECRET: ecs.Secret.fromSsmParameter(
+              StringParameter.fromStringParameterName(
+                this,
+                'AppGoogleClientSecretParameter',
+                '/app/GOOGLE_CLIENT_SECRET',
+              ),
+            ),
+            OPENAI_API_KEY: ecs.Secret.fromSsmParameter(
+              StringParameter.fromStringParameterName(
+                this,
+                'AppOpenAIKeyParameter',
+                '/app/OPENAI_API_KEY',
+              ),
+            ),
           },
           containerName: 'nodejs-app-container',
           family: 'fargate-node-task-defn',
