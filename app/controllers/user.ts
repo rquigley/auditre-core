@@ -3,14 +3,49 @@ import { unstable_cache } from 'next/cache';
 
 import { db, sql } from '@/lib/db';
 
-import type { NewUser, OrgId, User, UserId, UserUpdate } from '@/types';
+import type {
+  NewUser,
+  OrgId,
+  User,
+  UserId,
+  UserRole,
+  UserUpdate,
+} from '@/types';
 
-export async function createUser(user: NewUser): Promise<User> {
-  return await db
-    .insertInto('user')
-    .values({ ...user })
-    .returningAll()
-    .executeTakeFirstOrThrow();
+export async function createUser(
+  orgId: OrgId,
+  user: NewUser,
+): Promise<Pick<User, 'id' | 'name' | 'email' | 'image' | 'emailVerified'>> {
+  return await db.transaction().execute(async (trx) => {
+    const userRes = await trx
+      .insertInto('user')
+      .values({
+        name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        image: user.image,
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    await trx
+      .insertInto('userRole')
+      .values({
+        userId: userRes.id,
+        orgId,
+        role: 'user', // Always start as 'user', then can be promoted to 'admin'
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    return {
+      id: userRes.id,
+      name: userRes.name,
+      email: userRes.email,
+      image: userRes.image,
+      emailVerified: userRes.emailVerified,
+    };
+  });
 }
 
 export async function getById(id: UserId): Promise<User> {
@@ -25,8 +60,10 @@ export async function getById(id: UserId): Promise<User> {
 export async function getAllByOrgId(orgId: OrgId): Promise<User[]> {
   return await db
     .selectFrom('user')
+    .innerJoin('userRole as ur', 'ur.userId', 'user.id')
     .where('orgId', '=', orgId)
-    .where('isDeleted', '=', false)
+    .where('ur.isDeleted', '=', false)
+    .where('user.isDeleted', '=', false)
     .selectAll()
     .execute();
 }
@@ -165,4 +202,17 @@ export async function updateUser(id: UserId, updateWith: UserUpdate) {
     .set(updateWith)
     .where('id', '=', id)
     .execute();
+}
+
+export async function getUserRole(
+  userId: UserId,
+  orgId: OrgId,
+): Promise<UserRole['role'] | undefined> {
+  const res = await db
+    .selectFrom('userRole')
+    .select('role')
+    .where('userId', '=', userId)
+    .where('orgId', '=', orgId)
+    .executeTakeFirst();
+  return res?.role;
 }

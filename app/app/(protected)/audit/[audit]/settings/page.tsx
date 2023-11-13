@@ -9,7 +9,10 @@ export default async function AuditPage({
 }: {
   params: { audit: string };
 }) {
-  const user = await getCurrent();
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
   const audit = await getByIdForClientCached(id);
 
   if (audit.orgId !== user.orgId) {

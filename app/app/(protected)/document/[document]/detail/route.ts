@@ -29,7 +29,10 @@ export async function GET(
     params: { document: string };
   },
 ) {
-  const user = await getCurrent();
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
   const document = await getById(documentId);
   if (document.orgId !== user.orgId) {
     return notFound();

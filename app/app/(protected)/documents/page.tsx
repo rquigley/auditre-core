@@ -9,7 +9,10 @@ import { getCurrent } from '@/controllers/session-user';
 import Row from './row';
 
 export default async function DocumentsPage() {
-  const user = await getCurrent();
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
   const documents = getAllByOrgId(user.orgId);
 
   // for (const document of documents) {

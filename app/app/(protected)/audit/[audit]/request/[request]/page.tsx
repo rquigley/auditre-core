@@ -15,10 +15,13 @@ export default async function RequestPage({
 }: {
   params: { audit: AuditId; request: string };
 }) {
-  const userP = getCurrent();
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
   const auditP = getAuditById(auditId);
   const requestP = getRequestBySlug(auditId, requestSlug);
-  const [user, audit, request] = await Promise.all([userP, auditP, requestP]);
+  const [audit, request] = await Promise.all([auditP, requestP]);
 
   if (!request || !audit || audit.orgId !== user.orgId) {
     return notFound();

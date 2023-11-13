@@ -9,13 +9,11 @@ import LoginButton from './login-button';
 import Redirector from './redirector';
 
 export default async function Login() {
-  let user;
-  try {
-    user = await getCurrent();
-  } catch (err) {}
+  const { user } = await getCurrent();
   if (user) {
-    redirect(await getPostAuthUrl());
+    redirect('/');
   }
+
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
       <div className="z-10 w-full max-w-md overflow-hidden rounded-2xl border border-gray-100 shadow-xl">

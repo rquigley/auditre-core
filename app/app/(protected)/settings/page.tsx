@@ -3,7 +3,10 @@ import { Header } from '@/components/header';
 import { getCurrent } from '@/controllers/session-user';
 
 export default async function SettingsPage() {
-  const user = await getCurrent();
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
 
   return (
     <>

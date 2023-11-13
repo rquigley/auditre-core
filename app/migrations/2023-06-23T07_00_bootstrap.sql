@@ -36,6 +36,8 @@ volatile;
 CREATE TABLE "org" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "name" text,
+  "is_root_org" boolean NOT NULL DEFAULT FALSE,
+  "parent_org_id" uuid REFERENCES "org" ("id"),
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean DEFAULT FALSE
@@ -44,7 +46,7 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "org" FOR EACH ROW EX
 
 CREATE TABLE "user" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
-  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
+  -- "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "name" text,
   "email" text UNIQUE,
   "email_verified" text,
@@ -55,6 +57,20 @@ CREATE TABLE "user" (
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "user" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
+CREATE TABLE "user_role" (
+  "user_id" uuid NOT NULL REFERENCES "user" ("id"),
+  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
+  "role" text NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "is_deleted" boolean NOT NULL DEFAULT FALSE,
+  PRIMARY KEY ("user_id", "org_id")
+);
+
+CREATE TABLE "user_current_org" (
+  "user_id" uuid NOT NULL REFERENCES "user" ("id") PRIMARY KEY,
+  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
+  "created_at" timestamptz DEFAULT now() NOT NULL
+);
 
 CREATE TABLE "invitation" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,

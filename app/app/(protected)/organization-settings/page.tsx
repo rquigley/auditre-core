@@ -12,7 +12,7 @@ import {
   deleteInvitation,
   getAllByOrgId as getInvitations,
 } from '@/controllers/invitation';
-import { getCurrent } from '@/controllers/session-user';
+import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
 import { getAllByOrgId as getUsers } from '@/controllers/user';
 import { classNames } from '@/lib/util';
 import InviteSubmenu from './invite-submenu';
@@ -28,13 +28,20 @@ const deleteInviteSchema = z.object({
 });
 
 export default async function OrganizationSettingsPage() {
-  const user = await getCurrent();
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
   const users = await getUsers(user.orgId);
   const invitations = await getInvitations(user.orgId);
 
   async function createInvite(prevState: any, formData: FormData) {
     'use server';
     try {
+      const { user } = await getCurrent();
+      if (!user) {
+        throw new UnauthorizedError();
+      }
       const data = createInviteSchema.parse({
         email: formData.get('email'),
       });
