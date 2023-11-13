@@ -1,4 +1,4 @@
-import { stripIndent } from 'common-tags';
+import dedent from 'dedent';
 
 import { getById as getDocumentById } from '@/controllers/document';
 import { call, DEFAULT_OPENAI_MODEL } from '@/lib/ai';
@@ -176,7 +176,7 @@ export async function classifyDocument(document: Document): Promise<string> {
   const messages: OpenAIMessage[] = [
     {
       role: 'system',
-      content: stripIndent`
+      content: dedent`
       You are a CPA. You are tasked with looking at content that includes a "filename: [e.g. filename.doc]", and text (delimited by triple quotes).
       You will classify it as a type of document. To help you, I'm providing types along with a description of each type of document
         - [identifier]: [type of content along with a description]

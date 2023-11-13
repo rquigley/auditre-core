@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { stripIndent } from 'common-tags';
+import dedent from 'dedent';
 import { notFound } from 'next/navigation';
 
 import { getByIdForClientCached } from '@/controllers/audit';
@@ -85,7 +85,7 @@ function formatBodyText(section: Section, data: AuditData): React.ReactNode {
     return <span className="text-red-500">Not showing</span>;
   }
 
-  const input = stripIndent(section.body(data));
+  const input = dedent(section.body(data));
   const output: (string | JSX.Element)[] = [];
   let lastIndex = 0;
   const regex = /\[(.*?)\]|\n/g;

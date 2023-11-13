@@ -1,4 +1,4 @@
-import { stripIndent } from 'common-tags';
+import dedent from 'dedent';
 
 import { head } from '@/lib/util';
 import { balanceSheetTypes } from './consolidated-balance-sheet';
@@ -50,7 +50,7 @@ export const documentAiQuestions: Record<
       {
         id: 'accountNameColumn',
         preProcess: (val: string) => head(val, 10),
-        question: stripIndent`
+        question: dedent`
                 In this CSV content which column number contains account names? Think carefully before answering.
                 We don't want account types or any other. Return JSON with "columnName" and "columnNum".
                 If you are unsure return "-" for values
@@ -59,7 +59,7 @@ export const documentAiQuestions: Record<
       },
       {
         id: 'accountMapping',
-        question: stripIndent`
+        question: dedent`
               For each row in the Chart of Accounts CSV, perform the following steps to generate a JSON-formatted output:
 
               1. Account Name/ID
