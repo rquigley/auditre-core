@@ -121,6 +121,9 @@ export function humanCase(input: string): string {
     )
     .join(' ');
 }
+export function humanToKebab(input: string): string {
+  return input.replace(/\s+/g, '-').toLowerCase();
+}
 
 export function camelToKebab(input: string): string {
   return input.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
@@ -202,4 +205,13 @@ export function getMonthName(month: string) {
     default:
       return 'MISSING';
   }
+}
+
+export function ppCurrency(num: number) {
+  return num.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
 }
