@@ -17,7 +17,7 @@ import {
   Year,
 } from '@/components/form-fields';
 import { nl2br } from '@/components/nl2br';
-import SaveNotice from '@/components/save-notice';
+// import SaveNotice from '@/components/save-notice';
 import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
 import { classNames, isFieldVisible } from '@/lib/util';
 
@@ -202,11 +202,11 @@ export function BasicForm({
         </div>
       </div>
       <div className="mt-6 flex items-center justify-end gap-x-6">
-        {showSuccess && (
+        {/* {showSuccess && (
           <div className="flex-grow">
             <SaveNotice cb={() => setShowSuccess(false)} />
           </div>
-        )}
+        )} */}
 
         {enableSubmit && formState.isDirty ? (
           <button
