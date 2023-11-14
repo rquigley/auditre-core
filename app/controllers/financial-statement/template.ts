@@ -1,19 +1,12 @@
 import dayjs from 'dayjs';
 import dedent from 'dedent';
 
+import { ppCurrency } from '@/lib/util';
+
 import type { AuditData } from '../audit-output';
 
 function toDate(date: any) {
   return dayjs(date).format('MMMM D, YYYY');
-}
-
-function pp(num: number) {
-  return num.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
 }
 
 export type Template = {
@@ -96,9 +89,9 @@ export const getOrganizationSections = () => [
     body: (data) => `
       The Company has incurred recurring losses and negative cash flows from operating activities since inception. As of [${
         data.fiscalYearEnd
-      }], the Company had cash of [${pp(
+      }], the Company had cash of [${ppCurrency(
         data.balanceSheet.assets.currentAssets.cash,
-      )}] and an accumulated deficit of [${pp(
+      )}] and an accumulated deficit of [${ppCurrency(
         data.balanceSheet.liabilities.totalCurrent,
       )}]. Based on the Company’s forecasts, the Company’s current resources and cash balance are sufficient to enable the Company to continue as a going concern for 12 months from the date these consolidated financial statements are available to be issued.
 
@@ -132,7 +125,7 @@ export const getPolicySections = () => [
     body: (data) => `
       Financial instruments that potentially subject the Company to credit risk consist principally of cash held by financial institutions. Substantially all of the Company's cash is held at one financial institution that management believes is of high credit quality. Such deposits may, at times, exceed federally insured limits.
 
-      The Company is dependent on key suppliers for certain laboratory materials. An interruption in the supply of these materials would temporarily impact the Company's ability to perform development and testing related to its products.
+      The Company is dependent on key suppCurrencyliers for certain laboratory materials. An interruption in the suppCurrencyly of these materials would temporarily impact the Company's ability to perform development and testing related to its products.
     `,
   }),
   generateSection({

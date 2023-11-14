@@ -1,35 +1,30 @@
-import dayjs from 'dayjs';
-
 import { getById as getAuditById } from '@/controllers/audit';
 import { getAllByAuditId as getAllDocumentsByAuditId } from '@/controllers/document';
-import {
-  getAllByDocumentId as getAllQueriesByDocumentId,
-  getData as getDocData,
-} from '@/controllers/document-query';
-import { getAllByAuditId } from '@/controllers/request';
+import { getData as getDocData } from '@/controllers/document-query';
 import { getDataForAuditId } from '@/controllers/request-data';
-import { requestTypes } from '@/lib/request-types';
 import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
-import { get as getBalanceSheetData } from './financial-statement/balance-sheet';
+import {
+  buildBalanceSheet,
+  get as getBalanceSheetData,
+} from './financial-statement/balance-sheet';
 import * as t from './financial-statement/template';
 
-// import type { AuditRequestData, RequestTypeKey } from '@/lib/request-types';
 import type { AuditId, DocumentId } from '@/types';
 
 const {
   // import {
   AlignmentType,
-  Border,
+  // Border,
   BorderStyle,
   convertInchesToTwip,
   Document,
-  File,
+  // File,
   Footer,
-  Header,
+  // Header,
   HeadingLevel,
-  LevelFormat,
-  NumberFormat,
-  Packer,
+  // LevelFormat,
+  // NumberFormat,
+  // Packer,
   PageBreak,
   PageNumber,
   Paragraph,
@@ -38,7 +33,7 @@ const {
   TableCell,
   TableOfContents,
   TableRow,
-  TextDirection,
+  // TextDirection,
   TextRun,
   UnderlineType,
   VerticalAlign,
@@ -282,27 +277,11 @@ function independentAuditorsReport(data: AuditData) {
   };
 }
 
-function pp(num: number) {
-  return num.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
-}
-
 function consolidatedFinancialStatements(data: AuditData) {
   // const t1 = new TextRun({
   //   text: '[Auditor to add opinion]',
   //   highlight: 'yellow',
   // });
-
-  const fiscalCloseStr = `As of ${getMonthName(
-    data.auditInfo.fiscalYearMonthEnd,
-  )} ${getLastDayOfMonth(
-    data.auditInfo.fiscalYearMonthEnd,
-    data.auditInfo.year,
-  )},`;
 
   const table = new Table({
     borders: {
@@ -312,118 +291,7 @@ function consolidatedFinancialStatements(data: AuditData) {
       right: { style: BorderStyle.NONE },
     },
     columnWidths: [7505, 1505],
-    rows: [
-      getRow({
-        name: fiscalCloseStr,
-        value: data.auditInfo.year,
-        bold: true,
-        borderBottom: true,
-      }),
-      getRow({
-        name: 'Assets',
-        bold: true,
-        padTop: true,
-      }),
-      getRow({
-        name: 'Current assets:',
-        padTop: true,
-      }),
-      getRow({
-        name: 'Cash',
-        value: pp(data.balanceSheet.assets.currentAssets.cash),
-        indent: true,
-      }),
-      getRow({
-        name: 'Prepaid expenses and other current assets',
-        value: pp(data.balanceSheet.assets.currentAssets.other),
-        indent: true,
-        borderBottom: true,
-      }),
-      getRow({
-        name: 'Total current assets',
-        value: pp(data.balanceSheet.assets.totalCurrentAssets),
-        borderBottom: true,
-        padTop: true,
-      }),
-      getRow({
-        name: 'Property and equipment, net',
-        value: pp(data.balanceSheet.assets.property),
-      }),
-      getRow({
-        name: 'Intangible assets, net',
-        value: pp(data.balanceSheet.assets.intangible),
-      }),
-      getRow({
-        name: 'Operating lease right-of-use assets',
-        value: pp(data.balanceSheet.assets.operatingLeaseRightOfUse),
-      }),
-      getRow({
-        name: 'Other assets',
-        value: pp(data.balanceSheet.assets.other),
-        borderBottom: true,
-      }),
-      getRow({
-        name: 'Total assets',
-        value: pp(data.balanceSheet.assets.total),
-        bold: true,
-        borderBottom: true,
-        padTop: true,
-      }),
-
-      getRow({
-        name: 'Liabilities and Stockholders’ Deficit',
-        bold: true,
-        padTop: true,
-      }),
-      getRow({
-        name: 'Current liabilities:',
-        padTop: true,
-      }),
-      getRow({
-        name: 'Accounts payable',
-        value: pp(data.balanceSheet.liabilities.current.accountsPayable),
-        indent: true,
-      }),
-      getRow({
-        name: 'Accrued liabilities',
-        value: pp(data.balanceSheet.liabilities.current.accrued),
-        indent: true,
-      }),
-      getRow({
-        name: 'Operating lease liabilities, current',
-        value: pp(data.balanceSheet.liabilities.current.operatingLease),
-        indent: true,
-        borderBottom: true,
-      }),
-      getRow({
-        name: 'Total current liabilities',
-        value: pp(data.balanceSheet.liabilities.totalCurrent),
-        borderBottom: true,
-        padTop: true,
-      }),
-      getRow({
-        name: 'Accrued interest',
-        value: pp(data.balanceSheet.liabilities.accruedInterest),
-        indent: true,
-      }),
-      getRow({
-        name: 'Convertible notes payable',
-        value: pp(data.balanceSheet.liabilities.converableNotes),
-        indent: true,
-      }),
-      getRow({
-        name: 'Operating lease liabilities, net of current portion',
-        value: pp(data.balanceSheet.liabilities.operatingLease),
-        indent: true,
-      }),
-      getRow({
-        name: 'Total liabilities',
-        value: pp(data.balanceSheet.liabilities.total),
-        bold: true,
-        borderBottom: true,
-        padTop: true,
-      }),
-    ],
+    rows: buildBalanceSheet(data, buildTableRow),
   });
 
   return {
@@ -436,7 +304,7 @@ function consolidatedFinancialStatements(data: AuditData) {
       //   //pageBreakBefore: true,
       // }),
       new Paragraph({
-        text: 'Consolidated Financial Statements',
+        text: 'Consolidated Balance Sheet',
         heading: HeadingLevel.HEADING_2,
         pageBreakBefore: true,
       }),
@@ -445,7 +313,7 @@ function consolidatedFinancialStatements(data: AuditData) {
   };
 }
 
-function getRow({
+function buildTableRow({
   name,
   value,
   bold,
@@ -591,23 +459,7 @@ function formatBodyText(text: string): (typeof TextRun)[] {
   return textRuns;
 }
 
-function templateToParagraph(template: t.Template, pageBreakBefore = false) {
-  if (!template) {
-    return [];
-  }
-  const paragraphs = template.body.split('\n').map((p) => {
-    return new Paragraph({ children: formatBodyText(p) });
-  });
-  return [
-    new Paragraph({
-      text: template.header,
-      heading: HeadingLevel.HEADING_2,
-      pageBreakBefore,
-    }),
-    ...paragraphs,
-  ];
-}
-function templateToParagraph2(
+function templateToParagraph(
   template: t.Template & { pageBreakBefore: boolean },
 ): Array<unknown> {
   const ret = [
@@ -638,7 +490,7 @@ function notes(data: AuditData) {
       ...t.sectionsToBody(
         t.getOrganizationSections(),
         data,
-        templateToParagraph2,
+        templateToParagraph,
       ),
 
       new Paragraph({
@@ -649,7 +501,7 @@ function notes(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
       }),
 
-      ...t.sectionsToBody(t.getPolicySections(), data, templateToParagraph2),
+      ...t.sectionsToBody(t.getPolicySections(), data, templateToParagraph),
     ],
   };
 }

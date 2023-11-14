@@ -4,12 +4,15 @@ import { notFound } from 'next/navigation';
 
 import { getByIdForClientCached } from '@/controllers/audit';
 import { getAuditData } from '@/controllers/audit-output';
+import { buildBalanceSheet } from '@/controllers/financial-statement/balance-sheet';
 import {
   getOrganizationSections,
   getPolicySections,
 } from '@/controllers/financial-statement/template';
 import { getCurrent } from '@/controllers/session-user';
+import { humanToKebab } from '@/lib/util';
 import DataModal from './data-modal';
+import { ShowChangesToggle } from './show-changes-toggle';
 import { ViewDataButton } from './view-data-button';
 
 import type { AuditData } from '@/controllers/audit-output';
@@ -17,8 +20,10 @@ import type { Section } from '@/controllers/financial-statement/template';
 
 export default async function AuditPage({
   params: { audit: auditId },
+  searchParams,
 }: {
   params: { audit: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const { user, authRedirect } = await getCurrent();
   if (!user) {
@@ -32,49 +37,73 @@ export default async function AuditPage({
   const orgSettings = getOrganizationSections();
   const policySettings = getPolicySections();
 
-  const auditData = await getAuditData(auditId);
-
+  const data = await getAuditData(auditId);
+  const highlightData = searchParams['show-changes'] === '1';
+  console.log('shit', highlightData);
   return (
     <div className="m-5">
-      <div className="mb-4">
+      <div className="mb-4 flex space-x-7">
         <ViewDataButton />
+        <ShowChangesToggle />
       </div>
 
-      <div className="mb-4">
-        <div className="font-lg">Organization</div>
-        {orgSettings.map((section, idx) => (
-          <div key={idx} className="my-4 text-sm">
-            <div className="font-semibold">{section.header}</div>
-            <div className="text-gray-700">
-              {formatBodyText(section, auditData)}
-            </div>
-          </div>
-        ))}
+      <div className="max-w-3xl mb-4 border rounded-md p-4 font-serif">
+        <h1 className="text-lg font-bold">{data.basicInfo.businessName}</h1>
+        <div>Conslidated Financial Statements</div>
+        <div>Year Ended {data.fiscalYearEnd}</div>
       </div>
 
-      <div className="mb-4">
-        <div className="font-lg">
-          Summary of Significant Accounting Policies
-        </div>
-        {policySettings.map((section, idx) => (
-          <div key={idx} className="my-4 text-sm">
-            <div className="font-bold text-black">{section.header}</div>
-            <div className="text-gray-700">
-              {formatBodyText(section, auditData)}
-            </div>
-          </div>
-        ))}
+      <div className="max-w-3xl mb-4 border rounded-md p-4 font-serif">
+        <h2 className="text-lg font-bold">Contents</h2>
+
+        <TableOfContents
+          orgSettings={orgSettings}
+          policySettings={policySettings}
+          data={data}
+          highlightData={highlightData}
+        />
+      </div>
+
+      <div
+        id="section-balance-sheet"
+        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
+      >
+        <h2 className="text-lg font-bold">1. Consolidated Balance Sheet</h2>
+
+        <table className="w-full">
+          <tbody>{buildBalanceSheet(data, buildTableRow)}</tbody>
+        </table>
+      </div>
+
+      <div
+        id="section-org"
+        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
+      >
+        <h2 className="text-lg font-bold">2. Organization</h2>
+        {orgSettings.map((section, idx) =>
+          formatSection(section, data, highlightData),
+        )}
+      </div>
+
+      <div
+        id="section-policy"
+        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
+      >
+        <h2 className="text-lg font-bold">
+          3. Summary of Significant Accounting Policies
+        </h2>
+        {policySettings.map((section, idx) =>
+          formatSection(section, data, highlightData),
+        )}
       </div>
 
       <DataModal>
         <div className="w-full h-full">
           Data:
           <br />
-          {auditData
-            ? Object.keys(auditData).map((key) => {
-                return (
-                  <RequestType key={key} name={key} data={auditData[key]} />
-                );
+          {data
+            ? Object.keys(data).map((key) => {
+                return <RequestType key={key} name={key} data={data[key]} />;
               })
             : null}
         </div>
@@ -83,9 +112,24 @@ export default async function AuditPage({
   );
 }
 
-function formatBodyText(section: Section, data: AuditData): React.ReactNode {
+function formatSection(
+  section: Section,
+  data: AuditData,
+  highlightData: boolean,
+): React.ReactNode {
   if (!section.isShowing(data)) {
-    return <span className="text-red-500">Not showing</span>;
+    if (highlightData) {
+      return (
+        <div
+          id={humanToKebab(section.header)}
+          className="my-4 font-bold text-green-600"
+        >
+          Not showing {section.header}
+        </div>
+      );
+    } else {
+      return null;
+    }
   }
 
   const input = dedent(section.body(data));
@@ -95,18 +139,18 @@ function formatBodyText(section: Section, data: AuditData): React.ReactNode {
 
   let match;
   while ((match = regex.exec(input)) !== null) {
-    // Append the text before the bracket
     if (lastIndex < match.index) {
       output.push(input.slice(lastIndex, match.index));
     }
 
-    // Check if the match is a newline character
     if (match[0] === '\n') {
       output.push(<br key={match.index} />);
     } else {
-      // Append JSX span element
       output.push(
-        <span key={match.index} className="text-yellow-500">
+        <span
+          key={match.index}
+          className={highlightData ? 'text-green-600' : ''}
+        >
           {match[1]}
         </span>,
       );
@@ -115,12 +159,18 @@ function formatBodyText(section: Section, data: AuditData): React.ReactNode {
     lastIndex = regex.lastIndex;
   }
 
-  // Append remaining text after the last match
   if (lastIndex < input.length) {
     output.push(input.slice(lastIndex));
   }
 
-  return output;
+  return (
+    <div className="my-4">
+      <div id={humanToKebab(section.header)} className="font-bold text-black">
+        {section.header}
+      </div>
+      <p className="text-gray-700">{output}</p>
+    </div>
+  );
 }
 
 function RequestType({
@@ -178,5 +228,125 @@ function RowValOutput({ name, val }: { name: string; val: unknown }) {
     <li className={clsx(isMissing ? 'text-red-600' : '')}>
       {name}: {isMissing ? 'MISSING' : out}
     </li>
+  );
+}
+
+function buildTableRow({
+  name,
+  value,
+  bold,
+  indent,
+  borderBottom,
+  padTop,
+  key,
+}: {
+  name: string;
+  value?: string;
+  bold?: boolean;
+  indent?: boolean;
+  borderBottom?: boolean;
+  padTop?: boolean;
+  key: number;
+}) {
+  return (
+    <tr
+      key={key}
+      className={clsx(
+        padTop ? 'pt-4' : '',
+        borderBottom ? 'border-b' : '',
+        bold ? 'font-bold' : '',
+      )}
+    >
+      <td className={clsx(indent ? 'pl-4' : '')}>{name}</td>
+      <td className="text-right">{value}</td>
+    </tr>
+  );
+}
+
+function TableOfContents({
+  data,
+  orgSettings,
+  policySettings,
+  highlightData,
+}: {
+  data: AuditData;
+  orgSettings: Section[];
+  policySettings: Section[];
+  highlightData: boolean;
+}) {
+  return (
+    <div className="flex-col">
+      <a
+        href="#section-balance-sheet"
+        className="block text-slate-700 underline hover:no-underline"
+      >
+        1. Balance Sheet
+      </a>
+      <a
+        href="#section-org"
+        className="block text-slate-700 underline hover:no-underline"
+      >
+        2. Organization
+      </a>
+      {orgSettings.map((section, idx) => (
+        <ToCLink
+          key={idx}
+          section={section}
+          data={data}
+          highlightData={highlightData}
+        />
+      ))}
+      <a
+        href="#2. section-policy"
+        className="block text-slate-700 underline hover:no-underline"
+      >
+        3. Summary of Significant Accounting Policies
+      </a>
+      {policySettings.map((section, idx) => (
+        <ToCLink
+          key={idx}
+          section={section}
+          data={data}
+          highlightData={highlightData}
+        />
+      ))}
+    </div>
+  );
+  // <div className="flex flex-col">
+  //   {data.balanceSheet.map((section, idx) => (
+  //     <div key={idx} className="flex space-x-2">
+  //       <a href={`#${humanToKebab(section.name)}`}>{section.name}</a>
+  //       <a href={`#${humanToKebab(section
+}
+function ToCLink({
+  section,
+  data,
+  highlightData,
+}: {
+  section: Section;
+  data: AuditData;
+  highlightData: boolean;
+}) {
+  if (!section.isShowing(data)) {
+    if (highlightData) {
+      return (
+        <a
+          href={`#${humanToKebab(section.header)}`}
+          className="ml-4 block  text-green-600 underline hover:no-underline"
+        >
+          Not showing {section.header}
+        </a>
+      );
+    } else {
+      return null;
+    }
+  }
+  return (
+    <a
+      href={`#${humanToKebab(section.header)}`}
+      className="ml-4 block text-slate-700 underline hover:no-underline"
+    >
+      {section.header}
+    </a>
   );
 }
