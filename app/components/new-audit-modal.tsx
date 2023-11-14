@@ -44,7 +44,7 @@ export default function NewAuditModal() {
       year: data.year,
       hasDemoData: data.hasDemoData,
     });
-    router.push(`/audit/${audit.id}`);
+    router.push(`/audit/${audit.id}/request/basic-info`);
   }
 
   return (
