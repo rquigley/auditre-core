@@ -39,7 +39,6 @@ export default async function AuditPage({
 
   const data = await getAuditData(auditId);
   const highlightData = searchParams['show-changes'] === '1';
-  console.log('shit', highlightData);
   return (
     <div className="m-5">
       <div className="mb-4 flex space-x-7">
@@ -80,9 +79,14 @@ export default async function AuditPage({
         className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
       >
         <h2 className="text-lg font-bold">2. Organization</h2>
-        {orgSettings.map((section, idx) =>
-          formatSection(section, data, highlightData),
-        )}
+        {orgSettings.map((section, idx) => (
+          <DataSection
+            section={section}
+            data={data}
+            highlightData={highlightData}
+            key={idx}
+          />
+        ))}
       </div>
 
       <div
@@ -92,9 +96,14 @@ export default async function AuditPage({
         <h2 className="text-lg font-bold">
           3. Summary of Significant Accounting Policies
         </h2>
-        {policySettings.map((section, idx) =>
-          formatSection(section, data, highlightData),
-        )}
+        {policySettings.map((section, idx) => (
+          <DataSection
+            section={section}
+            data={data}
+            highlightData={highlightData}
+            key={idx}
+          />
+        ))}
       </div>
 
       <DataModal>
@@ -112,11 +121,15 @@ export default async function AuditPage({
   );
 }
 
-function formatSection(
-  section: Section,
-  data: AuditData,
-  highlightData: boolean,
-): React.ReactNode {
+function DataSection({
+  section,
+  data,
+  highlightData,
+}: {
+  section: Section;
+  data: AuditData;
+  highlightData: boolean;
+}): React.ReactNode {
   if (!section.isShowing(data)) {
     if (highlightData) {
       return (
@@ -124,7 +137,7 @@ function formatSection(
           id={humanToKebab(section.header)}
           className="my-4 font-bold text-green-600"
         >
-          Not showing {section.header}
+          {section.header} (Not showing)
         </div>
       );
     } else {
@@ -312,12 +325,8 @@ function TableOfContents({
       ))}
     </div>
   );
-  // <div className="flex flex-col">
-  //   {data.balanceSheet.map((section, idx) => (
-  //     <div key={idx} className="flex space-x-2">
-  //       <a href={`#${humanToKebab(section.name)}`}>{section.name}</a>
-  //       <a href={`#${humanToKebab(section
 }
+
 function ToCLink({
   section,
   data,
@@ -334,7 +343,7 @@ function ToCLink({
           href={`#${humanToKebab(section.header)}`}
           className="ml-4 block  text-green-600 underline hover:no-underline"
         >
-          Not showing {section.header}
+          {section.header} (Not showing)
         </a>
       );
     } else {
