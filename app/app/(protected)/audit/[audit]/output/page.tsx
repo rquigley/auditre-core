@@ -31,10 +31,10 @@ export default async function AuditPage({
       <div className="mt-4">
         <div className="font-lg border-b pb-1 mb-3">Documents</div>
         {documents.map((document) => (
-          <>
-            <Row auditId={audit.id} document={document} key={document.id} />
+          <div key={document.id}>
+            <Row auditId={audit.id} document={document} />
             <div className="w-48 border-b my-4"></div>
-          </>
+          </div>
         ))}
       </div>
     </div>
