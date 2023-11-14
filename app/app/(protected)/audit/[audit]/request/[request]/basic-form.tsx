@@ -1,7 +1,6 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -20,7 +19,7 @@ import {
 import { nl2br } from '@/components/nl2br';
 import SaveNotice from '@/components/save-notice';
 import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
-import { classNames, delay, isFieldVisible } from '@/lib/util';
+import { classNames, isFieldVisible } from '@/lib/util';
 
 import type { Request } from '@/controllers/request';
 import type { AuditId, DocumentId, RequestData } from '@/types';
@@ -48,7 +47,6 @@ export function BasicForm({
   saveData,
   documents,
 }: Props) {
-  const router = useRouter();
   const [showSuccess, setShowSuccess] = useState(false);
   const schema = getSchemaForId(request.id);
 
@@ -75,7 +73,6 @@ export function BasicForm({
   async function onSubmit(data: z.infer<typeof schema>) {
     await saveData(data);
     toast.success('Request saved');
-    // router.push(`/audit/${auditId}`);
   }
 
   let enableSubmit;
