@@ -15,7 +15,7 @@ export default async function AuditPage({
   }
   const audit = await getByIdForClientCached(id);
 
-  if (audit.orgId !== user.orgId) {
+  if (!audit || audit.orgId !== user.orgId) {
     return notFound();
   }
 

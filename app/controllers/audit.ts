@@ -34,7 +34,11 @@ export async function getByIdForClient(auditId: AuditId) {
     .select(['id', 'name', 'createdAt', 'orgId'])
     .where('id', '=', auditId)
     .where('isDeleted', '=', false)
-    .executeTakeFirstOrThrow();
+    .executeTakeFirst();
+
+  if (!audit) {
+    return undefined;
+  }
 
   const yearRes = await getDataForRequestAttribute(
     audit.id,
