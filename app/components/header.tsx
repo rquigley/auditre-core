@@ -136,8 +136,8 @@ function SettingsItems({ options }: { options: React.ReactNode }) {
       leaveFrom="transform opacity-100 scale-100"
       leaveTo="transform opacity-0 scale-95"
     >
-      <Menu.Items className="absolute left-0 z-10 w-52 origin-top-left  rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-        <div className="py-1">{options}</div>
+      <Menu.Items className="absolute left-0 w-52 origin-top-left divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        {options}
       </Menu.Items>
     </Transition>
   );
@@ -149,33 +149,38 @@ export function AuditSettings({ auditId }: { auditId: string }) {
 
   return (
     <>
-      <Menu.Item>
-        {({ active }) => (
-          <Link
-            href={`/audit/${auditId}/settings`}
-            className={clsx(
-              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-              'block px-4 py-2 text-xs',
-            )}
-          >
-            Edit audit...
-          </Link>
-        )}
-      </Menu.Item>
-      <Menu.Item>
-        {({ active }) => (
-          <a
-            href="#"
-            onClick={() => router.push(pathname + '?delete-audit=1')}
-            className={clsx(
-              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-              'block px-4 py-2 text-xs',
-            )}
-          >
-            Delete
-          </a>
-        )}
-      </Menu.Item>
+      <div className="px-1 py-1">
+        <Menu.Item>
+          {({ active }) => (
+            <Link
+              href={`/audit/${auditId}/settings`}
+              className={clsx(
+                active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                'group flex w-full items-center rounded-md px-4 py-2 text-xs',
+              )}
+            >
+              Edit audit...
+            </Link>
+          )}
+        </Menu.Item>
+      </div>
+
+      <div className="px-1 py-1">
+        <Menu.Item>
+          {({ active }) => (
+            <button
+              type="button"
+              onClick={() => router.push(pathname + '?delete-audit=1')}
+              className={clsx(
+                active ? 'bg-gray-100 text-red-500' : 'text-red-600',
+                'group flex w-full items-center rounded-md px-4 py-2 text-xs',
+              )}
+            >
+              Delete
+            </button>
+          )}
+        </Menu.Item>
+      </div>
     </>
   );
 }

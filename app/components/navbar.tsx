@@ -66,6 +66,7 @@ export function Navbar({
 
       {/* Full background on limited width screen when menu enabled */}
       <div
+        onClick={() => setSidebarOpen(false)}
         className={clsx(
           sidebarOpen
             ? 'inset-0 h-screen w-screen opacity-100 absolute'
@@ -146,15 +147,15 @@ function OrgMenuItems() {
       leaveFrom="transform opacity-100 scale-100"
       leaveTo="transform opacity-0 scale-95"
     >
-      <Menu.Items className="absolute left-4 z-10 mt-2 w-52 origin-top-left  rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-        <div className="py-1">
+      <Menu.Items className="absolute left-4 mt-2 w-52 origin-top-left divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <div className="px-1 py-1">
           <Menu.Item>
             {({ active }) => (
               <Link
                 href="#"
                 className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block px-4 py-2 text-xs',
+                  'block px-4 py-2 text-xs rounded-md',
                 )}
               >
                 Switch workspace
@@ -167,7 +168,7 @@ function OrgMenuItems() {
                 href="/organization-settings"
                 className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block px-4 py-2 text-xs',
+                  'block px-4 py-2 text-xs rounded-md',
                 )}
               >
                 Workplace settings
@@ -191,15 +192,15 @@ function AccountMenuItems() {
       leaveFrom="transform opacity-100 scale-100"
       leaveTo="transform opacity-0 scale-95"
     >
-      <Menu.Items className="absolute left-4 z-10 mt-2 w-52 origin-top-left  rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-        <div className="py-1">
+      <Menu.Items className="absolute left-4 mt-2 w-52 origin-top-left divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <div className="px-1 py-1">
           <Menu.Item>
             {({ active }) => (
               <Link
                 href="/settings"
                 className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block px-4 py-2 text-xs',
+                  'block px-4 py-2 text-xs rounded-md',
                 )}
               >
                 Account settings
@@ -212,25 +213,27 @@ function AccountMenuItems() {
                 href="/support"
                 className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block px-4 py-2 text-xs',
+                  'block px-4 py-2 text-xs rounded-md',
                 )}
               >
                 Support
               </Link>
             )}
           </Menu.Item>
+        </div>
+        <div className="px-1 py-1">
           <Menu.Item>
             {({ active }) => (
-              <a
-                href="#"
+              <button
+                type="button"
                 onClick={() => signOut()}
                 className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block w-full px-4 py-2 text-left text-xs',
+                  'group flex w-full items-center rounded-md px-4 py-2 text-xs',
                 )}
               >
                 Sign out
-              </a>
+              </button>
             )}
           </Menu.Item>
         </div>
