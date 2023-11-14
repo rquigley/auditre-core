@@ -11,8 +11,7 @@ async function main() {
   for (let m = 0; m < 1000; m++) {
     const org = await createOrg({ name: `test ${dn} org ${m}` });
     for (let n = 0; n < 5; n++) {
-      const user = await createUser({
-        orgId: org.id,
+      const user = await createUser(org.id, {
         email: `user${n}@test-${dn}-org${m}.debug`,
       });
       const audit = await createAudit({

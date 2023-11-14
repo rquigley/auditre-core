@@ -15,10 +15,11 @@ export default async function AuditLayout({
   params: { audit: string };
   children: React.ReactNode;
 }) {
-  const userP = getCurrent();
-  const auditP = getByIdForClientCached(auditId);
-
-  const [user, audit] = await Promise.all([userP, auditP]);
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
+  const audit = await getByIdForClientCached(auditId);
   if (audit.orgId !== user.orgId) {
     return notFound();
   }

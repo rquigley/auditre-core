@@ -12,15 +12,19 @@ import { ChartOfAccounts } from './chart-of-accounts';
 
 import type { Props as BasicFormProps } from './basic-form';
 import type { Request } from '@/controllers/request';
-import type { AuditId, DocumentId, User } from '@/types';
+import type { AuditId, DocumentId, UserId } from '@/types';
 
 type Props = {
   request: Request;
-  user: User;
+  userId: UserId;
   auditId: AuditId;
 };
 
-export default async function FormContainer({ request, user, auditId }: Props) {
+export default async function FormContainer({
+  request,
+  userId,
+  auditId,
+}: Props) {
   async function saveData(data: Record<string, unknown>) {
     'use server';
 
@@ -28,7 +32,7 @@ export default async function FormContainer({ request, user, auditId }: Props) {
       auditId: auditId,
       requestType: request.id,
       data: data,
-      actorUserId: user.id,
+      actorUserId: userId,
     });
 
     revalidatePath(`/audit/${auditId}/request/${request.id}`);

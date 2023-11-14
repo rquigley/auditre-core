@@ -15,10 +15,13 @@ export default async function RequestPage({
 }: {
   params: { audit: AuditId; request: string };
 }) {
-  const userP = getCurrent();
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
   const auditP = getAuditById(auditId);
   const requestP = getRequestBySlug(auditId, requestSlug);
-  const [user, audit, request] = await Promise.all([userP, auditP, requestP]);
+  const [audit, request] = await Promise.all([auditP, requestP]);
 
   if (!request || !audit || audit.orgId !== user.orgId) {
     return notFound();
@@ -28,7 +31,7 @@ export default async function RequestPage({
     <div className="m-8 mt-7">
       <Suspense fallback={<PageSpinner />}>
         <h1 className="text-lg mb-4 leading-6 text-gray-900">{request.name}</h1>
-        <FormContainer request={request} user={user} auditId={auditId} />
+        <FormContainer request={request} userId={user.id} auditId={auditId} />
       </Suspense>
       <h2 className="text-sm font-semibold leading-6 text-gray-900">
         Activity

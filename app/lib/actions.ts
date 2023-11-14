@@ -24,7 +24,7 @@ import {
   process as processDocument,
 } from '@/controllers/document';
 import { create as addRequestData } from '@/controllers/request-data';
-import { getCurrent } from '@/controllers/session-user';
+import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
 import { getPresignedUrl } from '@/lib/aws';
 import { getRequestTypeForId } from '@/lib/request-types';
 
@@ -63,7 +63,10 @@ export async function createAudit(rawData: {
   year: string;
   hasDemoData: boolean;
 }) {
-  const user = await getCurrent();
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
 
   const data = newAuditSchema.parse(rawData);
 
@@ -97,10 +100,13 @@ const auditSchema = z.object({
 });
 
 export async function updateAudit(auditId: AuditId, rawData: { name: string }) {
-  const user = await getCurrent();
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
   const audit = await getAuditById(auditId);
   if (audit.orgId !== user.orgId) {
-    throw new Error('Unauthorized');
+    throw new UnauthorizedError();
   }
 
   const { name } = auditSchema.parse(rawData);
@@ -115,10 +121,13 @@ export async function updateAudit(auditId: AuditId, rawData: { name: string }) {
 }
 
 export async function deleteAudit(auditId: AuditId) {
-  const user = await getCurrent();
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
   const audit = await getAuditById(auditId);
   if (audit.orgId !== user.orgId) {
-    throw new Error('Unauthorized');
+    throw new UnauthorizedError();
   }
 
   await updateAuditById(auditId, {
@@ -141,7 +150,10 @@ const fileSchema = z.object({
   lastModified: z.number(),
 });
 export async function createDocument(file: S3File) {
-  const user = await getCurrent();
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
 
   const data = fileSchema.parse(file);
   const doc = await _createDocument({
@@ -199,10 +211,13 @@ export async function getDocumentStatus(id: DocumentId) {
 }
 
 export async function deleteDocument(id: DocumentId) {
-  const user = await getCurrent();
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
   const document = await getDocumentById(id);
   if (document.orgId !== user.orgId) {
-    throw new Error('Unauthorized');
+    throw new UnauthorizedError();
   }
 
   await _deleteDocument(id);
@@ -220,8 +235,10 @@ export async function getPresignedUploadUrl({
   filename: string;
   contentType: string;
 }) {
-  const user = await getCurrent();
-
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
   const filename = filenameSchema.parse(unsanitizedFilename);
   const bucket = bucketSchema.parse(process.env.AWS_S3_BUCKET);
   const contentType = contentTypeSchema.parse(unsanitizedContentType);
@@ -240,32 +257,17 @@ export async function getPresignedUploadUrl({
   };
 }
 
-// export async function processChartOfAccounts(
-//   id: DocumentId,
-//   auditId: AuditId,
-// ): Promise<void> {
-//   const user = await getCurrent();
-//   const document = await getDocumentById(id);
-//   if (document.orgId !== user.orgId) {
-//     throw new Error('Unauthorized');
-//   }
-
-//   if (document.classifiedType !== 'CHART_OF_ACCOUNTS') {
-//     throw new Error(
-//       `Invalid document type for Chart of Accounts: ${document.classifiedType}`,
-//     );
-//   }
-//   await extractChartOfAccountsMapping(document, auditId);
-// }
-
 // export async function selectDocumentForRequest(
 //   id: DocumentId,
 //   field: string,
 // ): Promise<void> {
-//   const user = await getCurrent();
+// const { user } = await getCurrent();
+// if (!user) {
+//   throw new UnauthorizedError();
+// }
 //   const document = await getDocumentById(id);
 //   if (document.orgId !== user.orgId) {
-//     throw new Error('Unauthorized');
+//     throw new UnauthorizedError();
 //   }
 //   if (!document.requestId) {
 //     throw new Error('Document is not bound to a request');

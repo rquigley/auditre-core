@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Fragment } from 'react';
 
 import { getByIdForClientCached } from '@/controllers/audit';
@@ -12,11 +12,14 @@ export default async function AuditPage({
 }: {
   params: { audit: string };
 }) {
-  const userP = await getCurrent();
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
   const auditP = await getByIdForClientCached(auditId);
   const requestsP = await getAllByAuditId(auditId);
 
-  const [user, audit, requests] = await Promise.all([userP, auditP, requestsP]);
+  const [audit, requests] = await Promise.all([auditP, requestsP]);
 
   if (audit.orgId !== user.orgId) {
     return notFound();

@@ -13,7 +13,10 @@ export async function GET(
     params: { document: string };
   },
 ) {
-  const user = await getCurrent();
+  const { user } = await getCurrent();
+  if (!user) {
+    return notFound();
+  }
   const document = await getById(id);
   if (document.orgId !== user.orgId) {
     return notFound();

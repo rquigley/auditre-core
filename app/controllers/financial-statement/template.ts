@@ -1,5 +1,5 @@
-import { stripIndent } from 'common-tags';
 import dayjs from 'dayjs';
+import dedent from 'dedent';
 
 import type { AuditData } from '../audit-output';
 
@@ -68,7 +68,7 @@ export function sectionsToBody<T>(
       ret.push(
         ...wrapper({
           header: sections[s].header,
-          body: stripIndent(sections[s].body(data)),
+          body: dedent(sections[s].body(data)),
           pageBreakBefore: sections[s].pageBreakBefore,
         }),
       );

@@ -9,10 +9,12 @@ import {
   getAllForRequest as getAllCommentsForRequest,
 } from '@/controllers/comment';
 import { getChangesForRequestType } from '@/controllers/request-data';
+import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
 import CommentForm from './comment-form';
 
 import type { Request } from '@/controllers/request';
-import type { AuditId, User } from '@/types';
+import type { SessionUser } from '@/controllers/session-user';
+import type { AuditId } from '@/types';
 
 const schema = z.object({
   comment: z.string().max(500),
@@ -25,12 +27,17 @@ export default async function Activity({
 }: {
   auditId: AuditId;
   request: Request;
-  user: User;
+  user: SessionUser;
 }) {
   const feed = await getFeed(auditId, request);
 
   async function saveData(dataRaw: z.infer<typeof schema>) {
     'use server';
+
+    const { user } = await getCurrent();
+    if (!user) {
+      throw new UnauthorizedError();
+    }
 
     const data = schema.parse(dataRaw);
 

@@ -6,10 +6,12 @@ import { getAllByOrgId } from '@/controllers/audit';
 import { getCurrent } from '@/controllers/session-user';
 
 export default async function Home() {
-  const user = await getCurrent();
-
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
   const audits = await getAllByOrgId(user.orgId);
-  console.log(audits);
+
   return (
     <>
       <Header title="Home" />
