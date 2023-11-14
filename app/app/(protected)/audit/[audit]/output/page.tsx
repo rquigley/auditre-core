@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 
-import { PrimaryButton } from '@/components/button';
 import { getByIdForClientCached } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/document';
 import { getCurrent } from '@/controllers/session-user';
+import { GenerateFinancialStatementButton } from './generate-financial-statement-button';
 import Row from './row';
 
 export default async function AuditPage({
@@ -25,10 +25,7 @@ export default async function AuditPage({
   return (
     <div className="m-5">
       <div className="mt-4 flex">
-        <PrimaryButton
-          href={`/audit/${audit.id}/generate`}
-          label="Generate Financial Statement"
-        />
+        <GenerateFinancialStatementButton auditId={audit.id} />
       </div>
 
       <div className="mt-4">
