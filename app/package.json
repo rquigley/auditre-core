@@ -55,7 +55,6 @@
     "@testing-library/react": "14.1.0",
     "@total-typescript/ts-reset": "0.5.1",
     "@types/async-retry": "1.4.8",
-    "@types/common-tags": "1.8.4",
     "@types/jest": "29.5.8",
     "@types/mime-types": "2.1.4",
     "@types/node": "20.9.0",
