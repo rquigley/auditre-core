@@ -38,6 +38,14 @@ export async function createUser(
       .returningAll()
       .executeTakeFirstOrThrow();
 
+    await trx
+      .insertInto('userCurrentOrg')
+      .values({
+        userId: userRes.id,
+        orgId,
+      })
+      .execute();
+
     return {
       id: userRes.id,
       name: userRes.name,
@@ -213,6 +221,7 @@ export async function getUserRole(
     .select('role')
     .where('userId', '=', userId)
     .where('orgId', '=', orgId)
+    .where('isDeleted', '=', false)
     .executeTakeFirst();
   return res?.role;
 }

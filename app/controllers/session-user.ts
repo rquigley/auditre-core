@@ -1,5 +1,6 @@
 import { unstable_cache } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -12,7 +13,11 @@ export type SessionUser = Pick<User, 'id' | 'name' | 'email' | 'image'> & {
   role: UserRole['role'];
 };
 
-export async function getCurrent(): Promise<
+export const getCurrent = cache(async () => {
+  return await _getCurrent();
+});
+
+export async function _getCurrent(): Promise<
   | {
       user: SessionUser;
       authRedirect: undefined;
@@ -23,56 +28,41 @@ export async function getCurrent(): Promise<
     }
 > {
   const session = await auth();
-  if (!session) {
-    return {
-      user: undefined,
-      authRedirect: () => redirect('/login'),
-    };
-  }
+  if (session) {
+    // @ts-expect-error
+    const userId: UserId | undefined = session?.user?.id;
+    if (userId) {
+      const user = await getByIdCached(userId);
+      if (user) {
+        const orgId = await getCurrentOrgId(user.id);
+        if (!orgId) {
+          return {
+            user: undefined,
+            authRedirect: () => redirect('/org-select'),
+          };
+        }
+        const role = await getUserRole(user.id, orgId);
+        if (role) {
+          const sessionUser: SessionUser = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            orgId,
+            role,
+          };
 
-  // @ts-expect-error
-  const userId: UserId | undefined = session?.user?.id;
-  if (!userId) {
-    return {
-      user: undefined,
-      authRedirect: () => redirect('/login'),
-    };
+          return {
+            user: sessionUser,
+            authRedirect: undefined,
+          };
+        }
+      }
+    }
   }
-  const user = await getByIdCached(userId);
-  if (!user) {
-    return {
-      user: undefined,
-      authRedirect: () => redirect('/login'),
-    };
-  }
-
-  const orgId = await getCurrentOrgId(user.id);
-  if (!orgId) {
-    return {
-      user: undefined,
-      authRedirect: () => redirect('/org-select'),
-    };
-  }
-  const role = await getUserRole(user.id, orgId);
-  if (!role) {
-    return {
-      user: undefined,
-      authRedirect: () => redirect('/login'),
-    };
-  }
-
-  const sessionUser: SessionUser = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    image: user.image,
-    orgId,
-    role,
-  };
-
   return {
-    user: sessionUser,
-    authRedirect: undefined,
+    user: undefined,
+    authRedirect: () => redirect('/login'),
   };
 }
 
