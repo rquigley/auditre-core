@@ -17,6 +17,7 @@ export type DocumentQueryId = string;
 export type DocumentQueueId = number;
 export type InvitationId = string;
 export type OrgId = string;
+export type UserRoleId = string;
 export type RequestDataId = number;
 export type UserAccountId = number;
 export type UserId = string;
@@ -36,7 +37,6 @@ export type Actor = { userId: UserId; type: 'USER' } | { type: 'SYSTEM' };
 
 export interface UserTable {
   id: GeneratedAlways<UserId>;
-  orgId: OrgId;
   name: string | null;
   email: string | null;
   emailVerified: Date | null;
@@ -48,6 +48,29 @@ export interface UserTable {
 export type UserUpdate = Updateable<UserTable>;
 export type NewUser = Insertable<UserTable>;
 export type User = Selectable<UserTable>;
+
+export interface UserRoleTable {
+  id: GeneratedAlways<UserRoleId>;
+  userId: UserId;
+  orgId: OrgId;
+  role: 'user' | 'admin' | 'owner';
+  createdAt: ColumnType<Date, string | undefined, never>;
+  isDeleted: ColumnType<boolean, never, boolean>;
+}
+
+export type UserRoleUpdate = Updateable<UserRoleTable>;
+export type NewUserRole = Insertable<UserRoleTable>;
+export type UserRole = Selectable<UserRoleTable>;
+
+export interface UserCurrentOrgTable {
+  userId: UserId;
+  orgId: OrgId;
+  createdAt: ColumnType<Date, string | undefined, never>;
+}
+
+export type UserCurrentOrgUpdate = Updateable<UserCurrentOrgTable>;
+export type NewUserCurrentOrg = Insertable<UserCurrentOrgTable>;
+export type UserCurrentOrg = Selectable<UserCurrentOrgTable>;
 
 export interface InvitationTable {
   id: GeneratedAlways<InvitationId>;
@@ -307,6 +330,8 @@ export interface Database extends Kysely<Database> {
   session: SessionTable;
   user: UserTable;
   userAccount: UserAccountTable;
+  userCurrentOrg: UserCurrentOrgTable;
+  userRole: UserRoleTable;
   verificationToken: VerificationTokenTable;
 }
 

@@ -6,6 +6,12 @@ import { getByEmail as getUserByEmail } from '@/controllers/user';
 //import GitHubProvider from 'next-auth/providers/github';
 import { AuthAdapter } from '@/lib/auth-adapter';
 
+import type {
+  AdapterAccount,
+  AdapterSession,
+  AdapterUser,
+} from '@auth/core/adapters';
+
 export const {
   handlers: { GET, POST },
   auth,
@@ -80,23 +86,27 @@ export const {
     //   return token;
     // },
     // https://next-auth.js.org/configuration/callbacks#session-callback
-    // session: async ({
-    //   session,
-    //   token,
-    //   user,
-    // }: {
-    //   session: any;
-    //   token: any;
-    //   user: unknown;
-    // }) => {
-    //   console.log('session callback', { session, token, user });
-    //   session.user = {
-    //     ...session.user,
-    //     id: token.sub,
-    //     username: token?.user?.username || token?.user?.gh_username,
-    //   };
-    //   return session;
-    // },
+    // @ts-expect-error
+    session: async ({
+      session,
+      token,
+      user,
+    }: {
+      session: { user: AdapterUser; expires: string };
+      token: unknown;
+      user: AdapterUser;
+    }) => {
+      // console.log('session callback', { session, token, user });
+      session.user = {
+        ...session.user,
+        id: user.id,
+        // username: token?.user?.username || token?.user?.gh_username,
+      };
+      //console.log(user);
+      // session.user.id = user.id;
+      // session.orgId = 'this is going to be the selected orgId';
+      return session;
+    },
     // redirect: async ({ url, baseUrl }) => {
     //   console.log('redirect callback', { url, baseUrl });
     // },

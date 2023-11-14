@@ -9,8 +9,6 @@ import { Navbar } from '@/components/navbar';
 import { PageSpinner } from '@/components/spinner';
 import { getById as getOrgById } from '@/controllers/org';
 import { getCurrent } from '@/controllers/session-user';
-import { setPostAuthUrl } from '@/lib/actions';
-import Redirector from './redirector';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
@@ -23,21 +21,11 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let user;
-  try {
-    user = await getCurrent();
-  } catch (err) {}
-
+  const { user, authRedirect } = await getCurrent();
   if (!user) {
-    return (
-      <html lang="en" className={inter.className}>
-        <link rel="icon shortcut" href="/img/favicon.ico" type="image/x-icon" />
-        <body className="h-full bg-slate-100">
-          <Redirector setPostAuthUrl={setPostAuthUrl} />
-        </body>
-      </html>
-    );
+    return authRedirect();
   }
+
   const org = await getOrgById(user.orgId);
 
   return (

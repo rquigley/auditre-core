@@ -12,7 +12,10 @@ import { getCurrent } from '@/controllers/session-user';
 import Row from './row';
 
 export default async function AuditsPage() {
-  const user = await getCurrent();
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
   const audits = getAllByOrgId(user.orgId);
 
   return (

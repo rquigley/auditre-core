@@ -15,7 +15,10 @@ export async function GET(
     params: { audit: string };
   },
 ) {
-  const user = await getCurrent();
+  const { user } = await getCurrent();
+  if (!user) {
+    return notFound();
+  }
   const audit = await getAuditById(auditId);
   if (audit.orgId !== user.orgId) {
     return notFound();

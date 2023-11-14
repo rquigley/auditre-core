@@ -36,11 +36,15 @@ import type {
   VerificationToken,
 } from '@auth/core/adapters';
 
-function userToAdapterUser(user: User) {
+function userToAdapterUser(
+  user: Pick<User, 'id' | 'name' | 'email' | 'image'> & {
+    emailVerified: Date | null;
+  },
+): AdapterUser {
   return {
     id: user.id,
     name: user.name,
-    email: user.email,
+    email: user.email || '',
     image: user.image,
     emailVerified: user.emailVerified,
   };
@@ -56,8 +60,7 @@ export function AuthAdapter(): Adapter {
       await updateInvite(invite.id, {
         isUsed: true,
       });
-      const user = await createUser({
-        orgId: invite.orgId,
+      const user = await createUser(invite.orgId, {
         name: data.name,
         email: data.email,
         image: data.image,
@@ -164,6 +167,7 @@ export function AuthAdapter(): Adapter {
         session: {
           ...session,
           expires,
+          bar: 'baz',
         } as AdapterSession,
       };
     },
