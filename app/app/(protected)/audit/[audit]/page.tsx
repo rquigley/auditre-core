@@ -21,7 +21,7 @@ export default async function AuditPage({
 
   const [audit, requests] = await Promise.all([auditP, requestsP]);
 
-  if (audit.orgId !== user.orgId) {
+  if (!audit || audit.orgId !== user.orgId) {
     return notFound();
   }
 

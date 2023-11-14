@@ -20,7 +20,7 @@ export default async function AuditLayout({
     return authRedirect();
   }
   const audit = await getByIdForClientCached(auditId);
-  if (audit.orgId !== user.orgId) {
+  if (!audit || audit.orgId !== user.orgId) {
     return notFound();
   }
 
