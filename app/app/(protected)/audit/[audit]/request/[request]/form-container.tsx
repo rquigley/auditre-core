@@ -60,19 +60,16 @@ export default async function FormContainer({
       data: <DocumentData documentId={id} />,
     }));
   }
-  let secondaryCmp;
 
+  let secondaryCmp;
+  let postSaveAction;
   if (request.id === 'chart-of-accounts') {
-    const selectedDocumentId = documents.documentId[0]?.id;
-    if (!selectedDocumentId) {
-      secondaryCmp = null;
-    } else {
-      secondaryCmp = (
-        <Suspense fallback={null}>
-          <ChartOfAccounts auditId={auditId} documentId={selectedDocumentId} />
-        </Suspense>
-      );
-    }
+    secondaryCmp = (
+      <Suspense fallback={null}>
+        <ChartOfAccounts auditId={auditId} />
+      </Suspense>
+    );
+    postSaveAction = 'chart-of-accounts';
   } else {
     secondaryCmp = null;
   }
@@ -85,6 +82,7 @@ export default async function FormContainer({
         dataMatchesConfig={uninitializedFields.length === 0}
         saveData={saveData}
         documents={documents}
+        postSaveAction={postSaveAction}
       />
       {secondaryCmp}
     </>

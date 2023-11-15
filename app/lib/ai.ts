@@ -38,12 +38,14 @@ export async function call({
   messages,
   requestedModel,
   stopSequences,
+  respondInJSON,
 }: {
   messages: OpenAIMessage[];
   requestedModel: OpenAIModel;
   stopSequences?: string[];
+  respondInJSON?: boolean;
 }): Promise<{
-  message: string;
+  message: unknown;
   model: OpenAIModel;
   usage: DocumentQueryUsage;
 }> {
@@ -59,6 +61,7 @@ export async function call({
       model: requestedModel,
       messages,
       stop: stopSequences || undefined,
+      response_format: { type: respondInJSON ? 'json_object' : 'text' },
     });
   } catch (error) {
     if (error instanceof OpenAI.APIError) {
@@ -95,9 +98,14 @@ export async function call({
     totalTokens: resp.usage?.total_tokens || 0,
     timeMs: t1 - t0,
   };
-
+  let message;
+  if (respondInJSON) {
+    message = JSON.parse(resp.choices[0].message.content || '');
+  } else {
+    message = resp.choices[0].message.content || '';
+  }
   return {
-    message: resp.choices[0].message.content || '',
+    message,
     model: requestedModel,
     usage,
   };

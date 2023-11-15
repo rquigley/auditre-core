@@ -1,16 +1,28 @@
 import dedent from 'dedent';
 
+import { extractChartOfAccountsMapping } from '@/controllers/account-mapping';
 import { head } from '@/lib/util';
-import { balanceSheetTypes } from './consolidated-balance-sheet';
 
-export type AIQuestion = {
+import type { Document } from '@/types';
+
+// import { balanceSheetTypes } from './consolidated-balance-sheet';
+
+export interface AIQuestionBasic {
   id: string;
   label?: string;
   question: string;
   model?: string;
   preProcess?: (val: string) => string;
   validate?: (val: string) => boolean;
-};
+  respondInJSON?: boolean;
+}
+export interface AIQuestionCustom {
+  id: string;
+  label?: string;
+  fn: (document: Document) => Promise<void>;
+}
+
+export type AIQuestion = AIQuestionBasic | AIQuestionCustom;
 
 export const documentAiQuestions: Record<
   string,
@@ -48,55 +60,42 @@ export const documentAiQuestions: Record<
   CHART_OF_ACCOUNTS: {
     questions: [
       {
-        id: 'accountNameColumn',
-        preProcess: (val: string) => head(val, 10),
+        id: 'columnMappings',
+        preProcess: (val: string) => head(val, 6),
         question: dedent`
-                In this CSV content which column number contains account names? Think carefully before answering.
-                We don't want account types or any other. Return JSON with "columnName" and "columnNum".
-                If you are unsure return "-" for values
-                `,
+            In this CSV content extract the following column properties:
+
+            1. accountIdLabel and accountIdColumnIdx
+            Which column contains the account IDs? What is it called? The columns are often named 'ID', 'Account No.' or 'Code'. It is usually the first or second column and values for rows likely contain numbers.
+            If you can't find an account ID column, set accountIdLabel to '' and accountIdColumnIdx to -1
+
+            2. accountNameLabel and accountNameColumnIdx
+            Which column contains the account names? What is it called? The columns are often  labeled 'Account', 'Account Name', 'Name'. It is usually the first or second column and values for rows likely contain letters.
+            If you can't find an account name column, set accountNameLabel to '' and accountNameColumnIdx to -1
+
+            Return JSON with these four properties. Example:
+            """Input CSV
+            *Code,*Name,*Type,*Tax Code,Description,Dashboard,Expense Claims,Enable Payments,Balance\r                                                                                                                                                                                                                                                                                                                                                                                                                  +
+            1200,Accounts Receivable,Accounts Receivable,Tax Exempt (0%),Outstanding invoices the company has issued out to the client but has not yet received in cash at balance date.,No,No,No,\r                                                                                                                                                                                                                                                                                                                    +
+            1300,Prepayments,Current Asset,Tax Exempt (0%),An expenditure tha...
+            """
+
+            """Output JSON
+            {
+              "accountIdLabel": "*Code",
+              "accountIdColumnIdx": 0,
+              "accountNameLabel": "*Name",
+              "accountNameColumnIdx": 1
+            }
+            """
+            `,
+        respondInJSON: true,
         //model: 'gpt-4',
       },
-      {
-        id: 'accountMapping',
-        question: dedent`
-              For each row in the Chart of Accounts CSV, perform the following steps to generate a JSON-formatted output:
-
-              1. Account Name/ID
-              Look for the 'Account Name' in columns such as 'Full name,' 'Account Name,' 'Account /Parent Account,' etc.
-              If an 'Account ID' exists in columns like 'Account Number,' include it in the JSON object under the key id.
-
-              2. Type of Account
-              Use conditional logic to classify the type of account to one of the following ACCOUNT_TYPE:
-               ${Object.keys(balanceSheetTypes).join(', ')}
-
-              If unable to classify to one of these types, flag the entry for manual review.
-
-              For example:
-                  If 'Account Subtype' or 'Account Sub Type' is 'Cash on hand,' classify as ASSET_CASH.
-                  If 'Account Name' contains 'Receivable,' classify as LIABILITY_ACCOUNTS_PAYABLE.
-                  If there is a negative balance for the account, it is likely a LIABILITY_* type. If there is a positive balance, it is likely an ASSET_* type.
-              Utilize the 'Account Description' and any other info in the row if available for additional context.
-              If unable to classify with confidence to an [ACCOUNT_TYPE], set it to '-'
-
-              Output Format:
-
-              Output should be in JSON format using the following structure:
-
-                If 'Account ID' exists:
-
-                json
-                  [{ "id": "[ACCOUNT_ID]", "name": "[ACCOUNT_NAME]", "type": "[ACCOUNT_TYPE]"}, ...]
-
-              Otherwise:
-
-                json
-                  [{ "name": "[ACCOUNT_NAME]", "type": "[ACCOUNT_TYPE]}", ...]
-
-
-                `,
-        model: 'gpt-4-1106-preview',
-      },
+      // {
+      //   id: 'accountMapping',
+      //   fn: extractChartOfAccountsMapping,
+      // },
     ],
   },
 };
