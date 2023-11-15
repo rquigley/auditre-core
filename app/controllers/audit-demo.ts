@@ -6,7 +6,10 @@ import { create as createDocument } from '@/controllers/document';
 import { create as createDocumentQuery } from '@/controllers/document-query';
 import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestAttribute } from '@/controllers/request-data';
-import { documentAiQuestions } from '@/lib/document-ai-questions';
+import {
+  AIQuestionBasic,
+  documentAiQuestions,
+} from '@/lib/document-ai-questions';
 
 import type { OpenAIMessage } from '@/lib/ai';
 import type { AuditId, OrgId, UserId } from '@/types';
@@ -323,7 +326,9 @@ async function createDemoDocument({
   });
 
   if (documentAiQuestions[classifiedType]) {
-    const questions = documentAiQuestions[classifiedType].questions;
+    const questions = documentAiQuestions[classifiedType].questions.filter(
+      (q) => 'question' in q,
+    ) as AIQuestionBasic[];
     for (const qConfig of questions) {
       const messages: OpenAIMessage[] = [
         {
