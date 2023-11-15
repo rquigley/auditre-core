@@ -1,12 +1,8 @@
-// import { string } from 'zod';
 import * as Sentry from '@sentry/nextjs';
-import { inferSchema, initParser } from 'udsv';
 
-import { createAccountMapping } from '@/controllers/account-mapping';
 import {
   askDefaultQuestions,
   classifyDocument,
-  getByDocumentIdAndIdentifier,
 } from '@/controllers/document-query';
 import { getExtractedContent, NoSuchKey } from '@/lib/aws';
 import { db } from '@/lib/db';
@@ -14,7 +10,6 @@ import { delay } from '@/lib/util';
 import { getAllByDocumentId } from './document-queue';
 
 import type {
-  AccountType,
   AuditId,
   Document,
   DocumentId,
@@ -193,130 +188,4 @@ export async function getStatus(
 }
 
 // See PAGE_DELIMITER in core/ops-app/packages/extract-content-lambda/lambda_function.py
-const PAGE_DELIMITER = '-'.repeat(30) + '@@' + '-'.repeat(30);
-
-function getSheetData(document: Document) {
-  if (!document.extracted) {
-    throw new Error('Document has no extracted content');
-  }
-  let sheets = document.extracted.split(PAGE_DELIMITER);
-  let csvData;
-  let meta;
-  if (sheets.length === 1) {
-    // This is a CSV
-    csvData = sheets[0];
-    meta = {};
-  } else {
-    sheets = sheets.slice(1);
-    const lines = sheets[0].trim().split('\n');
-    const metaLine = lines[0];
-    if (metaLine.slice(0, 5) !== 'META:') {
-      throw new Error('Line 1 must be meta data');
-    }
-    meta = JSON.parse(metaLine.slice(5));
-    csvData = lines.slice(1).join('\n');
-  }
-
-  const schema = inferSchema(csvData);
-  const colIdxs = getColIdxs(schema);
-
-  const parser = initParser(schema);
-  const rows = parser.stringArrs(csvData);
-
-  return { meta, colIdxs, rows };
-}
-
-function getColIdxs(schema: ReturnType<typeof inferSchema>) {
-  if ('cols' in schema === false) {
-    throw new Error('Invalid schema');
-  }
-  const cols = schema.cols;
-  // TODO
-  return {
-    accountNumber: 0,
-    accountName: 1,
-  };
-}
-
-export async function extractChartOfAccountsMapping(
-  documentId: DocumentId,
-  auditId: AuditId,
-) {
-  const document = await getById(documentId);
-
-  if (document.classifiedType !== 'CHART_OF_ACCOUNTS') {
-    throw new Error('Invalid classified type');
-  }
-
-  const { meta, rows, colIdxs } = getSheetData(document);
-
-  let insertP = [];
-  for (const row of rows) {
-    const accountNumber = row[colIdxs.accountNumber];
-    const accountName = row[colIdxs.accountName];
-    if (!accountNumber || !accountName) {
-      continue;
-    }
-    insertP.push(
-      createAccountMapping({
-        auditId: auditId,
-        accountNumber,
-        accountName,
-        documentId: document.id,
-      }),
-    );
-  }
-  await Promise.allSettled(insertP);
-  await Promise.all(insertP);
-  // return;
-  // const mappingQuery = await getByDocumentIdAndIdentifier(
-  //   document.id,
-  //   'ACCOUNT_MAPPING',
-  // );
-  // if (!mappingQuery || !mappingQuery.result) {
-  //   return;
-  // }
-
-  // // const accountNameColumn = await getByDocumentIdAndIdentifier(
-  // //   document.id,
-  // //   'ACCOUNT_MAPPING',
-  // // );
-  // // if (!mappingQuery || !mappingQuery.result) {
-  // //   return;
-  // // }
-
-  // // let schema = inferSchema(document.extracted);
-  // // let parser = initParser(schema);
-
-  // // let stringArrs = parser.stringArrs(document.extracted);
-
-  // // console.log(stringArrs);
-
-  // let mapping;
-  // try {
-  //   mapping = JSON.parse(mappingQuery.result) as {
-  //     name: string;
-  //     type: AccountType | null;
-  //   }[];
-  // } catch (e) {
-  //   if (e instanceof SyntaxError) {
-  //     throw new Error('Invalid JSON');
-  //   }
-  // }
-  // if (!mapping || !mapping.length) {
-  //   return;
-  // }
-
-  // const amPromises = mapping.map(({ name, type }) => {
-  //   return createMapping({
-  //     documentId: document.id,
-  //     // orgId: document.orgId,
-  //     auditId: auditId,
-  //     accountId: name,
-  //     accountType: type,
-  //   });
-  // });
-
-  // await Promise.allSettled(amPromises);
-  // await Promise.all(amPromises);
-}
+export const PAGE_DELIMITER = '-'.repeat(30) + '@@' + '-'.repeat(30);

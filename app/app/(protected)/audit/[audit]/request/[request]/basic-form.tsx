@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
@@ -17,6 +17,7 @@ import {
   Year,
 } from '@/components/form-fields';
 import { nl2br } from '@/components/nl2br';
+import { extractAccountMapping } from '@/lib/actions';
 // import SaveNotice from '@/components/save-notice';
 import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
 import { classNames, isFieldVisible } from '@/lib/util';
@@ -37,6 +38,7 @@ export type Props = {
       data: JSX.Element;
     }>;
   };
+  postSaveAction: string | undefined;
 };
 
 export function BasicForm({
@@ -46,8 +48,9 @@ export function BasicForm({
   dataMatchesConfig,
   saveData,
   documents,
+  postSaveAction,
 }: Props) {
-  const [showSuccess, setShowSuccess] = useState(false);
+  // const [showSuccess, setShowSuccess] = useState(false);
   const schema = getSchemaForId(request.id);
 
   const {
@@ -72,7 +75,15 @@ export function BasicForm({
 
   async function onSubmit(data: z.infer<typeof schema>) {
     await saveData(data);
-    toast.success('Request saved');
+    if (postSaveAction === 'chart-of-accounts') {
+      toast.success('Chart of accounts saved. Extracting accounts...');
+
+      await extractAccountMapping(auditId);
+    } else if (postSaveAction) {
+      throw new Error(`Unknown postSaveAction: ${postSaveAction}`);
+    } else {
+      toast.success('Request saved');
+    }
   }
 
   let enableSubmit;
@@ -104,10 +115,6 @@ export function BasicForm({
               const deps = getFieldDependencies(field, request.form);
               const isVisibleA = deps.length ? watch(deps) : [true];
               const isVisible = isFieldVisible(field, isVisibleA, request.form);
-
-              // if (!isVisible) {
-              //   return <input type="hidden" key={field} {...register(field)} />;
-              // }
 
               return (
                 <div

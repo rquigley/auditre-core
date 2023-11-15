@@ -5,7 +5,7 @@ import { call, DEFAULT_OPENAI_MODEL } from '@/lib/ai';
 import { db } from '@/lib/db';
 import { documentAiQuestions } from '@/lib/document-ai-questions';
 import { requestTypes } from '@/lib/request-types';
-import { head, humanCase, isKey } from '@/lib/util';
+import { delay, head, humanCase } from '@/lib/util';
 
 import type { OpenAIMessage } from '@/lib/ai';
 import type { FormField } from '@/lib/request-types';
@@ -53,6 +53,25 @@ export async function getByDocumentIdAndIdentifier(
     .executeTakeFirst();
 }
 
+export async function pollGetByDocumentIdAndIdentifier(
+  documentId: DocumentId,
+  identifier: string,
+): Promise<DocumentQuery | undefined> {
+  for (let i = 0; i < 60; i++) {
+    const res = await getByDocumentIdAndIdentifier(documentId, identifier);
+    if (res) {
+      return res;
+    }
+    await delay(1000);
+    console.log(
+      `pollGetByDocumentIdAndIdentifier${
+        i === 59 ? ' (no response)' : ''
+      }: ${documentId}, ${identifier}`,
+    );
+  }
+  return undefined;
+}
+
 export async function getAllByDocumentId(
   documentId: DocumentId,
 ): Promise<DocumentQuery[]> {
@@ -82,12 +101,16 @@ export async function askQuestion({
   identifier,
   model = DEFAULT_OPENAI_MODEL,
   preProcess,
+  respondInJSON,
+  validate,
 }: {
   document: Document;
   question: string;
   identifier?: string;
   model?: OpenAIModel;
   preProcess?: (content: string) => string;
+  respondInJSON?: boolean;
+  validate?: (content: string) => string;
 }): Promise<DocumentQuery> {
   if (!document.extracted) {
     throw new Error('Document not extracted yet');
@@ -113,6 +136,7 @@ export async function askQuestion({
   } = await call({
     messages,
     requestedModel: model,
+    respondInJSON,
   });
   if (!identifier) {
     identifier = 'OTHER';
@@ -123,7 +147,7 @@ export async function askQuestion({
     query: { messages },
     identifier,
     usage,
-    result: message,
+    result: message as any,
   });
 }
 
@@ -217,16 +241,17 @@ export async function classifyDocument(document: Document): Promise<string> {
     stopSequences: ['('],
   });
 
+  const resultStr = resp.message as string;
   await create({
     documentId: document.id,
     model: resp.model,
     query: { messages },
     identifier: 'DOCUMENT_TYPE',
     usage: resp.usage,
-    result: resp.message,
+    result: resultStr,
   });
 
-  const [documentTypeRaw, ...reasoningA] = resp.message.split(' ');
+  const [documentTypeRaw, ...reasoningA] = resultStr.split(' ');
   const documentType = documentTypeRaw.toUpperCase();
   // This only works if stopSequesnces is commented out above
   const reasoning = reasoningA.join(' ').trim() as string;
@@ -255,13 +280,20 @@ export async function askDefaultQuestions(document: Document): Promise<number> {
   }
 
   const aiPromises = config.questions.map((obj) => {
-    return askQuestion({
-      document,
-      question: obj.question,
-      model: obj.model ? (obj.model as OpenAIModel) : undefined,
-      identifier: obj.id,
-      preProcess: obj.preProcess ? obj.preProcess : undefined,
-    });
+    if ('fn' in obj) {
+      return obj.fn(document);
+    } else if ('question' in obj) {
+      return askQuestion({
+        document,
+        question: obj.question,
+        model: obj.model ? (obj.model as OpenAIModel) : undefined,
+        identifier: obj.id,
+        preProcess: obj.preProcess ? obj.preProcess : undefined,
+        respondInJSON: obj.respondInJSON,
+      });
+    } else {
+      throw new Error('Invalid question');
+    }
   });
   await Promise.allSettled(aiPromises);
   await Promise.all(aiPromises);

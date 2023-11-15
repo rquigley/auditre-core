@@ -10,6 +10,10 @@ import { cookies } from 'next/headers';
 import * as z from 'zod';
 
 import {
+  extractChartOfAccountsMapping,
+  setAccountMappingType,
+} from '@/controllers/account-mapping';
+import {
   create as _createAudit,
   getById as getAuditById,
   update as updateAuditById,
@@ -19,7 +23,6 @@ import { generate as _generateFinancialStatement } from '@/controllers/audit-out
 import {
   create as _createDocument,
   deleteDocument as _deleteDocument,
-  extractChartOfAccountsMapping,
   getById as getDocumentById,
   process as processDocument,
 } from '@/controllers/document';
@@ -28,7 +31,14 @@ import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
 import { getPresignedUrl } from '@/lib/aws';
 import { getRequestTypeForId } from '@/lib/request-types';
 
-import type { AuditId, DocumentId, S3File } from '@/types';
+import type {
+  AccountMappingId,
+  AccountType,
+  AuditId,
+  DocumentId,
+  RequestData,
+  S3File,
+} from '@/types';
 
 export { processDocument };
 
@@ -292,13 +302,26 @@ export async function generateFinancialStatement(auditId: AuditId) {
   await _generateFinancialStatement(auditId);
 }
 
-export async function extractAccountMapping({
-  documentId,
+export async function extractAccountMapping(auditId: AuditId) {
+  const success = await extractChartOfAccountsMapping(auditId);
+  console.log('completed extractAccountMapping', success);
+  revalidatePath(`/audit/${auditId}`);
+}
+
+export async function overrideAccountMapping({
   auditId,
+  accountMappingId,
+  accountType,
 }: {
-  documentId: DocumentId;
   auditId: AuditId;
+  accountMappingId: AccountMappingId;
+  accountType: AccountType;
 }) {
-  await extractChartOfAccountsMapping(documentId, auditId);
-  revalidatePath('/audit/[id]');
+  console.log({
+    auditId,
+    accountMappingId,
+    accountType,
+  });
+  await setAccountMappingType(auditId, accountMappingId, accountType);
+  revalidatePath(`/audit/${auditId}`);
 }
