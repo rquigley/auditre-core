@@ -25,12 +25,12 @@ export default function Row({
       />
       {document.requestId && (
         <div className="text-xs ml-9 -mt-2 text-gray-500">
-          <Link
+          <a
             href={`/document/${document.id}/download`}
             className="text-sky-700 hover:text-slate-700 mr-4"
           >
             Download
-          </Link>
+          </a>
           <Link
             href={`/audit/${auditId}/request/${document.requestType}`}
             className="text-sky-700 hover:text-slate-700"
