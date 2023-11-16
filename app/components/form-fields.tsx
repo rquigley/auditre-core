@@ -407,6 +407,8 @@ export function FileUpload({
 
       const { isProcessed, classifiedType } = await getClassificationStatus(id);
 
+      setNumFilesUplading((val: number) => val - 1);
+
       if (classifiedType === 'UNKNOWN') {
         setFileState({
           state: 'error',
@@ -451,7 +453,6 @@ export function FileUpload({
       setFileState({ state: 'error', message: 'Error uploading file' });
       Sentry.captureException('Error uploading file');
     }
-    setNumFilesUplading((val: number) => val - 1);
   }
 
   const currentDocumentIds = getValues(field).documentIds || [];
