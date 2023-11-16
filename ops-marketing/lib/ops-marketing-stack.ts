@@ -108,6 +108,40 @@ export class OpsMarketingStack extends Stack {
       'Certificate',
       certificateArn,
     );
+
+    const siteCachePolicy = new cloudfront.CachePolicy(
+      this,
+      'SiteCachePolicy',
+      {
+        // headerBehavior: cloudfront.CacheHeaderBehavior.allowList(
+        //   'Host',
+        //   'Origin',
+        // ),
+        cookieBehavior: cloudfront.CacheCookieBehavior.all(),
+        queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
+        defaultTtl: Duration.minutes(5),
+        minTtl: Duration.seconds(60),
+        maxTtl: Duration.minutes(10),
+        enableAcceptEncodingBrotli: true,
+        enableAcceptEncodingGzip: true,
+      },
+    );
+
+    const cachePolicyNextStatic = new cloudfront.CachePolicy(
+      this,
+      'CachePolicyNextStatic',
+      {
+        cachePolicyName: 'next-static',
+        defaultTtl: Duration.seconds(86400),
+        maxTtl: Duration.seconds(31536000),
+        minTtl: Duration.seconds(2),
+        cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+        headerBehavior: cloudfront.CacheHeaderBehavior.none(),
+        queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
+        enableAcceptEncodingBrotli: true,
+        enableAcceptEncodingGzip: true,
+      },
+    );
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       certificate: certificate,
       defaultRootObject: 'index.html',
@@ -125,9 +159,53 @@ export class OpsMarketingStack extends Stack {
         origin: new cloudfrontOrigins.S3Origin(siteBucket, {
           originAccessIdentity: cloudfrontOAI,
         }),
+        cachePolicy: siteCachePolicy,
         compress: true,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      },
+      additionalBehaviors: {
+        '/_next/static/*': {
+          origin: new cloudfrontOrigins.S3Origin(siteBucket, {
+            originAccessIdentity: cloudfrontOAI,
+          }),
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+          cachePolicy: cachePolicyNextStatic,
+          compress: true,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
+        // '/favicon.ico': {
+        //   origin: new cloudfrontOrigins.S3Origin(siteBucket, {
+        //     originAccessIdentity: cloudfrontOAI,
+        //     //originPath: '/img',
+        //   }),
+        //   allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+        //   cachePolicy: cachePolicyNextStatic,
+        //   compress: true,
+        //   viewerProtocolPolicy:
+        //     cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        // },
+        '/logo-email-sig.png': {
+          origin: new cloudfrontOrigins.S3Origin(siteBucket, {
+            originAccessIdentity: cloudfrontOAI,
+          }),
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+          cachePolicy: cachePolicyNextStatic,
+          compress: true,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
+        '/images/*': {
+          origin: new cloudfrontOrigins.S3Origin(siteBucket, {
+            originAccessIdentity: cloudfrontOAI,
+          }),
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+          cachePolicy: cachePolicyNextStatic,
+          compress: true,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
       },
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
     });
