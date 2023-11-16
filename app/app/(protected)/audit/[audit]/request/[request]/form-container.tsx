@@ -25,7 +25,9 @@ export default async function FormContainer({
   userId,
   auditId,
 }: Props) {
-  async function saveData(data: Record<string, unknown>) {
+  async function saveData(
+    data: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
     'use server';
 
     await saveRequestData({

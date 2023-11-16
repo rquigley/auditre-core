@@ -23,14 +23,14 @@ import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
 import { classNames, isFieldVisible } from '@/lib/util';
 
 import type { Request } from '@/controllers/request';
-import type { AuditId, DocumentId, RequestData } from '@/types';
+import type { AuditId, DocumentId } from '@/types';
 
 export type Props = {
   auditId: AuditId;
   request: Request;
   requestData: Record<string, unknown>;
   dataMatchesConfig: boolean;
-  saveData: (data: RequestData) => Promise<void>;
+  saveData: (data: Record<string, unknown>) => Promise<Record<string, unknown>>;
   documents: {
     [key: string]: Array<{
       id: DocumentId;
