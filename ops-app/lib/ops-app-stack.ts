@@ -251,11 +251,13 @@ export class OpsAppStack extends Stack {
 
     const loadbalancer = new ApplicationLoadBalancer(this, 'lb', {
       vpc,
-      internetFacing: true, // TODO: false for prod
+      internetFacing: true,
       vpcSubnets: vpc.selectSubnets({
         subnetType: SubnetType.PUBLIC,
+        // subnetType: SubnetType.PRIVATE_WITH_EGRESS,
       }),
-      idleTimeout: Duration.seconds(5),
+      idleTimeout: Duration.seconds(60),
+      dropInvalidHeaderFields: true,
     });
 
     const cluster = new ecs.Cluster(this, 'Cluster', {
