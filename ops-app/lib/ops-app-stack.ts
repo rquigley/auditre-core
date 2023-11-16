@@ -163,10 +163,11 @@ export class OpsAppStack extends Stack {
         path.join(__dirname, '../packages/lxml-layer/layer311.zip'),
       ),
       compatibleArchitectures: [Architecture.ARM_64],
-      compatibleRuntimes: [Runtime.PYTHON_3_11],
+      compatibleRuntimes: [Runtime.PYTHON_3_11, Runtime.PYTHON_3_12],
     });
     /// pdf
     const extractPdfLambda = new Function(this, 'ExtractPdfLambda', {
+      description: 'S3 handler to extract text from PDFs',
       code: Code.fromAsset(
         path.join(__dirname, '../packages/extract-pdf-lambda'),
         {
@@ -180,7 +181,7 @@ export class OpsAppStack extends Stack {
           },
         },
       ),
-      runtime: Runtime.PYTHON_3_11,
+      runtime: Runtime.PYTHON_3_12,
       architecture: Architecture.ARM_64,
       memorySize: 512,
       timeout: Duration.seconds(30),
@@ -196,6 +197,7 @@ export class OpsAppStack extends Stack {
     });
     ////
     const extractContentLambda = new Function(this, 'ExtractContentLambda', {
+      description: 'S3 handler to extract text from XLXS, DOCX, DOC files',
       code: Code.fromAsset(
         path.join(__dirname, '../packages/extract-content-lambda'),
         {
@@ -209,7 +211,7 @@ export class OpsAppStack extends Stack {
           },
         },
       ),
-      runtime: Runtime.PYTHON_3_11,
+      runtime: Runtime.PYTHON_3_12,
       architecture: Architecture.ARM_64,
       memorySize: 512,
       timeout: Duration.seconds(60),
