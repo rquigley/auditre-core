@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
@@ -66,15 +66,10 @@ export function BasicForm({
     resolver: zodResolver(schema),
     defaultValues: requestData,
   });
-  useEffect(() => {
-    if (formState.isSubmitSuccessful) {
-      reset(undefined, { keepValues: true });
-      // setShowSuccess(true);
-    }
-  }, [formState.isSubmitSuccessful, reset]);
 
   async function onSubmit(data: z.infer<typeof schema>) {
-    await saveData(data);
+    const newData = await saveData(data);
+    reset(newData);
     if (postSaveAction === 'chart-of-accounts') {
       toast.success('Chart of accounts saved. Extracting accounts...');
 
@@ -85,7 +80,7 @@ export function BasicForm({
       toast.success('Request saved');
     }
   }
-
+  console.log(formState.isDirty);
   let enableSubmit;
   if (numFilesUploading > 0) {
     enableSubmit = false;

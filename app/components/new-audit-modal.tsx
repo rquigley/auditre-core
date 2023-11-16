@@ -154,13 +154,13 @@ export default function NewAuditModal() {
                       type="submit"
                       disabled={!formState.isDirty || formState.isSubmitting}
                       className={classNames(
-                        !formState.isDirty
+                        !formState.isDirty || formState.isSubmitting
                           ? 'bg-gray-400'
                           : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
                         'inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm sm:col-start-2',
                       )}
                     >
-                      Create
+                      {formState.isSubmitting ? 'Creating' : 'Create'}
                     </button>
                     <button
                       type="button"

@@ -38,6 +38,8 @@ export default async function FormContainer({
     revalidatePath(`/audit/${auditId}/request/${request.id}`);
     // audit-info.year is cached for the audit header
     revalidateTag('client-audit');
+
+    return data;
   }
 
   const { data: requestData, uninitializedFields } =
