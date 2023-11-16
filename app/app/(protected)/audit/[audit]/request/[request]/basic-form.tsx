@@ -80,7 +80,7 @@ export function BasicForm({
       toast.success('Request saved');
     }
   }
-  console.log(formState.isDirty);
+
   let enableSubmit;
   if (numFilesUploading > 0) {
     enableSubmit = false;
@@ -232,7 +232,7 @@ export function BasicForm({
             'rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm transition',
           )}
         >
-          {formState.isSubmitting ? 'Saving' : 'Save'}
+          Save
         </button>
       </div>
     </form>
