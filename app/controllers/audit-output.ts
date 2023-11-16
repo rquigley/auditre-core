@@ -305,7 +305,7 @@ function consolidatedFinancialStatements(data: AuditData) {
       // }),
       new Paragraph({
         text: 'Consolidated Balance Sheet',
-        heading: HeadingLevel.HEADING_2,
+        heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
       table,
