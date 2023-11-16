@@ -251,7 +251,7 @@ export class OpsAppStack extends Stack {
       ],
     });
 
-    const loadbalancer = new ApplicationLoadBalancer(this, 'lb', {
+    const loadbalancer = new ApplicationLoadBalancer(this, 'FargrateALB', {
       vpc,
       internetFacing: true,
       vpcSubnets: vpc.selectSubnets({
