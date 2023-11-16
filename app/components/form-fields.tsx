@@ -331,12 +331,14 @@ export function FileUpload({
   config,
   documents,
   resetField,
+  setNumFilesUplading,
 }: FormFieldProps & {
   config: FormFieldFile;
   setValue: (key: string, val: any, opts: any) => void;
   getValues: (key?: string) => any;
   documents: { id: DocumentId; doc: JSX.Element; data: JSX.Element }[];
   resetField: (field: string) => void;
+  setNumFilesUplading: (cb: (val: number) => number) => void;
 }) {
   const [fileState, setFileState] = useState<FileState>({ state: 'idle' });
 
@@ -348,6 +350,7 @@ export function FileUpload({
 
   async function uploadDocument(e: React.ChangeEvent<HTMLInputElement>) {
     setFileState({ state: 'uploading', pct: 0 });
+    setNumFilesUplading((val: number) => val + 1);
 
     const file = e.target.files?.[0]!;
     const filename = encodeURIComponent(file.name);
@@ -448,6 +451,7 @@ export function FileUpload({
       setFileState({ state: 'error', message: 'Error uploading file' });
       Sentry.captureException('Error uploading file');
     }
+    setNumFilesUplading((val: number) => val - 1);
   }
 
   const currentDocumentIds = getValues(field).documentIds || [];

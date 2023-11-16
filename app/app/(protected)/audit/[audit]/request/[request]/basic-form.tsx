@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
@@ -50,7 +50,7 @@ export function BasicForm({
   documents,
   postSaveAction,
 }: Props) {
-  // const [showSuccess, setShowSuccess] = useState(false);
+  const [numFilesUploading, setNumFilesUplading] = useState(0);
   const schema = getSchemaForId(request.id);
 
   const {
@@ -87,7 +87,9 @@ export function BasicForm({
   }
 
   let enableSubmit;
-  if (formState.isSubmitting) {
+  if (numFilesUploading > 0) {
+    enableSubmit = false;
+  } else if (formState.isSubmitting) {
     enableSubmit = false;
   } else if (formState.isDirty) {
     enableSubmit = true;
@@ -146,6 +148,7 @@ export function BasicForm({
                         getValues={getValues}
                         resetField={resetField}
                         documents={documents[field]}
+                        setNumFilesUplading={setNumFilesUplading}
                       />
                     ) : fieldConfig.input === 'checkbox' ? (
                       <Checkbox
