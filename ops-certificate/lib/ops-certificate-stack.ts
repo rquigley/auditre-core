@@ -76,7 +76,7 @@ export class OpsCertificateStack extends cdk.Stack {
       recordName: '_dmarc',
       zone: parentZone,
       values: [
-        'v=DMARC1; p=none; rua=mailto:dmarc-reports@auditre.co; pct=100; adkim=r; aspf=r',
+        'v=DMARC1; p=reject; rua=mailto:dmarc-reports@auditre.co; pct=100; adkim=r; aspf=r',
       ],
       comment: 'DMARC',
     });
