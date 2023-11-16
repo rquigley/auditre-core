@@ -175,7 +175,7 @@ export class PostgresCluster extends Construct {
       {
         functionName: `db-migrate`,
         entry: './packages/db-migration/migrate.js',
-        runtime: lambda.Runtime.NODEJS_18_X,
+        runtime: lambda.Runtime.NODEJS_20_X,
         architecture: lambda.Architecture.ARM_64,
         memorySize: 256,
         timeout: cdk.Duration.minutes(10),
