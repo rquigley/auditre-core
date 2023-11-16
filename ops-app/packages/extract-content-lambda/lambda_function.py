@@ -1,11 +1,12 @@
 import logging
 import tempfile
 import os
+from io import StringIO
 from docx import Document
-from pypdf import PdfReader
 from openpyxl import load_workbook
 import csv
 import boto3
+import json
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 import sentry_sdk
 
@@ -27,6 +28,8 @@ sentry_sdk.init(
 
 s3 = boto3.client('s3')
 
+PAGE_DELIMITER = '-' * 30 + '@@' + '-' * 30
+
 
 def handler(event, context):
     # Get bucket and object key from the Lambda event trigger
@@ -45,24 +48,13 @@ def handler(event, context):
 
         s3.download_file(bucket, key, download_path)
 
-        if file_type == 'pdf':
-            convert_pdf_to_text(download_path, upload_path)
-        elif file_type in ['doc', 'docx']:
+        if file_type in ['doc', 'docx']:
             convert_docx_to_text(download_path, upload_path)
         elif file_type == 'xlsx':
             convert_xlsx_to_csv(download_path, upload_path)
 
         new_key = f"{key}.extracted"
         s3.upload_file(upload_path, bucket, new_key)
-
-
-def convert_pdf_to_text(read_path, extracted_path):
-    with open(read_path, 'rb') as f:
-        pdf_reader = PdfReader(f)
-        with open(extracted_path, 'w') as extracted_file:
-            for page in pdf_reader.pages:
-                extracted_file.write(page.extract_text())
-                extracted_file.write('\n\n')
 
 
 def convert_docx_to_text(read_path, extracted_path):
@@ -75,8 +67,17 @@ def convert_docx_to_text(read_path, extracted_path):
 
 def convert_xlsx_to_csv(read_path, extracted_path):
     wb = load_workbook(read_path)
-    ws = wb.active
     with open(extracted_path, 'w') as extracted_file:
-        writer = csv.writer(extracted_file)
-        for row in ws.rows:
-            writer.writerow([cell.value for cell in row])
+        for sheet in wb.worksheets:
+            extracted_file.write(PAGE_DELIMITER + '\n')
+            meta_info = {
+                'sheetTitle': sheet.title
+            }
+            extracted_file.write(f'META:{json.dumps(meta_info)}\n')
+
+            output = StringIO()
+            writer = csv.writer(output)
+            for row in sheet.iter_rows():
+                writer.writerow([cell.value for cell in row])
+
+            extracted_file.write(output.getvalue())
