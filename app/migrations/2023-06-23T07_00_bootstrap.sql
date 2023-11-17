@@ -36,7 +36,6 @@ volatile;
 CREATE TABLE "org" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "name" text,
-  "is_root_org" boolean NOT NULL DEFAULT FALSE,
   "parent_org_id" uuid REFERENCES "org" ("id"),
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
@@ -46,7 +45,6 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "org" FOR EACH ROW EX
 
 CREATE TABLE "user" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
-  -- "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "name" text,
   "email" text UNIQUE,
   "email_verified" text,
@@ -75,12 +73,13 @@ CREATE TABLE "user_current_org" (
 CREATE TABLE "invitation" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "email" text UNIQUE,
+  "email" text NOT NULL,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "expires_at" timestamptz DEFAULT (now() + INTERVAL '7 days') NOT NULL,
   "is_used" boolean NOT NULL DEFAULT FALSE
 );
+ALTER TABLE "invitation" ADD CONSTRAINT constraint_unique_invite UNIQUE (org_id, email);
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "invitation" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 CREATE TABLE "user_account" (
@@ -226,3 +225,13 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account_mapping" FOR
 --   "context_user_agent" text,
 --   "created_at" timestamp DEFAULT now() NOT NULL
 -- );
+
+
+-- Demo Account
+WITH org_rows AS (
+  INSERT INTO public.org (name) VALUES ('AuditRe, Inc.') RETURNING id
+)
+INSERT INTO public.invitation (org_id, email, expires_at)
+VALUES
+  ((SELECT id FROM org_rows), 'ryan@auditre.co', CURRENT_DATE + INTERVAL '6 months'),
+  ((SELECT id FROM org_rows), 'jason@auditre.co', CURRENT_DATE + INTERVAL '6 months');
