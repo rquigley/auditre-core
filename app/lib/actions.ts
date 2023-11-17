@@ -189,6 +189,14 @@ export async function createDocument(file: S3File) {
 }
 
 export async function getDocumentStatus(id: DocumentId) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const doc = await getDocumentById(id);
+  if (doc.orgId !== user.orgId) {
+    throw new UnauthorizedError();
+  }
   try {
     const classifiedType = await retry(
       async () => {
@@ -299,10 +307,26 @@ export async function getPresignedUploadUrl({
 // }
 
 export async function generateFinancialStatement(auditId: AuditId) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const audit = await getAuditById(auditId);
+  if (audit.orgId !== user.orgId) {
+    throw new UnauthorizedError();
+  }
   await _generateFinancialStatement(auditId);
 }
 
 export async function extractAccountMapping(auditId: AuditId) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const audit = await getAuditById(auditId);
+  if (audit.orgId !== user.orgId) {
+    throw new UnauthorizedError();
+  }
   const success = await extractChartOfAccountsMapping(auditId);
   console.log('completed extractAccountMapping', success);
   revalidatePath(`/audit/${auditId}`);
