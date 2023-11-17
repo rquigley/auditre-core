@@ -116,7 +116,7 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
   });
   await saveRequestData({
     auditId,
-    requestType: 'asc-606-analysis',
+    requestType: 'revenue-recognition-policy',
     data: {
       hasCompletedASC606Analysis: false,
       asc606DocumentId: { isDocuments: true, documentIds: [docId] },

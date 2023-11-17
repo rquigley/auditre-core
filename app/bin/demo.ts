@@ -51,14 +51,6 @@ async function setupAudit(orgId: OrgId) {
     }),
     saveRequestData({
       auditId: audit.id,
-      requestType: 'asc-606-analysis',
-      data: {
-        hasCompletedASC606Analysis: false,
-        revenueRecognitionProcess: 'We do not recognize reveune yet',
-      },
-    }),
-    saveRequestData({
-      auditId: audit.id,
       requestType: 'leases',
       data: {
         hasLeases: false,
