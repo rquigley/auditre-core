@@ -15,8 +15,8 @@ export async function Requests({ auditId }: { auditId: AuditId }) {
 
   const groupedRequests = sortRows(requests, [
     'Background',
-    'Accounting Information',
-    'Business Operations',
+    'Accounting information',
+    'Business operations',
     'Other',
   ]);
   return (
@@ -60,19 +60,11 @@ function sortRows<T extends Row>(
 }[] {
   const groupMap: Record<string, T[]> = {};
 
-  // Group rows by their 'group' property
   for (const row of rows) {
     if (!groupMap[row.group]) {
       groupMap[row.group] = [];
     }
     groupMap[row.group].push(row);
-  }
-
-  // Sort each group by 'name'
-  for (const group of Object.keys(groupMap)) {
-    groupMap[group] = groupMap[group].sort((a, b) =>
-      b.name.localeCompare(a.name),
-    );
   }
 
   // Create SortedRowGroup based on groupOrder

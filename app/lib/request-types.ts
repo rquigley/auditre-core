@@ -438,7 +438,7 @@ export const requestTypes = [
         label: 'Has the company been audited before?',
       },
       previousAuditDocumentId: {
-        label: 'Previous Audit',
+        label: 'Previous audit',
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         dependsOn: 'hasBeenAudited',
@@ -450,70 +450,70 @@ export const requestTypes = [
   generateRequestType(
     {
       id: 'articles-of-incorporation',
-      name: 'Articles of Incorporation',
+      name: 'Articles of incorporation',
       group: 'Background',
     },
     {
       documentId: {
-        label: 'Upload the Articles of Incorporation',
+        label: 'Upload the articles of incorporation',
         extensions: ['PDF'],
         input: 'fileupload',
         aiClassificationType: 'ARTICLES_OF_INCORPORATION',
       },
     },
   ),
-  generateRequestType(
-    {
-      id: 'trial-balance',
-      name: 'Trial Balance',
-      group: 'Accounting Information',
-    },
-    {
-      documentId: {
-        label: 'Upload the Trial Balance',
-        extensions: ['XLS', 'XLSX', 'CSV'],
-        input: 'fileupload',
-        aiClassificationType: 'TRIAL_BALANCE',
-      },
-      // accounts: {
-      //   label: 'Upload the Trial Balance',
-      //   input: 'table',
-
-      // },
-    },
-  ),
 
   generateRequestType(
     {
       id: 'chart-of-accounts',
-      name: 'Chart of Accounts',
-      group: 'Accounting Information',
+      name: 'Chart of accounts',
+      group: 'Accounting information',
     },
     {
       documentId: {
-        label: "Upload the company's Chart of Accounts",
+        label: "Upload the company's chart of accounts",
+        description:
+          'Use a consolidated chart of accounts if there are multiple lines of business.',
         extensions: ['XLS', 'XLSX', 'CSV'],
         input: 'fileupload',
         aiClassificationType: 'CHART_OF_ACCOUNTS',
         aiClassificationHint:
-          'Chart of Accounts aka a complete listing, by category, of every account in the general ledger of a company. It can include an account name, identifier, account type, additional description, and sometimes the total balance for that account.',
+          'chart of accounts aka a complete listing, by category, of every account in the general ledger of a company. It can include an account name, identifier, account type, additional description, and sometimes the total balance for that account.',
       },
     },
   ),
 
   generateRequestType(
     {
-      id: 'asc-606-analysis',
-      name: 'ASC 606 Analysis',
-      group: 'Accounting Information',
+      id: 'trial-balance',
+      name: 'Trial balance',
+      group: 'Accounting information',
+    },
+    {
+      documentId: {
+        label: 'Upload the trial balance',
+        description:
+          'Use a consolidated trial balance if there are multiple lines of business.',
+        extensions: ['XLS', 'XLSX', 'CSV'],
+        input: 'fileupload',
+        aiClassificationType: 'TRIAL_BALANCE',
+      },
+    },
+  ),
+
+  generateRequestType(
+    {
+      id: 'revenue-recognition-policy',
+      name: 'Revenue recognition policy',
+      group: 'Accounting information',
     },
     {
       hasCompletedASC606Analysis: {
         input: 'boolean',
-        label: 'Has the company completed ASC 606 Analysis?',
+        label: 'Has the company completed ASC 606 analysis?',
       },
       asc606DocumentId: {
-        label: 'ASC 606 Analysis Document',
+        label: 'ASC 606 analysis document',
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         dependsOn: 'hasCompletedASC606Analysis',
@@ -535,58 +535,25 @@ export const requestTypes = [
   generateRequestType(
     {
       id: 'financing-documents',
-      name: 'Financing Documents',
-      group: 'Accounting Information',
+      name: 'Financing documents',
+      group: 'Accounting information',
     },
     {
       equityFinancingDocumentIds: {
-        label: 'Upload all Equity Financing documents',
+        label: 'Upload all equity financing documents',
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         allowMultiple: true,
         aiClassificationType: 'EQUITY_FINANCING',
-        aiClassificationHint: 'Equity Financing Documents',
+        aiClassificationHint: 'Equity financing documents',
       },
       debtFinancingAgreementDocumentIds: {
-        label: 'Debt Financing Agreements',
+        label: 'Debt financing agreements',
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         allowMultiple: true,
         aiClassificationType: 'DEBT_FINANCING_AGREEMENT',
-        aiClassificationHint: 'Equity Financing Documents',
-      },
-    },
-  ),
-
-  generateRequestType(
-    {
-      id: 'leases',
-      name: 'Leases',
-      group: 'Accounting Information',
-    },
-    {
-      hasLeases: {
-        input: 'boolean',
-        label: 'Does the company have any leases?',
-      },
-      didPerformASC842Analysis: {
-        input: 'boolean',
-        label: 'Did the company perform a ASC 842 analysis?',
-        dependsOn: 'hasLeases',
-      },
-      yearOfASC842Analysis: {
-        input: 'year',
-        label: 'Which year did the company first perform a ASC 842 analysis?',
-        dependsOn: 'didPerformASC842Analysis',
-      },
-      asc842DocumentId: {
-        label: 'ASC 842 Memo',
-        extensions: ['PDF', 'DOC', 'DOCX'],
-        input: 'fileupload',
-        dependsOn: 'didPerformASC842Analysis',
-        aiClassificationType: 'ASC_842_MEMO',
-        aiClassificationHint:
-          'Asc 842 memo. This document identifies leases and states “ASC 842” within the document.',
+        aiClassificationHint: 'Debt financing agreements',
       },
     },
   ),
@@ -595,11 +562,11 @@ export const requestTypes = [
     {
       id: 'equity',
       name: 'Equity',
-      group: 'Accounting Information',
+      group: 'Accounting information',
     },
     {
       capTableDetailDocumentId: {
-        label: 'Cap Table Detail',
+        label: 'Cap table detail',
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         aiClassificationType: 'CAP_TABLE',
@@ -626,13 +593,13 @@ export const requestTypes = [
         aiClassificationType: 'STOCK_BASED_COMPENSATION_REPORT',
       },
       employeeStockPlanDocumentId: {
-        label: 'Stock Option Plan & Amendments',
+        label: 'Stock option plan & amendments',
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         dependsOn: 'hasEmployeeStockPlan',
         aiClassificationType: 'STOCK_PLAN',
         aiClassificationHint:
-          'Stock Option Plan & Amendments. This includes the terms and definitions of stated with an equity incentive plan.',
+          'Stock option plan & amendments. This includes the terms and definitions of stated with an equity incentive plan.',
       },
     },
   ),
@@ -641,7 +608,7 @@ export const requestTypes = [
     {
       id: 'material-changes-post-audit',
       name: 'Post-audit changes',
-      group: 'Business Operations',
+      group: 'Business operations',
     },
     {
       hasPostAuditChanges: {
@@ -663,7 +630,7 @@ export const requestTypes = [
     {
       id: 'outstanding-legal-matters',
       name: 'Outstanding legal matters',
-      group: 'Business Operations',
+      group: 'Business operations',
     },
     {
       hasLegalMatters: {
@@ -685,7 +652,7 @@ export const requestTypes = [
     {
       id: 'related-party-transactions',
       name: 'Related party transactions ',
-      group: 'Business Operations',
+      group: 'Business operations',
     },
     {
       hasRelatedPartyTransactions: {
@@ -706,13 +673,13 @@ export const requestTypes = [
   generateRequestType(
     {
       id: 'employee-401k',
-      name: '401k plan',
-      group: 'Business Operations',
+      name: '401(k) plan',
+      group: 'Business operations',
     },
     {
       has401K: {
         input: 'boolean',
-        label: 'Does the company provide a 401k plan to employee?',
+        label: 'Does the company provide a 401(k) plan to employee?',
       },
       doesMatch: {
         input: 'boolean',
@@ -731,14 +698,47 @@ export const requestTypes = [
     {
       id: 'audit-year-tax-provision',
       name: 'Audit year tax provision',
-      group: 'Accounting Information',
+      group: 'Accounting information',
     },
     {
       documentId: {
-        label: 'Upload the Audit year tax provision',
+        label: 'Upload the audit year tax provision',
         extensions: ['XLS', 'XLSX', 'CSV'],
         input: 'fileupload',
         aiClassificationType: 'AUDIT_YEAR_TAX_PROVISION',
+      },
+    },
+  ),
+
+  generateRequestType(
+    {
+      id: 'leases',
+      name: 'Leases',
+      group: 'Accounting information',
+    },
+    {
+      hasLeases: {
+        input: 'boolean',
+        label: 'Does the company have any leases?',
+      },
+      didPerformASC842Analysis: {
+        input: 'boolean',
+        label: 'Did the company perform a ASC 842 analysis?',
+        dependsOn: 'hasLeases',
+      },
+      yearOfASC842Analysis: {
+        input: 'year',
+        label: 'Which year did the company first perform a ASC 842 analysis?',
+        dependsOn: 'didPerformASC842Analysis',
+      },
+      asc842DocumentId: {
+        label: 'ASC 842 memo',
+        extensions: ['PDF', 'DOC', 'DOCX'],
+        input: 'fileupload',
+        dependsOn: 'didPerformASC842Analysis',
+        aiClassificationType: 'ASC_842_MEMO',
+        aiClassificationHint:
+          'ASC 842 memo. This document identifies leases and states “ASC 842” within the document.',
       },
     },
   ),

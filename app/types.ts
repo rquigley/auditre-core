@@ -138,8 +138,8 @@ export type Audit = Selectable<AuditTable>;
 export type RequestStatus = 'requested' | 'complete' | 'overdue';
 export type RequestGroup =
   | 'Background'
-  | 'Accounting Information'
-  | 'Business Operations'
+  | 'Accounting information'
+  | 'Business operations'
   | 'Other';
 
 export interface RequestDataTable {
