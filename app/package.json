@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "build-cli": "tsc -p tsconfig-cli.json",
-    "reset": "node bin/db-reset.js && bun bin/demo.ts",
+    "reset": "node bin/db-reset.js",
     "start": "next start",
     "lint": "next lint",
     "test": "jest"
