@@ -54,7 +54,7 @@ export async function ChartOfAccounts({ auditId }: { auditId: AuditId }) {
                 <td className="w-30 px-2 py-2 text-sm font-medium text-gray-900">
                   {am.accountName}
                 </td>
-                <td className="w-full whitespace-nowrap px-2 py-2 text-sm text-gray-900">
+                <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-900">
                   <AccountMapping
                     auditId={auditId}
                     accountMappingId={am.id}
