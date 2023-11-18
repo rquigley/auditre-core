@@ -151,6 +151,7 @@ CREATE TABLE "document_query" (
   "identifier" text,
   "query" JSONB,
   "result" text,
+  "is_validated" boolean NOT NULL DEFAULT FALSE,
   "usage" JSONB,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
@@ -203,17 +204,36 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "comment" FOR EACH RO
 CREATE TABLE "account_mapping" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
-  --"org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "account_number" text,
   "account_name" text,
   "account_type" text,
-  "document_id" uuid REFERENCES "document" ("id"), -- only present if coming from a document
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL,
+  "is_deleted" boolean NOT NULL DEFAULT FALSE
+);
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account_mapping" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
+
+-- CREATE TABLE "account_mapping_overlay" (
+--   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
+--   "account_mapping_id" uuid NOT NULL REFERENCES "account_mapping_id" ("id"),
+--   "document_id" uuid REFERENCES "document" ("id"), -- only present if coming from a document
+--   "account_type" text,
+--   "created_at" timestamptz DEFAULT now() NOT NULL,
+--   "is_deleted" boolean NOT NULL DEFAULT FALSE,
+-- )
+-- ALTER TABLE "account_mapping_overlay" ADD CONSTRAINT constraint_unique_account_mapping UNIQUE (audit_id, account_number, account_name, document_id);
+
+CREATE TABLE "account_balance" (
+  "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
+  "account_mapping_id" uuid NOT NULL REFERENCES "account_mapping" ("id"),
+  "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
+  "balance" numeric(14,4),
+  "currency" text check (currency IN ('USD', 'EUR', 'GBP')) NOT NULL DEFAULT 'USD',
   "created_at" timestamptz DEFAULT now() NOT NULL,
   -- "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
-ALTER TABLE "account_mapping" ADD CONSTRAINT constraint_unique_account_mapping UNIQUE (audit_id, account_number, account_name, document_id);
-CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account_mapping" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
+-- CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account_mapping" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 -- CREATE TABLE "log" (
 --   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

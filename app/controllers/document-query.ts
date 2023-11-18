@@ -1,4 +1,5 @@
 import dedent from 'dedent';
+import * as z from 'zod';
 
 import { getById as getDocumentById } from '@/controllers/document';
 import { call, DEFAULT_OPENAI_MODEL } from '@/lib/ai';
@@ -56,9 +57,17 @@ export async function getByDocumentIdAndIdentifier(
 export async function pollGetByDocumentIdAndIdentifier(
   documentId: DocumentId,
   identifier: string,
-): Promise<DocumentQuery | undefined> {
+): Promise<Pick<DocumentQuery, 'result' | 'isValidated'> | undefined> {
   for (let i = 0; i < 60; i++) {
-    const res = await getByDocumentIdAndIdentifier(documentId, identifier);
+    const res = await db
+      .selectFrom('documentQuery')
+      .select(['result', 'isValidated'])
+      .where('documentId', '=', documentId)
+      .where('identifier', '=', identifier)
+      .where('isDeleted', '=', false)
+      // We only want the most recent classification
+      .orderBy('createdAt', 'desc')
+      .executeTakeFirst();
     if (res) {
       return res;
     }
@@ -110,7 +119,7 @@ export async function askQuestion({
   model?: OpenAIModel;
   preProcess?: (content: string) => string;
   respondInJSON?: boolean;
-  validate?: (content: string) => string;
+  validate?: z.ZodType<any>;
 }): Promise<DocumentQuery> {
   if (!document.extracted) {
     throw new Error('Document not extracted yet');
@@ -138,16 +147,34 @@ export async function askQuestion({
     requestedModel: model,
     respondInJSON,
   });
+
   if (!identifier) {
     identifier = 'OTHER';
   }
+  let result;
+  let isValidated = false;
+  if (validate) {
+    const parseRes = validate.safeParse(message);
+    if (parseRes.success) {
+      isValidated = true;
+      result = parseRes.data;
+    } else {
+      console.error(
+        `askQuestion: failed validation for "${identifier}" with message "${parseRes.error.message}"`,
+      );
+    }
+  } else {
+    result = message as any;
+  }
+
   return await create({
     documentId: document.id,
     model: usedModel,
     query: { messages },
     identifier,
     usage,
-    result: message as any,
+    result,
+    isValidated,
   });
 }
 
@@ -290,6 +317,7 @@ export async function askDefaultQuestions(document: Document): Promise<number> {
         identifier: obj.id,
         preProcess: obj.preProcess ? obj.preProcess : undefined,
         respondInJSON: obj.respondInJSON,
+        validate: obj.validate,
       });
     } else {
       throw new Error('Invalid question');

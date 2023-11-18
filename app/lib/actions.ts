@@ -10,8 +10,9 @@ import { cookies } from 'next/headers';
 import * as z from 'zod';
 
 import {
+  extractTrialBalance as _extractTrialBalance,
   extractChartOfAccountsMapping,
-  setAccountMappingType,
+  updateAccountMappingType,
 } from '@/controllers/account-mapping';
 import {
   create as _createAudit,
@@ -329,7 +330,21 @@ export async function extractAccountMapping(auditId: AuditId) {
   }
   const success = await extractChartOfAccountsMapping(auditId);
   console.log('completed extractAccountMapping', success);
-  revalidatePath(`/audit/${auditId}`);
+  revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
+}
+
+export async function extractTrialBalance(auditId: AuditId) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const audit = await getAuditById(auditId);
+  if (audit.orgId !== user.orgId) {
+    throw new UnauthorizedError();
+  }
+  const success = await _extractTrialBalance(auditId);
+  console.log('completed extractTrialBalance', success);
+  revalidatePath(`/audit/${auditId}/request/trial-balance`);
 }
 
 export async function overrideAccountMapping({
@@ -339,13 +354,15 @@ export async function overrideAccountMapping({
 }: {
   auditId: AuditId;
   accountMappingId: AccountMappingId;
-  accountType: AccountType;
+  accountType: AccountType | null;
 }) {
-  console.log({
-    auditId,
-    accountMappingId,
-    accountType,
-  });
-  await setAccountMappingType(auditId, accountMappingId, accountType);
-  revalidatePath(`/audit/${auditId}`);
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const audit = await getAuditById(auditId);
+  if (audit.orgId !== user.orgId) {
+    throw new UnauthorizedError();
+  }
+  await updateAccountMappingType(accountMappingId, accountType);
 }

@@ -242,6 +242,7 @@ export interface DocumentQueryTable {
   identifier: string;
   query: { messages: OpenAIMessage[] };
   result: string;
+  isValidated: ColumnType<boolean, boolean | undefined, boolean>;
   usage: DocumentQueryUsage;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
