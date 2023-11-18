@@ -20,28 +20,37 @@ import type {
   OpenAIModel,
 } from '@/types';
 
-export const documentClassificationTypes = [
-  'AUDIT',
-  'ARTICLES_OF_INCORPORATION',
-  'ASC_606_ANALYSIS',
-  'ASC_842_MEMO',
-  'CAP_TABLE',
-  'CERTIFICATE_TRANSACTION',
-  'CHART_OF_ACCOUNTS',
-  'DEBT_FINANCING_AGREEMENT',
-  'EQUITY_FINANCING',
-  'STOCK_BASED_COMPENSATION_REPORT',
-  'STOCK_PLAN',
-  'TRIAL_BALANCE',
-  'AUDIT_YEAR_TAX_PROVISION',
+export const documentClassificationTypes = {
+  AUDIT: '',
+  ARTICLES_OF_INCORPORATION: '',
+  ASC_606_ANALYSIS:
+    'Asc 606 analysis. This document identifies five different steps – 1. Identify the contract with a customer, 2. Identify the performance obligations of the contract, 3. Determine the transaction price, 4. Allocate the transaction price, and 5. Recognize revenue when the entity satisfies a performance obligations.',
+  ASC_842_MEMO:
+    'ASC 842 memo. This document identifies leases and states “ASC 842” within the document.',
+  CAP_TABLE:
+    'Cap table. The cap table will itemize the number of shares by shareholder. The shares are typically identified as common or preferred shares.',
+  CERTIFICATE_TRANSACTION:
+    'Certificate transaction. The certificate transaction report will itemize the share count, cost, and unique identifier for each shareholder.',
+  CHART_OF_ACCOUNTS:
+    'chart of accounts aka a complete listing, by category, of every account in the general ledger of a company. It can include an account name, identifier, account type, additional description, and sometimes the total balance for that account.',
+  DEBT_FINANCING_AGREEMENT: 'Debt financing agreements',
+  EQUITY_FINANCING: 'Equity financing documents',
+  STOCK_BASED_COMPENSATION_REPORT: '',
+  STOCK_PLAN:
+    'Stock option plan & amendments. This includes the terms and definitions of stated with an equity incentive plan.',
+  TRIAL_BALANCE: '',
+  AUDIT_YEAR_TAX_PROVISION: '',
+
+  // Types we want to ignore but are included to prevent misclassification of other types
+  BYLAWS:
+    'Bylaws. This document identifies the board of directors, committees, officers, and voting for the business.',
 
   // Special types
-  'UNCLASSIFIED',
-  'UNKNOWN',
-  'BYLAWS',
-] as const;
+  UNCLASSIFIED: '', // Set on document creation. Postgres default value
+  UNKNOWN: '', // Set by AI if it can't classify
+} as const;
 export type DocumentClassificationType =
-  (typeof documentClassificationTypes)[number];
+  keyof typeof documentClassificationTypes;
 
 export async function create(
   documentQuery: NewDocumentQuery,
@@ -201,52 +210,19 @@ export async function askQuestion({
   });
 }
 
-type DocumentType = {
-  type: string;
-  hint: string;
-};
-function getDocumentTypes(config: typeof requestTypes): {
-  str: string;
-  lookup: Record<string, string>;
-} {
-  const result: DocumentType[] = [];
-  const lookup: Record<string, string> = {};
-
-  requestTypes.forEach((rt) => {
-    Object.values(rt.form).forEach((field: FormField) => {
-      if ('aiClassificationType' in field && field.aiClassificationType) {
-        const type = field.aiClassificationType;
-        const hint = field.aiClassificationHint || humanCase(type);
-        result.push({ type, hint });
-        lookup[type] = hint;
-      }
-    });
-  });
-
-  // Types we want to ignore but are included to prevent misclassification of other types
-  result.push({
-    type: 'BYLAWS',
-    hint: 'Bylaws. This document identifies the board of directors, committees, officers, and voting for the business.',
-  });
-  lookup['BYLAWS'] = '--IGNORE--';
-
-  // Default type
-  result.push({ type: 'UNKNOWN', hint: 'Unknown' });
-  lookup['UNKNOWN'] = 'Unknown';
-
-  return {
-    str: result.map((r) => `- ${r.type}: ${r.hint}`).join('\n'),
-    lookup,
-  };
-}
-
-const documentTypes = getDocumentTypes(requestTypes);
-
 export async function classifyDocument(
   document: Document,
 ): Promise<DocumentClassificationType> {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
+  }
+
+  let documentTypeStr: string = '';
+  for (const type of Object.keys(
+    documentClassificationTypes,
+  ) as DocumentClassificationType[]) {
+    const hint = documentClassificationTypes[type] || humanCase(type);
+    documentTypeStr += `- ${type}: ${hint}\n`;
   }
 
   const messages: OpenAIMessage[] = [
@@ -258,7 +234,7 @@ export async function classifyDocument(
         - [identifier]: [type of content along with a description]
 
       Here are the document types:
-      ${documentTypes.str}
+      ${documentTypeStr}
 
         Attempt to identify it as one of the listed types. Return the [identifier] e.g. if the content can be identified along with your reasoning within parenthesis like
         \`\`\`
@@ -307,7 +283,7 @@ export async function classifyDocument(
   const documentType = documentTypeRaw.toUpperCase();
   // This only works if stopSequesnces is commented out above
   const reasoning = reasoningA.join(' ').trim() as string;
-  if (documentType in documentTypes.lookup === false) {
+  if (documentType in documentClassificationTypes === false) {
     throw new Error('Invalid document type');
   }
   if (reasoning) {
