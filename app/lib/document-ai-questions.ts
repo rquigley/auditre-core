@@ -4,12 +4,12 @@ import * as z from 'zod';
 // import { extractChartOfAccountsMapping } from '@/controllers/account-mapping';
 import { head } from '@/lib/util';
 
+import type { DocumentClassificationType } from '@/controllers/document-query';
 import type { Document } from '@/types';
 
 // import { balanceSheetTypes } from './consolidated-balance-sheet';
 
 export interface AIQuestionBasic {
-  id: string;
   label?: string;
   question: string;
   model?: string;
@@ -18,52 +18,40 @@ export interface AIQuestionBasic {
   respondInJSON?: boolean;
 }
 export interface AIQuestionCustom {
-  id: string;
   label?: string;
   fn: (document: Document) => Promise<void>;
 }
 
 export type AIQuestion = AIQuestionBasic | AIQuestionCustom;
 
-export const documentAiQuestions: Record<
-  string,
-  {
-    questions: AIQuestion[];
-  }
-> = {
+export const documentAiQuestions: {
+  [K in DocumentClassificationType]?: Record<string, AIQuestion>;
+} = {
   ARTICLES_OF_INCORPORATION: {
-    questions: [
-      {
-        id: 'incorporationDate',
-        label: 'Date of incorporation',
-        question: `What date was the company incorporated? Return only the date in the format of YYYY-MM-DD. If you don't find this date, return "-"`,
-      },
-      {
-        id: 'numberOfShares',
-        label: 'Number of shares',
-        question:
-          'How many shares does the company have the ability to offer? Return only the number without commas. If there are no numbers in your answer, return "-"',
-      },
-      {
-        id: 'parValuePerShare',
-        label: 'Par value per share',
-        question:
-          'What is the par value per share? Return only the number without commas. If there are no numbers in your answer, return "-"',
-      },
-      {
-        id: 'incorporationJurisdiction',
-        label: 'Jurisdiction of incorporation',
-        question:
-          'What is the jurisdiction of incorporation? Answer only with the jurisdiction',
-      },
-    ],
+    incorporationDate: {
+      label: 'Date of incorporation',
+      question: `What date was the company incorporated? Return only the date in the format of YYYY-MM-DD. If you don't find this date, return "-"`,
+    },
+    numberOfShares: {
+      label: 'Number of shares',
+      question:
+        'How many shares does the company have the ability to offer? Return only the number without commas. If there are no numbers in your answer, return "-"',
+    },
+    parValuePerShare: {
+      label: 'Par value per share',
+      question:
+        'What is the par value per share? Return only the number without commas. If there are no numbers in your answer, return "-"',
+    },
+    incorporationJurisdiction: {
+      label: 'Jurisdiction of incorporation',
+      question:
+        'What is the jurisdiction of incorporation? Answer only with the jurisdiction',
+    },
   },
   CHART_OF_ACCOUNTS: {
-    questions: [
-      {
-        id: 'columnMappings',
-        preProcess: (val: string) => head(val, 10),
-        question: dedent`
+    columnMappings: {
+      preProcess: (val: string) => head(val, 10),
+      question: dedent`
             In this CSV content extract the following column properties:
 
             1. accountIdColumnIdx
@@ -106,31 +94,27 @@ export const documentAiQuestions: Record<
             }
             """
             `,
-        respondInJSON: true,
-        validate: z.object({
-          accountIdColumnIdx: z.number().min(-1).max(100),
-          accountNameColumnIdx: z.number().min(-1).max(100),
-          otherColIdxs: z.array(z.number().min(0).max(100)),
-        }),
-      },
-      // {
-      //   id: 'accountMapping',
-      //   fn: extractChartOfAccountsMapping,
-      // },
-    ],
+      respondInJSON: true,
+      validate: z.object({
+        accountIdColumnIdx: z.number().min(-1).max(100),
+        accountNameColumnIdx: z.number().min(-1).max(100),
+        otherColIdxs: z.array(z.number().min(0).max(100)),
+      }),
+    },
+    // {
+    //   id: 'accountMapping',
+    //   fn: extractChartOfAccountsMapping,
+    // },
   },
   TRIAL_BALANCE: {
-    questions: [
-      {
-        id: 'trialBalanceDate',
-        label: 'Date of trial balance export',
-        question: `What is the date this trial balance was exported? Return only the date in the format of YYYY-MM-DD. If you don't find this date, return "-"`,
-        preProcess: (val: string) => head(val, 10),
-      },
-      {
-        id: 'columnMappings',
-        preProcess: (val: string) => head(val, 10),
-        question: dedent`
+    trialBalanceDate: {
+      label: 'Date of trial balance export',
+      question: `What is the date this trial balance was exported? Return only the date in the format of YYYY-MM-DD. If you don't find this date, return "-"`,
+      preProcess: (val: string) => head(val, 10),
+    },
+    columnMappings: {
+      preProcess: (val: string) => head(val, 10),
+      question: dedent`
             In this CSV content extract the following column properties:
 
             1. accountIdColumnIdx
@@ -214,15 +198,14 @@ export const documentAiQuestions: Record<
             }
             """
             `,
-        respondInJSON: true,
-        validate: z.object({
-          accountIdColumnIdx: z.number().min(-1).max(100),
-          accountNameColumnIdx: z.number().min(-1).max(100),
-          debitColumnIdx: z.number().min(-1).max(100),
-          creditColumnIdx: z.number().min(-1).max(100),
-          currencyColumnIdx: z.number().min(-1).max(100),
-        }),
-      },
-    ],
+      respondInJSON: true,
+      validate: z.object({
+        accountIdColumnIdx: z.number().min(-1).max(100),
+        accountNameColumnIdx: z.number().min(-1).max(100),
+        debitColumnIdx: z.number().min(-1).max(100),
+        creditColumnIdx: z.number().min(-1).max(100),
+        currencyColumnIdx: z.number().min(-1).max(100),
+      }),
+    },
   },
 };

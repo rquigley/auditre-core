@@ -1,4 +1,5 @@
 import type { OpenAIMessage } from './lib/ai';
+import type { DocumentClassificationType } from '@/controllers/document-query';
 import type {
   ColumnType,
   Generated,
@@ -184,7 +185,11 @@ export interface DocumentTable {
   //   never,
   //   DocumentType
   // >;
-  classifiedType: ColumnType<string, string | undefined, string>;
+  classifiedType: ColumnType<
+    DocumentClassificationType,
+    DocumentClassificationType | undefined,
+    DocumentClassificationType
+  >;
   extracted: string | null;
   usage: {
     extractMs: number;

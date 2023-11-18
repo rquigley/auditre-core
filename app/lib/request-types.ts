@@ -2,6 +2,7 @@ import * as z from 'zod';
 
 import { businessModelTypes } from './business-models';
 
+import type { DocumentClassificationType } from '@/controllers/document-query';
 import type { RequestGroup } from '@/types';
 import type { ZodTypeAny } from 'zod';
 
@@ -50,7 +51,7 @@ export interface FormFieldFile extends _FormFieldBase {
   maxFilesizeMB: number;
   defaultValue: { isDocuments: true; documentIds: readonly string[] };
   allowMultiple?: true;
-  aiClassificationType: string;
+  aiClassificationType: DocumentClassificationType;
   aiClassificationHint?: string;
 }
 

@@ -20,6 +20,29 @@ import type {
   OpenAIModel,
 } from '@/types';
 
+export const documentClassificationTypes = [
+  'AUDIT',
+  'ARTICLES_OF_INCORPORATION',
+  'ASC_606_ANALYSIS',
+  'ASC_842_MEMO',
+  'CAP_TABLE',
+  'CERTIFICATE_TRANSACTION',
+  'CHART_OF_ACCOUNTS',
+  'DEBT_FINANCING_AGREEMENT',
+  'EQUITY_FINANCING',
+  'STOCK_BASED_COMPENSATION_REPORT',
+  'STOCK_PLAN',
+  'TRIAL_BALANCE',
+  'AUDIT_YEAR_TAX_PROVISION',
+
+  // Special types
+  'UNCLASSIFIED',
+  'UNKNOWN',
+  'BYLAWS',
+] as const;
+export type DocumentClassificationType =
+  (typeof documentClassificationTypes)[number];
+
 export async function create(
   documentQuery: NewDocumentQuery,
 ): Promise<DocumentQuery> {
@@ -219,7 +242,9 @@ function getDocumentTypes(config: typeof requestTypes): {
 
 const documentTypes = getDocumentTypes(requestTypes);
 
-export async function classifyDocument(document: Document): Promise<string> {
+export async function classifyDocument(
+  document: Document,
+): Promise<DocumentClassificationType> {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
   }
@@ -293,7 +318,7 @@ export async function classifyDocument(document: Document): Promise<string> {
     console.log(`doc_classification: classified as "${documentType}"`);
   }
 
-  return documentType as string;
+  return documentType as DocumentClassificationType;
 }
 
 export async function askDefaultQuestions(document: Document): Promise<number> {
@@ -301,12 +326,13 @@ export async function askDefaultQuestions(document: Document): Promise<number> {
     throw new Error('Document has no extracted content');
   }
 
-  const config = documentAiQuestions[document.classifiedType];
-  if (!config || !config.questions.length) {
+  const questions = documentAiQuestions[document.classifiedType];
+  if (!questions || !Object.keys(questions).length) {
     return 0;
   }
 
-  const aiPromises = config.questions.map((obj) => {
+  const aiPromises = Object.keys(questions).map((identifier) => {
+    const obj = questions[identifier];
     if ('fn' in obj) {
       return obj.fn(document);
     } else if ('question' in obj) {
@@ -314,7 +340,7 @@ export async function askDefaultQuestions(document: Document): Promise<number> {
         document,
         question: obj.question,
         model: obj.model ? (obj.model as OpenAIModel) : undefined,
-        identifier: obj.id,
+        identifier,
         preProcess: obj.preProcess ? obj.preProcess : undefined,
         respondInJSON: obj.respondInJSON,
         validate: obj.validate,
@@ -346,11 +372,13 @@ export async function getDataWithLabels(
     return {};
   }
   let res: FormattedQueryDataWithLabels = {};
-  defaultQuestions.questions.forEach((q) => {
-    const answered = answeredQuestions.find((aq) => aq.identifier === q.id);
-    res[q.id] = {
+  Object.keys(defaultQuestions).forEach((identifier) => {
+    const answered = answeredQuestions.find(
+      (aq) => aq.identifier === identifier,
+    );
+    res[identifier] = {
       value: answered?.result,
-      label: q.label,
+      label: defaultQuestions[identifier].label,
     };
   });
   return res;
@@ -367,9 +395,11 @@ export async function getData(
     return {};
   }
   let res: FormattedQueryData = {};
-  defaultQuestions.questions.forEach((q) => {
-    const answered = answeredQuestions.find((aq) => aq.identifier === q.id);
-    res[q.id] = answered?.result;
+  Object.keys(defaultQuestions).forEach((identifier) => {
+    const answered = answeredQuestions.find(
+      (aq) => aq.identifier === identifier,
+    );
+    res[identifier] = answered?.result;
   });
 
   return res;
