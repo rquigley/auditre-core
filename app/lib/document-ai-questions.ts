@@ -24,9 +24,7 @@ export interface AIQuestionCustom {
 
 export type AIQuestion = AIQuestionBasic | AIQuestionCustom;
 
-export const documentAiQuestions: {
-  [K in DocumentClassificationType]?: Record<string, AIQuestion>;
-} = {
+export const documentAiQuestions = {
   ARTICLES_OF_INCORPORATION: {
     incorporationDate: {
       label: 'Date of incorporation',
@@ -208,4 +206,4 @@ export const documentAiQuestions: {
       }),
     },
   },
-};
+} as const;

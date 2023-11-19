@@ -207,6 +207,7 @@ CREATE TABLE "account_mapping" (
   "account_number" text,
   "account_name" text,
   "account_type" text,
+  "context" text,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
@@ -225,10 +226,17 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account_mapping" FOR
 
 CREATE TABLE "account_balance" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
-  "account_mapping_id" uuid NOT NULL REFERENCES "account_mapping" ("id"),
+  "account_mapping_id" uuid REFERENCES "account_mapping" ("id"),
+  -- account_number/account_name are persisted despite some redundancy with account_mapping.
+  -- 1. The names are sometimes subtly different, specifically in Quickbooks
+  -- 2. If we import the trial balance prior to the Chart of Accounts, we still want to show something to the user
+  "account_number" text,
+  "account_name" text,
   "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
-  "balance" numeric(14,4),
+  "debit" numeric(14,4),
+  "credit" numeric(14,4),
   "currency" text check (currency IN ('USD', 'EUR', 'GBP')) NOT NULL DEFAULT 'USD',
+  "context" text,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   -- "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE

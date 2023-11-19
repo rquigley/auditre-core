@@ -5,11 +5,9 @@ import { getById as getDocumentById } from '@/controllers/document';
 import { call, DEFAULT_OPENAI_MODEL } from '@/lib/ai';
 import { db } from '@/lib/db';
 import { documentAiQuestions } from '@/lib/document-ai-questions';
-import { requestTypes } from '@/lib/request-types';
 import { delay, head, humanCase } from '@/lib/util';
 
 import type { OpenAIMessage } from '@/lib/ai';
-import type { FormField } from '@/lib/request-types';
 import type {
   Document,
   DocumentId,

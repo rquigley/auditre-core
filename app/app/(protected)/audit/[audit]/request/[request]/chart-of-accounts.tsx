@@ -1,7 +1,9 @@
+import { SecondaryButton } from '@/components/button';
 import {
   accountTypes,
   getAllAccountMappingsByAuditId,
 } from '@/controllers/account-mapping';
+import { extractAccountMapping } from '@/lib/actions';
 import { AccountMapping } from './account-mapping';
 
 import type { AccountType, AuditId } from '@/types';
@@ -12,6 +14,14 @@ export async function ChartOfAccounts({ auditId }: { auditId: AuditId }) {
 
   return (
     <div className="mt-8">
+      <form
+        action={async () => {
+          'use server';
+          await extractAccountMapping(auditId);
+        }}
+      >
+        <SecondaryButton type="submit" label="Reprocess" />
+      </form>
       <table className="min-w-full divide-y divide-gray-300">
         <thead>
           <tr>
@@ -51,7 +61,7 @@ export async function ChartOfAccounts({ auditId }: { auditId: AuditId }) {
                 <td className="w-30 py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
                   {am.accountNumber}
                 </td>
-                <td className="w-30 px-2 py-2 text-sm font-medium text-gray-900">
+                <td className="w-30 px-2 py-2 text-sm text-gray-900">
                   {am.accountName}
                 </td>
                 <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-900">

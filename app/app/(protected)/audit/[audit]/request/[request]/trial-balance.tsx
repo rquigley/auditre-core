@@ -1,17 +1,24 @@
-import {
-  accountTypes,
-  getAllAccountMappingsByAuditId,
-} from '@/controllers/account-mapping';
-import { AccountMapping } from './account-mapping';
+import { SecondaryButton } from '@/components/button';
+import { getAllAccountBalancesByAuditId } from '@/controllers/account-mapping';
+import { extractTrialBalance } from '@/lib/actions';
+// import { AccountBalance } from './account-balance';
+import { ppCurrency } from '@/lib/util';
 
 import type { AccountType, AuditId } from '@/types';
 
 export async function TrialBalance({ auditId }: { auditId: AuditId }) {
-  const accountMapping = await getAllAccountMappingsByAuditId(auditId);
-  const aTypes = groupAccountTypes(accountTypes);
+  const accountMapping = await getAllAccountBalancesByAuditId(auditId);
 
   return (
     <div className="mt-8">
+      <form
+        action={async () => {
+          'use server';
+          await extractTrialBalance(auditId);
+        }}
+      >
+        <SecondaryButton type="submit" label="Reprocess" />
+      </form>
       <table className="min-w-full divide-y divide-gray-300">
         <thead>
           <tr>
@@ -25,7 +32,7 @@ export async function TrialBalance({ auditId }: { auditId: AuditId }) {
               scope="col"
               className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
             >
-              Account Name
+              Account name
             </th>
             <th
               scope="col"
@@ -33,13 +40,25 @@ export async function TrialBalance({ auditId }: { auditId: AuditId }) {
             >
               Mapped to
             </th>
+            <th
+              scope="col"
+              className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Credit
+            </th>
+            <th
+              scope="col"
+              className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Debit
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 bg-white">
           {accountMapping.length === 0 ? (
             <tr>
               <td
-                colSpan={3}
+                colSpan={4}
                 className="px-2 py-2 text-sm font-medium text-gray-900"
               >
                 No accounts found
@@ -51,17 +70,30 @@ export async function TrialBalance({ auditId }: { auditId: AuditId }) {
                 <td className="w-30 py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
                   {am.accountNumber}
                 </td>
-                <td className="w-30 px-2 py-2 text-sm font-medium text-gray-900">
+                <td className="w-30 py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
                   {am.accountName}
                 </td>
-                <td className="w-full whitespace-nowrap px-2 py-2 text-sm text-gray-900">
-                  <AccountMapping
+                <td className="w-30 px-2 py-2 text-sm text-gray-900">
+                  {am.mappedToAccountName ? (
+                    am.mappedToAccountName
+                  ) : (
+                    <span className="text-red-600">Could not map</span>
+                  )}
+                </td>
+                <td className="w-30 px-2 py-2 text-sm font-medium text-gray-900">
+                  {am.credit > 0 ? ppCurrency(parseFloat(am.credit)) : '-'}
+                </td>
+                <td className="w-30 px-2 py-2 text-sm font-medium text-gray-900">
+                  {am.debit > 0 ? ppCurrency(parseFloat(am.debit)) : '-'}
+                </td>
+                {/* <td className="w-full whitespace-nowrap px-2 py-2 text-sm text-gray-900">
+                  <AccountBalance
                     auditId={auditId}
                     accountMappingId={am.id}
                     accountType={am.accountType}
                     accountTypes={aTypes}
                   />
-                </td>
+                </td> */}
               </tr>
             ))
           )}

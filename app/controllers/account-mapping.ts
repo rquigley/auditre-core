@@ -1,5 +1,8 @@
 import dedent from 'dedent';
+import leven from 'leven';
+import { PassjoinIndex } from 'mnemonist';
 import { inferSchema, initParser } from 'udsv';
+import * as z from 'zod';
 
 import {
   getById as getDocumentById,
@@ -12,6 +15,7 @@ import {
 import { getDataForRequestAttribute } from '@/controllers/request-data';
 import { call } from '@/lib/ai';
 import { db } from '@/lib/db';
+import { documentAiQuestions } from '@/lib/document-ai-questions';
 import { AccountType } from '@/types';
 
 import type { OpenAIMessage } from '@/lib/ai';
@@ -106,6 +110,31 @@ export async function updateAccountMappingType(
     .execute();
 }
 
+// export type AccountBalanceAll = Pick<
+//   AccountBalance,
+//   'id' | 'accountNumber' | 'accountName' | 'accountType'
+// >;
+export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
+  return await db
+    .selectFrom('accountBalance as ab')
+    .leftJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')
+    .select([
+      'ab.id',
+      'ab.accountNumber',
+      'ab.accountName',
+      'am.accountName as mappedToAccountName',
+      'am.accountType',
+      'credit',
+      'debit',
+      'currency',
+      'ab.context',
+    ])
+    .where('ab.auditId', '=', auditId)
+    .where('ab.isDeleted', '=', false)
+    //.orderBy(['accountNumber', 'accountName'])
+    .execute();
+}
+
 export async function extractChartOfAccountsMapping(
   auditId: AuditId,
 ): Promise<boolean> {
@@ -134,8 +163,8 @@ export async function extractChartOfAccountsMapping(
 
   const { rows, colIdxs } = await getSheetData(document);
   if (
-    !colIdxs ||
-    (colIdxs.accountNumber === -1 && colIdxs.accountName === -1)
+    colIdxs.classifiedType !== document.classifiedType ||
+    (colIdxs.accountIdColumnIdx === -1 && colIdxs.accountNameColumnIdx === -1)
   ) {
     console.log('Invalid colIdxs', colIdxs);
     return false;
@@ -163,8 +192,8 @@ export async function extractChartOfAccountsMapping(
   const newMap = new Map();
   const toAdd = [];
   for (const row of rows) {
-    const accountNumber = row[colIdxs.accountNumber];
-    const accountName = row[colIdxs.accountName];
+    const accountNumber = row[colIdxs.accountIdColumnIdx];
+    const accountName = row[colIdxs.accountNameColumnIdx];
     if (!accountNumber && !accountName) {
       continue;
     }
@@ -229,70 +258,91 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
 
   const { rows, colIdxs } = await getSheetData(document);
   if (
-    !colIdxs ||
-    (colIdxs.accountNumber === -1 && colIdxs.accountName === -1)
+    colIdxs.classifiedType !== document.classifiedType ||
+    (colIdxs.accountIdColumnIdx === -1 &&
+      colIdxs.accountNameColumnIdx === -1) ||
+    colIdxs.debitColumnIdx === -1 ||
+    colIdxs.creditColumnIdx === -1
   ) {
-    console.log('Invalid colIdxs', colIdxs);
+    console.log('Missing account colIdxs', colIdxs);
     return false;
   }
 
-  const existingRows = await getAllAccountMappingsByAuditId(auditId);
-  const existingMap = new Map(
-    existingRows.map((r) => [`${r.accountNumber}-${r.accountName}`, r]),
+  await db.updateTable('accountBalance').set({ isDeleted: true }).execute();
+
+  const accountMappingRows = await db
+    .selectFrom('accountMapping')
+    .select(['id', 'accountNumber', 'accountName'])
+    .where('auditId', '=', auditId)
+    .where('isDeleted', '=', false)
+    // .where('accountType', 'is not', null)
+    .execute();
+
+  const tree = PassjoinIndex.from(
+    accountMappingRows.map(
+      (r) => `${r.accountNumber || ''}${r.accountName || ''}`,
+    ),
+    leven,
+    7,
   );
 
-  const existingDeletedWithTypeRows = await db
-    .selectFrom('accountMapping')
-    .select(['id', 'accountNumber', 'accountName', 'accountType'])
-    .where('auditId', '=', auditId)
-    .where('isDeleted', '=', true)
-    .where('accountType', 'is not', null)
-    .execute();
-  const existingTypeMap = new Map(
-    existingDeletedWithTypeRows.map((r) => [
-      `${r.accountNumber}-${r.accountName}`,
-      r.accountType,
+  const accountMappingMap = new Map(
+    accountMappingRows.map((r) => [
+      `${r.accountNumber || ''}${r.accountName || ''}`,
+      r.id,
     ]),
   );
 
-  const newMap = new Map();
   const toAdd = [];
   for (const row of rows) {
-    const accountNumber = row[colIdxs.accountNumber];
-    const accountName = row[colIdxs.accountName];
-    if (!accountNumber && !accountName) {
+    if (
+      (!row[colIdxs.accountIdColumnIdx] &&
+        !row[colIdxs.accountNameColumnIdx]) ||
+      (row[colIdxs.debitColumnIdx] === '' &&
+        row[colIdxs.creditColumnIdx] === '') ||
+      // Naive, but we want ultimately want to ignore any type of total
+      String(row[colIdxs.accountNameColumnIdx])?.toUpperCase() === 'TOTAL'
+    ) {
       continue;
     }
-    newMap.set(`${accountNumber}-${accountName}`, {
-      accountNumber,
-      accountName,
-    });
-    if (!existingMap.has(`${accountNumber}-${accountName}`)) {
-      toAdd.push({
-        auditId: auditId,
-        accountNumber,
-        accountName,
-        accountType: existingTypeMap.get(`${accountNumber}-${accountName}`),
+    const searchKey = `${row[colIdxs.accountIdColumnIdx] || ''}${
+      row[colIdxs.accountNameColumnIdx] || ''
+    }`;
+
+    let accountMappingId;
+
+    // This is the "Deal with Quickbooks" logic. Quickbooks places account IDs within the account name,
+    // but doesn't do so consistently e.g. "1000 - Cash" vs "1000 Cash". We use a passjoin index to
+    // find the closest match.
+    const suggestions = tree.search(searchKey);
+    if (suggestions.size === 1) {
+      const first = Array.from(suggestions.entries())[0][0];
+      accountMappingId = accountMappingMap.get(first);
+    } else if (suggestions.size > 1) {
+      const distances: [distance: number, key: string][] = Array.from(
+        suggestions.entries(),
+      ).map(([suggestion]) => {
+        return [leven(searchKey, suggestion), suggestion];
       });
+      const bestMatch = distances.sort((a, b) => a[0] - b[0])[0];
+      accountMappingId = accountMappingMap.get(bestMatch[1]);
     }
+
+    const debit = parseFloat(row[colIdxs.debitColumnIdx]) || 0;
+    const credit = parseFloat(row[colIdxs.creditColumnIdx]) || 0;
+    toAdd.push({
+      auditId,
+      accountMappingId,
+      accountNumber: row[colIdxs.accountIdColumnIdx],
+      accountName: row[colIdxs.accountNameColumnIdx],
+      debit,
+      credit,
+      currency: 'USD',
+    });
   }
 
   if (toAdd.length > 0) {
-    await db.insertInto('accountMapping').values(toAdd).execute();
-  }
-
-  const idsToDelete = [];
-  for (const row of existingRows) {
-    if (!newMap.has(`${row.accountNumber}-${row.accountName}`)) {
-      idsToDelete.push(row.id);
-    }
-  }
-  if (idsToDelete.length > 0) {
-    await db
-      .updateTable('accountMapping')
-      .set({ isDeleted: true })
-      .where('id', 'in', idsToDelete)
-      .execute();
+    await db.insertInto('accountBalance').values(toAdd).execute();
   }
 
   return true;
@@ -347,17 +397,24 @@ async function getColIdxs(
     throw new Error('Invalid columnMappings for document');
   }
 
-  const columnMappings = JSON.parse(columnMappingsRes.result) as any;
+  const res = JSON.parse(columnMappingsRes.result);
+
   if (document.classifiedType === 'CHART_OF_ACCOUNTS') {
     return {
-      accountNumber: columnMappings.accountIdColumnIdx,
-      accountName: columnMappings.accountNameColumnIdx,
-    };
-  } else {
+      ...(res as z.infer<
+        typeof documentAiQuestions.CHART_OF_ACCOUNTS.columnMappings.validate
+      >),
+      classifiedType: document.classifiedType,
+    } as const;
+  } else if (document.classifiedType === 'TRIAL_BALANCE') {
     return {
-      accountNumber: columnMappings.accountIdColumnIdx,
-      accountName: columnMappings.accountNameColumnIdx,
-    };
+      ...(res as z.infer<
+        typeof documentAiQuestions.TRIAL_BALANCE.columnMappings.validate
+      >),
+      classifiedType: document.classifiedType,
+    } as const;
+  } else {
+    throw new Error('Invalid classified type');
   }
 }
 
