@@ -1,4 +1,4 @@
-import { clientSafe, deepCopy, isFieldVisible, omit } from '../util';
+import { bucket, clientSafe, deepCopy, isFieldVisible, omit } from '../util';
 
 describe('omit', () => {
   it('should prune specified keys from an object', () => {
@@ -118,5 +118,18 @@ describe('isFieldVisible', () => {
     expect(isFieldVisible('nope', [true, false], formConfig)).toEqual(false);
     expect(isFieldVisible('nope', [false, true], formConfig)).toEqual(true);
     expect(isFieldVisible('nope', [false, false], formConfig)).toEqual(false);
+  });
+});
+
+describe('bucket', () => {
+  it('should round robin bucket items into groups', () => {
+    const inArr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    const output = bucket(inArr, 3);
+
+    expect(output).toEqual([
+      [1, 4, 7, 10],
+      [2, 5, 8],
+      [3, 6, 9],
+    ]);
   });
 });
