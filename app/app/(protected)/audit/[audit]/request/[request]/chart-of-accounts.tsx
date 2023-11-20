@@ -59,10 +59,10 @@ export async function ChartOfAccounts({ auditId }: { auditId: AuditId }) {
             accountMapping.map((am) => (
               <tr key={am.id}>
                 <td className="w-30 py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-                  {am.accountNumber}
+                  {am.accountNumber || '-'}
                 </td>
                 <td className="w-30 px-2 py-2 text-sm text-gray-900">
-                  {am.accountName}
+                  {am.accountName || '-'}
                 </td>
                 <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-900">
                   <AccountMapping

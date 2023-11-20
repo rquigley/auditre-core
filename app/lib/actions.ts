@@ -334,7 +334,7 @@ export async function extractAccountMapping(auditId: AuditId) {
   revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
 
   await classifyChartOfAccountsTypes(auditId);
-  revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
+  revalidatePath(`/audit/${auditId}`);
 }
 
 export async function extractTrialBalance(auditId: AuditId) {
@@ -348,7 +348,7 @@ export async function extractTrialBalance(auditId: AuditId) {
   }
   const success = await _extractTrialBalance(auditId);
   console.log('completed extractTrialBalance', success);
-  revalidatePath(`/audit/${auditId}/request/trial-balance`);
+  revalidatePath(`/audit/${auditId}`);
 }
 
 export async function overrideAccountMapping({

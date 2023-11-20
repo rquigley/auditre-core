@@ -117,14 +117,19 @@ export async function updateAccountMappingType(
 //   AccountBalance,
 //   'id' | 'accountNumber' | 'accountName' | 'accountType'
 // >;
-export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
-  return await db
+export async function getAllAccountBalancesByAuditId(
+  auditId: AuditId,
+  includeDeleted = false,
+) {
+  let query = db
     .selectFrom('accountBalance as ab')
     .leftJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')
     .select([
       'ab.id',
+      'ab.isDeleted',
       'ab.accountNumber',
       'ab.accountName',
+      'ab.accountMappingId',
       'am.accountName as mappedToAccountName',
       'am.accountType',
       'credit',
@@ -132,10 +137,11 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
       'currency',
       'ab.context',
     ])
-    .where('ab.auditId', '=', auditId)
-    .where('ab.isDeleted', '=', false)
-    //.orderBy(['accountNumber', 'accountName'])
-    .execute();
+    .where('ab.auditId', '=', auditId);
+  if (!includeDeleted) {
+    query = query.where('ab.isDeleted', '=', includeDeleted);
+  }
+  return await query.orderBy(['accountNumber', 'accountName']).execute();
 }
 
 export async function extractChartOfAccountsMapping(
@@ -257,7 +263,7 @@ export async function classifyChartOfAccountsTypes(
 
   const remainingRows = await autoClassifyCOARows(rows);
   const aiP = [];
-  for (const bucketRows of bucket(remainingRows, 20, 4)) {
+  for (const bucketRows of bucket(remainingRows, 20, 8)) {
     aiP.push(aiClassifyCOARows(bucketRows));
   }
   await Promise.allSettled(aiP);
@@ -356,6 +362,10 @@ export async function aiClassifyCOARows(
       console.log('Invalid accountType', accountType);
       continue;
     }
+    // TODO: consider removing this to avoid constantly using AI
+    if (accountType === 'UNKNOWN') {
+      continue;
+    }
     toUpdate.push(
       db
         .updateTable('accountMapping')
@@ -369,24 +379,23 @@ export async function aiClassifyCOARows(
 }
 
 export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
-  const documentIdRes = await getDataForRequestAttribute(
+  const tbDocRequest = await getDataForRequestAttribute(
     auditId,
     'trial-balance',
     'documentId',
   );
   if (
-    !documentIdRes ||
-    !documentIdRes.data ||
-    'value' in documentIdRes.data ||
-    !documentIdRes.data.isDocuments
+    !tbDocRequest ||
+    !tbDocRequest.data ||
+    'value' in tbDocRequest.data ||
+    !tbDocRequest.data.isDocuments
   ) {
     return false;
   }
-  const documentIds = documentIdRes.data.documentIds;
-  if (documentIds.length !== 1) {
+  if (tbDocRequest.data.documentIds.length !== 1) {
     return false;
   }
-  const document = await getDocumentById(documentIds[0]);
+  const document = await getDocumentById(tbDocRequest.data.documentIds[0]);
 
   if (document.classifiedType !== 'TRIAL_BALANCE') {
     throw new Error('Invalid classified type');
@@ -404,8 +413,13 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     return false;
   }
 
-  // This is dumb, be smarter!!!
-  await db.updateTable('accountBalance').set({ isDeleted: true }).execute();
+  const existingRows = await getAllAccountBalancesByAuditId(auditId, true);
+  const existingMap = new Map(
+    existingRows.map((r) => [
+      `${r.accountNumber || ''}${r.accountName || ''}`,
+      r,
+    ]),
+  );
 
   const accountMappingRows = await db
     .selectFrom('accountMapping')
@@ -415,6 +429,7 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     // .where('accountType', 'is not', null)
     .execute();
 
+  // Index for fuzzy search
   const tree = PassjoinIndex.from(
     accountMappingRows.map(
       (r) => `${r.accountNumber || ''}${r.accountName || ''}`,
@@ -431,56 +446,108 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
   );
 
   const toAdd = [];
+  const toUpdate = [];
+  const idsToRetain: string[] = [];
   for (const row of rows) {
+    const accountNumber = row[colIdxs.accountIdColumnIdx] || '';
+    const accountName = row[colIdxs.accountNameColumnIdx] || '';
     if (
-      (!row[colIdxs.accountIdColumnIdx] &&
-        !row[colIdxs.accountNameColumnIdx]) ||
+      (!accountNumber && !accountName) ||
       (row[colIdxs.debitColumnIdx] === '' &&
         row[colIdxs.creditColumnIdx] === '') ||
       // Naive, but we want ultimately want to ignore any type of total
-      String(row[colIdxs.accountNameColumnIdx])?.toUpperCase() === 'TOTAL'
+      String(accountName)?.toUpperCase() === 'TOTAL'
     ) {
       continue;
     }
-    const searchKey = `${row[colIdxs.accountIdColumnIdx] || ''}${
-      row[colIdxs.accountNameColumnIdx] || ''
-    }`;
+    const searchKey = `${accountNumber}${accountName}`;
+    const newDebit = parseFloat(row[colIdxs.debitColumnIdx]) || 0;
+    const newCredit = parseFloat(row[colIdxs.creditColumnIdx]) || 0;
+    const accountMappingId = getAccountMappingIdFromSearchIndex(
+      searchKey,
+      tree,
+      accountMappingMap,
+    );
 
-    let accountMappingId;
+    if (existingMap.has(searchKey)) {
+      const existing = existingMap.get(searchKey) as (typeof existingRows)[0];
 
-    // This is the "Deal with Quickbooks" logic. Quickbooks places account IDs within the account name,
-    // but doesn't do so consistently e.g. "1000 - Cash" vs "1000 Cash". We use a passjoin index to
-    // find the closest match.
-    const suggestions = tree.search(searchKey);
-    if (suggestions.size === 1) {
-      const first = Array.from(suggestions.entries())[0][0];
-      accountMappingId = accountMappingMap.get(first);
-    } else if (suggestions.size > 1) {
-      const distances: [distance: number, key: string][] = Array.from(
-        suggestions.entries(),
-      ).map(([suggestion]) => {
-        return [leven(searchKey, suggestion), suggestion];
+      if (
+        existing.debit !== newDebit ||
+        existing.credit !== newCredit ||
+        (accountMappingId && existing.accountMappingId !== accountMappingId) ||
+        existing.isDeleted
+      ) {
+        toUpdate.push(
+          db
+            .updateTable('accountBalance')
+            .set({
+              accountMappingId: existing.accountMappingId || accountMappingId,
+              debit: newDebit,
+              credit: newCredit,
+              isDeleted: false,
+            })
+            .where('id', '=', existing.id)
+            .execute(),
+        );
+        idsToRetain.push(existing.id);
+      }
+    } else {
+      toAdd.push({
+        auditId,
+        accountMappingId,
+        accountNumber,
+        accountName,
+        debit: newDebit,
+        credit: newCredit,
+        currency: 'USD',
       });
-      const bestMatch = distances.sort((a, b) => a[0] - b[0])[0];
-      accountMappingId = accountMappingMap.get(bestMatch[1]);
     }
-
-    toAdd.push({
-      auditId,
-      accountMappingId: accountMappingId || null,
-      accountNumber: row[colIdxs.accountIdColumnIdx] || '',
-      accountName: row[colIdxs.accountNameColumnIdx] || '',
-      debit: parseFloat(row[colIdxs.debitColumnIdx]) || 0,
-      credit: parseFloat(row[colIdxs.creditColumnIdx]) || 0,
-      currency: 'USD',
-    });
   }
 
   if (toAdd.length > 0) {
     await db.insertInto('accountBalance').values(toAdd).execute();
   }
+  const idsToDelete = existingRows
+    .filter((r) => idsToRetain.includes(r.id) === false)
+    .map((r) => r.id);
+
+  if (idsToDelete.length > 0) {
+    await db
+      .updateTable('accountBalance')
+      .set({ isDeleted: true })
+      .where('id', 'in', idsToDelete)
+      .execute();
+  }
 
   return true;
+}
+
+/**
+ * This is the "Deal with Quickbooks" logic. Quickbooks places account IDs within the account name,
+ * but doesn't do so consistently e.g. "1000 - Cash" vs "1000 Cash". We use a passjoin index to
+ * find the closest match.
+ **/
+function getAccountMappingIdFromSearchIndex(
+  key: string,
+  tree: PassjoinIndex<string>,
+  accountMappingMap: Map<string, AccountMappingId>,
+) {
+  let accountMappingId;
+  const suggestions = tree.search(key);
+  if (suggestions.size === 1) {
+    const first = Array.from(suggestions.entries())[0][0];
+    accountMappingId = accountMappingMap.get(first);
+  } else if (suggestions.size > 1) {
+    const distances: [distance: number, key: string][] = Array.from(
+      suggestions.entries(),
+    ).map(([suggestion]) => {
+      return [leven(key, suggestion), suggestion];
+    });
+    const bestMatch = distances.sort((a, b) => a[0] - b[0])[0];
+    accountMappingId = accountMappingMap.get(bestMatch[1]);
+  }
+  return accountMappingId || null;
 }
 
 async function getSheetData(document: Document) {

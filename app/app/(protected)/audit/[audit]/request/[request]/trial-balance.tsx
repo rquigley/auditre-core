@@ -68,10 +68,10 @@ export async function TrialBalance({ auditId }: { auditId: AuditId }) {
             accountMapping.map((am) => (
               <tr key={am.id}>
                 <td className="w-30 py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-                  {am.accountNumber}
+                  {am.accountNumber || '-'}
                 </td>
                 <td className="w-30 py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-                  {am.accountName}
+                  {am.accountName || '-'}
                 </td>
                 <td className="w-30 px-2 py-2 text-sm text-gray-900">
                   {am.mappedToAccountName ? (
@@ -81,10 +81,14 @@ export async function TrialBalance({ auditId }: { auditId: AuditId }) {
                   )}
                 </td>
                 <td className="w-30 px-2 py-2 text-sm font-medium text-gray-900">
-                  {am.credit > 0 ? ppCurrency(parseFloat(am.credit)) : '-'}
+                  {am.credit > 0
+                    ? ppCurrency(parseFloat(am.credit as unknown as string))
+                    : '-'}
                 </td>
                 <td className="w-30 px-2 py-2 text-sm font-medium text-gray-900">
-                  {am.debit > 0 ? ppCurrency(parseFloat(am.debit)) : '-'}
+                  {am.debit > 0
+                    ? ppCurrency(parseFloat(am.debit as unknown as string))
+                    : '-'}
                 </td>
                 {/* <td className="w-full whitespace-nowrap px-2 py-2 text-sm text-gray-900">
                   <AccountBalance
