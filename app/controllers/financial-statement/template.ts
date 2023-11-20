@@ -48,11 +48,11 @@ export function sectionsToBody<T>(
   wrapper: ({
     header,
     body,
-    pageBreakBefore = false,
+    pageBreakBefore,
   }: {
     header: string;
     body: string;
-    pageBreakBefore: boolean;
+    pageBreakBefore?: boolean;
   }) => T[],
 ) {
   const ret = [];
