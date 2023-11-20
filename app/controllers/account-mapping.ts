@@ -1,5 +1,8 @@
 import dedent from 'dedent';
+import leven from 'leven';
+import { PassjoinIndex } from 'mnemonist';
 import { inferSchema, initParser } from 'udsv';
+import * as z from 'zod';
 
 import {
   getById as getDocumentById,
@@ -12,6 +15,11 @@ import {
 import { getDataForRequestAttribute } from '@/controllers/request-data';
 import { call } from '@/lib/ai';
 import { db } from '@/lib/db';
+import {
+  documentAiQuestions,
+  isAIQuestionJSON,
+} from '@/lib/document-ai-questions';
+import { bucket } from '@/lib/util';
 import { AccountType } from '@/types';
 
 import type { OpenAIMessage } from '@/lib/ai';
@@ -47,6 +55,7 @@ export const accountTypes: Record<AccountType, string> = {
   EQUITY_COMMON_STOCK: 'Common stock',
   EQUITY_PAID_IN_CAPITAL: 'Additional paid-in capital',
   EQUITY_ACCUMULATED_DEFICIT: 'Accumulated deficit',
+  UNKNOWN: 'Unknown',
 } as const;
 
 export function createAccountMapping(
@@ -56,9 +65,7 @@ export function createAccountMapping(
     .insertInto('accountMapping')
     .values({ ...accountMapping })
     .onConflict((oc) =>
-      oc
-        .columns(['auditId', 'accountNumber', 'accountName', 'documentId'])
-        .doNothing(),
+      oc.columns(['auditId', 'accountNumber', 'accountName']).doNothing(),
     )
     .returningAll()
     .executeTakeFirst();
@@ -77,82 +84,64 @@ export function getAccountMappingById(
 
 export type AccountMappingAll = Pick<
   AccountMapping,
-  'id' | 'documentId' | 'accountNumber' | 'accountName' | 'accountType'
+  'id' | 'accountNumber' | 'accountName' | 'accountType'
 >;
 export async function getAllAccountMappingsByAuditId(
   auditId: AuditId,
 ): Promise<AccountMappingAll[]> {
-  const res = await db
+  return await db
     .selectFrom('accountMapping')
-    .select(['id', 'documentId', 'accountNumber', 'accountName', 'accountType'])
+    .select(['id', 'accountNumber', 'accountName', 'accountType'])
     .where('auditId', '=', auditId)
     .where('isDeleted', '=', false)
+    .orderBy(['accountNumber', 'accountName'])
     .execute();
-
-  const overrides = res.filter((r) => r.documentId === null);
-  const overridesMap = new Map(
-    overrides.map((r) => [`${r.accountNumber}-${r.accountName}`, r]),
-  );
-  const base = res.filter((r) => r.documentId !== null);
-
-  const baseWithOverrides = base.map((r) => {
-    const override = overridesMap.get(`${r.accountNumber}-${r.accountName}`);
-    if (!override) {
-      return r;
-    }
-
-    return {
-      ...r,
-      accountType: override.accountType,
-    };
-  });
-
-  return baseWithOverrides;
 }
 
-export async function setAccountMappingType(
-  auditId: AuditId,
-  accountMappingId: AccountMappingId,
-  accountType: AccountType,
+export async function updateAccountMappingType(
+  id: AccountMappingId,
+  accountType: AccountType | null,
 ) {
-  const existing = await getAccountMappingById(accountMappingId);
+  if (accountType !== null && !accountTypes[accountType]) {
+    throw new Error(`Invalid account type: ${accountType}}`);
+  }
 
-  // delete any existing override
   await db
     .updateTable('accountMapping')
-    .set({ isDeleted: true })
-    .where('auditId', '=', auditId)
-    .where('accountNumber', '=', existing.accountNumber)
-    .where('accountName', '=', existing.accountName)
-    .where('documentId', 'is', null)
-    .execute();
-
-  await createAccountMapping({
-    auditId,
-    accountNumber: existing.accountNumber,
-    accountName: existing.accountName,
-    accountType,
-  });
-}
-
-export function deleteAccountMappingsFromDocument(auditId: AuditId) {
-  return db
-    .updateTable('accountMapping')
-    .set({ isDeleted: true })
-    .where('auditId', '=', auditId)
-    .where('documentId', 'is not', null)
-    .execute();
-}
-
-export function updateAccountMapping(
-  id: AccountMappingId,
-  updateWith: AccountMappingUpdate,
-) {
-  return db
-    .updateTable('accountMapping')
-    .set(updateWith)
+    .set({ accountType })
     .where('id', '=', id)
     .execute();
+}
+
+// export type AccountBalanceAll = Pick<
+//   AccountBalance,
+//   'id' | 'accountNumber' | 'accountName' | 'accountType'
+// >;
+export async function getAllAccountBalancesByAuditId(
+  auditId: AuditId,
+  includeDeleted = false,
+) {
+  let query = db
+    .selectFrom('accountBalance as ab')
+    .leftJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')
+    .select([
+      'ab.id',
+      'ab.isDeleted',
+      'ab.accountNumber',
+      'ab.accountName',
+      'ab.accountMappingId',
+      'am.accountName as mappedToAccountName',
+      'am.accountType',
+      'credit',
+      'debit',
+      'currency',
+      'ab.context',
+    ])
+    .where('ab.auditId', '=', auditId);
+  if (!includeDeleted) {
+    query = query.where('ab.isDeleted', '=', includeDeleted);
+  }
+  return await query.orderBy(['accountNumber', 'accountName']).execute();
 }
 
 export async function extractChartOfAccountsMapping(
@@ -182,30 +171,383 @@ export async function extractChartOfAccountsMapping(
   }
 
   const { rows, colIdxs } = await getSheetData(document);
+  if (
+    colIdxs.classifiedType !== document.classifiedType ||
+    (colIdxs.accountIdColumnIdx === -1 && colIdxs.accountNameColumnIdx === -1)
+  ) {
+    console.log('Invalid colIdxs', colIdxs);
+    return false;
+  }
 
-  await deleteAccountMappingsFromDocument(auditId);
+  const existingRows = await getAllAccountMappingsByAuditId(auditId);
+  const existingMap = new Map(
+    existingRows.map((r) => [`${r.accountNumber}-${r.accountName}`, r]),
+  );
 
-  let insertP = [];
-  console.log(colIdxs);
+  const existingDeletedWithTypeRows = await db
+    .selectFrom('accountMapping')
+    .select(['id', 'accountNumber', 'accountName', 'accountType'])
+    .where('auditId', '=', auditId)
+    .where('isDeleted', '=', true)
+    .where('accountType', 'is not', null)
+    .execute();
+  const existingTypeMap = new Map(
+    existingDeletedWithTypeRows.map((r) => [
+      `${r.accountNumber}-${r.accountName}`,
+      r.accountType,
+    ]),
+  );
+
+  const newMap = new Map();
+  const toAdd = [];
   for (const row of rows) {
-    const accountNumber = row[colIdxs.accountNumber];
-    const accountName = row[colIdxs.accountName];
+    const accountNumber = row[colIdxs.accountIdColumnIdx];
+    const accountName = row[colIdxs.accountNameColumnIdx];
     if (!accountNumber && !accountName) {
       continue;
     }
-    insertP.push(
-      createAccountMapping({
+    newMap.set(`${accountNumber}-${accountName}`, {
+      accountNumber,
+      accountName,
+    });
+    if (!existingMap.has(`${accountNumber}-${accountName}`)) {
+      toAdd.push({
         auditId: auditId,
         accountNumber,
         accountName,
-        documentId: document.id,
-      }),
-    );
+        accountType: existingTypeMap.get(`${accountNumber}-${accountName}`),
+        context: JSON.stringify(row),
+      });
+    }
   }
-  await Promise.allSettled(insertP);
-  await Promise.all(insertP);
+
+  if (toAdd.length > 0) {
+    await db.insertInto('accountMapping').values(toAdd).execute();
+  }
+
+  const idsToDelete = [];
+  for (const row of existingRows) {
+    if (!newMap.has(`${row.accountNumber}-${row.accountName}`)) {
+      idsToDelete.push(row.id);
+    }
+  }
+  if (idsToDelete.length > 0) {
+    await db
+      .updateTable('accountMapping')
+      .set({ isDeleted: true })
+      .where('id', 'in', idsToDelete)
+      .execute();
+  }
 
   return true;
+}
+
+type AccountMappingToClassifyRow = {
+  id: string;
+  accountNumber: string;
+  accountName: string;
+  accountType: AccountType | null;
+  context: string | null;
+};
+
+export async function classifyChartOfAccountsTypes(
+  auditId: AuditId,
+): Promise<void> {
+  const rows = await db
+    .selectFrom('accountMapping')
+    .select(['id', 'accountNumber', 'accountName', 'accountType', 'context'])
+    .where('auditId', '=', auditId)
+    .where('isDeleted', '=', false)
+    .where('accountType', 'is', null)
+    .execute();
+
+  const remainingRows = await autoClassifyCOARows(rows);
+  const aiP = [];
+  for (const bucketRows of bucket(remainingRows, 20, 8)) {
+    aiP.push(aiClassifyCOARows(bucketRows));
+  }
+  await Promise.allSettled(aiP);
+  await Promise.all(aiP);
+}
+
+/**
+ *
+ * Classify any rows that we can before handing off to the AI
+ */
+async function autoClassifyCOARows(
+  rows: AccountMappingToClassifyRow[],
+): Promise<AccountMappingToClassifyRow[]> {
+  const toUpdate = [];
+  let accountType: AccountType;
+  const remainingRows = [];
+  for (const row of rows) {
+    const key = String(row.accountName).toLowerCase();
+    if (key.includes('accounts payable')) {
+      accountType = 'LIABILITY_ACCOUNTS_PAYABLE';
+    } else if (key.includes('common stock')) {
+      accountType = 'EQUITY_COMMON_STOCK';
+    } else {
+      remainingRows.push(row);
+      continue;
+    }
+
+    toUpdate.push(
+      db
+        .updateTable('accountMapping')
+        .set({ accountType })
+        .where('id', '=', row.id)
+        .execute(),
+    );
+  }
+  await Promise.allSettled(toUpdate);
+  await Promise.all(toUpdate);
+  return rows;
+}
+
+export async function aiClassifyCOARows(
+  bucketRows: AccountMappingToClassifyRow[],
+): Promise<void> {
+  const rowMap = new Map(bucketRows.map((r, idx) => [idx, r.id]));
+  const toAiRows = bucketRows.map((r, idx) => [idx, r.context]);
+
+  const t0 = performance.now();
+  const messages: OpenAIMessage[] = [
+    {
+      role: 'system',
+      content: dedent`
+      For each row in an export of a company chart of accounts report, classify each row to one of the following
+      account types used for financial statements:
+
+      ${Object.entries(accountTypes)
+        .map(([aType, description]) => `- ${aType}: ${description}`)
+        .join('\n')}
+
+      If unable to classify the row, set accountType as 'UNKNOWN'
+
+      Do not truncate for brevity. Return all rows in the CSV.
+
+      Output in JSON using the following structure:
+
+        {"data":[[accountId1, classifiedAs1],[accountId2, classifiedAs2],[accountId3, classifiedAs3],...]}
+      `,
+    },
+    {
+      role: 'user',
+      content: JSON.stringify(toAiRows),
+    },
+    // {
+    //   role: 'system',
+    //   content:
+    //     "Does your response only include the document's type and the reasoning in parenthesis? If there is any extraneous text, remove it",
+    // },
+  ];
+
+  const resp = await call({
+    requestedModel: 'gpt-4-1106-preview',
+    messages,
+    respondInJSON: true,
+    // h ttps://twitter.com/mattshumer_/status/1720108414049636404
+  });
+  const schema = z.object({
+    data: z.array(z.tuple([z.number(), z.string()])),
+  });
+
+  const parsed = schema.parse(resp.message);
+  const t1 = performance.now();
+  console.log('Time (ms) to create messages', t1 - t0);
+  const toUpdate = [];
+  for (const [idx, accountType] of parsed.data) {
+    const id = rowMap.get(idx) as AccountMappingId;
+    if (!id || accountType in accountTypes === false) {
+      console.log('Invalid accountType', accountType);
+      continue;
+    }
+    // TODO: consider removing this to avoid constantly using AI
+    if (accountType === 'UNKNOWN') {
+      continue;
+    }
+    toUpdate.push(
+      db
+        .updateTable('accountMapping')
+        .set({ accountType: accountType as AccountType })
+        .where('id', '=', id)
+        .execute(),
+    );
+    await Promise.allSettled(toUpdate);
+    await Promise.all(toUpdate);
+  }
+}
+
+export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
+  const tbDocRequest = await getDataForRequestAttribute(
+    auditId,
+    'trial-balance',
+    'documentId',
+  );
+  if (
+    !tbDocRequest ||
+    !tbDocRequest.data ||
+    'value' in tbDocRequest.data ||
+    !tbDocRequest.data.isDocuments
+  ) {
+    return false;
+  }
+  if (tbDocRequest.data.documentIds.length !== 1) {
+    return false;
+  }
+  const document = await getDocumentById(tbDocRequest.data.documentIds[0]);
+
+  if (document.classifiedType !== 'TRIAL_BALANCE') {
+    throw new Error('Invalid classified type');
+  }
+
+  const { rows, colIdxs } = await getSheetData(document);
+  if (
+    colIdxs.classifiedType !== document.classifiedType ||
+    (colIdxs.accountIdColumnIdx === -1 &&
+      colIdxs.accountNameColumnIdx === -1) ||
+    colIdxs.debitColumnIdx === -1 ||
+    colIdxs.creditColumnIdx === -1
+  ) {
+    console.log('Missing account colIdxs', colIdxs);
+    return false;
+  }
+
+  const existingRows = await getAllAccountBalancesByAuditId(auditId, true);
+  const existingMap = new Map(
+    existingRows.map((r) => [
+      `${r.accountNumber || ''}${r.accountName || ''}`,
+      r,
+    ]),
+  );
+
+  const accountMappingRows = await db
+    .selectFrom('accountMapping')
+    .select(['id', 'accountNumber', 'accountName'])
+    .where('auditId', '=', auditId)
+    .where('isDeleted', '=', false)
+    // .where('accountType', 'is not', null)
+    .execute();
+
+  // Index for fuzzy search
+  const tree = PassjoinIndex.from(
+    accountMappingRows.map(
+      (r) => `${r.accountNumber || ''}${r.accountName || ''}`,
+    ),
+    leven,
+    7,
+  );
+
+  const accountMappingMap = new Map(
+    accountMappingRows.map((r) => [
+      `${r.accountNumber || ''}${r.accountName || ''}`,
+      r.id,
+    ]),
+  );
+
+  const toAdd = [];
+  const toUpdate = [];
+  const idsToRetain: string[] = [];
+  for (const row of rows) {
+    const accountNumber = row[colIdxs.accountIdColumnIdx] || '';
+    const accountName = row[colIdxs.accountNameColumnIdx] || '';
+    if (
+      (!accountNumber && !accountName) ||
+      (row[colIdxs.debitColumnIdx] === '' &&
+        row[colIdxs.creditColumnIdx] === '') ||
+      // Naive, but we want ultimately want to ignore any type of total
+      String(accountName)?.toUpperCase() === 'TOTAL'
+    ) {
+      continue;
+    }
+    const searchKey = `${accountNumber}${accountName}`;
+    const newDebit = parseFloat(row[colIdxs.debitColumnIdx]) || 0;
+    const newCredit = parseFloat(row[colIdxs.creditColumnIdx]) || 0;
+    const accountMappingId = getAccountMappingIdFromSearchIndex(
+      searchKey,
+      tree,
+      accountMappingMap,
+    );
+
+    if (existingMap.has(searchKey)) {
+      const existing = existingMap.get(searchKey) as (typeof existingRows)[0];
+
+      if (
+        existing.debit !== newDebit ||
+        existing.credit !== newCredit ||
+        (accountMappingId && existing.accountMappingId !== accountMappingId) ||
+        existing.isDeleted
+      ) {
+        toUpdate.push(
+          db
+            .updateTable('accountBalance')
+            .set({
+              accountMappingId: existing.accountMappingId || accountMappingId,
+              debit: newDebit,
+              credit: newCredit,
+              isDeleted: false,
+            })
+            .where('id', '=', existing.id)
+            .execute(),
+        );
+        idsToRetain.push(existing.id);
+      }
+    } else {
+      toAdd.push({
+        auditId,
+        accountMappingId,
+        accountNumber,
+        accountName,
+        debit: newDebit,
+        credit: newCredit,
+        currency: 'USD',
+      });
+    }
+  }
+
+  if (toAdd.length > 0) {
+    await db.insertInto('accountBalance').values(toAdd).execute();
+  }
+  const idsToDelete = existingRows
+    .filter((r) => idsToRetain.includes(r.id) === false)
+    .map((r) => r.id);
+
+  if (idsToDelete.length > 0) {
+    await db
+      .updateTable('accountBalance')
+      .set({ isDeleted: true })
+      .where('id', 'in', idsToDelete)
+      .execute();
+  }
+
+  return true;
+}
+
+/**
+ * This is the "Deal with Quickbooks" logic. Quickbooks places account IDs within the account name,
+ * but doesn't do so consistently e.g. "1000 - Cash" vs "1000 Cash". We use a passjoin index to
+ * find the closest match.
+ **/
+function getAccountMappingIdFromSearchIndex(
+  key: string,
+  tree: PassjoinIndex<string>,
+  accountMappingMap: Map<string, AccountMappingId>,
+) {
+  let accountMappingId;
+  const suggestions = tree.search(key);
+  if (suggestions.size === 1) {
+    const first = Array.from(suggestions.entries())[0][0];
+    accountMappingId = accountMappingMap.get(first);
+  } else if (suggestions.size > 1) {
+    const distances: [distance: number, key: string][] = Array.from(
+      suggestions.entries(),
+    ).map(([suggestion]) => {
+      return [leven(key, suggestion), suggestion];
+    });
+    const bestMatch = distances.sort((a, b) => a[0] - b[0])[0];
+    accountMappingId = accountMappingMap.get(bestMatch[1]);
+  }
+  return accountMappingId || null;
 }
 
 async function getSheetData(document: Document) {
@@ -231,7 +573,7 @@ async function getSheetData(document: Document) {
   }
 
   const schema = inferSchema(csvData);
-  const colIdxs = await getColIdxs(schema, document.id);
+  const colIdxs = await getColIdxs(schema, document);
 
   const parser = initParser(schema);
   const rows = parser.stringArrs(csvData);
@@ -241,93 +583,116 @@ async function getSheetData(document: Document) {
 
 async function getColIdxs(
   schema: ReturnType<typeof inferSchema>,
-  documentId: DocumentId,
+  document: Document,
 ) {
   if ('cols' in schema === false) {
     throw new Error('Invalid schema');
   }
   const columnMappingsRes = await pollGetByDocumentIdAndIdentifier(
-    documentId,
+    document.id,
     'columnMappings',
   );
   if (!columnMappingsRes) {
     throw new Error('No columnMappings query found for document');
   }
-  console.log('FUCK', columnMappingsRes.result);
-  const columnMappings = JSON.parse(columnMappingsRes.result) as {
-    accountIdColumnIdx: number;
-    accountNameColumnIdx: number;
-  };
-  return {
-    accountNumber: columnMappings.accountIdColumnIdx,
-    accountName: columnMappings.accountNameColumnIdx,
-  };
-}
-
-export async function extractChartOfAccountsMappingOpenAi(document: Document) {
-  if (!document.extracted) {
-    throw new Error('Document has no extracted content');
+  if (!columnMappingsRes.result || !columnMappingsRes.isValidated) {
+    throw new Error('Invalid columnMappings for document');
   }
 
-  const messages: OpenAIMessage[] = [
-    {
-      role: 'system',
-      content: dedent`
-        Your response should be in json format. For each row in the Chart of Accounts CSV, extract and classify the following information:
+  const res = JSON.parse(columnMappingsRes.result);
+  const classifiedType = document.classifiedType;
 
-        1. accountId
-        Find the account ID in columns typically labeled 'ID', 'Account No.', 'Code'. It is usually the first or second column and will likely contain numbers.
-        If you can't find an account ID, leave accountId as blank
-
-        2. accountName
-        Find the account name in columns typically labeled 'Account', 'Account Name', 'Name'. It is usually the first or second column and will mostly contain letters.
-        If you can't find an account name, leave accountId as blank
-
-        2. accountType
-        Based off all of the information in the row (including account name) map the account to one of the following account types used for financial statements:
-        ${Object.keys(accountTypes)
-          // @ts-expect-error
-          .map((t) => `- ${t}: ${accountTypes[t]}`)
-          .join('\n')}
-
-        If unable to classify to one of these types, leave accountType as 'UNKNOWN'
-
-        Do not truncate for brevity. Return all rows in the CSV.
-
-        Output Format:
-
-        Use the following structure:
-
-          [{ "accountId": "[ACCOUNT_ID]", "accountName": "[ACCOUNT_NAME]", "accountType": "[ACCOUNT_TYPE]"}, ...]
-        `,
-    },
-    {
-      role: 'user',
-      content: document.extracted,
-    },
-    // {
-    //   role: 'system',
-    //   content:
-    //     "Does your response only include the document's type and the reasoning in parenthesis? If there is any extraneous text, remove it",
-    // },
-  ];
-
-  // let requestedModel: OpenAIModel = 'gpt-3.5-turbo-1106';
-  let requestedModel: OpenAIModel = 'gpt-4-1106-preview';
-
-  const resp = await call({
-    requestedModel,
-    messages,
-    respondInJSON: true,
-    // https://twitter.com/mattshumer_/status/1720108414049636404
-  });
-
-  await create({
-    documentId: document.id,
-    model: resp.model,
-    query: { messages },
-    identifier: 'accountMapping',
-    usage: resp.usage,
-    result: resp.message as string,
-  });
+  if (classifiedType === 'CHART_OF_ACCOUNTS') {
+    if (
+      !isAIQuestionJSON(documentAiQuestions.CHART_OF_ACCOUNTS.columnMappings)
+    ) {
+      throw new Error('Invalid question');
+    }
+    return {
+      ...(res as z.infer<
+        typeof documentAiQuestions.CHART_OF_ACCOUNTS.columnMappings.validate
+      >),
+      classifiedType,
+    } as const;
+  } else if (classifiedType === 'TRIAL_BALANCE') {
+    if (!isAIQuestionJSON(documentAiQuestions.TRIAL_BALANCE.columnMappings)) {
+      throw new Error('Invalid question');
+    }
+    return {
+      ...(res as z.infer<
+        typeof documentAiQuestions.TRIAL_BALANCE.columnMappings.validate
+      >),
+      classifiedType,
+    } as const;
+  } else {
+    throw new Error('Invalid classified type');
+  }
 }
+
+// export async function extractChartOfAccountsMappingOpenAi(document: Document) {
+//   if (!document.extracted) {
+//     throw new Error('Document has no extracted content');
+//   }
+
+//   const messages: OpenAIMessage[] = [
+//     {
+//       role: 'system',
+//       content: dedent`
+//         Your response should be in json format. For each row in the Chart of Accounts CSV, extract and classify the following information:
+
+//         1. accountId
+//         Find the account ID in columns typically labeled 'ID', 'Account No.', 'Code'. It is usually the first or second column and will likely contain numbers.
+//         If you can't find an account ID, leave accountId as blank
+
+//         2. accountName
+//         Find the account name in columns typically labeled 'Account', 'Account Name', 'Name'. It is usually the first or second column and will mostly contain letters.
+//         If you can't find an account name, leave accountId as blank
+
+//         2. accountType
+//         Based off all of the information in the row (including account name) map the account to one of the following account types used for financial statements:
+//         ${Object.keys(accountTypes)
+//           // @ts-expect-error
+//           .map((t) => `- ${t}: ${accountTypes[t]}`)
+//           .join('\n')}
+
+//         If unable to classify to one of these types, leave accountType as 'UNKNOWN'
+
+//         Do not truncate for brevity. Return all rows in the CSV.
+
+//         Output Format:
+
+//         Use the following structure:
+
+//           [{ "accountId": "[ACCOUNT_ID]", "accountName": "[ACCOUNT_NAME]", "accountType": "[ACCOUNT_TYPE]"}, ...]
+//         `,
+//     },
+//     {
+//       role: 'user',
+//       content: document.extracted,
+//     },
+//     // {
+//     //   role: 'system',
+//     //   content:
+//     //     "Does your response only include the document's type and the reasoning in parenthesis? If there is any extraneous text, remove it",
+//     // },
+//   ];
+
+//   // let requestedModel: OpenAIModel = 'gpt-3.5-turbo-1106';
+//   let requestedModel: OpenAIModel = 'gpt-4-1106-preview';
+
+//   const resp = await call({
+//     requestedModel,
+//     messages,
+//     respondInJSON: true,
+//     // https://twitter.com/mattshumer_/status/1720108414049636404
+//   });
+
+//   await create({
+//     documentId: document.id,
+//     model: resp.model,
+//     query: { messages },
+//     identifier: 'accountMapping',
+//     usage: resp.usage,
+//     result: resp.message as string,
+//   });
+// }

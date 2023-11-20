@@ -17,7 +17,7 @@ import {
   Year,
 } from '@/components/form-fields';
 import { nl2br } from '@/components/nl2br';
-import { extractAccountMapping } from '@/lib/actions';
+import { extractAccountMapping, extractTrialBalance } from '@/lib/actions';
 // import SaveNotice from '@/components/save-notice';
 import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
 import { classNames, isFieldVisible } from '@/lib/util';
@@ -74,6 +74,10 @@ export function BasicForm({
       toast.success('Chart of accounts saved. Extracting accounts...');
 
       await extractAccountMapping(auditId);
+    } else if (postSaveAction === 'trial-balance') {
+      toast.success('Trial balance saved. Extracting balances...');
+
+      await extractTrialBalance(auditId);
     } else if (postSaveAction) {
       throw new Error(`Unknown postSaveAction: ${postSaveAction}`);
     } else {

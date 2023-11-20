@@ -7,10 +7,14 @@ import { create as createDocumentQuery } from '@/controllers/document-query';
 import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestAttribute } from '@/controllers/request-data';
 import {
+  AIQuestion,
   AIQuestionBasic,
+  AIQuestionCustom,
+  AIQuestionJSON,
   documentAiQuestions,
 } from '@/lib/document-ai-questions';
 
+import type { DocumentClassificationType } from '@/controllers/document-query';
 import type { OpenAIMessage } from '@/lib/ai';
 import type { AuditId, OrgId, UserId } from '@/types';
 
@@ -289,7 +293,7 @@ async function createDemoDocument({
 }: {
   orgId: OrgId;
   filename: string;
-  classifiedType: string;
+  classifiedType: DocumentClassificationType;
   ai?: any;
   actorUserId: UserId;
 }) {
@@ -325,35 +329,38 @@ async function createDemoDocument({
     uploadedByUserId: actorUserId,
   });
 
-  if (documentAiQuestions[classifiedType]) {
-    const questions = documentAiQuestions[classifiedType].questions.filter(
-      (q) => 'question' in q,
-    ) as AIQuestionBasic[];
-    for (const qConfig of questions) {
+  if (classifiedType in documentAiQuestions) {
+    // @ts-expect-error
+    const qObj = documentAiQuestions[classifiedType];
+    const identifiers = Object.keys(qObj) as string[];
+    for (const identifier of identifiers) {
+      if ((qObj[identifier] as AIQuestionCustom).fn) {
+        continue;
+      }
       const messages: OpenAIMessage[] = [
         {
           role: 'system',
-          content: qConfig.question,
+          content: qObj[identifier].question,
         },
         { role: 'user', content: `"""${extracted}"""` },
       ];
-      if (!ai[qConfig.id]) {
+      if (!ai[identifier]) {
         console.error(
-          `Missing demo ai answer for ${classifiedType}: ${qConfig.id}`,
+          `Missing demo ai answer for ${classifiedType}: ${identifier}`,
         );
       }
       await createDocumentQuery({
         documentId: doc.id,
         model: 'gpt-4',
         query: { messages },
-        identifier: qConfig.id,
+        identifier,
         usage: {
           promptTokens: 0,
           completionTokens: 0,
           totalTokens: 0,
           timeMs: 0,
         },
-        result: ai[qConfig.id] || '',
+        result: ai[identifier] || '',
       });
     }
   }

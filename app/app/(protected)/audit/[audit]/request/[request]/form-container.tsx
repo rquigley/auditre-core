@@ -9,6 +9,7 @@ import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestType } from '@/controllers/request-data';
 import { BasicForm } from './basic-form';
 import { ChartOfAccounts } from './chart-of-accounts';
+import { TrialBalance } from './trial-balance';
 
 import type { Props as BasicFormProps } from './basic-form';
 import type { Request } from '@/controllers/request';
@@ -68,12 +69,11 @@ export default async function FormContainer({
   let secondaryCmp;
   let postSaveAction;
   if (request.id === 'chart-of-accounts') {
-    secondaryCmp = (
-      <Suspense fallback={null}>
-        <ChartOfAccounts auditId={auditId} />
-      </Suspense>
-    );
+    secondaryCmp = <ChartOfAccounts auditId={auditId} />;
     postSaveAction = 'chart-of-accounts';
+  } else if (request.id === 'trial-balance') {
+    secondaryCmp = <TrialBalance auditId={auditId} />;
+    postSaveAction = 'trial-balance';
   } else {
     secondaryCmp = null;
   }
@@ -88,7 +88,9 @@ export default async function FormContainer({
         documents={documents}
         postSaveAction={postSaveAction}
       />
-      {secondaryCmp}
+      {secondaryCmp ? (
+        <Suspense fallback={null}>{secondaryCmp}</Suspense>
+      ) : null}
     </>
   );
 }
