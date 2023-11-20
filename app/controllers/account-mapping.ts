@@ -535,9 +535,6 @@ async function getColIdxs(
   const res = JSON.parse(columnMappingsRes.result);
   const classifiedType = document.classifiedType;
 
-  // if (!documentAiQuestions[document.classifiedType].columnMappings.validate) {
-  //   throw new Error('columnMapping validation not implemented');
-  // }
   if (classifiedType === 'CHART_OF_ACCOUNTS') {
     if (
       !isAIQuestionJSON(documentAiQuestions.CHART_OF_ACCOUNTS.columnMappings)

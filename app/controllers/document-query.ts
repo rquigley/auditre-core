@@ -8,6 +8,7 @@ import { documentAiQuestions } from '@/lib/document-ai-questions';
 import { delay, head, humanCase } from '@/lib/util';
 
 import type { OpenAIMessage } from '@/lib/ai';
+import type { AIQuestion } from '@/lib/document-ai-questions';
 import type {
   Document,
   DocumentId,
@@ -299,7 +300,7 @@ export async function askDefaultQuestions(document: Document): Promise<number> {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
   }
-
+  // @ts-expect-error
   const questions = documentAiQuestions[document.classifiedType];
   if (!questions || !Object.keys(questions).length) {
     return 0;
@@ -341,10 +342,11 @@ export async function getDataWithLabels(
 ): Promise<FormattedQueryDataWithLabels> {
   const { classifiedType } = await getDocumentById(documentId);
   const answeredQuestions = await getAllByDocumentId(documentId);
-  const defaultQuestions = documentAiQuestions[classifiedType];
-  if (!defaultQuestions) {
+  if (classifiedType in documentAiQuestions === false) {
     return {};
   }
+  // @ts-expect-error
+  const defaultQuestions = documentAiQuestions[classifiedType];
   let res: FormattedQueryDataWithLabels = {};
   Object.keys(defaultQuestions).forEach((identifier) => {
     const answered = answeredQuestions.find(
@@ -364,6 +366,7 @@ export async function getData(
 ): Promise<FormattedQueryData> {
   const { classifiedType } = await getDocumentById(documentId);
   const answeredQuestions = await getAllByDocumentId(documentId);
+  // @ts-expect-error
   const defaultQuestions = documentAiQuestions[classifiedType];
   if (!defaultQuestions) {
     return {};
