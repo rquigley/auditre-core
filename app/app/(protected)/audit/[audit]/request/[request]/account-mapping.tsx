@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import clsx from 'clsx';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { overrideAccountMapping } from '@/lib/actions';
@@ -17,16 +18,26 @@ export function AccountMapping({
   accountType: AccountType | null;
   accountTypes: Record<string, Record<string, string>>;
 }) {
+  const [currentAccountType, setCurrentAccountType] = useState<
+    AccountType | string
+  >(accountType || '');
   return useMemo(
     () => (
       <select
-        className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-sky-600 sm:text-sm sm:leading-6"
-        defaultValue={accountType || ''}
+        className={clsx(
+          !currentAccountType || currentAccountType === 'UNKNOWN'
+            ? 'ring-red-600 text-red-900'
+            : 'ring-gray-300 text-gray-900',
+          'mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 ring-1 ring-inset focus:ring-2 focus:ring-sky-600 sm:text-sm sm:leading-6',
+        )}
+        defaultValue={currentAccountType}
         onChange={async (e) => {
+          const val = (e.target.value as AccountType) || null;
+          setCurrentAccountType(e.target.value);
           await overrideAccountMapping({
             auditId,
             accountMappingId,
-            accountType: e.target.value as AccountType,
+            accountType: val,
           });
           toast.success('Account mapping updated');
         }}
@@ -43,6 +54,6 @@ export function AccountMapping({
         ))}
       </select>
     ),
-    [auditId, accountMappingId, accountType, accountTypes],
+    [auditId, accountMappingId, currentAccountType, accountTypes],
   );
 }

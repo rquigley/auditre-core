@@ -1,4 +1,5 @@
 import type { OpenAIMessage } from './lib/ai';
+import type { DocumentClassificationType } from '@/controllers/document-query';
 import type {
   ColumnType,
   Generated,
@@ -9,6 +10,7 @@ import type {
   Updateable,
 } from 'kysely';
 
+export type AccountBalanceId = string;
 export type AccountMappingId = string;
 export type AuditId = string;
 export type CommentId = string;
@@ -184,7 +186,11 @@ export interface DocumentTable {
   //   never,
   //   DocumentType
   // >;
-  classifiedType: ColumnType<string, string | undefined, string>;
+  classifiedType: ColumnType<
+    DocumentClassificationType,
+    DocumentClassificationType | undefined,
+    DocumentClassificationType
+  >;
   extracted: string | null;
   usage: {
     extractMs: number;
@@ -242,6 +248,7 @@ export interface DocumentQueryTable {
   identifier: string;
   query: { messages: OpenAIMessage[] };
   result: string;
+  isValidated: ColumnType<boolean, boolean | undefined, boolean>;
   usage: DocumentQueryUsage;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
@@ -298,16 +305,18 @@ export type AccountType =
   | 'EQUITY_PREFERRED_STOCK'
   | 'EQUITY_COMMON_STOCK'
   | 'EQUITY_PAID_IN_CAPITAL'
-  | 'EQUITY_ACCUMULATED_DEFICIT';
+  | 'EQUITY_ACCUMULATED_DEFICIT'
+
+  // AI failure to classify
+  | 'UNKNOWN';
 
 export interface AccountMappingTable {
   id: GeneratedAlways<AccountMappingId>;
   auditId: AuditId;
-  // orgId: OrgId;
   accountNumber: string;
   accountName: string;
   accountType: AccountType | null;
-  documentId: DocumentId | null;
+  context: string | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
 }
@@ -316,7 +325,29 @@ export type AccountMappingUpdate = Updateable<AccountMappingTable>;
 export type NewAccountMapping = Insertable<AccountMappingTable>;
 export type AccountMapping = Selectable<AccountMappingTable>;
 
+export interface AccountBalanceTable {
+  id: GeneratedAlways<AccountBalanceId>;
+  auditId: AuditId;
+  accountMappingId: AccountMappingId | null;
+  // account_number/account_name are persisted despite some redundancy with account_mapping.
+  // 1. The names are sometimes subtly different, specifically in Quickbooks
+  // 2. If we import the trial balance prior to the Chart of Accounts, we still want to show something to the user
+  accountNumber: string;
+  accountName: string;
+  debit: number;
+  credit: number;
+  currency: string;
+  context: string | null;
+  createdAt: ColumnType<Date, string | undefined, never>;
+  isDeleted: ColumnType<boolean, never, boolean>;
+}
+
+export type AccountBalanceUpdate = Updateable<AccountBalanceTable>;
+export type NewAccountBalance = Insertable<AccountBalanceTable>;
+export type AccountBalance = Selectable<AccountBalanceTable>;
+
 export interface Database extends Kysely<Database> {
+  accountBalance: AccountBalanceTable;
   accountMapping: AccountMappingTable;
   audit: AuditTable;
   comment: CommentTable;

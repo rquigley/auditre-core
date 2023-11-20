@@ -2,6 +2,7 @@ import * as z from 'zod';
 
 import { businessModelTypes } from './business-models';
 
+import type { DocumentClassificationType } from '@/controllers/document-query';
 import type { RequestGroup } from '@/types';
 import type { ZodTypeAny } from 'zod';
 
@@ -50,8 +51,7 @@ export interface FormFieldFile extends _FormFieldBase {
   maxFilesizeMB: number;
   defaultValue: { isDocuments: true; documentIds: readonly string[] };
   allowMultiple?: true;
-  aiClassificationType: string;
-  aiClassificationHint?: string;
+  aiClassificationType: DocumentClassificationType;
 }
 
 export type FormField =
@@ -477,8 +477,6 @@ export const requestTypes = [
         extensions: ['XLS', 'XLSX', 'CSV'],
         input: 'fileupload',
         aiClassificationType: 'CHART_OF_ACCOUNTS',
-        aiClassificationHint:
-          'chart of accounts aka a complete listing, by category, of every account in the general ledger of a company. It can include an account name, identifier, account type, additional description, and sometimes the total balance for that account.',
       },
     },
   ),
@@ -518,8 +516,6 @@ export const requestTypes = [
         input: 'fileupload',
         dependsOn: 'hasCompletedASC606Analysis',
         aiClassificationType: 'ASC_606_ANALYSIS',
-        aiClassificationHint:
-          'Asc 606 analysis. This document identifies five different steps – 1. Identify the contract with a customer, 2. Identify the performance obligations of the contract, 3. Determine the transaction price, 4. Allocate the transaction price, and 5. Recognize revenue when the entity satisfies a performance obligations.',
       },
       revenueRecognitionProcess: {
         input: 'textarea',
@@ -545,7 +541,6 @@ export const requestTypes = [
         input: 'fileupload',
         allowMultiple: true,
         aiClassificationType: 'EQUITY_FINANCING',
-        aiClassificationHint: 'Equity financing documents',
       },
       debtFinancingAgreementDocumentIds: {
         label: 'Debt financing agreements',
@@ -553,7 +548,6 @@ export const requestTypes = [
         input: 'fileupload',
         allowMultiple: true,
         aiClassificationType: 'DEBT_FINANCING_AGREEMENT',
-        aiClassificationHint: 'Debt financing agreements',
       },
     },
   ),
@@ -570,16 +564,12 @@ export const requestTypes = [
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         aiClassificationType: 'CAP_TABLE',
-        aiClassificationHint:
-          'Cap table. The cap table will itemize the number of shares by shareholder. The shares are typically identified as common or preferred shares.',
       },
       certificateTransactionDocumentId: {
         label: 'Certificate Transaction',
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         aiClassificationType: 'CERTIFICATE_TRANSACTION',
-        aiClassificationHint:
-          'Certificate transaction. The certificate transaction report will itemize the share count, cost, and unique identifier for each shareholder.',
       },
       hasEmployeeStockPlan: {
         input: 'boolean',
@@ -598,8 +588,6 @@ export const requestTypes = [
         input: 'fileupload',
         dependsOn: 'hasEmployeeStockPlan',
         aiClassificationType: 'STOCK_PLAN',
-        aiClassificationHint:
-          'Stock option plan & amendments. This includes the terms and definitions of stated with an equity incentive plan.',
       },
     },
   ),
@@ -737,8 +725,6 @@ export const requestTypes = [
         input: 'fileupload',
         dependsOn: 'didPerformASC842Analysis',
         aiClassificationType: 'ASC_842_MEMO',
-        aiClassificationHint:
-          'ASC 842 memo. This document identifies leases and states “ASC 842” within the document.',
       },
     },
   ),

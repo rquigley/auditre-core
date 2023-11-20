@@ -211,7 +211,31 @@ export function ppCurrency(num: number) {
   return num.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    currencySign: 'accounting',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
+}
+
+export function bucket<T>(
+  arr: Array<T>,
+  idealNumPerBucket: number,
+  maxNumBuckets: number,
+): Array<Array<T>> {
+  const numBuckets = Math.min(
+    Math.ceil(arr.length / idealNumPerBucket),
+    maxNumBuckets,
+  );
+  const buckets: Array<Array<T>> = [];
+  for (let i = 0; i < numBuckets; i++) {
+    buckets.push([]);
+  }
+  for (let i = 0; i < arr.length; i++) {
+    buckets[i % numBuckets].push(arr[i]);
+  }
+  return buckets;
+}
+
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }
