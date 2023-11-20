@@ -460,7 +460,7 @@ function formatBodyText(text: string): (typeof TextRun)[] {
 }
 
 function templateToParagraph(
-  template: t.Template & { pageBreakBefore: boolean },
+  template: t.Template & { pageBreakBefore?: boolean },
 ): Array<unknown> {
   const ret = [
     new Paragraph({
