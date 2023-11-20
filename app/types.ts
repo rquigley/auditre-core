@@ -305,7 +305,10 @@ export type AccountType =
   | 'EQUITY_PREFERRED_STOCK'
   | 'EQUITY_COMMON_STOCK'
   | 'EQUITY_PAID_IN_CAPITAL'
-  | 'EQUITY_ACCUMULATED_DEFICIT';
+  | 'EQUITY_ACCUMULATED_DEFICIT'
+
+  // AI failure to classify
+  | 'UNKNOWN';
 
 export interface AccountMappingTable {
   id: GeneratedAlways<AccountMappingId>;
@@ -325,7 +328,7 @@ export type AccountMapping = Selectable<AccountMappingTable>;
 export interface AccountBalanceTable {
   id: GeneratedAlways<AccountBalanceId>;
   auditId: AuditId;
-  accountMappingId: AccountMappingId;
+  accountMappingId: AccountMappingId | null;
   // account_number/account_name are persisted despite some redundancy with account_mapping.
   // 1. The names are sometimes subtly different, specifically in Quickbooks
   // 2. If we import the trial balance prior to the Chart of Accounts, we still want to show something to the user

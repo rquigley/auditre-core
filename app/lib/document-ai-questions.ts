@@ -1,13 +1,10 @@
 import dedent from 'dedent';
 import * as z from 'zod';
 
-// import { extractChartOfAccountsMapping } from '@/controllers/account-mapping';
 import { head } from '@/lib/util';
 
 import type { DocumentClassificationType } from '@/controllers/document-query';
 import type { Document } from '@/types';
-
-// import { balanceSheetTypes } from './consolidated-balance-sheet';
 
 export interface AIQuestionBasic {
   label?: string;
@@ -15,16 +12,40 @@ export interface AIQuestionBasic {
   model?: string;
   preProcess?: (val: string) => string;
   validate?: z.ZodType<any>;
-  respondInJSON?: boolean;
+}
+export interface AIQuestionJSON {
+  label?: string;
+  question: string;
+  model?: string;
+  preProcess?: (val: string) => string;
+  respondInJSON: boolean;
+  // Always validate JSON repsonses
+  validate: z.ZodType<any>;
 }
 export interface AIQuestionCustom {
   label?: string;
   fn: (document: Document) => Promise<void>;
 }
 
-export type AIQuestion = AIQuestionBasic | AIQuestionCustom;
+export type AIQuestion = AIQuestionBasic | AIQuestionJSON | AIQuestionCustom;
 
-export const documentAiQuestions = {
+export function isAIQuestionJSON(
+  question: AIQuestion,
+): question is AIQuestionJSON {
+  return (question as AIQuestionJSON).respondInJSON !== undefined;
+}
+
+export const documentAiQuestions: {
+  ARTICLES_OF_INCORPORATION: {
+    [identifier: string]: AIQuestion;
+  };
+  CHART_OF_ACCOUNTS: {
+    [identifier: string]: AIQuestion;
+  };
+  TRIAL_BALANCE: {
+    [identifier: string]: AIQuestion;
+  };
+} = {
   ARTICLES_OF_INCORPORATION: {
     incorporationDate: {
       label: 'Date of incorporation',
@@ -94,8 +115,8 @@ export const documentAiQuestions = {
             `,
       respondInJSON: true,
       validate: z.object({
-        accountIdColumnIdx: z.number().min(-1).max(100),
-        accountNameColumnIdx: z.number().min(-1).max(100),
+        accountIdColumnIdx: z.number().min(-1).max(10),
+        accountNameColumnIdx: z.number().min(-1).max(10),
         otherColIdxs: z.array(z.number().min(0).max(100)),
       }),
     },
@@ -198,11 +219,11 @@ export const documentAiQuestions = {
             `,
       respondInJSON: true,
       validate: z.object({
-        accountIdColumnIdx: z.number().min(-1).max(100),
-        accountNameColumnIdx: z.number().min(-1).max(100),
-        debitColumnIdx: z.number().min(-1).max(100),
-        creditColumnIdx: z.number().min(-1).max(100),
-        currencyColumnIdx: z.number().min(-1).max(100),
+        accountIdColumnIdx: z.number().min(-1).max(10),
+        accountNameColumnIdx: z.number().min(-1).max(10),
+        debitColumnIdx: z.number().min(-1).max(10),
+        creditColumnIdx: z.number().min(-1).max(10),
+        currencyColumnIdx: z.number().min(-1).max(10),
       }),
     },
   },

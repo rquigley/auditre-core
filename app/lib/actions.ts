@@ -11,6 +11,7 @@ import * as z from 'zod';
 
 import {
   extractTrialBalance as _extractTrialBalance,
+  classifyChartOfAccountsTypes,
   extractChartOfAccountsMapping,
   updateAccountMappingType,
 } from '@/controllers/account-mapping';
@@ -330,6 +331,9 @@ export async function extractAccountMapping(auditId: AuditId) {
   }
   const success = await extractChartOfAccountsMapping(auditId);
   console.log('completed extractAccountMapping', success);
+  revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
+
+  await classifyChartOfAccountsTypes(auditId);
   revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
 }
 

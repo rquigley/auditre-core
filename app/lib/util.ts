@@ -217,7 +217,15 @@ export function ppCurrency(num: number) {
   });
 }
 
-export function bucket<T>(arr: Array<T>, numBuckets: number) {
+export function bucket<T>(
+  arr: Array<T>,
+  idealNumPerBucket: number,
+  maxNumBuckets: number,
+): Array<Array<T>> {
+  const numBuckets = Math.min(
+    Math.ceil(arr.length / idealNumPerBucket),
+    maxNumBuckets,
+  );
   const buckets: Array<Array<T>> = [];
   for (let i = 0; i < numBuckets; i++) {
     buckets.push([]);
@@ -226,4 +234,8 @@ export function bucket<T>(arr: Array<T>, numBuckets: number) {
     buckets[i % numBuckets].push(arr[i]);
   }
   return buckets;
+}
+
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }

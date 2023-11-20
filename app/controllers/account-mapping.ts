@@ -15,7 +15,11 @@ import {
 import { getDataForRequestAttribute } from '@/controllers/request-data';
 import { call } from '@/lib/ai';
 import { db } from '@/lib/db';
-import { documentAiQuestions } from '@/lib/document-ai-questions';
+import {
+  documentAiQuestions,
+  isAIQuestionJSON,
+} from '@/lib/document-ai-questions';
+import { bucket } from '@/lib/util';
 import { AccountType } from '@/types';
 
 import type { OpenAIMessage } from '@/lib/ai';
@@ -51,6 +55,7 @@ export const accountTypes: Record<AccountType, string> = {
   EQUITY_COMMON_STOCK: 'Common stock',
   EQUITY_PAID_IN_CAPITAL: 'Additional paid-in capital',
   EQUITY_ACCUMULATED_DEFICIT: 'Accumulated deficit',
+  UNKNOWN: 'Unknown',
 } as const;
 
 export function createAccountMapping(
@@ -60,9 +65,7 @@ export function createAccountMapping(
     .insertInto('accountMapping')
     .values({ ...accountMapping })
     .onConflict((oc) =>
-      oc
-        .columns(['auditId', 'accountNumber', 'accountName', 'documentId'])
-        .doNothing(),
+      oc.columns(['auditId', 'accountNumber', 'accountName']).doNothing(),
     )
     .returningAll()
     .executeTakeFirst();
@@ -207,6 +210,7 @@ export async function extractChartOfAccountsMapping(
         accountNumber,
         accountName,
         accountType: existingTypeMap.get(`${accountNumber}-${accountName}`),
+        context: JSON.stringify(row),
       });
     }
   }
@@ -230,6 +234,138 @@ export async function extractChartOfAccountsMapping(
   }
 
   return true;
+}
+
+type AccountMappingToClassifyRow = {
+  id: string;
+  accountNumber: string;
+  accountName: string;
+  accountType: AccountType | null;
+  context: string | null;
+};
+
+export async function classifyChartOfAccountsTypes(
+  auditId: AuditId,
+): Promise<void> {
+  const rows = await db
+    .selectFrom('accountMapping')
+    .select(['id', 'accountNumber', 'accountName', 'accountType', 'context'])
+    .where('auditId', '=', auditId)
+    .where('isDeleted', '=', false)
+    .where('accountType', 'is', null)
+    .execute();
+
+  const remainingRows = await autoClassifyCOARows(rows);
+  const aiP = [];
+  for (const bucketRows of bucket(remainingRows, 20, 4)) {
+    aiP.push(aiClassifyCOARows(bucketRows));
+  }
+  await Promise.allSettled(aiP);
+  await Promise.all(aiP);
+}
+
+/**
+ *
+ * Classify any rows that we can before handing off to the AI
+ */
+async function autoClassifyCOARows(
+  rows: AccountMappingToClassifyRow[],
+): Promise<AccountMappingToClassifyRow[]> {
+  const toUpdate = [];
+  let accountType: AccountType;
+  const remainingRows = [];
+  for (const row of rows) {
+    const key = String(row.accountName).toLowerCase();
+    if (key.includes('accounts payable')) {
+      accountType = 'LIABILITY_ACCOUNTS_PAYABLE';
+    } else if (key.includes('common stock')) {
+      accountType = 'EQUITY_COMMON_STOCK';
+    } else {
+      remainingRows.push(row);
+      continue;
+    }
+
+    toUpdate.push(
+      db
+        .updateTable('accountMapping')
+        .set({ accountType })
+        .where('id', '=', row.id)
+        .execute(),
+    );
+  }
+  await Promise.allSettled(toUpdate);
+  await Promise.all(toUpdate);
+  return rows;
+}
+
+export async function aiClassifyCOARows(
+  bucketRows: AccountMappingToClassifyRow[],
+): Promise<void> {
+  const rowMap = new Map(bucketRows.map((r, idx) => [idx, r.id]));
+  const toAiRows = bucketRows.map((r, idx) => [idx, r.context]);
+
+  const t0 = performance.now();
+  const messages: OpenAIMessage[] = [
+    {
+      role: 'system',
+      content: dedent`
+      For each row in an export of a company chart of accounts report, classify each row to one of the following
+      account types used for financial statements:
+
+      ${Object.entries(accountTypes)
+        .map(([aType, description]) => `- ${aType}: ${description}`)
+        .join('\n')}
+
+      If unable to classify the row, set accountType as 'UNKNOWN'
+
+      Do not truncate for brevity. Return all rows in the CSV.
+
+      Output in JSON using the following structure:
+
+        {"data":[[accountId1, classifiedAs1],[accountId2, classifiedAs2],[accountId3, classifiedAs3],...]}
+      `,
+    },
+    {
+      role: 'user',
+      content: JSON.stringify(toAiRows),
+    },
+    // {
+    //   role: 'system',
+    //   content:
+    //     "Does your response only include the document's type and the reasoning in parenthesis? If there is any extraneous text, remove it",
+    // },
+  ];
+
+  const resp = await call({
+    requestedModel: 'gpt-4-1106-preview',
+    messages,
+    respondInJSON: true,
+    // h ttps://twitter.com/mattshumer_/status/1720108414049636404
+  });
+  const schema = z.object({
+    data: z.array(z.tuple([z.number(), z.string()])),
+  });
+
+  const parsed = schema.parse(resp.message);
+  const t1 = performance.now();
+  console.log('Time (ms) to create messages', t1 - t0);
+  const toUpdate = [];
+  for (const [idx, accountType] of parsed.data) {
+    const id = rowMap.get(idx) as AccountMappingId;
+    if (!id || accountType in accountTypes === false) {
+      console.log('Invalid accountType', accountType);
+      continue;
+    }
+    toUpdate.push(
+      db
+        .updateTable('accountMapping')
+        .set({ accountType: accountType as AccountType })
+        .where('id', '=', id)
+        .execute(),
+    );
+    await Promise.allSettled(toUpdate);
+    await Promise.all(toUpdate);
+  }
 }
 
 export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
@@ -268,6 +404,7 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     return false;
   }
 
+  // This is dumb, be smarter!!!
   await db.updateTable('accountBalance').set({ isDeleted: true }).execute();
 
   const accountMappingRows = await db
@@ -328,15 +465,13 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
       accountMappingId = accountMappingMap.get(bestMatch[1]);
     }
 
-    const debit = parseFloat(row[colIdxs.debitColumnIdx]) || 0;
-    const credit = parseFloat(row[colIdxs.creditColumnIdx]) || 0;
     toAdd.push({
       auditId,
-      accountMappingId,
-      accountNumber: row[colIdxs.accountIdColumnIdx],
-      accountName: row[colIdxs.accountNameColumnIdx],
-      debit,
-      credit,
+      accountMappingId: accountMappingId || null,
+      accountNumber: row[colIdxs.accountIdColumnIdx] || '',
+      accountName: row[colIdxs.accountNameColumnIdx] || '',
+      debit: parseFloat(row[colIdxs.debitColumnIdx]) || 0,
+      credit: parseFloat(row[colIdxs.creditColumnIdx]) || 0,
       currency: 'USD',
     });
   }
@@ -398,20 +533,32 @@ async function getColIdxs(
   }
 
   const res = JSON.parse(columnMappingsRes.result);
+  const classifiedType = document.classifiedType;
 
-  if (document.classifiedType === 'CHART_OF_ACCOUNTS') {
+  // if (!documentAiQuestions[document.classifiedType].columnMappings.validate) {
+  //   throw new Error('columnMapping validation not implemented');
+  // }
+  if (classifiedType === 'CHART_OF_ACCOUNTS') {
+    if (
+      !isAIQuestionJSON(documentAiQuestions.CHART_OF_ACCOUNTS.columnMappings)
+    ) {
+      throw new Error('Invalid question');
+    }
     return {
       ...(res as z.infer<
         typeof documentAiQuestions.CHART_OF_ACCOUNTS.columnMappings.validate
       >),
-      classifiedType: document.classifiedType,
+      classifiedType,
     } as const;
-  } else if (document.classifiedType === 'TRIAL_BALANCE') {
+  } else if (classifiedType === 'TRIAL_BALANCE') {
+    if (!isAIQuestionJSON(documentAiQuestions.TRIAL_BALANCE.columnMappings)) {
+      throw new Error('Invalid question');
+    }
     return {
       ...(res as z.infer<
         typeof documentAiQuestions.TRIAL_BALANCE.columnMappings.validate
       >),
-      classifiedType: document.classifiedType,
+      classifiedType,
     } as const;
   } else {
     throw new Error('Invalid classified type');

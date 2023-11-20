@@ -124,12 +124,18 @@ describe('isFieldVisible', () => {
 describe('bucket', () => {
   it('should round robin bucket items into groups', () => {
     const inArr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    const output = bucket(inArr, 3);
+    const output = bucket(inArr, 3, 3);
 
     expect(output).toEqual([
       [1, 4, 7, 10],
       [2, 5, 8],
       [3, 6, 9],
     ]);
+  });
+  it('should not exceed maxNumBuckets', () => {
+    const inArr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    const output = bucket(inArr, 3, 1);
+
+    expect(output).toEqual([inArr]);
   });
 });

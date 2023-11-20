@@ -25,7 +25,7 @@ export function AccountMapping({
     () => (
       <select
         className={clsx(
-          !currentAccountType
+          !currentAccountType || currentAccountType === 'UNKNOWN'
             ? 'ring-red-600 text-red-900'
             : 'ring-gray-300 text-gray-900',
           'mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 ring-1 ring-inset focus:ring-2 focus:ring-sky-600 sm:text-sm sm:leading-6',
