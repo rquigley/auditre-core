@@ -172,7 +172,7 @@ function Document({
               </dd>
             </div>
             {document.uploadedByUser ? (
-              <div className="flex justify-between gap-x-4 py-3">
+              <div className="flex align-middle justify-between gap-x-4 py-3">
                 <dt className="text-slate-500">Uploaded by</dt>
                 <dd className="text-slate-900 font-medium">
                   {document.uploadedByUser.image ? (
@@ -181,7 +181,7 @@ function Document({
                       alt={document.uploadedByUser.name || ''}
                       width="36"
                       height="36"
-                      className="inline-block h-6 w-6 rounded-full"
+                      className="inline-block h-5 w-5 mr-2 rounded-full"
                     />
                   ) : null}
                   {document.uploadedByUser.name}
