@@ -172,16 +172,22 @@ export async function extractChartOfAccountsMapping(
 
   const { rows, colIdxs, schema } = await getSheetData(document);
   if (
-    colIdxs.classifiedType !== document.classifiedType ||
-    (colIdxs.accountIdColumnIdx === -1 && colIdxs.accountNameColumnIdx === -1)
+    colIdxs.accountIdColumnIdx === -1 &&
+    colIdxs.accountNameColumnIdx === -1
   ) {
-    console.log('Invalid colIdxs', colIdxs);
+    console.log(
+      'COA extraction, neither account id or account num columns present',
+      colIdxs,
+    );
     return false;
   }
 
   const existingRows = await getAllAccountMappingsByAuditId(auditId);
   const existingMap = new Map(
-    existingRows.map((r) => [`${r.accountNumber}-${r.accountName}`, r]),
+    existingRows.map((r) => [
+      `${r.accountNumber || ''}${r.accountName || ''}`,
+      r,
+    ]),
   );
 
   const existingDeletedWithTypeRows = await db
@@ -193,7 +199,7 @@ export async function extractChartOfAccountsMapping(
     .execute();
   const existingTypeMap = new Map(
     existingDeletedWithTypeRows.map((r) => [
-      `${r.accountNumber}-${r.accountName}`,
+      `${r.accountNumber || ''}${r.accountName || ''}`,
       r.accountType,
     ]),
   );
@@ -201,16 +207,16 @@ export async function extractChartOfAccountsMapping(
   const newMap = new Map();
   const toAdd = [];
   for (const row of rows) {
-    const accountNumber = row[colIdxs.accountIdColumnIdx];
-    const accountName = row[colIdxs.accountNameColumnIdx];
+    const accountNumber = row[colIdxs.accountIdColumnIdx] || '';
+    const accountName = row[colIdxs.accountNameColumnIdx] || '';
     if (!accountNumber && !accountName) {
       continue;
     }
-    newMap.set(`${accountNumber}-${accountName}`, {
+    newMap.set(`${accountNumber}${accountName}`, {
       accountNumber,
       accountName,
     });
-    if (!existingMap.has(`${accountNumber}-${accountName}`)) {
+    if (!existingMap.has(`${accountNumber}${accountName}`)) {
       // Try and provide the AI with any helpful non-balance data
       const context = schema.cols.reduce((obj, col, idx) => {
         if (!row[idx] || col.name.toLowerCase().includes('balance')) {
@@ -223,7 +229,7 @@ export async function extractChartOfAccountsMapping(
         auditId: auditId,
         accountNumber,
         accountName,
-        accountType: existingTypeMap.get(`${accountNumber}-${accountName}`),
+        accountType: existingTypeMap.get(`${accountNumber}${accountName}`),
         context: JSON.stringify(context),
       });
     }
@@ -235,7 +241,7 @@ export async function extractChartOfAccountsMapping(
 
   const idsToDelete = [];
   for (const row of existingRows) {
-    if (!newMap.has(`${row.accountNumber}-${row.accountName}`)) {
+    if (!newMap.has(`${row.accountNumber || ''}${row.accountName || ''}`)) {
       idsToDelete.push(row.id);
     }
   }
@@ -431,7 +437,6 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
 
   const { rows, colIdxs } = await getSheetData(document);
   if (
-    colIdxs.classifiedType !== document.classifiedType ||
     (colIdxs.accountIdColumnIdx === -1 &&
       colIdxs.accountNameColumnIdx === -1) ||
     colIdxs.debitColumnIdx === -1 ||
