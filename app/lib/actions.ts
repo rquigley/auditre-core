@@ -33,9 +33,9 @@ import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
 import { getPresignedUrl } from '@/lib/aws';
 import { getRequestTypeForId } from '@/lib/request-types';
 
+import type { AccountType } from '@/controllers/account-mapping';
 import type {
   AccountMappingId,
-  AccountType,
   AuditId,
   DocumentId,
   RequestData,
