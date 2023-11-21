@@ -2,7 +2,7 @@ import * as z from 'zod';
 
 import { businessModelTypes } from './business-models';
 
-import type { DocumentClassificationType } from '@/controllers/ai-query';
+import type { DocumentClassificationType } from '@/controllers/document';
 import type { RequestGroup } from '@/types';
 import type { ZodTypeAny } from 'zod';
 
