@@ -1,6 +1,8 @@
 import { getById as getAuditById } from '@/controllers/audit';
-import { getAllByAuditId as getAllDocumentsByAuditId } from '@/controllers/document';
-import { getData as getDocData } from '@/controllers/document-query';
+import {
+  getAiDataForDocumentId,
+  getAllByAuditId as getAllDocumentsByAuditId,
+} from '@/controllers/document';
 import { getDataForAuditId } from '@/controllers/request-data';
 import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
 import {
@@ -52,7 +54,7 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
 
   let aiData: Record<string, Record<string, string | undefined>> = {};
   for (const document of documents) {
-    aiData[document.id] = await getDocData(document.id);
+    aiData[document.id] = await getAiDataForDocumentId(document.id);
   }
 
   const data: Record<string, unknown> = {};

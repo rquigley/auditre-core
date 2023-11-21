@@ -3,8 +3,10 @@ import { Suspense } from 'react';
 
 import { Await } from '@/components/await';
 import { Document } from '@/components/document';
-import { getById as getDocumentById } from '@/controllers/document';
-import { getDataWithLabels } from '@/controllers/document-query';
+import {
+  getAiDataWithLabels,
+  getById as getDocumentById,
+} from '@/controllers/document';
 import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestType } from '@/controllers/request-data';
 import { BasicForm } from './basic-form';
@@ -121,7 +123,7 @@ function DocumentData({ documentId }: { documentId: string }) {
       </span>
       <div className="text-xs leading-5 text-gray-600">
         <Suspense fallback={null}>
-          <Await promise={getDataWithLabels(documentId)}>
+          <Await promise={getAiDataWithLabels(documentId)}>
             {(data) => (
               <div>
                 {Object.keys(data).map((identifier) => (

@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { extname } from 'path';
 
+import { createAiQuery } from '@/controllers/ai-query';
 import { getById } from '@/controllers/audit';
 import { create as createDocument } from '@/controllers/document';
-import { create as createDocumentQuery } from '@/controllers/document-query';
 import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestAttribute } from '@/controllers/request-data';
 import {
@@ -14,7 +14,7 @@ import {
   documentAiQuestions,
 } from '@/lib/document-ai-questions';
 
-import type { DocumentClassificationType } from '@/controllers/document-query';
+import type { DocumentClassificationType } from '@/controllers/document';
 import type { OpenAIMessage } from '@/lib/ai';
 import type { AuditId, OrgId, UserId } from '@/types';
 
@@ -329,40 +329,42 @@ async function createDemoDocument({
     uploadedByUserId: actorUserId,
   });
 
-  if (classifiedType in documentAiQuestions) {
-    // @ts-expect-error
-    const qObj = documentAiQuestions[classifiedType];
-    const identifiers = Object.keys(qObj) as string[];
-    for (const identifier of identifiers) {
-      if ((qObj[identifier] as AIQuestionCustom).fn) {
-        continue;
-      }
-      const messages: OpenAIMessage[] = [
-        {
-          role: 'system',
-          content: qObj[identifier].question,
-        },
-        { role: 'user', content: `"""${extracted}"""` },
-      ];
-      if (!ai[identifier]) {
-        console.error(
-          `Missing demo ai answer for ${classifiedType}: ${identifier}`,
-        );
-      }
-      await createDocumentQuery({
-        documentId: doc.id,
-        model: 'gpt-4',
-        query: { messages },
-        identifier,
-        usage: {
-          promptTokens: 0,
-          completionTokens: 0,
-          totalTokens: 0,
-          timeMs: 0,
-        },
-        result: ai[identifier] || '',
-      });
+  if (classifiedType in documentAiQuestions === false) {
+    return doc.id;
+  }
+  const qObj = { ...documentAiQuestions[classifiedType] };
+  const identifiers = Object.keys(qObj);
+  for (const identifier of identifiers) {
+    if ('question' in qObj[identifier] === false) {
+      continue;
     }
+    const aiObject = qObj[identifier] as AIQuestionBasic | AIQuestionJSON;
+
+    const messages: OpenAIMessage[] = [
+      {
+        role: 'system',
+        content: aiObject.question,
+      },
+      { role: 'user', content: `"""${extracted}"""` },
+    ];
+    if (!ai[identifier]) {
+      console.error(
+        `Missing demo ai answer for ${classifiedType}: ${identifier}`,
+      );
+    }
+    await createAiQuery({
+      documentId: doc.id,
+      model: 'gpt-4',
+      query: { messages },
+      identifier,
+      usage: {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        timeMs: 0,
+      },
+      result: ai[identifier] || '',
+    });
   }
   return doc.id;
 }

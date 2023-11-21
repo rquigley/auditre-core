@@ -1,5 +1,5 @@
 import type { OpenAIMessage } from './lib/ai';
-import type { DocumentClassificationType } from '@/controllers/document-query';
+import type { DocumentClassificationType } from '@/controllers/document';
 import type {
   ColumnType,
   Generated,
@@ -15,7 +15,7 @@ export type AccountMappingId = string;
 export type AuditId = string;
 export type CommentId = string;
 export type DocumentId = string;
-export type DocumentQueryId = string;
+export type AiQueryId = string;
 export type DocumentQueueId = number;
 export type InvitationId = string;
 export type OrgId = string;
@@ -234,29 +234,30 @@ export type OpenAIModel =
   | 'gpt-4'
   | 'gpt-4-1106-preview';
 
-export type DocumentQueryUsage = {
+export type AiQueryUsage = {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
   timeMs: number;
 };
 
-export interface DocumentQueryTable {
-  id: GeneratedAlways<string>;
-  documentId: DocumentId;
-  model: OpenAIModel;
+export interface AiQueryTable {
+  id: GeneratedAlways<AiQueryId>;
+  auditId: AuditId | null;
+  documentId: DocumentId | null;
   identifier: string;
+  model: OpenAIModel;
   query: { messages: OpenAIMessage[] };
   result: string;
   isValidated: ColumnType<boolean, boolean | undefined, boolean>;
-  usage: DocumentQueryUsage;
+  usage: AiQueryUsage;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
 }
 
-export type DocumentQueryUpdate = Updateable<DocumentQueryTable>;
-export type NewDocumentQuery = Insertable<DocumentQueryTable>;
-export type DocumentQuery = Selectable<DocumentQueryTable>;
+export type AiQueryUpdate = Updateable<AiQueryTable>;
+export type NewAiQuery = Insertable<AiQueryTable>;
+export type AiQuery = Selectable<AiQueryTable>;
 
 export type S3File = {
   documentId: string;
@@ -349,10 +350,10 @@ export type AccountBalance = Selectable<AccountBalanceTable>;
 export interface Database extends Kysely<Database> {
   accountBalance: AccountBalanceTable;
   accountMapping: AccountMappingTable;
+  aiQuery: AiQueryTable;
   audit: AuditTable;
   comment: CommentTable;
   document: DocumentTable;
-  documentQuery: DocumentQueryTable;
   documentQueue: DocumentQueueTable;
   invitation: InvitationTable;
   org: OrgTable;

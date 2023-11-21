@@ -5,13 +5,13 @@ import { inferSchema, initParser } from 'udsv';
 import * as z from 'zod';
 
 import {
+  createAiQuery,
+  pollGetByDocumentIdAndIdentifier,
+} from '@/controllers/ai-query';
+import {
   getById as getDocumentById,
   PAGE_DELIMITER,
 } from '@/controllers/document';
-import {
-  create,
-  pollGetByDocumentIdAndIdentifier,
-} from '@/controllers/document-query';
 import { getDataForRequestAttribute } from '@/controllers/request-data';
 import { call } from '@/lib/ai';
 import { db } from '@/lib/db';
@@ -604,6 +604,7 @@ async function getColIdxs(
 
   if (classifiedType === 'CHART_OF_ACCOUNTS') {
     if (
+      !documentAiQuestions.CHART_OF_ACCOUNTS ||
       !isAIQuestionJSON(documentAiQuestions.CHART_OF_ACCOUNTS.columnMappings)
     ) {
       throw new Error('Invalid question');
@@ -615,7 +616,10 @@ async function getColIdxs(
       classifiedType,
     } as const;
   } else if (classifiedType === 'TRIAL_BALANCE') {
-    if (!isAIQuestionJSON(documentAiQuestions.TRIAL_BALANCE.columnMappings)) {
+    if (
+      !documentAiQuestions.TRIAL_BALANCE ||
+      !isAIQuestionJSON(documentAiQuestions.TRIAL_BALANCE.columnMappings)
+    ) {
       throw new Error('Invalid question');
     }
     return {
@@ -687,7 +691,7 @@ async function getColIdxs(
 //     // https://twitter.com/mattshumer_/status/1720108414049636404
 //   });
 
-//   await create({
+//   await createAiQuery({
 //     documentId: document.id,
 //     model: resp.model,
 //     query: { messages },

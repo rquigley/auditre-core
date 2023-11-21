@@ -3,7 +3,7 @@ import * as z from 'zod';
 
 import { head } from '@/lib/util';
 
-import type { DocumentClassificationType } from '@/controllers/document-query';
+import type { DocumentClassificationType } from '@/controllers/document';
 import type { Document } from '@/types';
 
 export interface AIQuestionBasic {
@@ -35,17 +35,26 @@ export function isAIQuestionJSON(
   return (question as AIQuestionJSON).respondInJSON !== undefined;
 }
 
-export const documentAiQuestions: {
-  ARTICLES_OF_INCORPORATION: {
-    [identifier: string]: AIQuestion;
-  };
-  CHART_OF_ACCOUNTS: {
-    [identifier: string]: AIQuestion;
-  };
-  TRIAL_BALANCE: {
-    [identifier: string]: AIQuestion;
-  };
-} = {
+export const documentAiQuestions: Partial<
+  Record<
+    DocumentClassificationType,
+    {
+      [identifier: string]: AIQuestion;
+    }
+  >
+> = {
+  // export const documentAiQuestions: {
+
+  //   ARTICLES_OF_INCORPORATION: {
+  //     [identifier: string]: AIQuestion;
+  //   };
+  //   CHART_OF_ACCOUNTS: {
+  //     [identifier: string]: AIQuestion;
+  //   };
+  //   TRIAL_BALANCE: {
+  //     [identifier: string]: AIQuestion;
+  //   };
+  // } = {
   ARTICLES_OF_INCORPORATION: {
     incorporationDate: {
       label: 'Date of incorporation',
