@@ -170,7 +170,7 @@ export async function extractChartOfAccountsMapping(
     throw new Error('Invalid classified type');
   }
 
-  const { rows, colIdxs } = await getSheetData(document);
+  const { rows, colIdxs, schema } = await getSheetData(document);
   if (
     colIdxs.classifiedType !== document.classifiedType ||
     (colIdxs.accountIdColumnIdx === -1 && colIdxs.accountNameColumnIdx === -1)
@@ -211,12 +211,19 @@ export async function extractChartOfAccountsMapping(
       accountName,
     });
     if (!existingMap.has(`${accountNumber}-${accountName}`)) {
+      const context = schema.cols.reduce((obj, col, idx) => {
+        if (!row[idx] || col.name.toLowerCase().includes('balance')) {
+          return obj;
+        }
+        return { ...obj, [col.name]: row[idx] };
+      }, {});
+
       toAdd.push({
         auditId: auditId,
         accountNumber,
         accountName,
         accountType: existingTypeMap.get(`${accountNumber}-${accountName}`),
-        context: JSON.stringify(row),
+        context: JSON.stringify(context),
       });
     }
   }
@@ -262,12 +269,17 @@ export async function classifyChartOfAccountsTypes(
     .execute();
 
   const remainingRows = await autoClassifyCOARows(rows);
-  const aiP = [];
-  for (const bucketRows of bucket(remainingRows, 20, 8)) {
-    aiP.push(aiClassifyCOARows(bucketRows));
-  }
+  const aiP: Promise<any>[] = [];
+  const buckets = bucket(remainingRows, 20, 8);
+  console.log(
+    `Classifying CoA via AI, ${remainingRows.length} rows, ${buckets.length} buckets`,
+  );
+  buckets.forEach((bucketRows, idx, buckets) => {
+    aiP.push(aiClassifyCOARows(auditId, bucketRows, idx + 1, buckets.length));
+  });
   await Promise.allSettled(aiP);
   await Promise.all(aiP);
+  console.log('Classifying CoA via AI, complete');
 }
 
 /**
@@ -301,16 +313,20 @@ async function autoClassifyCOARows(
   }
   await Promise.allSettled(toUpdate);
   await Promise.all(toUpdate);
-  return rows;
+
+  return remainingRows;
 }
 
 export async function aiClassifyCOARows(
+  auditId: AuditId,
   bucketRows: AccountMappingToClassifyRow[],
+  bucketNum: number,
+  numBuckets: number,
 ): Promise<void> {
   const rowMap = new Map(bucketRows.map((r, idx) => [idx, r.id]));
   const toAiRows = bucketRows.map((r, idx) => [idx, r.context]);
 
-  const t0 = performance.now();
+  const t0 = Date.now();
   const messages: OpenAIMessage[] = [
     {
       role: 'system',
@@ -342,6 +358,9 @@ export async function aiClassifyCOARows(
     // },
   ];
 
+  console.log(
+    `Classifying CoA via AI, ${bucketNum}/${numBuckets}: ${toAiRows.length} rows`,
+  );
   const resp = await call({
     requestedModel: 'gpt-4-1106-preview',
     messages,
@@ -352,9 +371,24 @@ export async function aiClassifyCOARows(
     data: z.array(z.tuple([z.number(), z.string()])),
   });
 
+  await createAiQuery({
+    auditId,
+    model: resp.model,
+    query: { messages },
+    identifier: 'accountMapping',
+    usage: resp.usage,
+    // result: resp.message as z.infer<typeof schema>,
+    result: resp.message as string,
+  });
+
   const parsed = schema.parse(resp.message);
-  const t1 = performance.now();
-  console.log('Time (ms) to create messages', t1 - t0);
+  const t1 = Date.now();
+  console.log(
+    `Classifying CoA via AI, ${bucketNum}/${numBuckets}: ${
+      toAiRows.length
+    } rows in ${t1 - t0}ms`,
+  );
+
   const toUpdate = [];
   for (const [idx, accountType] of parsed.data) {
     const id = rowMap.get(idx) as AccountMappingId;
@@ -578,7 +612,7 @@ async function getSheetData(document: Document) {
   const parser = initParser(schema);
   const rows = parser.stringArrs(csvData);
 
-  return { meta, colIdxs, rows };
+  return { meta, schema, colIdxs, rows };
 }
 
 async function getColIdxs(
@@ -600,6 +634,7 @@ async function getColIdxs(
   }
 
   const res = JSON.parse(columnMappingsRes.result);
+
   const classifiedType = document.classifiedType;
 
   if (classifiedType === 'CHART_OF_ACCOUNTS') {
