@@ -366,7 +366,6 @@ export async function aiClassifyCOARows(
     requestedModel: 'gpt-4-1106-preview',
     messages,
     respondInJSON: true,
-    // h ttps://twitter.com/mattshumer_/status/1720108414049636404
   });
   const schema = z.object({
     data: z.array(z.tuple([z.number(), z.string()])),
