@@ -6,7 +6,7 @@ import {
 import { extractAccountMapping } from '@/lib/actions';
 import { AccountMapping } from './account-mapping';
 
-import type { AccountType, AuditId } from '@/types';
+import type { AuditId } from '@/types';
 
 export async function ChartOfAccounts({ auditId }: { auditId: AuditId }) {
   const accountMapping = await getAllAccountMappingsByAuditId(auditId);
@@ -88,6 +88,7 @@ function groupAccountTypes(
     Asset: {},
     Liability: {},
     Equity: {},
+    'Income Statement': {},
   };
 
   for (const key in types) {
@@ -97,6 +98,8 @@ function groupAccountTypes(
       grouped.Liability[key] = types[key];
     } else if (key.startsWith('EQUITY_')) {
       grouped.Equity[key] = types[key];
+    } else if (key.startsWith('INCOME_STATEMENT_')) {
+      grouped['Income Statement'][key] = types[key];
     }
   }
 

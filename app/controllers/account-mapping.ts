@@ -20,7 +20,6 @@ import {
   isAIQuestionJSON,
 } from '@/lib/document-ai-questions';
 import { bucket } from '@/lib/util';
-import { AccountType } from '@/types';
 
 import type { OpenAIMessage } from '@/lib/ai';
 import type {
@@ -34,29 +33,47 @@ import type {
   OpenAIModel,
 } from '@/types';
 
-export const accountTypes: Record<AccountType, string> = {
-  ASSET_CASH: 'Cash',
-  ASSET_PREPAID_EXPENSES: 'Prepaid expenses and other current assets',
-  ASSET_PROPERTY_AND_EQUIPMENT: 'Property and equipment, net',
+export const accountTypes = {
+  ASSET_CASH_AND_CASH_EQUIVALENTS: 'Cash and cash equivalents',
   ASSET_INTANGIBLE_ASSETS: 'Intangible assets, net',
+  ASSET_INVENTORY: 'Inventory',
   ASSET_OPERATING_LEASE_RIGHT_OF_USE: 'Operating lease right-of-use assets',
   ASSET_OTHER: 'Other assets',
+  ASSET_PREPAID_EXPENSES: 'Prepaid expenses',
+  ASSET_PROPERTY_AND_EQUIPMENT: 'Property and equipment, net',
 
   LIABILITY_ACCOUNTS_PAYABLE: 'Accounts payable',
-  LIABILITY_ACCRUED_EXPENSES: 'Accrued expenses',
+  LIABILITY_ACCRUED_INTEREST: 'Accrued interest',
+  LIABILITY_ACCRUED_LIABILITIES: 'Accrued liabilities',
+  LIABILITY_CONVERTIBLE_NOTES_PAYABLE: 'Convertible notes payable',
+  LIABILITY_DEBT: 'Long-term debt',
+  LIABILITY_DEFERRED_REVENUE: 'Deferred revenue',
   LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT:
     'Operating lease liabilities, current',
-  LIABILITY_ACCRUED_INTEREST: 'Accrued interest',
-  LIABILITY_CONVERTIBLE_NOTES_PAYABLE: 'Convertible notes payable',
   LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION:
     'Operating lease liabilities, net of current portion',
+  LIABILITY_OTHER: 'Other current liabilities',
 
-  EQUITY_PREFERRED_STOCK: 'Convertible preferred stock',
+  EQUITY_ACCUMULATED_DEFICIT: 'Accumulated deficit',
   EQUITY_COMMON_STOCK: 'Common stock',
   EQUITY_PAID_IN_CAPITAL: 'Additional paid-in capital',
-  EQUITY_ACCUMULATED_DEFICIT: 'Accumulated deficit',
+  EQUITY_PREFERRED_STOCK: 'Convertible preferred stock',
+  EQUITY_RETAINED_EARNINGS: 'Retained earnings',
+
+  INCOME_STATEMENT_COST_OF_REVENUE: 'Cost of revenue',
+  INCOME_STATEMENT_G_AND_A: 'General and administrative',
+  INCOME_STATEMENT_INTEREST_EXPENSE: 'Interest expense',
+  INCOME_STATEMENT_INTEREST_INCOME: 'Interest income',
+  INCOME_STATEMENT_OTHER_INCOME: 'Other income',
+  INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT: 'Research and development',
+  INCOME_STATEMENT_REVENUE: 'Revenue',
+  INCOME_STATEMENT_SALES_AND_MARKETING: 'Sales and marketing',
+  INCOME_TAXES: 'Income taxes',
+
   UNKNOWN: `You are unsure of the account type or it doesn't map to one of the other values`,
 } as const;
+
+export type AccountType = keyof typeof accountTypes;
 
 export function createAccountMapping(
   accountMapping: NewAccountMapping,
