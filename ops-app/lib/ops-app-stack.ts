@@ -172,7 +172,7 @@ export class OpsAppStack extends Stack {
         path.join(__dirname, '../packages/extract-pdf-lambda'),
         {
           bundling: {
-            image: Runtime.PYTHON_3_11.bundlingImage,
+            image: Runtime.PYTHON_3_12.bundlingImage,
             command: [
               'bash',
               '-c',
@@ -211,7 +211,7 @@ export class OpsAppStack extends Stack {
           },
         },
       ),
-      runtime: Runtime.PYTHON_3_12,
+      runtime: Runtime.PYTHON_3_11,
       architecture: Architecture.ARM_64,
       memorySize: 512,
       timeout: Duration.seconds(60),
@@ -328,7 +328,7 @@ export class OpsAppStack extends Stack {
     );
     const appService = new ecsPatterns.ApplicationLoadBalancedFargateService(
       this,
-      'FargateNodeService',
+      'FargateNodeServiceV2',
       {
         cluster,
         // taskImageOptions: {
@@ -391,7 +391,8 @@ export class OpsAppStack extends Stack {
         cpu: 256,
         memoryLimitMiB: 512,
         desiredCount: 1,
-        serviceName: 'fargate-node-service',
+        // If you change serviceName, it must also be changed in the github workflow file.
+        serviceName: 'fargate-node-service-v2',
         taskSubnets: vpc.selectSubnets({
           subnetType: SubnetType.PRIVATE_WITH_EGRESS,
         }),
@@ -495,6 +496,9 @@ export class OpsAppStack extends Stack {
         origin: new cloudfrontOrigins.LoadBalancerV2Origin(loadbalancer, {
           // TODO: Switch back to HTTPS
           protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+          customHeaders: {
+            'X-AR-CF-Header': 'CustomValue',
+          },
         }),
         functionAssociations: [
           {
