@@ -2,7 +2,7 @@ import { revalidatePath } from 'next/cache';
 
 import CopyToClipboard from '@/components/copy-to-clipboard';
 import { nl2br } from '@/components/nl2br';
-import { askQuestion, getAllByDocumentId } from '@/controllers/document-query';
+import { askQuestion, getAllByDocumentId } from '@/controllers/ai-query';
 import { OpenAIModel } from '@/types';
 import AIForm from './ai-form';
 import Datetime from './datetime';

@@ -144,11 +144,12 @@ CREATE TABLE "document" (
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "document" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
-CREATE TABLE "document_query" (
+CREATE TABLE "ai_query" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
+  "audit_id" uuid REFERENCES "audit" ("id"),
   "document_id" uuid REFERENCES "document" ("id"),
-  "model" text,
   "identifier" text,
+  "model" text,
   "query" JSONB,
   "result" text,
   "is_validated" boolean NOT NULL DEFAULT FALSE,

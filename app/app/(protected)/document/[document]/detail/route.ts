@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import { getById } from '@/controllers/document';
-import { getDataWithLabels } from '@/controllers/document-query';
+import { getAiDataWithLabels, getById } from '@/controllers/document';
 import { getCurrent } from '@/controllers/session-user';
 import { getById as getUserById } from '@/controllers/user';
 
@@ -19,7 +18,7 @@ export type DocumentDetails = Pick<
   | 'classifiedType'
 > & {
   uploadedByUser: Pick<User, 'id' | 'name' | 'image'> | null;
-  dataWithLabels: Awaited<ReturnType<typeof getDataWithLabels>>;
+  dataWithLabels: Awaited<ReturnType<typeof getAiDataWithLabels>>;
 };
 export async function GET(
   req: Request,
@@ -38,7 +37,7 @@ export async function GET(
     return notFound();
   }
 
-  const dataWithLabels = await getDataWithLabels(documentId);
+  const dataWithLabels = await getAiDataWithLabels(documentId);
 
   let uploadedByUser;
   if (document.uploadedByUserId) {
