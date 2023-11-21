@@ -211,6 +211,7 @@ export async function extractChartOfAccountsMapping(
       accountName,
     });
     if (!existingMap.has(`${accountNumber}-${accountName}`)) {
+      // Try and provide the AI with any helpful non-balance data
       const context = schema.cols.reduce((obj, col, idx) => {
         if (!row[idx] || col.name.toLowerCase().includes('balance')) {
           return obj;
