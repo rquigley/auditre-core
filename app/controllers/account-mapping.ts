@@ -55,7 +55,7 @@ export const accountTypes: Record<AccountType, string> = {
   EQUITY_COMMON_STOCK: 'Common stock',
   EQUITY_PAID_IN_CAPITAL: 'Additional paid-in capital',
   EQUITY_ACCUMULATED_DEFICIT: 'Accumulated deficit',
-  UNKNOWN: 'Unknown',
+  UNKNOWN: `You are unsure of the account type or it doesn't map to one of the other values`,
 } as const;
 
 export function createAccountMapping(
