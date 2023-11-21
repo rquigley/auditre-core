@@ -3,7 +3,7 @@
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 dayjs.extend(relativeTime);
 dayjs.extend(customParseFormat);
@@ -16,24 +16,26 @@ export default function Datetime({
   className?: string;
 }) {
   const [showInitial, setShowInitial] = useState(true);
-  return useMemo(() => {
-    const dt = dayjs(dateTime);
-    let initial;
-    if (dt.isBefore(dayjs().subtract(2, 'day'))) {
-      initial = dt.format('M/D/YY');
-    } else {
-      initial = dt.fromNow();
-    }
+  const [initial, setInitial] = useState('');
+  const dt = dayjs(dateTime);
+  const absolute = dt.format('M/D/YY H:ma');
 
-    const absolute = dt.format('M/D/YY H:ma');
-    return (
-      <time
-        onClick={() => setShowInitial(!showInitial)}
-        dateTime={absolute}
-        className={className}
-      >
-        {showInitial ? initial : absolute}
-      </time>
-    );
-  }, [dateTime, className, showInitial]);
+  useEffect(() => {
+    if (dt.isBefore(dayjs().subtract(2, 'day'))) {
+      setInitial(dt.format('M/D/YY'));
+    } else {
+      setInitial(dt.fromNow());
+    }
+  }, [dt]);
+
+  return (
+    <time
+      onClick={() => setShowInitial(!showInitial)}
+      dateTime={absolute}
+      className={className}
+      // suppressHydrationWarning={true}
+    >
+      {showInitial ? initial : absolute}
+    </time>
+  );
 }
