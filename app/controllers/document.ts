@@ -104,7 +104,8 @@ export async function didExtractAndUpdateContent(document: Document) {
 
 export async function process(id: DocumentId): Promise<void> {
   try {
-    const t0 = Date.now();
+    let t0 = Date.now();
+    let t1 = Date.now(); // for task-dependent timing
     let usage = {
       extractMs: 0,
       classifyMs: 0,
@@ -121,9 +122,10 @@ export async function process(id: DocumentId): Promise<void> {
       // The extract lambda can take up to 60 seconds to run for especially large excel docs
       for (let i = 0; i < 60; i++) {
         await delay(1000);
-        console.log(`checking for extracted content: ${Date.now() - t0}ms`);
+        console.log(`checking for extracted content: ${Date.now() - t1}ms`);
         if (await didExtractAndUpdateContent(doc)) {
-          usage.extractMs = Date.now() - t0;
+          usage.extractMs = Date.now() - t1;
+          t1 = Date.now();
           break;
         }
       }
@@ -138,7 +140,8 @@ export async function process(id: DocumentId): Promise<void> {
     }
 
     const classifiedType = await classifyDocument(extractedDoc);
-    usage.classifyMs = Date.now() - t0;
+    usage.classifyMs = Date.now() - t1;
+    t1 = Date.now();
     console.log('Document classified', usage);
 
     await update(id, { classifiedType, usage });
@@ -152,7 +155,8 @@ export async function process(id: DocumentId): Promise<void> {
     // await completeJob(askQuestionsJob.id);
     const classifiedDoc = await getById(id);
     usage.numQuestions = await askDefaultQuestions(classifiedDoc);
-    usage.askQuestionsMs = Date.now() - t0;
+    usage.askQuestionsMs = Date.now() - t1;
+    t1 = Date.now();
 
     // await completeJob(askQuestionsJob.id);
     await update(id, { isProcessed: true, usage });
