@@ -378,7 +378,6 @@ export async function aiClassifyCOARows(
     query: { messages },
     identifier: 'accountMapping',
     usage: resp.usage,
-    // result: resp.message as z.infer<typeof schema>,
     result: resp.message as string,
   });
 
