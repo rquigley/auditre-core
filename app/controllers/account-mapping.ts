@@ -352,11 +352,6 @@ export async function aiClassifyCOARows(
       role: 'user',
       content: JSON.stringify(toAiRows),
     },
-    // {
-    //   role: 'system',
-    //   content:
-    //     "Does your response only include the document's type and the reasoning in parenthesis? If there is any extraneous text, remove it",
-    // },
   ];
 
   console.log(
