@@ -255,6 +255,12 @@ CREATE TABLE "account_balance" (
 --   "created_at" timestamp DEFAULT now() NOT NULL
 -- );
 
+CREATE TABLE "kv" (
+  "key" text NOT NULL PRIMARY KEY,
+  "value" text,
+  "created_at" timestamptz DEFAULT now() NOT NULL
+);
+
 
 -- Demo Account
 WITH org_rows AS (
