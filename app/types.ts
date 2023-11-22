@@ -321,6 +321,7 @@ export interface AccountBalanceTable {
 export type AccountBalanceUpdate = Updateable<AccountBalanceTable>;
 export type NewAccountBalance = Insertable<AccountBalanceTable>;
 export type AccountBalance = Selectable<AccountBalanceTable>;
+}
 
 export interface Database extends Kysely<Database> {
   accountBalance: AccountBalanceTable;
@@ -331,6 +332,7 @@ export interface Database extends Kysely<Database> {
   document: DocumentTable;
   documentQueue: DocumentQueueTable;
   invitation: InvitationTable;
+  kv: KVTable;
   org: OrgTable;
   requestData: RequestDataTable;
   requestDataDocument: RequestDataDocumentTable;
