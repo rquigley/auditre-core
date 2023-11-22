@@ -233,7 +233,7 @@ CREATE TABLE "account_balance" (
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
-CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account_mapping" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account_balance" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
 -- CREATE TABLE "log" (
 --   "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
