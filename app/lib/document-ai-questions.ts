@@ -1,10 +1,33 @@
 import dedent from 'dedent';
 import * as z from 'zod';
 
-import { head } from '@/lib/util';
+import { extractLinesContaining, head } from '@/lib/util';
 
 import type { DocumentClassificationType } from '@/controllers/document';
 import type { Document } from '@/types';
+
+const yesNoSchema = z
+  .string()
+  .transform((val) => val.toLowerCase())
+  .refine((val) => ['yes', 'no', '-'].includes(val));
+
+const dateRegex = /\d{4}-\d{2}-\d{2}/;
+const extractDateString = (input: string) => {
+  const match = input.match(dateRegex);
+  return match ? match[0] : null;
+};
+const dateSchema = z.string().refine(
+  (data) => {
+    const dateString = extractDateString(data);
+    if (!dateString) return false;
+
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  },
+  {
+    message: 'Invalid date format or value.',
+  },
+);
 
 export interface AIQuestionBasic {
   label?: string;
@@ -59,6 +82,7 @@ export const documentAiQuestions: Partial<
     incorporationDate: {
       label: 'Date of incorporation',
       question: `What date was the company incorporated? Return only the date in the format of YYYY-MM-DD. If you don't find this date, return "-"`,
+      validate: dateSchema,
     },
     numberOfShares: {
       label: 'Number of shares',
@@ -137,8 +161,9 @@ export const documentAiQuestions: Partial<
   TRIAL_BALANCE: {
     trialBalanceDate: {
       label: 'Date of trial balance export',
-      question: `What is the date this trial balance was exported? Return only the date in the format of YYYY-MM-DD. If you don't find this date, return "-"`,
+      question: `What is the date this trial balance was exported? Return _only_ the date in the format of YYYY-MM-DD. Do not add any other information other than the date. If you don't find this date, return "-"`,
       preProcess: (val: string) => head(val, 10),
+      validate: dateSchema,
     },
     columnMappings: {
       preProcess: (val: string) => head(val, 10),
@@ -234,6 +259,30 @@ export const documentAiQuestions: Partial<
         creditColumnIdx: z.number().min(-1).max(10),
         currencyColumnIdx: z.number().min(-1).max(10),
       }),
+    },
+    hasResearchAndDevelopment: {
+      label: 'Has research and development accounts',
+      question:
+        'Does this data mention research and development? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+      preProcess: (val: string) =>
+        extractLinesContaining(val, ['research', 'development']).join('\n'),
+      validate: yesNoSchema,
+    },
+    hasAdvertisingMarketing: {
+      label: 'Has advertising and/or marketing accounts',
+      question:
+        'Does this data mention a marketing and/or advertising costs? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+      preProcess: (val: string) =>
+        extractLinesContaining(val, ['advertising', 'marketing']).join('\n'),
+      validate: yesNoSchema,
+    },
+    hasConvertibleNoteAccount: {
+      label: 'Has a convertible note account',
+      question:
+        'Does this data mention a "convertible note?" If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+      preProcess: (val: string) =>
+        extractLinesContaining(val, ['convertible']).join('\n'),
+      validate: yesNoSchema,
     },
   },
 } as const;

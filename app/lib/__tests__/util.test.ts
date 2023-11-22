@@ -1,4 +1,11 @@
-import { bucket, clientSafe, deepCopy, isFieldVisible, omit } from '../util';
+import {
+  bucket,
+  clientSafe,
+  deepCopy,
+  extractLinesContaining,
+  isFieldVisible,
+  omit,
+} from '../util';
 
 describe('omit', () => {
   it('should prune specified keys from an object', () => {
@@ -137,5 +144,14 @@ describe('bucket', () => {
     const output = bucket(inArr, 3, 1);
 
     expect(output).toEqual([inArr]);
+  });
+});
+
+describe('extractLinesContaining', () => {
+  it(`should only extract lines we're interested in`, () => {
+    const input = 'How many\nCows\nDo you think\neat IN france\nwith\na spoon';
+    const output = extractLinesContaining(input, ['cows', 'france']);
+
+    expect(output).toEqual(['Cows', 'eat IN france']);
   });
 });
