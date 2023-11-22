@@ -2,7 +2,7 @@ import { request } from 'http';
 import OpenAI from 'openai';
 import { z } from 'zod';
 
-import { DocumentQueryUsage, OpenAIModel } from '@/types';
+import type { AiQueryUsage, OpenAIModel } from '@/types';
 
 const openaiConfig = z.string().min(3).max(255);
 
@@ -47,7 +47,7 @@ export async function call({
 }): Promise<{
   message: unknown;
   model: OpenAIModel;
-  usage: DocumentQueryUsage;
+  usage: AiQueryUsage;
 }> {
   const apiKey = openaiConfig.parse(process.env.OPENAI_API_KEY);
   const openai = new OpenAI({
