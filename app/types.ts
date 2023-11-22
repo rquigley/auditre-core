@@ -294,6 +294,7 @@ export interface AccountMappingTable {
   accountName: string;
   accountType: AccountType | null;
   context: string | null;
+  reasoning: string | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
 }

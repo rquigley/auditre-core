@@ -1,11 +1,13 @@
 'use client';
 
 import clsx from 'clsx';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { overrideAccountMapping } from '@/lib/actions';
-import { AccountMappingId, AccountType, AuditId } from '@/types';
+
+import type { AccountType } from '@/controllers/account-mapping';
+import type { AccountMappingId, AuditId } from '@/types';
 
 export function AccountMapping({
   auditId,
@@ -15,12 +17,14 @@ export function AccountMapping({
 }: {
   auditId: AuditId;
   accountMappingId: AccountMappingId;
-  accountType: AccountType | null;
+  accountType: AccountType;
   accountTypes: Record<string, Record<string, string>>;
 }) {
-  const [currentAccountType, setCurrentAccountType] = useState<
-    AccountType | string
-  >(accountType || '');
+  const [currentAccountType, setCurrentAccountType] =
+    useState<AccountType | null>(accountType);
+  useEffect(() => {
+    setCurrentAccountType(accountType);
+  }, [accountType]);
   return useMemo(
     () => (
       <select
@@ -30,10 +34,10 @@ export function AccountMapping({
             : 'ring-gray-300 text-gray-900',
           'mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 ring-1 ring-inset focus:ring-2 focus:ring-sky-600 sm:text-sm sm:leading-6',
         )}
-        defaultValue={currentAccountType}
+        value={currentAccountType || ''}
         onChange={async (e) => {
           const val = (e.target.value as AccountType) || null;
-          setCurrentAccountType(e.target.value);
+          setCurrentAccountType(val);
           await overrideAccountMapping({
             auditId,
             accountMappingId,

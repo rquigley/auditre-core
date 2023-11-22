@@ -1,4 +1,4 @@
-import { AccountType } from '@/types';
+import type { AccountType } from '@/controllers/account-mapping';
 
 interface FinancialElement {
   //   name: string;

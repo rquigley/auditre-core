@@ -4,6 +4,7 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { extname } from 'path';
+import * as Sentry from '@sentry/nextjs';
 import retry from 'async-retry';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -28,6 +29,7 @@ import {
   getById as getDocumentById,
   process as processDocument,
 } from '@/controllers/document';
+import { getKV } from '@/controllers/kv';
 import { create as addRequestData } from '@/controllers/request-data';
 import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
 import { getPresignedUrl } from '@/lib/aws';
@@ -277,37 +279,6 @@ export async function getPresignedUploadUrl({
   };
 }
 
-// export async function selectDocumentForRequest(
-//   id: DocumentId,
-//   field: string,
-// ): Promise<void> {
-// const { user } = await getCurrent();
-// if (!user) {
-//   throw new UnauthorizedError();
-// }
-//   const document = await getDocumentById(id);
-//   if (document.orgId !== user.orgId) {
-//     throw new UnauthorizedError();
-//   }
-//   if (!document.requestId) {
-//     throw new Error('Document is not bound to a request');
-//   }
-//   return;
-//   const request = await getRequestById(document.requestId);
-//   console.log(request);
-//   if (!request.data.hasOwnProperty(field)) {
-//     console.log(request.data);
-//     throw new Error(`Invalid field: ${field}`);
-//   }
-//   const newData = { ...request.data, [field]: document.id };
-//   await updateRequest(
-//     request.id,
-//     { data: newData },
-//     { userId: user.id, type: 'USER' },
-//   );
-//   revalidatePath('/');
-// }
-
 export async function generateFinancialStatement(auditId: AuditId) {
   const { user } = await getCurrent();
   if (!user) {
@@ -331,10 +302,44 @@ export async function extractAccountMapping(auditId: AuditId) {
   }
   const success = await extractChartOfAccountsMapping(auditId);
   console.log('completed extractAccountMapping', success);
+
   revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
 
-  await classifyChartOfAccountsTypes(auditId);
-  revalidatePath(`/audit/${auditId}`);
+  // Kick off classification. Don't await this
+  classifyChartOfAccountsTypes(audit.orgId, auditId)
+    .catch((err) => {
+      Sentry.captureException(err);
+    })
+    .finally(() => {
+      revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
+    });
+}
+
+export async function getAccountMappingStatus(auditId: AuditId) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const audit = await getAuditById(auditId);
+  if (audit.orgId !== user.orgId) {
+    throw new UnauthorizedError();
+  }
+  const numToProcess = parseInt(
+    (await getKV({
+      orgId: audit.orgId,
+      auditId: auditId,
+      key: 'coa-to-process',
+    })) || '0',
+  );
+  const numToProcessTotal = parseInt(
+    (await getKV({
+      orgId: audit.orgId,
+      auditId: auditId,
+      key: 'coa-to-process-total',
+    })) || '0',
+  );
+
+  return { numToProcess, numToProcessTotal };
 }
 
 export async function extractTrialBalance(auditId: AuditId) {

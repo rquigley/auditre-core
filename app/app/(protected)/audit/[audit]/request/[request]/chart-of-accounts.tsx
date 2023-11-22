@@ -3,25 +3,32 @@ import {
   accountTypes,
   getAllAccountMappingsByAuditId,
 } from '@/controllers/account-mapping';
+import { getByIdForClientCached } from '@/controllers/audit';
+import { getKV } from '@/controllers/kv';
 import { extractAccountMapping } from '@/lib/actions';
 import { AccountMapping } from './account-mapping';
+import { StatusSpinner } from './status-spinner';
 
 import type { AuditId } from '@/types';
 
 export async function ChartOfAccounts({ auditId }: { auditId: AuditId }) {
+  const audit = await getByIdForClientCached(auditId);
+  if (!audit) {
+    return null;
+  }
   const accountMapping = await getAllAccountMappingsByAuditId(auditId);
   const aTypes = groupAccountTypes(accountTypes);
+  const numAccountsToProcess = parseInt(
+    (await getKV({
+      orgId: audit.orgId,
+      auditId: auditId,
+      key: 'coa-to-process',
+    })) || '0',
+  );
 
   return (
     <div className="mt-8">
-      <form
-        action={async () => {
-          'use server';
-          await extractAccountMapping(auditId);
-        }}
-      >
-        <SecondaryButton type="submit" label="Reprocess" />
-      </form>
+      {numAccountsToProcess > 0 && <StatusSpinner auditId={auditId} />}
       <table className="min-w-full divide-y divide-gray-300">
         <thead>
           <tr>
@@ -68,7 +75,7 @@ export async function ChartOfAccounts({ auditId }: { auditId: AuditId }) {
                   <AccountMapping
                     auditId={auditId}
                     accountMappingId={am.id}
-                    accountType={am.accountType}
+                    accountType={am.accountType || 'UNKNOWN'}
                     accountTypes={aTypes}
                   />
                 </td>
@@ -77,6 +84,15 @@ export async function ChartOfAccounts({ auditId }: { auditId: AuditId }) {
           )}
         </tbody>
       </table>
+      <form
+        className="my-4"
+        action={async () => {
+          'use server';
+          await extractAccountMapping(auditId);
+        }}
+      >
+        <SecondaryButton type="submit" label="Reprocess" />
+      </form>
     </div>
   );
 }
