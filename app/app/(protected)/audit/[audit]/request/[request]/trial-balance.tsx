@@ -1,24 +1,15 @@
 import { SecondaryButton } from '@/components/button';
 import { getAllAccountBalancesByAuditId } from '@/controllers/account-mapping';
 import { extractTrialBalance } from '@/lib/actions';
-// import { AccountBalance } from './account-balance';
 import { ppCurrency } from '@/lib/util';
 
-import type { AccountType, AuditId } from '@/types';
+import type { AuditId } from '@/types';
 
 export async function TrialBalance({ auditId }: { auditId: AuditId }) {
   const accountMapping = await getAllAccountBalancesByAuditId(auditId);
 
   return (
     <div className="mt-8">
-      <form
-        action={async () => {
-          'use server';
-          await extractTrialBalance(auditId);
-        }}
-      >
-        <SecondaryButton type="submit" label="Reprocess" />
-      </form>
       <table className="min-w-full divide-y divide-gray-300">
         <thead>
           <tr>
@@ -103,6 +94,15 @@ export async function TrialBalance({ auditId }: { auditId: AuditId }) {
           )}
         </tbody>
       </table>
+      <form
+        className="my-4"
+        action={async () => {
+          'use server';
+          await extractTrialBalance(auditId);
+        }}
+      >
+        <SecondaryButton type="submit" label="Reprocess" />
+      </form>
     </div>
   );
 }

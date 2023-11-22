@@ -1,6 +1,7 @@
 import dedent from 'dedent';
 import leven from 'leven';
 import { PassjoinIndex } from 'mnemonist';
+import { revalidatePath } from 'next/cache';
 import { inferSchema, initParser } from 'udsv';
 import * as z from 'zod';
 
@@ -20,6 +21,7 @@ import {
   isAIQuestionJSON,
 } from '@/lib/document-ai-questions';
 import { bucket } from '@/lib/util';
+import { setKV, updateKV } from './kv';
 
 import type { OpenAIMessage } from '@/lib/ai';
 import type {
@@ -31,6 +33,7 @@ import type {
   DocumentId,
   NewAccountMapping,
   OpenAIModel,
+  OrgId,
 } from '@/types';
 
 export const accountTypes = {
@@ -282,6 +285,7 @@ type AccountMappingToClassifyRow = {
 };
 
 export async function classifyChartOfAccountsTypes(
+  orgId: OrgId,
   auditId: AuditId,
 ): Promise<void> {
   const rows = await db
@@ -292,27 +296,85 @@ export async function classifyChartOfAccountsTypes(
     .where('accountType', 'is', null)
     .execute();
 
-  const remainingRows = await autoClassifyCOARows(rows);
+  await setKV({
+    orgId,
+    auditId,
+    key: 'coa-to-process',
+    value: rows.length,
+  });
+  await setKV({
+    orgId,
+    auditId,
+    key: 'coa-to-process-total',
+    value: rows.length,
+  });
+
+  if (!rows.length) {
+    console.log('Classifying CoA, no rows to classify');
+    return;
+  }
+
+  const { numClassified, remainingRows } = await autoClassifyCOARows(rows);
+  await setKV({
+    orgId,
+    auditId,
+    key: 'coa-to-process',
+    value: remainingRows.length,
+  });
+  revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
+
   const aiP: Promise<any>[] = [];
   const buckets = bucket(remainingRows, 20, 8);
+  const t0 = Date.now();
   console.log(
     `Classifying CoA via AI, ${remainingRows.length} rows, ${buckets.length} buckets`,
   );
   buckets.forEach((bucketRows, idx, buckets) => {
-    aiP.push(aiClassifyCOARows(auditId, bucketRows, idx + 1, buckets.length));
+    aiP.push(
+      aiClassifyCOARows({
+        auditId,
+        bucketRows,
+        bucketNum: idx + 1,
+        numBuckets: buckets.length,
+        quickPass: false,
+        includeReasoning: true,
+      }).then(async ({ numClassified }) => {
+        await updateKV({
+          orgId,
+          auditId,
+          key: 'coa-to-process',
+          updater: (prev) => {
+            return Math.max(parseInt(prev || '0') - bucketRows.length, 0);
+          },
+        });
+        revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
+
+        return { numClassified };
+      }),
+    );
   });
-  await Promise.allSettled(aiP);
+  const res = await Promise.allSettled(aiP);
   await Promise.all(aiP);
-  console.log('Classifying CoA via AI, complete');
+  const numClassifiedViaAi = res.reduce(
+    (sum, r) => sum + (r.status === 'fulfilled' ? r.value.numClassified : 0),
+    0,
+  );
+  console.log(
+    `Classifying CoA, completed ${numClassified + numClassifiedViaAi}/${
+      rows.length
+    } in ${Date.now() - t0}ms`,
+  );
 }
 
 /**
- *
  * Classify any rows that we can before handing off to the AI
  */
 async function autoClassifyCOARows(
   rows: AccountMappingToClassifyRow[],
-): Promise<AccountMappingToClassifyRow[]> {
+): Promise<{
+  numClassified: number;
+  remainingRows: AccountMappingToClassifyRow[];
+}> {
   const toUpdate = [];
   let accountType: AccountType;
   const remainingRows = [];
@@ -338,37 +400,64 @@ async function autoClassifyCOARows(
   await Promise.allSettled(toUpdate);
   await Promise.all(toUpdate);
 
-  return remainingRows;
+  return {
+    numClassified: toUpdate.length,
+    remainingRows,
+  };
 }
 
-export async function aiClassifyCOARows(
-  auditId: AuditId,
-  bucketRows: AccountMappingToClassifyRow[],
-  bucketNum: number,
-  numBuckets: number,
-): Promise<void> {
+export async function aiClassifyCOARows({
+  auditId,
+  bucketRows,
+  bucketNum,
+  numBuckets,
+  quickPass,
+  includeReasoning,
+}: {
+  auditId: AuditId;
+  bucketRows: AccountMappingToClassifyRow[];
+  bucketNum: number;
+  numBuckets: number;
+  quickPass: boolean;
+  includeReasoning: boolean;
+}): Promise<{ numClassified: number }> {
   const rowMap = new Map(bucketRows.map((r, idx) => [idx, r.id]));
   const toAiRows = bucketRows.map((r, idx) => [idx, r.context]);
 
   const t0 = Date.now();
+
+  let unknownStr: string;
+  let outputStr: string;
+  if (includeReasoning) {
+    unknownStr =
+      'If you are classifying as UNKNOWN, provide your reasoning. Otherwise, you can leave reasoning as empty string.';
+    outputStr =
+      '{"data":[[accountId1, classifiedAs1, reasoning1],[accountId2, classifiedAs2, reasoning2],[accountId3, classifiedAs3, reasoning3],...]}';
+  } else {
+    unknownStr = `--Ignore this line--`;
+    outputStr =
+      '{"data":[[accountId1, classifiedAs1, ""],[accountId2, classifiedAs2, ""],[accountId3, classifiedAs3, ""],...]}';
+  }
   const messages: OpenAIMessage[] = [
     {
       role: 'system',
       content: dedent`
-      For each row in an export of a company chart of accounts report, classify each row to one of the following
-      account types used for financial statements:
+      1. For each row in a company Chart of Accounts report, classify each row to one of the following
+      accountType(s) used for financial statements:
 
       ${Object.entries(accountTypes)
         .map(([aType, description]) => `- ${aType}: ${description}`)
         .join('\n')}
 
-      If unable to classify the row, set accountType as 'UNKNOWN'
+      2. Confirm the classification is one of the listed accountType based on your reasoning. Do not use a type you make up.
 
-      Do not truncate for brevity. Return all rows in the CSV.
+      3. ${unknownStr}
 
-      Output in JSON using the following structure:
+      4. Do not truncate for brevity. Return all rows in the CSV.
 
-        {"data":[[accountId1, classifiedAs1],[accountId2, classifiedAs2],[accountId3, classifiedAs3],...]}
+      5. Output in JSON using the following structure:
+
+        ${outputStr}
       `,
     },
     {
@@ -380,13 +469,19 @@ export async function aiClassifyCOARows(
   console.log(
     `Classifying CoA via AI, ${bucketNum}/${numBuckets}: ${toAiRows.length} rows`,
   );
+  let requestedModel: OpenAIModel;
+  if (quickPass) {
+    requestedModel = 'gpt-3.5-turbo-1106';
+  } else {
+    requestedModel = 'gpt-4-1106-preview';
+  }
   const resp = await call({
-    requestedModel: 'gpt-4-1106-preview',
+    requestedModel,
     messages,
     respondInJSON: true,
   });
   const schema = z.object({
-    data: z.array(z.tuple([z.number(), z.string()])),
+    data: z.array(z.tuple([z.number(), z.string(), z.string()])),
   });
 
   await createAiQuery({
@@ -407,26 +502,34 @@ export async function aiClassifyCOARows(
   );
 
   const toUpdate = [];
-  for (const [idx, accountType] of parsed.data) {
+
+  for (const [idx, accountType, reasoning] of parsed.data) {
     const id = rowMap.get(idx) as AccountMappingId;
     if (!id || accountType in accountTypes === false) {
       console.log('Invalid accountType', accountType);
       continue;
     }
     // TODO: consider removing this to avoid constantly using AI
-    if (accountType === 'UNKNOWN') {
+    if (accountType === 'UNKNOWN' && quickPass) {
       continue;
     }
+
     toUpdate.push(
       db
         .updateTable('accountMapping')
-        .set({ accountType: accountType as AccountType })
+        .set({
+          accountType: accountType as AccountType,
+          reasoning: reasoning || undefined,
+        })
         .where('id', '=', id)
         .execute(),
     );
-    await Promise.allSettled(toUpdate);
-    await Promise.all(toUpdate);
   }
+
+  await Promise.allSettled(toUpdate);
+  await Promise.all(toUpdate);
+
+  return { numClassified: toUpdate.length };
 }
 
 export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
