@@ -322,6 +322,11 @@ export interface AccountBalanceTable {
 export type AccountBalanceUpdate = Updateable<AccountBalanceTable>;
 export type NewAccountBalance = Insertable<AccountBalanceTable>;
 export type AccountBalance = Selectable<AccountBalanceTable>;
+
+export interface KVTable {
+  id: GeneratedAlways<AccountBalanceId>;
+  key: string;
+  value: string;
 }
 
 export interface Database extends Kysely<Database> {
