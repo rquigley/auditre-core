@@ -88,11 +88,13 @@ export const documentAiQuestions: Partial<
       label: 'Number of shares',
       question:
         'How many shares does the company have the ability to offer? Return only the number without commas. If there are no numbers in your answer, return "-"',
+      validate: numberSchema,
     },
     parValuePerShare: {
       label: 'Par value per share',
       question:
         'What is the par value per share? Return only the number without commas. If there are no numbers in your answer, return "-"',
+      validate: numberSchema,
     },
     incorporationJurisdiction: {
       label: 'Jurisdiction of incorporation',
@@ -276,7 +278,15 @@ export const documentAiQuestions: Partial<
         extractLinesContaining(val, ['advertising', 'marketing']).join('\n'),
       validate: yesNoSchema,
     },
-    hasConvertibleNoteAccount: {
+    hasIntangibleAssets: {
+      label: 'Has ingangible assets',
+      question:
+        'Does this data mention intangible assets? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+      preProcess: (val: string) =>
+        extractLinesContaining(val, ['intangible', 'assets']).join('\n'),
+      validate: yesNoSchema,
+    },
+    hasConvertibleNote: {
       label: 'Has a convertible note account',
       question:
         'Does this data mention a "convertible note?" If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
