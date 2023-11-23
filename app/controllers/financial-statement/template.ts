@@ -177,7 +177,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Intangible Assets',
-    isShowing: (data) => true, // [If the trial balance has a field referencing "intangible assets']
+    isShowing: (data) => data.trialBalance.hasIntangibleAssets,
     body: (data) => `
       Intangible assets consist of patents and are stated at cost, net of amortization. Amortization is computed using the straight-line method over an estimated useful life of approximately five to seventeen years.
     `,
@@ -204,7 +204,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Research and Development',
-    isShowing: (data) => true, // [if there's a field called "research and development" from the trial balance]
+    isShowing: (data) => data.trialBalance.hasResearchAndDevelopment,
     body: (data) => `
       Costs associated with research and development activities are expensed as incurred and include, but are not limited to, personnel-related expenses including stock-based compensation expense, materials, laboratory supplies, consulting costs, and allocated overhead including rent and utilities.
     `,
@@ -284,7 +284,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Convertible Note Payable',
-    isShowing: (data) => true, // [if there answered there's a field called "convertible note" on the trial balance"]
+    isShowing: (data) => data.trialBalance.hasConvertibleNote,
     body: (data) => `
       [if there answered there's a field called "convertible note" on the trial balance"] Note - this will also prompt the user to upload the equity/debt deal
 
