@@ -214,7 +214,7 @@ export async function generate(auditId: AuditId) {
       tableOfContents(),
       independentAuditorsReport(data),
       consolidatedFinancialStatements(data),
-      notes(data),
+      await notes(data),
     ],
   });
   return {
@@ -478,7 +478,7 @@ function templateToParagraph(
   return ret;
 }
 
-function notes(data: AuditData) {
+async function notes(data: AuditData) {
   return {
     ...getPageProperties(),
 
@@ -489,11 +489,11 @@ function notes(data: AuditData) {
         pageBreakBefore: true,
       }),
 
-      ...t.sectionsToBody(
+      ...(await t.sectionsToBody(
         t.getOrganizationSections(),
         data,
         templateToParagraph,
-      ),
+      )),
 
       new Paragraph({
         text: '',
@@ -503,7 +503,11 @@ function notes(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
       }),
 
-      ...t.sectionsToBody(t.getPolicySections(), data, templateToParagraph),
+      ...(await t.sectionsToBody(
+        t.getPolicySections(),
+        data,
+        templateToParagraph,
+      )),
     ],
   };
 }
