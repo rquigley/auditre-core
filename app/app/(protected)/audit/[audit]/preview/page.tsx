@@ -121,7 +121,7 @@ export default async function AuditPage({
   );
 }
 
-function DataSection({
+async function DataSection({
   section,
   data,
   highlightData,
@@ -129,7 +129,7 @@ function DataSection({
   section: Section;
   data: AuditData;
   highlightData: boolean;
-}): React.ReactNode {
+}) {
   if (!section.isShowing(data)) {
     if (highlightData) {
       return (
@@ -145,7 +145,7 @@ function DataSection({
     }
   }
 
-  const input = dedent(section.body(data));
+  const input = dedent(await section.body(data));
   const output: (string | JSX.Element)[] = [];
   let lastIndex = 0;
   const regex = /\[(.*?)\]|\n/g;

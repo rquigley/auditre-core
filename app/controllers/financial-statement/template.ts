@@ -18,7 +18,7 @@ export type Section = {
   header: string;
   isShowing: (data: AuditData) => boolean;
   slug: string;
-  body: (data: AuditData) => string;
+  body: (data: AuditData) => string | Promise<string>;
   pageBreakBefore: boolean;
 };
 
@@ -30,7 +30,7 @@ function generateSection({
 }: {
   header: string;
   isShowing?: (data: AuditData) => boolean;
-  body: (data: AuditData) => string;
+  body: (data: AuditData) => string | Promise<string>;
   pageBreakBefore?: boolean;
 }): Section {
   return {
@@ -42,7 +42,7 @@ function generateSection({
   };
 }
 
-export function sectionsToBody<T>(
+export async function sectionsToBody<T>(
   sections: Section[],
   data: AuditData,
   wrapper: ({
@@ -58,10 +58,11 @@ export function sectionsToBody<T>(
   const ret = [];
   for (const s in sections) {
     if (sections[s].isShowing(data)) {
+      const body = dedent(await sections[s].body(data));
       ret.push(
         ...wrapper({
           header: sections[s].header,
-          body: dedent(sections[s].body(data)),
+          body,
           pageBreakBefore: sections[s].pageBreakBefore,
         }),
       );
@@ -86,7 +87,7 @@ export const getOrganizationSections = () => [
 
   generateSection({
     header: 'Going Concern and Liquidity',
-    body: (data) => `
+    body: async (data) => `
       The Company has incurred recurring losses and negative cash flows from operating activities since inception. As of [${
         data.fiscalYearEnd
       }], the Company had cash of [${ppCurrency(
