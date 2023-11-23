@@ -29,6 +29,7 @@ const dateSchema = z.string().refine(
   },
 );
 
+const numberSchema = z.string().transform((val) => val.replace(/[^\d\.]/g, ''));
 export interface AIQuestionBasic {
   label?: string;
   question: string;
