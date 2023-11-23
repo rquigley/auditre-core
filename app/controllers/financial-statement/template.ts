@@ -211,7 +211,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Advertising and Marketing Costs',
-    isShowing: (data) => true, // [if there's a field called "marketing" or "advertising" from the trial balance]
+    isShowing: (data) => data.trialBalance.hasAdvertisingMarketing,
     body: (data) => `
       Costs associated with advertising and marketing activities are expensed as incurred. Total advertising and marketing costs amounted to [marketing cost, $XX,XXX] for the year ended [${data.fiscalYearEnd}] and are included in general and administrative expenses in the consolidated statement of operations.
     `,
