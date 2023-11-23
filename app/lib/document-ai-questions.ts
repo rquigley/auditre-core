@@ -284,7 +284,15 @@ export const documentAiQuestions: Partial<
       question:
         'Does this data mention intangible assets? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
       preProcess: (val: string) =>
-        extractLinesContaining(val, ['intangible', 'assets']).join('\n'),
+        extractLinesContaining(val, ['intangible', 'asset']).join('\n'),
+      validate: yesNoSchema,
+    },
+    hasfixedAssets: {
+      label: 'Has fixed assets',
+      question:
+        'Does this data mention fixed assets? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+      preProcess: (val: string) =>
+        extractLinesContaining(val, ['asset']).join('\n'),
       validate: yesNoSchema,
     },
     hasConvertibleNote: {
