@@ -126,7 +126,7 @@ export const getPolicySections = () => [
     body: (data) => `
       Financial instruments that potentially subject the Company to credit risk consist principally of cash held by financial institutions. Substantially all of the Company's cash is held at one financial institution that management believes is of high credit quality. Such deposits may, at times, exceed federally insured limits.
 
-      The Company is dependent on key suppCurrencyliers for certain laboratory materials. An interruption in the suppCurrencyly of these materials would temporarily impact the Company's ability to perform development and testing related to its products.
+      The Company is dependent on key suppliers for certain laboratory materials. An interruption in the supply of these materials would temporarily impact the Company's ability to perform development and testing related to its products.
     `,
   }),
   generateSection({
@@ -157,7 +157,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Property and Equipment',
-    isShowing: (data) => true, // [no show If the trial balance has a field referencing "fixed assets']
+    isShowing: (data) => data.trialBalance.hasfixedAssets === 'no', // [no show If the trial balance has a field referencing "fixed assets']
     body: (data) => `
       Property and equipment are stated at cost, net of depreciation. Depreciation is computed using the straight-line method over the estimated useful lives of the assets. Leasehold improvements are amortized on a straight-line basis over the lesser of the estimated useful life of the asset or the remaining term of the related lease. Maintenance and repairs are charged to expense as incurred, and improvements and betterments are capitalized.
 
@@ -178,7 +178,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Intangible Assets',
-    isShowing: (data) => data.trialBalance.hasIntangibleAssets,
+    isShowing: (data) => data.trialBalance.hasIntangibleAssets === 'yes',
     body: (data) => `
       Intangible assets consist of patents and are stated at cost, net of amortization. Amortization is computed using the straight-line method over an estimated useful life of approximately five to seventeen years.
     `,
@@ -205,21 +205,21 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Research and Development',
-    isShowing: (data) => data.trialBalance.hasResearchAndDevelopment,
+    isShowing: (data) => data.trialBalance.hasResearchAndDevelopment === 'yes',
     body: (data) => `
       Costs associated with research and development activities are expensed as incurred and include, but are not limited to, personnel-related expenses including stock-based compensation expense, materials, laboratory supplies, consulting costs, and allocated overhead including rent and utilities.
     `,
   }),
   generateSection({
     header: 'Advertising and Marketing Costs',
-    isShowing: (data) => data.trialBalance.hasAdvertisingMarketing,
+    isShowing: (data) => data.trialBalance.hasAdvertisingMarketing === 'yes',
     body: (data) => `
       Costs associated with advertising and marketing activities are expensed as incurred. Total advertising and marketing costs amounted to [marketing cost, $XX,XXX] for the year ended [${data.fiscalYearEnd}] and are included in general and administrative expenses in the consolidated statement of operations.
     `,
   }),
   generateSection({
     header: 'Stock-Based Compensation',
-    isShowing: (data) => data.equity.hasEmployeeStockPlan,
+    isShowing: (data) => data.equity.hasEmployeeStockPlan === 'yes',
     body: (data) => `
       The Company estimates the fair value of stock based payment awards on the date of grant using the Black Scholes Merton option pricing model. The model requires management to make a number of assumptions, including the fair value of the Company's common stock, expected volatility, expected life, risk free interest rate and expected dividends. The value of awards that are ultimately expected to vest is recognized ratably over the requisite service periods in the Company's consolidated statement of operations. Forfeitures are accounted for as they occur.
     `,
@@ -285,7 +285,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Convertible Note Payable',
-    isShowing: (data) => data.trialBalance.hasConvertibleNote,
+    isShowing: (data) => data.trialBalance.hasConvertibleNote === 'yes',
     body: (data) => `
       [if there answered there's a field called "convertible note" on the trial balance"] Note - this will also prompt the user to upload the equity/debt deal
 
