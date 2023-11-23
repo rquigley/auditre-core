@@ -223,13 +223,22 @@ export function getMonthName(month: string) {
 }
 
 export function ppCurrency(num: number) {
-  return num.toLocaleString('en-US', {
+  const isNeg = num < 0;
+  if (isNeg) {
+    num = num * -1;
+  }
+  const ret = (Math.round(num * 100) / 100).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
     currencySign: 'accounting',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+  if (isNeg) {
+    return `(${ret})`;
+  } else {
+    return ret;
+  }
 }
 
 export function bucket<T>(

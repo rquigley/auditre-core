@@ -15,7 +15,7 @@ import {
 } from '@/controllers/document';
 import { getDataForRequestAttribute } from '@/controllers/request-data';
 import { call } from '@/lib/ai';
-import { db } from '@/lib/db';
+import { db, sql } from '@/lib/db';
 import {
   documentAiQuestions,
   isAIQuestionJSON,
@@ -162,6 +162,29 @@ export async function getAllAccountBalancesByAuditId(
     query = query.where('ab.isDeleted', '=', includeDeleted);
   }
   return await query.orderBy(['accountNumber', 'accountName']).execute();
+}
+
+export async function getBalancesByAccountType(auditId: AuditId) {
+  const rows = await db
+    .selectFrom('accountBalance as ab')
+    .leftJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')
+    .select([
+      'am.accountType',
+      db.fn.sum('credit').as('credit'),
+      db.fn.sum('debit').as('debit'),
+      sql`SUM(ab.debit) - SUM(ab.credit)`.as('balance'),
+    ])
+    .where('ab.isDeleted', '=', false)
+    .where('accountType', 'is not', null)
+    .groupBy('accountType')
+    .execute();
+  const balances = new Map(
+    Object.keys(accountTypes).map((aType) => [aType, 0]),
+  ) as Map<AccountType, number>;
+  for (const row of rows) {
+    balances.set(row.accountType as AccountType, row.balance as number);
+  }
+  return balances;
 }
 
 export async function extractChartOfAccountsMapping(
