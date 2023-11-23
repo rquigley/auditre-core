@@ -1,58 +1,74 @@
-import {
-  getLastDayOfMonth,
-  getMonthName,
-  kebabToCamel,
-  ppCurrency,
-} from '@/lib/util';
+import { getBalancesByAccountType } from '@/controllers/account-mapping';
+import { getLastDayOfMonth, getMonthName, ppCurrency } from '@/lib/util';
 
 import type { AuditData } from '../audit-output';
 import type { AuditId } from '@/types';
 
+function addFP(...args: number[]) {
+  return args.reduce((existing, x) => existing + x * 1000, 0) / 1000;
+}
+
 export async function get(auditId: AuditId) {
+  const t = await getBalancesByAccountType(auditId);
   const assets = {
+    // TODO:
+    // - ASSET_INVENTORY
+    // - ASSET_PREPAID_EXPENSES
     currentAssets: {
-      cash: 25979389,
-      other: 873839,
+      cash: t.get('ASSET_CASH_AND_CASH_EQUIVALENTS') || 0,
+      other: t.get('ASSET_OTHER') || 0,
     },
     totalCurrentAssets: 0, // computed
-    property: 11164032,
-    intangible: 346801,
-    operatingLeaseRightOfUse: 3800326,
-    other: 162656,
+    property: t.get('ASSET_PROPERTY_AND_EQUIPMENT') || 0,
+    intangible: t.get('ASSET_INTANGIBLE_ASSETS') || 0,
+    operatingLeaseRightOfUse: t.get('ASSET_OPERATING_LEASE_RIGHT_OF_USE') || 0,
+    other: t.get('ASSET_OTHER') || 0,
     total: 0, // computed
   };
-  assets.totalCurrentAssets =
-    assets.currentAssets.cash + assets.currentAssets.other;
+  assets.totalCurrentAssets = addFP(
+    assets.currentAssets.cash,
+    assets.currentAssets.other,
+  );
 
-  assets.total =
-    assets.totalCurrentAssets +
-    assets.property +
-    assets.intangible +
-    assets.operatingLeaseRightOfUse +
-    assets.other;
+  assets.total = addFP(
+    assets.totalCurrentAssets,
+    assets.property,
+    assets.intangible,
+    assets.operatingLeaseRightOfUse,
+    assets.other,
+  );
 
   const liabilities = {
+    // TODO:
+    // - LIABILITY_DEBT
+    // - LIABILITY_DEFERRED_REVENUE
+    // - LIABILITY_OTHER
     current: {
-      accountsPayable: 25979389,
-      accrued: 873839,
-      operatingLease: 873839,
+      accountsPayable: t.get('LIABILITY_ACCOUNTS_PAYABLE') || 0,
+      accrued: t.get('LIABILITY_ACCRUED_LIABILITIES') || 0,
+      operatingLease:
+        t.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT') || 0,
     },
     totalCurrent: 0, // computed
-    accruedInterest: 11164032,
-    converableNotes: 346801,
-    operatingLease: 3800326,
+    accruedInterest: t.get('LIABILITY_ACCRUED_INTEREST') || 0,
+    converableNotes: t.get('LIABILITY_CONVERTIBLE_NOTES_PAYABLE') || 0,
+    operatingLease:
+      t.get('LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION') ||
+      0,
     total: 0, // computed
   };
-  liabilities.totalCurrent =
-    liabilities.current.accountsPayable +
-    liabilities.current.accrued +
-    liabilities.current.operatingLease;
+  liabilities.totalCurrent = addFP(
+    liabilities.current.accountsPayable,
+    liabilities.current.accrued,
+    liabilities.current.operatingLease,
+  );
 
-  liabilities.total =
-    liabilities.totalCurrent +
-    liabilities.accruedInterest +
-    liabilities.converableNotes +
-    liabilities.operatingLease;
+  liabilities.total = addFP(
+    liabilities.totalCurrent,
+    liabilities.accruedInterest,
+    liabilities.converableNotes,
+    liabilities.operatingLease,
+  );
   return {
     assets,
     liabilities,
