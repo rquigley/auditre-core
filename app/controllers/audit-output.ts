@@ -1,3 +1,4 @@
+import { getBalancesByAccountType } from '@/controllers/account-mapping';
 import { getById as getAuditById } from '@/controllers/audit';
 import {
   getAiDataForDocumentId,
@@ -7,7 +8,7 @@ import { getDataForAuditId } from '@/controllers/request-data';
 import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
 import {
   buildBalanceSheet,
-  get as getBalanceSheetData,
+  getTotals,
 } from './financial-statement/balance-sheet';
 import * as t from './financial-statement/template';
 
@@ -75,7 +76,8 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
     data[kebabToCamel(key)] = fieldsData;
   }
 
-  const balanceSheet = await getBalanceSheetData(auditId);
+  const totals = await getBalancesByAccountType(auditId);
+  const balanceSheet = getTotals(totals);
 
   data.balanceSheet = balanceSheet;
   data.fiscalYearEnd = `${getMonthName(

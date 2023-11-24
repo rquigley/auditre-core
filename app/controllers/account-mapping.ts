@@ -164,7 +164,9 @@ export async function getAllAccountBalancesByAuditId(
   return await query.orderBy(['accountNumber', 'accountName']).execute();
 }
 
-export async function getBalancesByAccountType(auditId: AuditId) {
+export async function getBalancesByAccountType(
+  auditId: AuditId,
+): Promise<Map<AccountType, number>> {
   const rows = await db
     .selectFrom('accountBalance as ab')
     .leftJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')

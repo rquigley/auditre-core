@@ -1,4 +1,4 @@
-import { getBalancesByAccountType } from '@/controllers/account-mapping';
+import { AccountType } from '@/controllers/account-mapping';
 import { getLastDayOfMonth, getMonthName, ppCurrency } from '@/lib/util';
 
 import type { AuditData } from '../audit-output';
@@ -8,8 +8,7 @@ function addFP(...args: number[]) {
   return args.reduce((existing, x) => existing + x * 1000, 0) / 1000;
 }
 
-export async function get(auditId: AuditId) {
-  const t = await getBalancesByAccountType(auditId);
+export function getTotals(t: Map<AccountType, number>) {
   const assets = {
     // TODO:
     // - ASSET_INVENTORY
@@ -69,9 +68,31 @@ export async function get(auditId: AuditId) {
     liabilities.converableNotes,
     liabilities.operatingLease,
   );
+
+  const equity = {
+    preferredStock: t.get('EQUITY_PREFERRED_STOCK') || 0,
+    commonStock: t.get('EQUITY_COMMON_STOCK') || 0,
+    paidInCapital: t.get('EQUITY_PAID_IN_CAPITAL') || 0,
+    retainedEarnings: t.get('EQUITY_RETAINED_EARNINGS') || 0,
+    accumulatedDeficit: t.get('EQUITY_ACCUMULATED_DEFICIT') || 0,
+  };
+  const totalStockholdersDeficit = addFP(
+    equity.preferredStock,
+    equity.commonStock,
+    equity.paidInCapital,
+    equity.retainedEarnings,
+    equity.accumulatedDeficit,
+  );
+  const totalLiabilitiesAndStockholdersDeficit = addFP(
+    liabilities.total,
+    totalStockholdersDeficit,
+  );
   return {
     assets,
     liabilities,
+    equity,
+    totalStockholdersDeficit,
+    totalLiabilitiesAndStockholdersDeficit,
   };
 }
 
@@ -210,11 +231,67 @@ export function buildBalanceSheet(
       name: 'Operating lease liabilities, net of current portion',
       value: ppCurrency(data.balanceSheet.liabilities.operatingLease),
       indent: true,
+      borderBottom: true,
     }),
     buildTableRow({
       key: idx++,
       name: 'Total liabilities',
       value: ppCurrency(data.balanceSheet.liabilities.total),
+      bold: true,
+      borderBottom: true,
+      padTop: true,
+    }),
+
+    buildTableRow({
+      key: idx++,
+      name: 'Stockholders’ deficit:',
+      padTop: true,
+    }),
+    buildTableRow({
+      key: idx++,
+      name: 'Preferred stock',
+      value: ppCurrency(data.balanceSheet.equity.preferredStock),
+      indent: true,
+    }),
+    buildTableRow({
+      key: idx++,
+      name: 'Common stock',
+      value: ppCurrency(data.balanceSheet.equity.commonStock),
+      indent: true,
+    }),
+    buildTableRow({
+      key: idx++,
+      name: 'Paid-in capital',
+      value: ppCurrency(data.balanceSheet.equity.paidInCapital),
+      indent: true,
+    }),
+    buildTableRow({
+      key: idx++,
+      name: 'Retained earnings',
+      value: ppCurrency(data.balanceSheet.equity.retainedEarnings),
+      indent: true,
+    }),
+    buildTableRow({
+      key: idx++,
+      name: 'Accumulated deficit',
+      value: ppCurrency(data.balanceSheet.equity.accumulatedDeficit),
+      indent: true,
+      borderBottom: true,
+    }),
+    buildTableRow({
+      key: idx++,
+      name: 'Total stockholders’ deficit',
+      value: ppCurrency(data.balanceSheet.totalStockholdersDeficit),
+      bold: true,
+      borderBottom: true,
+      padTop: true,
+    }),
+    buildTableRow({
+      key: idx++,
+      name: 'Total liabilities and stockholders’ deficit',
+      value: ppCurrency(
+        data.balanceSheet.totalLiabilitiesAndStockholdersDeficit,
+      ),
       bold: true,
       borderBottom: true,
       padTop: true,
