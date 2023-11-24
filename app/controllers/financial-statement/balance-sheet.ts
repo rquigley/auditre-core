@@ -1,12 +1,8 @@
 import { AccountType } from '@/controllers/account-mapping';
-import { getLastDayOfMonth, getMonthName, ppCurrency } from '@/lib/util';
+import { addFP, getLastDayOfMonth, getMonthName, ppCurrency } from '@/lib/util';
 
 import type { AuditData } from '../audit-output';
 import type { AuditId } from '@/types';
-
-function addFP(...args: number[]) {
-  return args.reduce((existing, x) => existing + x * 1000, 0) / 1000;
-}
 
 export function getTotals(t: Map<AccountType, number>) {
   const assets = {
