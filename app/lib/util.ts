@@ -222,6 +222,10 @@ export function getMonthName(month: string) {
   }
 }
 
+export function addFP(...args: number[]) {
+  return args.reduce((existing, x) => existing + x * 1000, 0) / 1000;
+}
+
 export function ppCurrency(num: number) {
   const isNeg = num < 0;
   if (isNeg) {
