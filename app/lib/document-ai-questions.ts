@@ -280,7 +280,7 @@ export const documentAiQuestions: Partial<
       validate: yesNoSchema,
     },
     hasIntangibleAssets: {
-      label: 'Has ingangible assets',
+      label: 'Has intangible assets',
       question:
         'Does this data mention intangible assets? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
       preProcess: (val: string) =>
