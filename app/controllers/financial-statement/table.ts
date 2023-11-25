@@ -1,7 +1,31 @@
+import React from 'react';
+
 import { AccountType } from '@/controllers/account-mapping';
 import { addFP, getLastDayOfMonth, getMonthName, ppCurrency } from '@/lib/util';
 
 import type { AuditData } from '../audit-output';
+
+export type BuildTableRowArgs = {
+  name: string;
+  value?: string;
+  bold?: boolean;
+  indent?: boolean;
+  padTop?: boolean;
+  borderBottom?: boolean;
+  key?: React.Key;
+};
+
+function buildTable<T>(
+  buildTableRow: (args: BuildTableRowArgs) => T,
+  arr: BuildTableRowArgs[],
+) {
+  return arr.map((row: BuildTableRowArgs, idx: number) => {
+    return buildTableRow({
+      ...row,
+      key: idx,
+    });
+  });
+}
 
 export function normalizeBalanceSheet(t: Map<AccountType, number>) {
   const assets = {
@@ -88,13 +112,13 @@ export function normalizeBalanceSheet(t: Map<AccountType, number>) {
     equity,
     totalStockholdersDeficit,
     totalLiabilitiesAndStockholdersDeficit,
-  };
+  } as const;
 }
 
-export function buildBalanceSheet(
+export function buildBalanceSheet<T>(
   data: AuditData,
-  buildTableRow: any,
-): React.ReactNode {
+  buildTableRow: (args: BuildTableRowArgs) => T,
+): T[] {
   const fiscalCloseStr = `As of ${getMonthName(
     data.auditInfo.fiscalYearMonthEnd,
   )} ${getLastDayOfMonth(
@@ -102,187 +126,157 @@ export function buildBalanceSheet(
     data.auditInfo.year,
   )},`;
 
-  let idx = 0;
-  return [
-    buildTableRow({
-      key: idx++,
+  return buildTable(buildTableRow, [
+    {
       name: fiscalCloseStr,
       value: data.auditInfo.year,
       bold: true,
       borderBottom: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Assets',
       bold: true,
       padTop: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Current assets:',
       padTop: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Cash',
       value: ppCurrency(data.balanceSheet.assets.currentAssets.cash),
       indent: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Prepaid expenses and other current assets',
       value: ppCurrency(data.balanceSheet.assets.currentAssets.other),
       indent: true,
       borderBottom: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Total current assets',
       value: ppCurrency(data.balanceSheet.assets.totalCurrentAssets),
       borderBottom: true,
       padTop: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Property and equipment, net',
       value: ppCurrency(data.balanceSheet.assets.property),
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Intangible assets, net',
       value: ppCurrency(data.balanceSheet.assets.intangible),
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Operating lease right-of-use assets',
       value: ppCurrency(data.balanceSheet.assets.operatingLeaseRightOfUse),
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Other assets',
       value: ppCurrency(data.balanceSheet.assets.other),
       borderBottom: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Total assets',
       value: ppCurrency(data.balanceSheet.assets.total),
       bold: true,
       borderBottom: true,
       padTop: true,
-    }),
+    },
 
-    buildTableRow({
-      key: idx++,
+    {
       name: 'Liabilities and Stockholders’ Deficit',
       bold: true,
       padTop: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Current liabilities:',
       padTop: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Accounts payable',
       value: ppCurrency(data.balanceSheet.liabilities.current.accountsPayable),
       indent: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Accrued liabilities',
       value: ppCurrency(data.balanceSheet.liabilities.current.accrued),
       indent: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Operating lease liabilities, current',
       value: ppCurrency(data.balanceSheet.liabilities.current.operatingLease),
       indent: true,
       borderBottom: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Total current liabilities',
       value: ppCurrency(data.balanceSheet.liabilities.totalCurrent),
       borderBottom: true,
       padTop: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Accrued interest',
       value: ppCurrency(data.balanceSheet.liabilities.accruedInterest),
       indent: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Convertible notes payable',
       value: ppCurrency(data.balanceSheet.liabilities.converableNotes),
       indent: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Operating lease liabilities, net of current portion',
       value: ppCurrency(data.balanceSheet.liabilities.operatingLease),
       indent: true,
       borderBottom: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Total liabilities',
       value: ppCurrency(data.balanceSheet.liabilities.total),
       bold: true,
       borderBottom: true,
       padTop: true,
-    }),
+    },
 
-    buildTableRow({
-      key: idx++,
+    {
       name: 'Stockholders’ deficit:',
       padTop: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Preferred stock',
       value: ppCurrency(data.balanceSheet.equity.preferredStock),
       indent: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Common stock',
       value: ppCurrency(data.balanceSheet.equity.commonStock),
       indent: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Paid-in capital',
       value: ppCurrency(data.balanceSheet.equity.paidInCapital),
       indent: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Retained earnings',
       value: ppCurrency(data.balanceSheet.equity.retainedEarnings),
       indent: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Accumulated deficit',
       value: ppCurrency(data.balanceSheet.equity.accumulatedDeficit),
       indent: true,
       borderBottom: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Total stockholders’ deficit',
       value: ppCurrency(data.balanceSheet.totalStockholdersDeficit),
       bold: true,
       borderBottom: true,
       padTop: true,
-    }),
-    buildTableRow({
-      key: idx++,
+    },
+    {
       name: 'Total liabilities and stockholders’ deficit',
       value: ppCurrency(
         data.balanceSheet.totalLiabilitiesAndStockholdersDeficit,
@@ -290,6 +284,100 @@ export function buildBalanceSheet(
       bold: true,
       borderBottom: true,
       padTop: true,
-    }),
-  ];
+    },
+  ]);
+}
+
+export function normalizeStatementOfOps(t: Map<AccountType, number>) {
+  let ret = {
+    opEx: {
+      rAndD: t.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') || 0,
+      gAndA: t.get('INCOME_STATEMENT_G_AND_A') || 0,
+    },
+    totalOpEx: 0, // computed
+    lossFromOps: 0, // computed
+    otherIncomeExpenseNet: {
+      interestExpenseNet: t.get('INCOME_STATEMENT_INTEREST_EXPENSE') || 0,
+      otherIncomeNet: t.get('INCOME_STATEMENT_OTHER_INCOME') || 0,
+    },
+    totalOtherIncomeExpenseNet: 0, // computed
+    netLoss: 0, // computed
+  };
+  ret.totalOpEx = addFP(ret.opEx.rAndD, ret.opEx.gAndA);
+  ret.lossFromOps = addFP(ret.totalOpEx * -1);
+  ret.totalOtherIncomeExpenseNet = addFP(
+    ret.otherIncomeExpenseNet.interestExpenseNet,
+    ret.otherIncomeExpenseNet.otherIncomeNet,
+  );
+  ret.netLoss = addFP(ret.lossFromOps, ret.totalOtherIncomeExpenseNet);
+  return ret;
+}
+
+export function buildStatementOfOperations<T>(
+  data: AuditData,
+  buildTableRow: (args: BuildTableRowArgs) => T,
+): T[] {
+  const fiscalCloseStr = `As of ${getMonthName(
+    data.auditInfo.fiscalYearMonthEnd,
+  )} ${getLastDayOfMonth(
+    data.auditInfo.fiscalYearMonthEnd,
+    data.auditInfo.year,
+  )},`;
+
+  return buildTable(buildTableRow, [
+    {
+      name: fiscalCloseStr,
+      value: data.auditInfo.year,
+      bold: true,
+      borderBottom: true,
+    },
+    {
+      name: 'Operating expenses:',
+      padTop: true,
+    },
+    {
+      name: 'Research and development',
+      value: ppCurrency(data.statementOfOps.opEx.rAndD),
+      indent: true,
+    },
+    {
+      name: 'General and administrative',
+      value: ppCurrency(data.statementOfOps.opEx.gAndA),
+      indent: true,
+    },
+    {
+      name: 'Total operating expenses',
+      value: ppCurrency(data.statementOfOps.totalOpEx),
+      indent: true,
+    },
+    {
+      name: 'Loss from operations',
+      value: ppCurrency(data.statementOfOps.lossFromOps),
+    },
+    {
+      name: 'Other income (expense), net:',
+    },
+    {
+      name: 'Interest expense, net',
+      value: ppCurrency(
+        data.statementOfOps.otherIncomeExpenseNet.interestExpenseNet,
+      ),
+      indent: true,
+    },
+    {
+      name: 'Other income, net',
+      value: ppCurrency(
+        data.statementOfOps.otherIncomeExpenseNet.otherIncomeNet,
+      ),
+      indent: true,
+    },
+    {
+      name: 'Total other income (expense), net',
+      value: ppCurrency(data.statementOfOps.totalOtherIncomeExpenseNet),
+    },
+    {
+      name: 'Net loss',
+      value: ppCurrency(data.statementOfOps.netLoss),
+    },
+  ]);
 }
