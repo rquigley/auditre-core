@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 
 import { getByIdForClientCached } from '@/controllers/audit';
 import { getAuditData } from '@/controllers/audit-output';
-import { buildBalanceSheet } from '@/controllers/financial-statement/balance-sheet';
+import { buildBalanceSheet } from '@/controllers/financial-statement/table';
 import {
   getOrganizationSections,
   getPolicySections,

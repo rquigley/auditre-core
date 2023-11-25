@@ -1,5 +1,5 @@
 import { AccountType } from '@/controllers/account-mapping';
-import { getTotals } from '../balance-sheet';
+import { getTotals } from '../table';
 
 describe('getTotals', () => {
   it('should calculate total current assets correctly', () => {
