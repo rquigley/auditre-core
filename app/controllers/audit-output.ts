@@ -8,7 +8,10 @@ import { getDataForAuditId } from '@/controllers/request-data';
 import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
 import {
   buildBalanceSheet,
+  buildStatementOfOperations,
+  BuildTableRowArgs,
   normalizeBalanceSheet,
+  normalizeStatementOfOps,
 } from './financial-statement/table';
 import * as t from './financial-statement/template';
 
@@ -77,9 +80,9 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   }
 
   const totals = await getBalancesByAccountType(auditId);
-  const balanceSheet = normalizeBalanceSheet(totals);
 
-  data.balanceSheet = balanceSheet;
+  data.balanceSheet = normalizeBalanceSheet(totals);
+  data.statementOfOps = normalizeStatementOfOps(totals);
   data.fiscalYearEnd = `${getMonthName(
     // @ts-expect-error
     data.auditInfo.fiscalYearMonthEnd,
@@ -216,6 +219,7 @@ export async function generate(auditId: AuditId) {
       tableOfContents(),
       independentAuditorsReport(data),
       consolidatedFinancialStatements(data),
+      consolidatedStatementOfOperations(data),
       await notes(data),
     ],
   });
@@ -282,11 +286,6 @@ function independentAuditorsReport(data: AuditData) {
 }
 
 function consolidatedFinancialStatements(data: AuditData) {
-  // const t1 = new TextRun({
-  //   text: '[Auditor to add opinion]',
-  //   highlight: 'yellow',
-  // });
-
   const table = new Table({
     borders: {
       top: { style: BorderStyle.NONE },
@@ -302,13 +301,34 @@ function consolidatedFinancialStatements(data: AuditData) {
     ...getPageProperties(),
 
     children: [
-      // new Paragraph({
-      //   text: 'Consolidated Financial Statements',
-      //   heading: HeadingLevel.HEADING_1,
-      //   //pageBreakBefore: true,
-      // }),
       new Paragraph({
         text: 'Consolidated Balance Sheet',
+        heading: HeadingLevel.HEADING_1,
+        pageBreakBefore: true,
+      }),
+      table,
+    ],
+  };
+}
+
+function consolidatedStatementOfOperations(data: AuditData) {
+  const table = new Table({
+    borders: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+    },
+    columnWidths: [7505, 1505],
+    rows: buildStatementOfOperations(data, buildTableRow),
+  });
+
+  return {
+    ...getPageProperties(),
+
+    children: [
+      new Paragraph({
+        text: 'Consolidated Statement of Operations',
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
@@ -324,14 +344,7 @@ function buildTableRow({
   indent,
   borderBottom,
   padTop,
-}: {
-  name: string;
-  value?: string;
-  bold?: boolean;
-  indent?: boolean;
-  borderBottom?: boolean;
-  padTop?: boolean;
-}) {
+}: BuildTableRowArgs) {
   const borders = {
     top: {
       style: BorderStyle.NONE,

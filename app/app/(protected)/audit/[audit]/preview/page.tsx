@@ -4,7 +4,11 @@ import { notFound } from 'next/navigation';
 
 import { getByIdForClientCached } from '@/controllers/audit';
 import { getAuditData } from '@/controllers/audit-output';
-import { buildBalanceSheet } from '@/controllers/financial-statement/table';
+import {
+  buildBalanceSheet,
+  buildStatementOfOperations,
+  BuildTableRowArgs,
+} from '@/controllers/financial-statement/table';
 import {
   getOrganizationSections,
   getPolicySections,
@@ -39,6 +43,7 @@ export default async function AuditPage({
 
   const data = await getAuditData(auditId);
   const highlightData = searchParams['show-changes'] === '1';
+
   return (
     <div className="m-5">
       <div className="mb-4 flex space-x-7">
@@ -69,16 +74,59 @@ export default async function AuditPage({
       >
         <h2 className="text-lg font-bold">1. Consolidated Balance Sheet</h2>
 
-        <table className="w-full">
-          <tbody>{buildBalanceSheet(data, buildTableRow)}</tbody>
+        <table className="w-full mt-2">
+          <tbody>
+            {buildBalanceSheet<React.ReactNode>(data, buildTableRow)}
+          </tbody>
         </table>
+      </div>
+
+      <div
+        id="section-statement-of-operations"
+        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
+      >
+        <h2 className="text-lg font-bold">
+          2. Consolidated Statement of Operations
+        </h2>
+
+        <table className="w-full mt-2">
+          <tbody>
+            {buildStatementOfOperations<React.ReactNode>(data, buildTableRow)}
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        id="section-balance-sheet"
+        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
+      >
+        <h2 className="text-lg font-bold">
+          3. Conslidated Statement of Stockholders&apos; Equity (Deficit)
+        </h2>
+
+        {/* <table className="w-full mt-2">
+          <tbody>TODO</tbody>
+        </table> */}
+      </div>
+
+      <div
+        id="section-balance-sheet"
+        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
+      >
+        <h2 className="text-lg font-bold">
+          4. Conslidated Statement of Cash Flows
+        </h2>
+
+        {/* <table className="w-full mt-2">
+          <tbody>TODO</tbody>
+        </table> */}
       </div>
 
       <div
         id="section-org"
         className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
       >
-        <h2 className="text-lg font-bold">2. Organization</h2>
+        <h2 className="text-lg font-bold">5. Organization</h2>
         {orgSettings.map((section, idx) => (
           <DataSection
             section={section}
@@ -94,7 +142,7 @@ export default async function AuditPage({
         className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
       >
         <h2 className="text-lg font-bold">
-          3. Summary of Significant Accounting Policies
+          6. Summary of Significant Accounting Policies
         </h2>
         {policySettings.map((section, idx) => (
           <DataSection
@@ -252,15 +300,7 @@ function buildTableRow({
   borderBottom,
   padTop,
   key,
-}: {
-  name: string;
-  value?: string;
-  bold?: boolean;
-  indent?: boolean;
-  borderBottom?: boolean;
-  padTop?: boolean;
-  key: number;
-}) {
+}: BuildTableRowArgs): React.ReactNode {
   return (
     <tr
       key={key}
@@ -293,13 +333,31 @@ function TableOfContents({
         href="#section-balance-sheet"
         className="block text-slate-700 underline hover:no-underline"
       >
-        1. Balance Sheet
+        1. Consolidated Balance Sheet
+      </a>
+      <a
+        href="#section-statement-of-operations"
+        className="block text-slate-700 underline hover:no-underline"
+      >
+        2. Consolidated Statement of Operations
+      </a>
+      <a
+        href="#section-statement-of-operations"
+        className="block text-slate-700 underline hover:no-underline"
+      >
+        3. Conslidated Statement of Stockholders&apos; Equity (Deficit)
+      </a>
+      <a
+        href="#section-statement-of-operations"
+        className="block text-slate-700 underline hover:no-underline"
+      >
+        4. Conslidated Statement of Cash Flows
       </a>
       <a
         href="#section-org"
         className="block text-slate-700 underline hover:no-underline"
       >
-        2. Organization
+        5. Organization
       </a>
       {orgSettings.map((section, idx) => (
         <ToCLink
@@ -313,7 +371,7 @@ function TableOfContents({
         href="#2. section-policy"
         className="block text-slate-700 underline hover:no-underline"
       >
-        3. Summary of Significant Accounting Policies
+        6. Summary of Significant Accounting Policies
       </a>
       {policySettings.map((section, idx) => (
         <ToCLink
