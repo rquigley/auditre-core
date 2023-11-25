@@ -2,9 +2,8 @@ import { AccountType } from '@/controllers/account-mapping';
 import { addFP, getLastDayOfMonth, getMonthName, ppCurrency } from '@/lib/util';
 
 import type { AuditData } from '../audit-output';
-import type { AuditId } from '@/types';
 
-export function getTotals(t: Map<AccountType, number>) {
+export function normalizeBalanceSheet(t: Map<AccountType, number>) {
   const assets = {
     // TODO:
     // - ASSET_INVENTORY

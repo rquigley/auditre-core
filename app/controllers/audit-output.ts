@@ -8,8 +8,8 @@ import { getDataForAuditId } from '@/controllers/request-data';
 import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
 import {
   buildBalanceSheet,
-  getTotals,
-} from './financial-statement/balance-sheet';
+  normalizeBalanceSheet,
+} from './financial-statement/table';
 import * as t from './financial-statement/template';
 
 import type { AuditId, DocumentId } from '@/types';
@@ -77,7 +77,7 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   }
 
   const totals = await getBalancesByAccountType(auditId);
-  const balanceSheet = getTotals(totals);
+  const balanceSheet = normalizeBalanceSheet(totals);
 
   data.balanceSheet = balanceSheet;
   data.fiscalYearEnd = `${getMonthName(
