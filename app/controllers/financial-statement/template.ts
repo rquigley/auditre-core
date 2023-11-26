@@ -94,9 +94,13 @@ export const getOrganizationSections = () => [
         data.balanceSheet.assets.currentAssets.cash,
       )}] and an accumulated deficit of [${ppCurrency(
         data.balanceSheet.liabilities.totalCurrent,
-      )}]. Based on the Company’s forecasts, the Company’s current resources and cash balance are sufficient to enable the Company to continue as a going concern for 12 months from the date these consolidated financial statements are available to be issued.
+      )}]. Based on the Company’s forecasts, the Company’s current resources and cash balance are sufficient to enable the Company to continue as a going concern for 12 months from the date these consolidated financial statements are available to be issued. [TODO]
 
       The ability to continue as a going concern is dependent upon the Company obtaining necessary financing to meet its obligations and repay its liabilities arising from normal business operations when they come due. The Company may raise additional capital through the issuance of equity securities, debt financings or other sources in order to further implement its business plan. However, if such financing is not available when needed and at adequate levels, the Company will need to reevaluate its operating plan and may be required to delay the development of its products.
+
+      [if there was a recent financing event (what defines recent?)]
+      In March 2023, the Company issued [number] shares of Series B-1 convertible preferred stock for proceeds of approximately [number]. In addition, the convertible notes with aggregate outstanding principal of [number] were converted into [number] shares of Series B-1 convertible preferred stock. In April 2023, the Company closed a subsequent round of Series B-1 convertible preferred stock for additional proceeds of $10,800,000 and issuance of [number] Series B-1 convertible preferred shares.
+      [endif]
     `,
   }),
 ];
@@ -124,9 +128,9 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Concentration of Credit Risk and Other Risks and Uncertainties',
     body: (data) => `
-      Financial instruments that potentially subject the Company to credit risk consist principally of cash held by financial institutions. Substantially all of the Company's cash is held at one financial institution that management believes is of high credit quality. Such deposits may, at times, exceed federally insured limits.
+      Financial instruments that potentially subject the Company to credit risk consist principally of cash held by financial institutions. Substantially all of the Company's cash is held at one financial institution that management believes is of high credit quality. Such deposits may, at times, exceed federally insured limits [TODO].
 
-      The Company is dependent on key suppliers for certain laboratory materials. An interruption in the supply of these materials would temporarily impact the Company's ability to perform development and testing related to its products.
+      [TODO] The Company is dependent on key suppliers for certain laboratory materials. An interruption in the supply of these materials would temporarily impact the Company's ability to perform development and testing related to its products.
     `,
   }),
   generateSection({
@@ -157,7 +161,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Property and Equipment',
-    isShowing: (data) => data.trialBalance.hasfixedAssets === 'no', // [no show If the trial balance has a field referencing "fixed assets']
+    isShowing: (data) => data.trialBalance.hasfixedAssets === 'no',
     body: (data) => `
       Property and equipment are stated at cost, net of depreciation. Depreciation is computed using the straight-line method over the estimated useful lives of the assets. Leasehold improvements are amortized on a straight-line basis over the lesser of the estimated useful life of the asset or the remaining term of the related lease. Maintenance and repairs are charged to expense as incurred, and improvements and betterments are capitalized.
 
@@ -165,15 +169,10 @@ export const getPolicySections = () => [
 
       The useful lives of property and equipment are:
 
-      [TODO]
-      Asset
-      Furniture and fixtures
-      Machinery and equipment
-      Leasehold improvements
-      Useful Life (Years)
-      3
-      3 – 10
-      Remaining life of the lease
+      Asset [(TODO)]
+      Furniture and fixtures: 3 years
+      Machinery and equipment: 3 - 10 years
+      Leasehold improvements: Remaining life of the lease
     `,
   }),
   generateSection({
@@ -205,16 +204,26 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Research and Development',
-    isShowing: (data) => data.trialBalance.hasResearchAndDevelopment === 'yes',
+    isShowing: (data) =>
+      data.totals.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') > 0,
     body: (data) => `
-      Costs associated with research and development activities are expensed as incurred and include, but are not limited to, personnel-related expenses including stock-based compensation expense, materials, laboratory supplies, consulting costs, and allocated overhead including rent and utilities.
+      Costs associated with research and development activities are expensed as incurred and include, but are not limited to, personnel-related expenses including stock-based compensation expense, materials, laboratory supplies, consulting costs, and allocated overhead including rent and utilities. Total research and development costs amounted to [${ppCurrency(
+        data.totals.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') || 0,
+      )}] for the year ended [${
+        data.fiscalYearEnd
+      }] and are included in general and administrative expenses in the consolidated statement of operations.
     `,
   }),
   generateSection({
     header: 'Advertising and Marketing Costs',
-    isShowing: (data) => data.trialBalance.hasAdvertisingMarketing === 'yes',
+    isShowing: (data) =>
+      data.totals.get('INCOME_STATEMENT_SALES_AND_MARKETING') > 0,
     body: (data) => `
-      Costs associated with advertising and marketing activities are expensed as incurred. Total advertising and marketing costs amounted to [marketing cost, $XX,XXX] for the year ended [${data.fiscalYearEnd}] and are included in general and administrative expenses in the consolidated statement of operations.
+      Costs associated with advertising and marketing activities are expensed as incurred. Total advertising and marketing costs amounted to [${ppCurrency(
+        data.totals.get('INCOME_STATEMENT_SALES_AND_MARKETING') || 0,
+      )}] for the year ended [${
+        data.fiscalYearEnd
+      }] and are included in general and administrative expenses in the consolidated statement of operations.
     `,
   }),
   generateSection({
@@ -255,7 +264,7 @@ export const getPolicySections = () => [
     header: 'Fair Value Measurements',
     isShowing: (data) => data.leases.didPerformASC842Analysis,
     body: (data) => `
-      The following tables summarize the Company’s financial liabilities measured at fair value on a recurring basis by level within the fair value hierarchy as of [insert December 31, 2022]:
+      The following tables summarize the Company’s financial liabilities measured at fair value on a recurring basis by level within the fair value hierarchy as of [${data.fiscalYearEnd}]:
 
       [TABLE https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=2072488138&range=A6]
 

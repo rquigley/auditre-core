@@ -80,9 +80,11 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   }
 
   const totals = await getBalancesByAccountType(auditId);
+  data.totals = totals;
 
   data.balanceSheet = normalizeBalanceSheet(totals);
   data.statementOfOps = normalizeStatementOfOps(totals);
+
   data.fiscalYearEnd = `${getMonthName(
     // @ts-expect-error
     data.auditInfo.fiscalYearMonthEnd,
@@ -98,7 +100,7 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
 }
 
 export async function generate(auditId: AuditId) {
-  const audit = await getAuditById(auditId);
+  //const audit = await getAuditById(auditId);
   const data = await getAuditData(auditId);
 
   const document = new Document({

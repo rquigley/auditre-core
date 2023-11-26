@@ -263,22 +263,22 @@ export const documentAiQuestions: Partial<
         currencyColumnIdx: z.number().min(-1).max(10),
       }),
     },
-    hasResearchAndDevelopment: {
-      label: 'Has research and development accounts',
-      question:
-        'Does this data mention research and development? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
-      preProcess: (val: string) =>
-        extractLinesContaining(val, ['research', 'development']).join('\n'),
-      validate: yesNoSchema,
-    },
-    hasAdvertisingMarketing: {
-      label: 'Has advertising and/or marketing accounts',
-      question:
-        'Does this data mention a marketing and/or advertising costs? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
-      preProcess: (val: string) =>
-        extractLinesContaining(val, ['advertising', 'marketing']).join('\n'),
-      validate: yesNoSchema,
-    },
+    // hasResearchAndDevelopment: {
+    //   label: 'Has research and development accounts',
+    //   question:
+    //     'Does this data mention research and development? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+    //   preProcess: (val: string) =>
+    //     extractLinesContaining(val, ['research', 'development']).join('\n'),
+    //   validate: yesNoSchema,
+    // },
+    // hasAdvertisingMarketing: {
+    //   label: 'Has advertising and/or marketing accounts',
+    //   question:
+    //     'Does this data mention a marketing and/or advertising costs? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+    //   preProcess: (val: string) =>
+    //     extractLinesContaining(val, ['advertising', 'marketing']).join('\n'),
+    //   validate: yesNoSchema,
+    // },
     hasIntangibleAssets: {
       label: 'Has intangible assets',
       question:

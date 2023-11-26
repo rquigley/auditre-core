@@ -292,7 +292,11 @@ export function normalizeStatementOfOps(t: Map<AccountType, number>) {
   let ret = {
     opEx: {
       rAndD: t.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') || 0,
-      gAndA: t.get('INCOME_STATEMENT_G_AND_A') || 0,
+
+      gAndA: addFP(
+        t.get('INCOME_STATEMENT_G_AND_A') || 0,
+        t.get('INCOME_STATEMENT_SALES_AND_MARKETING') || 0,
+      ),
     },
     totalOpEx: 0, // computed
     lossFromOps: 0, // computed
