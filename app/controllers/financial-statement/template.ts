@@ -156,7 +156,15 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Cash',
     body: (data) => `
-      The Company considers highly liquid investments purchased with a remaining maturity date upon acquisition of three months or less to be cash equivalents and are stated at cost, which approximates fair value. As of [${data.fiscalYearEnd}], there were no cash equivalents.
+      The Company considers highly liquid investments purchased with a remaining maturity date upon acquisition of three months or less to be cash equivalents and are stated at cost, which approximates fair value. As of [${
+        data.fiscalYearEnd
+      }], ${
+        data.totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS') > 0
+          ? `there were cash equivalents totaling [${ppCurrency(
+              data.totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS') || 0,
+            )}].`
+          : `there were no cash equivalents.`
+      }
     `,
   }),
   generateSection({
