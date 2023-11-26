@@ -27,10 +27,8 @@ import type { OpenAIMessage } from '@/lib/ai';
 import type {
   AccountMapping,
   AccountMappingId,
-  AccountMappingUpdate,
   AuditId,
   Document,
-  DocumentId,
   NewAccountMapping,
   OpenAIModel,
   OrgId,
