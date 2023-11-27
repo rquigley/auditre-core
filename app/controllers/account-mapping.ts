@@ -1,5 +1,4 @@
 import dedent from 'dedent';
-import leven from 'leven';
 import { PassjoinIndex } from 'mnemonist';
 import { revalidatePath } from 'next/cache';
 import { inferSchema, initParser } from 'udsv';
@@ -20,6 +19,7 @@ import {
   documentAiQuestions,
   isAIQuestionJSON,
 } from '@/lib/document-ai-questions';
+import leven from '@/lib/leven';
 import { bucket } from '@/lib/util';
 import { setKV, updateKV } from './kv';
 
