@@ -235,8 +235,8 @@ export function ppCurrency(num: number) {
     style: 'currency',
     currency: 'USD',
     currencySign: 'accounting',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
   if (isNeg) {
     return `(${ret})`;
