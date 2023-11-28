@@ -14,7 +14,7 @@ const schema = z.object({
 export default function AI({
   saveData,
 }: {
-  saveData: (data: z.infer<typeof schema>) => void;
+  saveData: (data: z.infer<typeof schema>) => Promise<void>;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
