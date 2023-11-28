@@ -221,21 +221,6 @@ export async function process(id: DocumentId): Promise<void> {
   }
 }
 
-export type DocumentStatus = 'COMPLETE' | 'INCOMPLETE';
-export async function getStatus(
-  id: DocumentId,
-): Promise<{ status: DocumentStatus }> {
-  const queueJobs = await getAllByDocumentId(id);
-  if (queueJobs.length === 0) {
-    return {
-      status: 'COMPLETE',
-    };
-  }
-  return {
-    status: 'INCOMPLETE',
-  };
-}
-
 // See PAGE_DELIMITER in core/ops-app/packages/extract-content-lambda/lambda_function.py
 export const PAGE_DELIMITER = '-'.repeat(30) + '@@' + '-'.repeat(30);
 
