@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import clsx from 'clsx';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -20,7 +21,7 @@ import { nl2br } from '@/components/nl2br';
 import { extractAccountMapping, extractTrialBalance } from '@/lib/actions';
 // import SaveNotice from '@/components/save-notice';
 import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
-import { classNames, isFieldVisible } from '@/lib/util';
+import { isFieldVisible } from '@/lib/util';
 
 import type { Request } from '@/controllers/request';
 import type { AuditId, DocumentId } from '@/types';
@@ -119,10 +120,7 @@ export function BasicForm({
 
               return (
                 <div
-                  className={classNames(
-                    isVisible ? '' : 'hidden',
-                    'sm:col-span-8',
-                  )}
+                  className={clsx(isVisible ? '' : 'hidden', 'sm:col-span-8')}
                   key={field}
                 >
                   <label
@@ -229,7 +227,7 @@ export function BasicForm({
         <button
           type="submit"
           disabled={enableSubmit === false}
-          className={classNames(
+          className={clsx(
             enableSubmit === false
               ? 'bg-gray-400'
               : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
