@@ -165,27 +165,70 @@ export async function getAllAccountBalancesByAuditId(
 
 export async function getBalancesByAccountType(
   auditId: AuditId,
-): Promise<Map<AccountType, number>> {
-  const rows = await db
+): Promise<AccountMap> {
+  const originalRows = await db
     .selectFrom('accountBalance as ab')
-    .leftJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')
+    .innerJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')
     .select([
       'am.accountType',
-      db.fn.sum('credit').as('credit'),
-      db.fn.sum('debit').as('debit'),
+      // db.fn.sum('credit').as('credit'),
+      // db.fn.sum('debit').as('debit'),
       sql`SUM(ab.debit) - SUM(ab.credit)`.as('balance'),
     ])
     .where('ab.isDeleted', '=', false)
     .where('accountType', 'is not', null)
     .groupBy('accountType')
     .execute();
-  const balances = new Map(
-    Object.keys(accountTypes).map((aType) => [aType, 0]),
-  ) as Map<AccountType, number>;
-  for (const row of rows) {
-    balances.set(row.accountType as AccountType, row.balance as number);
+  const rows = originalRows.map((row) => ({
+    accountType: row.accountType || 'UNKNOWN',
+    balance: row.balance as string,
+  }));
+  return new AccountMap(Object.keys(accountTypes) as AccountType[], rows);
+}
+
+export class AccountMap {
+  private map: Map<AccountType, number>;
+
+  constructor(
+    aTypes: AccountType[],
+    initialPairs?: { accountType: AccountType; balance: string }[],
+  ) {
+    this.map = new Map(aTypes.map((aType) => [aType, 0])) as Map<
+      AccountType,
+      number
+    >;
+
+    if (initialPairs) {
+      initialPairs.forEach((pair) => {
+        if (!aTypes.includes(pair.accountType)) {
+          throw new Error('Invalid account type');
+        }
+        this.map.set(pair.accountType, Number(pair.balance));
+      });
+    }
   }
-  return balances;
+
+  set(key: AccountType, value: number): void {
+    if (!this.map.has(key)) {
+      throw new Error(
+        `key is not one of ${Array.from(this.map.keys())}: ${key}`,
+      );
+    }
+    this.map.set(key, value);
+  }
+
+  get(key: AccountType): number {
+    if (!this.map.has(key)) {
+      throw new Error(
+        `key is not one of ${Array.from(this.map.keys())}: ${key}`,
+      );
+    }
+    return this.map.get(key) || 0;
+  }
+
+  get size(): number {
+    return this.map.size;
+  }
 }
 
 export async function extractChartOfAccountsMapping(

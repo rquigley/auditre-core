@@ -49,10 +49,12 @@ export async function sectionsToBody<T>(
     header,
     body,
     pageBreakBefore,
+    data,
   }: {
     header: string;
     body: string;
     pageBreakBefore?: boolean;
+    data: AuditData;
   }) => T[],
 ) {
   const ret = [];
@@ -64,6 +66,7 @@ export async function sectionsToBody<T>(
           header: sections[s].header,
           body,
           pageBreakBefore: sections[s].pageBreakBefore,
+          data,
         }),
       );
     }
@@ -169,7 +172,8 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Property and Equipment',
-    isShowing: (data) => data.trialBalance.hasfixedAssets === 'no',
+    isShowing: (data) => true,
+    // isShowing: (data) => data.trialBalance.hasfixedAssets === 'no',
     body: (data) => `
       Property and equipment are stated at cost, net of depreciation. Depreciation is computed using the straight-line method over the estimated useful lives of the assets. Leasehold improvements are amortized on a straight-line basis over the lesser of the estimated useful life of the asset or the remaining term of the related lease. Maintenance and repairs are charged to expense as incurred, and improvements and betterments are capitalized.
 
@@ -177,10 +181,7 @@ export const getPolicySections = () => [
 
       The useful lives of property and equipment are:
 
-      Asset [(TODO)]
-      Furniture and fixtures: 3 years
-      Machinery and equipment: 3 - 10 years
-      Leasehold improvements: Remaining life of the lease
+      [TABLE:property-and-equipment-lives]
     `,
   }),
   generateSection({

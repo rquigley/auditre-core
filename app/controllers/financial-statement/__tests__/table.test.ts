@@ -1,9 +1,11 @@
-import { AccountType } from '@/controllers/account-mapping';
+import { AccountMap, accountTypes } from '@/controllers/account-mapping';
 import { normalizeBalanceSheet } from '../table';
+
+import type { AccountType } from '@/controllers/account-mapping';
 
 describe('normalizeBalanceSheet', () => {
   it('should calculate total current assets correctly', () => {
-    const t = new Map<AccountType, number>();
+    const t = new AccountMap(Object.keys(accountTypes) as AccountType[]);
 
     t.set('ASSET_CASH_AND_CASH_EQUIVALENTS', 100);
     t.set('ASSET_OTHER', 200);
@@ -19,7 +21,7 @@ describe('normalizeBalanceSheet', () => {
   });
 
   it('should calculate total liabilities correctly', () => {
-    const t = new Map<AccountType, number>();
+    const t = new AccountMap(Object.keys(accountTypes) as AccountType[]);
 
     t.set('LIABILITY_ACCOUNTS_PAYABLE', 700);
     t.set('LIABILITY_ACCRUED_LIABILITIES', 800);
@@ -37,7 +39,7 @@ describe('normalizeBalanceSheet', () => {
   });
 
   it('should calculate total equity correctly', () => {
-    const t = new Map<AccountType, number>();
+    const t = new AccountMap(Object.keys(accountTypes) as AccountType[]);
 
     t.set('EQUITY_PREFERRED_STOCK', 1300);
     t.set('EQUITY_COMMON_STOCK', 1400);

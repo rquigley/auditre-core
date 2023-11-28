@@ -8,13 +8,14 @@ import {
   buildBalanceSheet,
   buildStatementOfOperations,
   BuildTableRowArgs,
+  tableMap,
 } from '@/controllers/financial-statement/table';
 import {
   getOrganizationSections,
   getPolicySections,
 } from '@/controllers/financial-statement/template';
 import { getCurrent } from '@/controllers/session-user';
-import { humanToKebab } from '@/lib/util';
+import { humanToKebab, ppCurrency } from '@/lib/util';
 import DataModal from './data-modal';
 import { ShowChangesToggle } from './show-changes-toggle';
 import { ViewDataButton } from './view-data-button';
@@ -74,11 +75,7 @@ export default async function AuditPage({
       >
         <h2 className="text-lg font-bold">1. Consolidated Balance Sheet</h2>
 
-        <table className="w-full mt-2">
-          <tbody>
-            {buildBalanceSheet<React.ReactNode>(data, buildTableRow)}
-          </tbody>
-        </table>
+        {buildTable(buildBalanceSheet(data))}
       </div>
 
       <div
@@ -89,11 +86,7 @@ export default async function AuditPage({
           2. Consolidated Statement of Operations
         </h2>
 
-        <table className="w-full mt-2">
-          <tbody>
-            {buildStatementOfOperations<React.ReactNode>(data, buildTableRow)}
-          </tbody>
-        </table>
+        {buildTable(buildStatementOfOperations(data))}
       </div>
 
       <div
@@ -194,7 +187,7 @@ async function DataSection({
   }
 
   const input = dedent(await section.body(data));
-  const output: (string | JSX.Element)[] = [];
+  const output: React.ReactNode[] = [];
   let lastIndex = 0;
   const regex = /\[(.*?)\]|\n/g;
 
@@ -206,6 +199,16 @@ async function DataSection({
 
     if (match[0] === '\n') {
       output.push(<br key={match.index} />);
+    } else if (match[1].startsWith('TABLE:')) {
+      const mapKey = match[1].slice(6);
+      if (mapKey in tableMap) {
+        const tableBuildFn = tableMap[mapKey as keyof typeof tableMap];
+        output.push(
+          <span key={mapKey}> {buildTable(tableBuildFn(data))}</span>,
+        );
+      } else {
+        throw new Error(`Unknown table: ${mapKey}`);
+      }
     } else {
       output.push(
         <span
@@ -229,7 +232,7 @@ async function DataSection({
       <div id={humanToKebab(section.header)} className="font-bold text-black">
         {section.header}
       </div>
-      <p className="text-gray-700">{output}</p>
+      <div className="text-gray-700">{output}</div>
     </div>
   );
 }
@@ -292,6 +295,23 @@ function RowValOutput({ name, val }: { name: string; val: unknown }) {
   );
 }
 
+function buildTable(arr: BuildTableRowArgs[]): React.ReactNode {
+  return (
+    <table className="w-full mt-2" key="12345">
+      <tbody>
+        {arr
+          .map((row: BuildTableRowArgs, idx: number) => {
+            return buildTableRow({
+              ...row,
+              key: idx,
+            });
+          })
+          .filter((x) => x !== null)}
+      </tbody>
+    </table>
+  );
+}
+
 function buildTableRow({
   name,
   value,
@@ -300,7 +320,12 @@ function buildTableRow({
   borderBottom,
   padTop,
   key,
+  hideIfZero,
 }: BuildTableRowArgs): React.ReactNode {
+  if (hideIfZero && typeof value === 'number' && value === 0) {
+    return null;
+  }
+
   return (
     <tr
       key={key}
@@ -311,7 +336,9 @@ function buildTableRow({
       )}
     >
       <td className={clsx(indent ? 'pl-4' : '')}>{name}</td>
-      <td className="text-right">{value}</td>
+      <td className="text-right">
+        {value && typeof value === 'number' ? ppCurrency(value) : value}
+      </td>
     </tr>
   );
 }
