@@ -120,7 +120,13 @@ export function BasicForm({
 
               return (
                 <div
-                  className={clsx(isVisible ? '' : 'hidden', 'sm:col-span-8')}
+                  className={clsx(
+                    isVisible ? '' : 'hidden',
+                    fieldConfig.input === 'fileupload'
+                      ? 'border rounded-md p-4'
+                      : '',
+                    'sm:col-span-8',
+                  )}
                   key={field}
                 >
                   <label
