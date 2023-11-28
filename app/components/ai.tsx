@@ -1,6 +1,6 @@
 import { revalidatePath } from 'next/cache';
 
-import CopyToClipboard from '@/components/copy-to-clipboard';
+// import CopyToClipboard from '@/components/copy-to-clipboard';
 import { nl2br } from '@/components/nl2br';
 import { askQuestion, getAllByDocumentId } from '@/controllers/ai-query';
 import { OpenAIModel } from '@/types';
