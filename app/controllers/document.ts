@@ -2,7 +2,11 @@ import * as Sentry from '@sentry/nextjs';
 import dedent from 'dedent';
 import * as z from 'zod';
 
-import { askQuestion, createAiQuery } from '@/controllers/ai-query';
+import {
+  askQuestion,
+  createAiQuery,
+  getAllMostRecentByDocumentId,
+} from '@/controllers/ai-query';
 import { getById as getDocumentById } from '@/controllers/document';
 import { call, DEFAULT_OPENAI_MODEL } from '@/lib/ai';
 import { db } from '@/lib/db';
@@ -366,7 +370,7 @@ export async function getAiDataWithLabels(
   documentId: DocumentId,
 ): Promise<FormattedQueryDataWithLabels> {
   const { classifiedType } = await getDocumentById(documentId);
-  const answeredQuestions = await getAllByDocumentId(documentId);
+  const answeredQuestions = await getAllMostRecentByDocumentId(documentId);
   const defaultQuestions = { ...documentAiQuestions[classifiedType] };
   if (classifiedType in documentAiQuestions === false) {
     return {};
@@ -390,7 +394,7 @@ export async function getAiDataForDocumentId(
   documentId: DocumentId,
 ): Promise<FormattedQueryData> {
   const { classifiedType } = await getDocumentById(documentId);
-  const answeredQuestions = await getAllByDocumentId(documentId);
+  const answeredQuestions = await getAllMostRecentByDocumentId(documentId);
   const defaultQuestions = { ...documentAiQuestions[classifiedType] };
   if (!defaultQuestions) {
     return {};

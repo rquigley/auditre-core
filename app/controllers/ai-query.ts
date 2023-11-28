@@ -2,7 +2,7 @@ import dedent from 'dedent';
 import * as z from 'zod';
 
 import { call, DEFAULT_OPENAI_MODEL } from '@/lib/ai';
-import { db } from '@/lib/db';
+import { db, sql } from '@/lib/db';
 import { delay } from '@/lib/util';
 
 import type { OpenAIMessage } from '@/lib/ai';
@@ -62,6 +62,7 @@ export async function pollGetByDocumentIdAndIdentifier(
       .where('isDeleted', '=', false)
       // We only want the most recent classification
       .orderBy('createdAt', 'desc')
+      .limit(1)
       .executeTakeFirst();
     if (res) {
       return res;
@@ -86,6 +87,33 @@ export async function getAllByDocumentId(
     .orderBy('createdAt', 'asc')
     .selectAll()
     .execute();
+}
+
+export async function getAllMostRecentByDocumentId(
+  documentId: DocumentId,
+): Promise<Pick<AiQuery, 'identifier' | 'isValidated' | 'result'>[]> {
+  const subQuery = db
+    .selectFrom('aiQuery')
+    .select([
+      'identifier',
+      'result',
+      'isValidated',
+      sql`row_number() over (partition by identifier order by created_at desc)`.as(
+        'rn',
+      ),
+    ])
+    .where('documentId', '=', documentId)
+    .where('isDeleted', '=', false)
+    .where('identifier', '!=', 'DOCUMENT_TYPE')
+    .as('subquery');
+
+  const mostRecentRows = await db
+    .selectFrom(subQuery)
+    .select(['identifier', 'isValidated', 'result'])
+    .where('rn', '=', 1)
+    .execute();
+
+  return mostRecentRows;
 }
 
 export async function update(id: AiQueryId, updateWith: AiQueryUpdate) {
