@@ -192,6 +192,19 @@ export async function createDocument(file: S3File) {
   };
 }
 
+export async function reprocessDocument(id: DocumentId) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const doc = await getDocumentById(id);
+  if (doc.orgId !== user.orgId) {
+    throw new UnauthorizedError();
+  }
+
+  await processDocument(id);
+}
+
 export async function getDocumentStatus(id: DocumentId) {
   const { user } = await getCurrent();
   if (!user) {
