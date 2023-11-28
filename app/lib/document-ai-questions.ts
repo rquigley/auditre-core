@@ -306,4 +306,12 @@ export const documentAiQuestions: Partial<
       validate: yesNoSchema,
     },
   },
+  ASC_842_MEMO: {
+    asc842MemoDate: {
+      label: 'Date of the memo',
+      question: `What is the date this memo was written? ${questionDate}`,
+      preProcess: (val: string) => head(val, 500),
+      validate: dateSchema,
+    },
+  },
 } as const;
