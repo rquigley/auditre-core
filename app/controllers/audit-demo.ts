@@ -76,40 +76,41 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
     actorUserId,
   });
 
-  docId = await createDemoDocument({
-    orgId,
-    filename: 'Chart-of-accounts.xlsx',
-    classifiedType: 'CHART_OF_ACCOUNTS',
-    actorUserId,
-    ai: {
-      accountNameColumn: 'foo',
-      accountMapping: 'bar',
-    },
-  });
-  await saveRequestData({
-    auditId,
-    requestType: 'chart-of-accounts',
-    data: {
-      documentId: { isDocuments: true, documentIds: [docId] },
-    },
-    actorUserId,
-  });
+  // Disabling CoA and TB for now until we refactor the actual functionality
+  // docId = await createDemoDocument({
+  //   orgId,
+  //   filename: 'Chart-of-accounts.xlsx',
+  //   classifiedType: 'CHART_OF_ACCOUNTS',
+  //   actorUserId,
+  //   ai: {
+  //     accountNameColumn: 'foo',
+  //     accountMapping: 'bar',
+  //   },
+  // });
+  // await saveRequestData({
+  //   auditId,
+  //   requestType: 'chart-of-accounts',
+  //   data: {
+  //     documentId: { isDocuments: true, documentIds: [docId] },
+  //   },
+  //   actorUserId,
+  // });
 
-  docId = await createDemoDocument({
-    orgId,
-    filename: 'Trial Balance.xlsx',
-    classifiedType: 'TRIAL_BALANCE',
-    actorUserId,
-    ai: {},
-  });
-  await saveRequestData({
-    auditId,
-    requestType: 'trial-balance',
-    data: {
-      documentId: { isDocuments: true, documentIds: [docId] },
-    },
-    actorUserId,
-  });
+  // docId = await createDemoDocument({
+  //   orgId,
+  //   filename: 'Trial Balance.xlsx',
+  //   classifiedType: 'TRIAL_BALANCE',
+  //   actorUserId,
+  //   ai: {},
+  // });
+  // await saveRequestData({
+  //   auditId,
+  //   requestType: 'trial-balance',
+  //   data: {
+  //     documentId: { isDocuments: true, documentIds: [docId] },
+  //   },
+  //   actorUserId,
+  // });
 
   docId = await createDemoDocument({
     orgId,
