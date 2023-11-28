@@ -545,9 +545,14 @@ export function FileUpload({
             />
           ) : null}
           {documents.map((d, idx) => (
-            <div key={idx}>
+            <div
+              key={idx}
+              className={clsx(idx !== documents.length - 1 ? 'mb-10' : '')}
+            >
               {d.doc}
-              {/* {d.data} */}
+              <div className={fileState.state !== 'idle' ? 'opacity-20' : ''}>
+                {d.data}
+              </div>
             </div>
           ))}
         </>
@@ -587,7 +592,9 @@ export function FileUpload({
                 )}
               >
                 {documents[0].doc}
-                {/* {documents[0].data} */}
+                <div className={fileState.state !== 'idle' ? 'opacity-20' : ''}>
+                  {documents[0] ? documents[0].data : null}
+                </div>
               </div>
             </>
           ) : null}
