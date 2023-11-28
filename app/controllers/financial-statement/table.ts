@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { AccountType } from '@/controllers/account-mapping';
-import { addFP, getLastDayOfMonth, getMonthName, ppCurrency } from '@/lib/util';
+import { AccountMap, AccountType } from '@/controllers/account-mapping';
+import { addFP, getLastDayOfMonth, getMonthName } from '@/lib/util';
 
 import type { AuditData } from '../audit-output';
 
@@ -13,38 +13,36 @@ export type BuildTableRowArgs = {
   padTop?: boolean;
   borderBottom?: boolean;
   key?: React.Key;
+  hideIfZero?: boolean;
 };
+export const tableMap = {
+  'balance-sheet': buildBalanceSheet,
+  'statement-of-operations': buildStatementOfOperations,
+  'property-and-equipment-lives': buildPropertyAndEquipmentLives,
+} as const;
 
-function buildTable<T>(
-  buildTableRow: (args: BuildTableRowArgs) => T,
-  arr: BuildTableRowArgs[],
-) {
-  return arr.map((row: BuildTableRowArgs, idx: number) => {
-    return buildTableRow({
-      ...row,
-      key: idx,
-    });
-  });
-}
-
-export function normalizeBalanceSheet(t: Map<AccountType, number>) {
+export function normalizeBalanceSheet(t: AccountMap) {
+  // Add accounting norm to hide if < 5% TOTAL
   const assets = {
-    // TODO:
-    // - ASSET_INVENTORY
-    // - ASSET_PREPAID_EXPENSES
     currentAssets: {
-      cash: t.get('ASSET_CASH_AND_CASH_EQUIVALENTS') || 0,
-      other: t.get('ASSET_OTHER') || 0,
+      cash: t.get('ASSET_CASH_AND_CASH_EQUIVALENTS'),
+      inventory: t.get('ASSET_INVENTORY'),
+      prepaidExpenses: t.get('ASSET_PREPAID_EXPENSES'),
+      // if < 5%, hide and group into ASSET_OTHER
+      other: t.get('ASSET_CURRENT_OTHER'),
     },
-    totalCurrentAssets: 0, // computed
-    property: t.get('ASSET_PROPERTY_AND_EQUIPMENT') || 0,
-    intangible: t.get('ASSET_INTANGIBLE_ASSETS') || 0,
-    operatingLeaseRightOfUse: t.get('ASSET_OPERATING_LEASE_RIGHT_OF_USE') || 0,
-    other: t.get('ASSET_OTHER') || 0,
+    totalCurrentAssets: 0, // computed + invent + asset
+    property: t.get('ASSET_PROPERTY_AND_EQUIPMENT'),
+    intangible: t.get('ASSET_INTANGIBLE_ASSETS'),
+    operatingLeaseRightOfUse: t.get('ASSET_OPERATING_LEASE_RIGHT_OF_USE'),
+    other: t.get('ASSET_OTHER'),
     total: 0, // computed
   };
+
   assets.totalCurrentAssets = addFP(
     assets.currentAssets.cash,
+    assets.currentAssets.inventory,
+    assets.currentAssets.prepaidExpenses,
     assets.currentAssets.other,
   );
 
@@ -57,19 +55,17 @@ export function normalizeBalanceSheet(t: Map<AccountType, number>) {
   );
 
   const liabilities = {
-    // TODO:
-    // - LIABILITY_DEBT
-    // - LIABILITY_DEFERRED_REVENUE
-    // - LIABILITY_OTHER
     current: {
-      accountsPayable: t.get('LIABILITY_ACCOUNTS_PAYABLE') || 0,
-      accrued: t.get('LIABILITY_ACCRUED_LIABILITIES') || 0,
-      operatingLease:
-        t.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT') || 0,
+      accountsPayable: t.get('LIABILITY_ACCOUNTS_PAYABLE'),
+      accrued: t.get('LIABILITY_ACCRUED_LIABILITIES'),
+      deferredRevenue: t.get('LIABILITY_DEFERRED_REVENUE'),
+      operatingLease: t.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT'),
+      other: t.get('LIABILITY_OTHER'),
     },
     totalCurrent: 0, // computed
-    accruedInterest: t.get('LIABILITY_ACCRUED_INTEREST') || 0,
-    converableNotes: t.get('LIABILITY_CONVERTIBLE_NOTES_PAYABLE') || 0,
+    accruedInterest: t.get('LIABILITY_ACCRUED_INTEREST'),
+    converableNotes: t.get('LIABILITY_CONVERTIBLE_NOTES_PAYABLE'),
+    debt: t.get('LIABILITY_DEBT'),
     operatingLease:
       t.get('LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION') ||
       0,
@@ -78,6 +74,8 @@ export function normalizeBalanceSheet(t: Map<AccountType, number>) {
   liabilities.totalCurrent = addFP(
     liabilities.current.accountsPayable,
     liabilities.current.accrued,
+    liabilities.current.deferredRevenue,
+    liabilities.current.other,
     liabilities.current.operatingLease,
   );
 
@@ -85,15 +83,16 @@ export function normalizeBalanceSheet(t: Map<AccountType, number>) {
     liabilities.totalCurrent,
     liabilities.accruedInterest,
     liabilities.converableNotes,
+    liabilities.debt,
     liabilities.operatingLease,
   );
 
   const equity = {
-    preferredStock: t.get('EQUITY_PREFERRED_STOCK') || 0,
-    commonStock: t.get('EQUITY_COMMON_STOCK') || 0,
-    paidInCapital: t.get('EQUITY_PAID_IN_CAPITAL') || 0,
-    retainedEarnings: t.get('EQUITY_RETAINED_EARNINGS') || 0,
-    accumulatedDeficit: t.get('EQUITY_ACCUMULATED_DEFICIT') || 0,
+    preferredStock: t.get('EQUITY_PREFERRED_STOCK'),
+    commonStock: t.get('EQUITY_COMMON_STOCK'),
+    paidInCapital: t.get('EQUITY_PAID_IN_CAPITAL'),
+    retainedEarnings: t.get('EQUITY_RETAINED_EARNINGS'),
+    accumulatedDeficit: t.get('EQUITY_ACCUMULATED_DEFICIT'),
   };
   const totalStockholdersDeficit = addFP(
     equity.preferredStock,
@@ -115,10 +114,7 @@ export function normalizeBalanceSheet(t: Map<AccountType, number>) {
   } as const;
 }
 
-export function buildBalanceSheet<T>(
-  data: AuditData,
-  buildTableRow: (args: BuildTableRowArgs) => T,
-): T[] {
+export function buildBalanceSheet(data: AuditData) {
   const fiscalCloseStr = `As of ${getMonthName(
     data.auditInfo.fiscalYearMonthEnd,
   )} ${getLastDayOfMonth(
@@ -126,7 +122,7 @@ export function buildBalanceSheet<T>(
     data.auditInfo.year,
   )},`;
 
-  return buildTable(buildTableRow, [
+  return [
     {
       name: fiscalCloseStr,
       value: data.auditInfo.year,
@@ -144,41 +140,58 @@ export function buildBalanceSheet<T>(
     },
     {
       name: 'Cash',
-      value: ppCurrency(data.balanceSheet.assets.currentAssets.cash),
+      value: data.balanceSheet.assets.currentAssets.cash,
       indent: true,
+    },
+    {
+      name: 'Inventory',
+      value: data.balanceSheet.assets.currentAssets.inventory,
+      indent: true,
+      hideIfZero: true,
+    },
+    {
+      name: 'Prepaid expenses',
+      value: data.balanceSheet.assets.currentAssets.prepaidExpenses,
+      indent: true,
+      hideIfZero: true,
     },
     {
       name: 'Prepaid expenses and other current assets',
-      value: ppCurrency(data.balanceSheet.assets.currentAssets.other),
+      value: data.balanceSheet.assets.currentAssets.other,
       indent: true,
       borderBottom: true,
+      hideIfZero: true,
     },
     {
       name: 'Total current assets',
-      value: ppCurrency(data.balanceSheet.assets.totalCurrentAssets),
+      value: data.balanceSheet.assets.totalCurrentAssets,
       borderBottom: true,
       padTop: true,
     },
     {
       name: 'Property and equipment, net',
-      value: ppCurrency(data.balanceSheet.assets.property),
+      value: data.balanceSheet.assets.property,
+      hideIfZero: true,
     },
     {
       name: 'Intangible assets, net',
-      value: ppCurrency(data.balanceSheet.assets.intangible),
+      value: data.balanceSheet.assets.intangible,
+      hideIfZero: true,
     },
     {
       name: 'Operating lease right-of-use assets',
-      value: ppCurrency(data.balanceSheet.assets.operatingLeaseRightOfUse),
+      value: data.balanceSheet.assets.operatingLeaseRightOfUse,
+      hideIfZero: true,
     },
     {
       name: 'Other assets',
-      value: ppCurrency(data.balanceSheet.assets.other),
+      value: data.balanceSheet.assets.other,
       borderBottom: true,
+      hideIfZero: true,
     },
     {
       name: 'Total assets',
-      value: ppCurrency(data.balanceSheet.assets.total),
+      value: data.balanceSheet.assets.total,
       bold: true,
       borderBottom: true,
       padTop: true,
@@ -195,45 +208,65 @@ export function buildBalanceSheet<T>(
     },
     {
       name: 'Accounts payable',
-      value: ppCurrency(data.balanceSheet.liabilities.current.accountsPayable),
+      value: data.balanceSheet.liabilities.current.accountsPayable,
       indent: true,
+      hideIfZero: true,
     },
     {
       name: 'Accrued liabilities',
-      value: ppCurrency(data.balanceSheet.liabilities.current.accrued),
+      value: data.balanceSheet.liabilities.current.accrued,
       indent: true,
+      hideIfZero: true,
+    },
+    {
+      name: 'Deferred revenue',
+      value: data.balanceSheet.liabilities.current.deferredRevenue,
+      indent: true,
+      hideIfZero: true,
     },
     {
       name: 'Operating lease liabilities, current',
-      value: ppCurrency(data.balanceSheet.liabilities.current.operatingLease),
+      value: data.balanceSheet.liabilities.current.operatingLease,
       indent: true,
       borderBottom: true,
+      hideIfZero: true,
+    },
+    {
+      name: 'Other',
+      value: data.balanceSheet.liabilities.current.other,
+      indent: true,
+      hideIfZero: true,
     },
     {
       name: 'Total current liabilities',
-      value: ppCurrency(data.balanceSheet.liabilities.totalCurrent),
+      value: data.balanceSheet.liabilities.totalCurrent,
       borderBottom: true,
       padTop: true,
     },
     {
       name: 'Accrued interest',
-      value: ppCurrency(data.balanceSheet.liabilities.accruedInterest),
+      value: data.balanceSheet.liabilities.accruedInterest,
       indent: true,
     },
     {
       name: 'Convertible notes payable',
-      value: ppCurrency(data.balanceSheet.liabilities.converableNotes),
+      value: data.balanceSheet.liabilities.converableNotes,
+      indent: true,
+    },
+    {
+      name: 'Debt',
+      value: data.balanceSheet.liabilities.debt,
       indent: true,
     },
     {
       name: 'Operating lease liabilities, net of current portion',
-      value: ppCurrency(data.balanceSheet.liabilities.operatingLease),
+      value: data.balanceSheet.liabilities.operatingLease,
       indent: true,
       borderBottom: true,
     },
     {
       name: 'Total liabilities',
-      value: ppCurrency(data.balanceSheet.liabilities.total),
+      value: data.balanceSheet.liabilities.total,
       bold: true,
       borderBottom: true,
       padTop: true,
@@ -245,64 +278,67 @@ export function buildBalanceSheet<T>(
     },
     {
       name: 'Preferred stock',
-      value: ppCurrency(data.balanceSheet.equity.preferredStock),
+      value: data.balanceSheet.equity.preferredStock,
       indent: true,
+      hideIfZero: true,
     },
     {
       name: 'Common stock',
-      value: ppCurrency(data.balanceSheet.equity.commonStock),
+      value: data.balanceSheet.equity.commonStock,
       indent: true,
+      hideIfZero: true,
     },
     {
       name: 'Paid-in capital',
-      value: ppCurrency(data.balanceSheet.equity.paidInCapital),
+      value: data.balanceSheet.equity.paidInCapital,
       indent: true,
+      hideIfZero: true,
     },
     {
       name: 'Retained earnings',
-      value: ppCurrency(data.balanceSheet.equity.retainedEarnings),
+      value: data.balanceSheet.equity.retainedEarnings,
       indent: true,
+      hideIfZero: true,
     },
     {
       name: 'Accumulated deficit',
-      value: ppCurrency(data.balanceSheet.equity.accumulatedDeficit),
+      value: data.balanceSheet.equity.accumulatedDeficit,
       indent: true,
       borderBottom: true,
+      hideIfZero: true,
     },
     {
       name: 'Total stockholders’ deficit',
-      value: ppCurrency(data.balanceSheet.totalStockholdersDeficit),
+      value: data.balanceSheet.totalStockholdersDeficit,
       bold: true,
       borderBottom: true,
       padTop: true,
     },
     {
       name: 'Total liabilities and stockholders’ deficit',
-      value: ppCurrency(
-        data.balanceSheet.totalLiabilitiesAndStockholdersDeficit,
-      ),
+      value: data.balanceSheet.totalLiabilitiesAndStockholdersDeficit,
       bold: true,
       borderBottom: true,
       padTop: true,
     },
-  ]);
+  ];
 }
 
-export function normalizeStatementOfOps(t: Map<AccountType, number>) {
+export function normalizeStatementOfOps(t: AccountMap) {
   let ret = {
     opEx: {
-      rAndD: t.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') || 0,
+      rAndD: t.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT'),
 
       gAndA: addFP(
-        t.get('INCOME_STATEMENT_G_AND_A') || 0,
-        t.get('INCOME_STATEMENT_SALES_AND_MARKETING') || 0,
+        t.get('INCOME_STATEMENT_G_AND_A'),
+        t.get('INCOME_STATEMENT_SALES_AND_MARKETING'),
       ),
     },
     totalOpEx: 0, // computed
     lossFromOps: 0, // computed
     otherIncomeExpenseNet: {
-      interestExpenseNet: t.get('INCOME_STATEMENT_INTEREST_EXPENSE') || 0,
-      otherIncomeNet: t.get('INCOME_STATEMENT_OTHER_INCOME') || 0,
+      interestExpenseNet: t.get('INCOME_STATEMENT_INTEREST_EXPENSE'),
+      otherIncomeNet: t.get('INCOME_STATEMENT_OTHER_INCOME'),
     },
     totalOtherIncomeExpenseNet: 0, // computed
     netLoss: 0, // computed
@@ -317,10 +353,30 @@ export function normalizeStatementOfOps(t: Map<AccountType, number>) {
   return ret;
 }
 
-export function buildStatementOfOperations<T>(
-  data: AuditData,
-  buildTableRow: (args: BuildTableRowArgs) => T,
-): T[] {
+export function buildPropertyAndEquipmentLives(data: AuditData) {
+  return [
+    {
+      name: 'Asset',
+      value: 'Useful life (years)',
+      bold: true,
+      borderBottom: true,
+    },
+    {
+      name: 'Furniture and fixtures',
+      value: '3',
+    },
+    {
+      name: 'Machinery and equipment',
+      value: '3 – 10',
+    },
+    {
+      name: 'Leasehold improvements',
+      value: 'Remaining life of the lease',
+    },
+  ];
+}
+
+export function buildStatementOfOperations(data: AuditData) {
   const fiscalCloseStr = `As of ${getMonthName(
     data.auditInfo.fiscalYearMonthEnd,
   )} ${getLastDayOfMonth(
@@ -328,7 +384,7 @@ export function buildStatementOfOperations<T>(
     data.auditInfo.year,
   )},`;
 
-  return buildTable(buildTableRow, [
+  return [
     {
       name: fiscalCloseStr,
       value: data.auditInfo.year,
@@ -341,47 +397,43 @@ export function buildStatementOfOperations<T>(
     },
     {
       name: 'Research and development',
-      value: ppCurrency(data.statementOfOps.opEx.rAndD),
+      value: data.statementOfOps.opEx.rAndD,
       indent: true,
     },
     {
       name: 'General and administrative',
-      value: ppCurrency(data.statementOfOps.opEx.gAndA),
+      value: data.statementOfOps.opEx.gAndA,
       indent: true,
     },
     {
       name: 'Total operating expenses',
-      value: ppCurrency(data.statementOfOps.totalOpEx),
+      value: data.statementOfOps.totalOpEx,
       indent: true,
     },
     {
       name: 'Loss from operations',
-      value: ppCurrency(data.statementOfOps.lossFromOps),
+      value: data.statementOfOps.lossFromOps,
     },
     {
       name: 'Other income (expense), net:',
     },
     {
       name: 'Interest expense, net',
-      value: ppCurrency(
-        data.statementOfOps.otherIncomeExpenseNet.interestExpenseNet,
-      ),
+      value: data.statementOfOps.otherIncomeExpenseNet.interestExpenseNet,
       indent: true,
     },
     {
       name: 'Other income, net',
-      value: ppCurrency(
-        data.statementOfOps.otherIncomeExpenseNet.otherIncomeNet,
-      ),
+      value: data.statementOfOps.otherIncomeExpenseNet.otherIncomeNet,
       indent: true,
     },
     {
       name: 'Total other income (expense), net',
-      value: ppCurrency(data.statementOfOps.totalOtherIncomeExpenseNet),
+      value: data.statementOfOps.totalOtherIncomeExpenseNet,
     },
     {
       name: 'Net loss',
-      value: ppCurrency(data.statementOfOps.netLoss),
+      value: data.statementOfOps.netLoss,
     },
-  ]);
+  ];
 }

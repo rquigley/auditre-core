@@ -5,13 +5,19 @@ import {
   getAllByAuditId as getAllDocumentsByAuditId,
 } from '@/controllers/document';
 import { getDataForAuditId } from '@/controllers/request-data';
-import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
+import {
+  getLastDayOfMonth,
+  getMonthName,
+  kebabToCamel,
+  ppCurrency,
+} from '@/lib/util';
 import {
   buildBalanceSheet,
   buildStatementOfOperations,
   BuildTableRowArgs,
   normalizeBalanceSheet,
   normalizeStatementOfOps,
+  tableMap,
 } from './financial-statement/table';
 import * as t from './financial-statement/template';
 
@@ -288,17 +294,6 @@ function independentAuditorsReport(data: AuditData) {
 }
 
 function consolidatedFinancialStatements(data: AuditData) {
-  const table = new Table({
-    borders: {
-      top: { style: BorderStyle.NONE },
-      bottom: { style: BorderStyle.NONE },
-      left: { style: BorderStyle.NONE },
-      right: { style: BorderStyle.NONE },
-    },
-    columnWidths: [7505, 1505],
-    rows: buildBalanceSheet(data, buildTableRow),
-  });
-
   return {
     ...getPageProperties(),
 
@@ -308,23 +303,12 @@ function consolidatedFinancialStatements(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
-      table,
+      buildTable(buildBalanceSheet(data)),
     ],
   };
 }
 
 function consolidatedStatementOfOperations(data: AuditData) {
-  const table = new Table({
-    borders: {
-      top: { style: BorderStyle.NONE },
-      bottom: { style: BorderStyle.NONE },
-      left: { style: BorderStyle.NONE },
-      right: { style: BorderStyle.NONE },
-    },
-    columnWidths: [7505, 1505],
-    rows: buildStatementOfOperations(data, buildTableRow),
-  });
-
   return {
     ...getPageProperties(),
 
@@ -334,9 +318,31 @@ function consolidatedStatementOfOperations(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
-      table,
+      buildTable(buildStatementOfOperations(data)),
     ],
   };
+}
+
+function buildTable(arr: BuildTableRowArgs[]) {
+  const table = new Table({
+    borders: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+    },
+    columnWidths: [7505, 1505],
+    rows: arr
+      .map((row: BuildTableRowArgs, idx: number) => {
+        return buildTableRow({
+          ...row,
+          key: idx,
+        });
+      })
+      .filter((x) => x !== null),
+  });
+
+  return table;
 }
 
 function buildTableRow({
@@ -402,7 +408,10 @@ function buildTableRow({
           new Paragraph({
             children: [
               new TextRun({
-                text: value || '',
+                text:
+                  value && typeof value === 'number'
+                    ? ppCurrency(value)
+                    : value,
                 bold,
               }),
             ],
@@ -479,7 +488,7 @@ function formatBodyText(text: string): (typeof TextRun)[] {
 }
 
 function templateToParagraph(
-  template: t.Template & { pageBreakBefore?: boolean },
+  template: t.Template & { pageBreakBefore?: boolean; data: AuditData },
 ): Array<unknown> {
   const ret = [
     new Paragraph({
@@ -489,7 +498,16 @@ function templateToParagraph(
     }),
   ];
   template.body.split('\n').forEach((p) => {
-    ret.push(new Paragraph({ children: formatBodyText(p) }));
+    if (p.startsWith('[TABLE:')) {
+      const mapKey = p.match(/\[TABLE:(.*)\]/)?.[1];
+      if (!mapKey || mapKey in tableMap === false) {
+        throw new Error(`Unknown table: ${mapKey}`);
+      }
+      const tableBuildFn = tableMap[mapKey as keyof typeof tableMap];
+      ret.push(buildTable(tableBuildFn(template.data)));
+    } else {
+      ret.push(new Paragraph({ children: formatBodyText(p) }));
+    }
   });
 
   return ret;
