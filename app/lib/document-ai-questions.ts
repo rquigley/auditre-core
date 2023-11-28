@@ -313,5 +313,22 @@ export const documentAiQuestions: Partial<
       preProcess: (val: string) => head(val, 500),
       validate: dateSchema,
     },
+    asc842MemoSummary: {
+      label: 'Summary of the memo',
+      question: dedent`You are an auditor. You will be provided an ASC 842 Memo.
+
+      1. Summarize the memo in 500 words or less. Use the following template:
+
+      TEMPLATE:
+      The Company determines if an arrangement is a lease at inception and if so, determines whether the lease qualifies as operating or finance. Operating leases are included in operating lease right-of-use (“ROU”) assets and operating lease liabilities in the consolidated balance sheet. The Company [does/does not] not have any finance leases as of [date of memo].
+
+      ROU assets represent the right to use an underlying asset for the lease term and lease liabilities represent the obligation to make lease payments arising from the lease. ROU assets are calculated and recognized at lease commencement date based on the present value of lease payments over the lease term adjusted for any lease payments paid to the lessor at or before the commencement date and initial direct costs incurred by the Company and excludes any lease incentives received from the lessor. When the implicit rate is not readily available, the Company has made an accounting policy election to use to the risk-free rate to determine the present value of lease payments for its property leases. The Company’s lease terms may include options to extend or terminate the lease when it is reasonably certain that it will exercise that option.
+
+      Lease expense for lease payments is recognized on a straight-line basis over the lease term. The Company has elected not to recognize ROU asset and lease obligations for its short-term leases, which are defined as leases with an initial term of 12 months or less. The Company elected to not separate lease and non-lease components for all of its property leases. For leases in which the lease and non-lease components have been combined, the variable lease expense includes expenses such as common area maintenance, utilities, repairs and maintenance and are expensed as incurred.
+      END TEMPLATE
+
+      2. Finally, ensure that you haven't included an introduction or conclusion. If included, remove them.
+      `,
+    },
   },
 } as const;

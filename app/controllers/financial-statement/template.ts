@@ -196,11 +196,7 @@ export const getPolicySections = () => [
     isShowing: (data) =>
       data.leases.hasLeases && data.leases.didPerformASC842Analysis,
     body: (data) => `
-      The Company determines if an arrangement is a lease at inception and if so, determines whether the lease qualifies as operating or finance. Operating leases are included in operating lease right-of-use (“ROU”) assets and operating lease liabilities in the consolidated balance sheet. The Company does not have any finance leases as of [${data.fiscalYearEnd}].
-
-      ROU assets represent the right to use an underlying asset for the lease term and lease liabilities represent the obligation to make lease payments arising from the lease. ROU assets are calculated and recognized at lease commencement date based on the present value of lease payments over the lease term adjusted for any lease payments paid to the lessor at or before the commencement date and initial direct costs incurred by the Company and excludes any lease incentives received from the lessor. When the implicit rate is not readily available, the Company has made an accounting policy election to use to the risk-free rate to determine the present value of lease payments for its property leases. The Company's lease terms may include options to extend or terminate the lease when it is reasonably certain that it will exercise that option.
-
-      Lease expense for lease payments is recognized on a straight-line basis over the lease term. The Company has elected not to recognize ROU asset and lease obligations for its short-term leases, which are defined as leases with an initial term of 12 months or less. The Company elected to not separate lease and non-lease components for all of its property leases. For leases in which the lease and non-lease components have been combined, the variable lease expense includes expenses such as common area maintenance, utilities, repairs and maintenance and are expensed as incurred.
+      ${data.leases.asc842MemoSummary || '[ASC 842 memo summary missing]'}
     `,
   }),
   generateSection({
