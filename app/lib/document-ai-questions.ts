@@ -30,6 +30,11 @@ const dateSchema = z.string().refine(
 );
 
 const numberSchema = z.string().transform((val) => val.replace(/[^\d\.]/g, ''));
+
+const questionYesNo =
+  'If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"';
+const questionDate = `Return _only_ the date in the format of YYYY-MM-DD. Do not add any other information other than the date. If you don't find this date, return "-"`;
+
 export interface AIQuestionBasic {
   label?: string;
   question: string;
@@ -82,7 +87,7 @@ export const documentAiQuestions: Partial<
   ARTICLES_OF_INCORPORATION: {
     incorporationDate: {
       label: 'Date of incorporation',
-      question: `What date was the company incorporated? Return only the date in the format of YYYY-MM-DD. If you don't find this date, return "-"`,
+      question: `What date was the company incorporated? ${questionDate}`,
       validate: dateSchema,
     },
     numberOfShares: {
@@ -164,7 +169,7 @@ export const documentAiQuestions: Partial<
   TRIAL_BALANCE: {
     trialBalanceDate: {
       label: 'Date of trial balance export',
-      question: `What is the date this trial balance was exported? Return _only_ the date in the format of YYYY-MM-DD. Do not add any other information other than the date. If you don't find this date, return "-"`,
+      question: `What is the date this trial balance was exported? ${questionDate}`,
       preProcess: (val: string) => head(val, 10),
       validate: dateSchema,
     },
@@ -266,7 +271,7 @@ export const documentAiQuestions: Partial<
     // hasResearchAndDevelopment: {
     //   label: 'Has research and development accounts',
     //   question:
-    //     'Does this data mention research and development? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+    //     `Does this data mention research and development? ${questionYesNo}`,
     //   preProcess: (val: string) =>
     //     extractLinesContaining(val, ['research', 'development']).join('\n'),
     //   validate: yesNoSchema,
@@ -274,31 +279,28 @@ export const documentAiQuestions: Partial<
     // hasAdvertisingMarketing: {
     //   label: 'Has advertising and/or marketing accounts',
     //   question:
-    //     'Does this data mention a marketing and/or advertising costs? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+    //     `Does this data mention a marketing and/or advertising costs? ${questionYesNo}`,
     //   preProcess: (val: string) =>
     //     extractLinesContaining(val, ['advertising', 'marketing']).join('\n'),
     //   validate: yesNoSchema,
     // },
     hasIntangibleAssets: {
       label: 'Has intangible assets',
-      question:
-        'Does this data mention intangible assets? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+      question: `Does this data mention intangible assets? ${questionYesNo}`,
       preProcess: (val: string) =>
         extractLinesContaining(val, ['intangible', 'asset']).join('\n'),
       validate: yesNoSchema,
     },
     hasfixedAssets: {
       label: 'Has fixed assets',
-      question:
-        'Does this data mention fixed assets? If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+      question: `Does this data mention fixed assets? ${questionYesNo}`,
       preProcess: (val: string) =>
         extractLinesContaining(val, ['asset']).join('\n'),
       validate: yesNoSchema,
     },
     hasConvertibleNote: {
       label: 'Has a convertible note account',
-      question:
-        'Does this data mention a "convertible note?" If so, answer "yes". If not, answer "no". If you cannot determine, answer "-"',
+      question: `Does this data mention a "convertible note?" ${questionYesNo}`,
       preProcess: (val: string) =>
         extractLinesContaining(val, ['convertible']).join('\n'),
       validate: yesNoSchema,
