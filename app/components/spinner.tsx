@@ -6,14 +6,20 @@ export function PageSpinner() {
   );
 }
 
+export function MiniSpinner() {
+  return <Spinner textColorClass="text-slate-400" size={4} />;
+}
+
 export function Spinner({
   textColorClass = 'text-green-700',
+  size = 5,
 }: {
   textColorClass?: string;
+  size?: number;
 }) {
   return (
     <svg
-      className={`mr-3 h-5 w-5 animate-spin ${textColorClass}`}
+      className={`mr-3 h-${size} w-${size} animate-spin ${textColorClass}`}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
