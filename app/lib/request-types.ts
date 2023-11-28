@@ -714,11 +714,6 @@ export const requestTypes = [
         label: 'Did the company perform a ASC 842 analysis?',
         dependsOn: 'hasLeases',
       },
-      yearOfASC842Analysis: {
-        input: 'year',
-        label: 'Which year did the company first perform a ASC 842 analysis?',
-        dependsOn: 'didPerformASC842Analysis',
-      },
       asc842DocumentId: {
         label: 'ASC 842 memo',
         extensions: ['PDF', 'DOC', 'DOCX'],
