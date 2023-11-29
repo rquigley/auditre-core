@@ -64,7 +64,7 @@ export async function pollGetByDocumentIdAndIdentifier(
   for (let i = 0; i < 60; i++) {
     const res = await db
       .selectFrom('aiQuery')
-      .select(['result', 'isValidated'])
+      .select(['result', 'isValidated', 'status'])
       .where('documentId', '=', documentId)
       .where('identifier', '=', identifier)
       .where('isDeleted', '=', false)
@@ -72,7 +72,7 @@ export async function pollGetByDocumentIdAndIdentifier(
       .orderBy('createdAt', 'desc')
       .limit(1)
       .executeTakeFirst();
-    if (res) {
+    if (res && res.status === 'COMPLETE') {
       return res;
     }
     await delay(1000);
