@@ -34,6 +34,10 @@ const nextConfig = {
   //   };
   //   return config;
   // },
+  generateBuildId: async () => {
+    console.log('build id', process.env.GITHUB_SHA);
+    return process.env.GITHUB_SHA;
+  },
 };
 
 module.exports = nextConfig;

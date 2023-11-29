@@ -36,6 +36,10 @@ ENV NEXT_TELEMETRY_DISABLED 1
 ARG SENTRY_AUTH_TOKEN
 ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
 
+# used for next generateBuildId
+ARG GITHUB_SHA
+ENV GITHUB_SHA=${GITHUB_SHA}
+
 RUN npm run build
 
 # If using npm comment out above and use below instead
