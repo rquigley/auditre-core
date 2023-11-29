@@ -17,7 +17,7 @@ export default async function RequestLayout({
         <Requests auditId={auditId} />
       </div>
 
-      <div className="basis-3/4 w-full max-w-3xl overflow-y-auto">
+      <div className="basis-3/4 w-1/2 max-w-3xl xl:max-w-5xl overflow-y-auto">
         {children}
       </div>
     </div>
