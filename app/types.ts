@@ -248,12 +248,15 @@ export interface AiQueryTable {
   auditId: AuditId | null;
   documentId: DocumentId | null;
   identifier: string;
+  status: 'PENDING' | 'COMPLETE' | 'ERROR';
   model: OpenAIModel;
   query: { messages: OpenAIMessage[] };
-  result: string;
+  result: string | null;
+  error: string | null;
   isValidated: ColumnType<boolean, boolean | undefined, boolean>;
-  usage: AiQueryUsage;
+  usage: AiQueryUsage | null;
   createdAt: ColumnType<Date, string | undefined, never>;
+  answeredAt: Date | null;
   isDeleted: ColumnType<boolean, never, boolean>;
 }
 

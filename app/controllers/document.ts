@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import dedent from 'dedent';
-import * as z from 'zod';
+import { revalidatePath } from 'next/cache';
 
 import {
   askQuestion,
@@ -14,12 +14,11 @@ import { documentAiQuestions } from '@/lib/document-ai-questions';
 import { delay, head, humanCase } from '@/lib/util';
 
 import type { OpenAIMessage } from '@/lib/ai';
-import type { AIQuestion } from '@/lib/document-ai-questions';
 
 import '@/controllers/ai-query'; // here
 
 import { getExtractedContent, NoSuchKey } from '@/lib/aws';
-import { getAllByDocumentId } from './ai-query';
+import { getAuditIdsForDocument } from './request-data';
 
 import type {
   AuditId,
@@ -77,6 +76,16 @@ export async function getById(id: DocumentId): Promise<Document> {
     .where('id', '=', id)
     .where('isDeleted', '=', false)
     .selectAll()
+    .executeTakeFirstOrThrow();
+}
+
+export async function getDocumentStatus(
+  id: DocumentId,
+): Promise<Pick<Document, 'orgId' | 'isProcessed' | 'classifiedType'>> {
+  return await db
+    .selectFrom('document')
+    .select(['orgId', 'isProcessed', 'classifiedType'])
+    .where('id', '=', id)
     .executeTakeFirstOrThrow();
 }
 
@@ -215,6 +224,10 @@ export async function process(id: DocumentId): Promise<void> {
     // }
     console.log('Document process complete:', usage);
     console.log(`total time: ${Date.now() - t0}ms`);
+
+    for (const auditId of await getAuditIdsForDocument(id)) {
+      revalidatePath(`/audit/${auditId}`);
+    }
   } catch (e) {
     console.log(e);
     Sentry.captureException(e);
@@ -287,6 +300,7 @@ export async function classifyDocument(
   await createAiQuery({
     documentId: document.id,
     model: resp.model,
+    status: 'COMPLETE',
     query: { messages },
     identifier: 'DOCUMENT_TYPE',
     usage: resp.usage,
@@ -349,6 +363,7 @@ type FormattedQueryDataWithLabels = Record<
   {
     value: string | undefined;
     label: string | undefined;
+    status: string | undefined;
   }
 >;
 export async function getAiDataWithLabels(
@@ -367,8 +382,9 @@ export async function getAiDataWithLabels(
       (aq) => aq.identifier === identifier,
     );
     res[identifier] = {
-      value: answered?.result,
       label: defaultQuestions[identifier].label,
+      status: answered?.status || 'PENDING',
+      value: answered?.result || '',
     };
   });
   return res;
@@ -389,7 +405,7 @@ export async function getAiDataForDocumentId(
     const answered = answeredQuestions.find(
       (aq) => aq.identifier === identifier,
     );
-    res[identifier] = answered?.result;
+    res[identifier] = answered?.result || '';
   });
 
   return res;

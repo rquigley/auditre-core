@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 
-import { getById } from '@/controllers/document';
+import { getAllStatusByDocument } from '@/controllers/ai-query';
+import { getDocumentStatus } from '@/controllers/document';
 import { getCurrent } from '@/controllers/session-user';
 
 export async function GET(
@@ -15,7 +16,11 @@ export async function GET(
   if (!user) {
     return notFound();
   }
-  const document = await getById(id);
+  const [documentP, queriesP] = [
+    getDocumentStatus(id),
+    getAllStatusByDocument(id),
+  ];
+  const [document, queries] = await Promise.all([documentP, queriesP]);
   if (document.orgId !== user.orgId) {
     return notFound();
   }
@@ -23,5 +28,7 @@ export async function GET(
   return Response.json({
     isProcessed: document.isProcessed,
     classifiedType: document.classifiedType,
+    queries,
+    queriesComplete: queries.every((q) => q.status === 'COMPLETE'),
   });
 }

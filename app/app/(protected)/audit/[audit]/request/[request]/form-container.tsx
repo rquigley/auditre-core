@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 
 import { Await } from '@/components/await';
 import { Document } from '@/components/document';
+import { MiniSpinner } from '@/components/spinner';
 import {
   getAiDataWithLabels,
   getById as getDocumentById,
@@ -118,9 +119,9 @@ function DocumentData({ documentId }: { documentId: string }) {
   }
   return (
     <>
-      <span className="text-xs font-semibold leading-5 text-gray-600">
+      {/* <span className="text-xs leading-5 text-gray-600">
         Extracted document data
-      </span>
+      </span> */}
       <div className="text-xs leading-5 text-gray-600">
         <Suspense fallback={null}>
           <Await promise={getAiDataWithLabels(documentId)}>
@@ -147,16 +148,23 @@ function DataRow({
   data,
 }: {
   identifier: string;
-  data: { value: string | undefined; label: string | undefined };
+  data: {
+    value: string | undefined;
+    label: string | undefined;
+    status: string | undefined;
+  };
 }) {
   if (!data.label) {
     return null;
   }
   return (
-    <div className="flex items-center justify-between">
-      {/* <span className="text-xs leading-5 text-gray-600 hover:text-gray-800 hover:underline cursor-pointer"> */}
-      <span className="text-xs leading-5 text-gray-600">{data.label}</span>
-      <p className="text-xs leading-5 text-gray-600">{data.value}</p>
+    <div className="mb-2">
+      <div className="text-xs leading-5 font-semibold text-gray-600">
+        {data.label}
+      </div>
+      <p className="text-xs leading-5 text-gray-600">
+        {data.status === 'PENDING' ? <MiniSpinner /> : data.value}
+      </p>
     </div>
   );
 }
