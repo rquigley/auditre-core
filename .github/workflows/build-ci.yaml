@@ -38,11 +38,6 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition fargate-node-task-defn --query taskDefinition > task-definition.json
 
-      - name: Run any db migrations
-        if: github.ref == 'refs/heads/main'
-        run: |
-          aws lambda invoke --function-name db-migrate output.json
-
       - name: Create .env.local
         working-directory: ./app
         run: |
@@ -111,10 +106,10 @@ jobs:
         run: |
           aws s3 sync ./migrations s3://auditre-app-db-migrations-dev/migrations
 
-      # - name: Run any db migrations
-      #   if: github.ref == 'refs/heads/main'
-      #   run: |
-      #     aws lambda invoke --function-name db-migrate output.json
+      - name: Run any db migrations
+        if: github.ref == 'refs/heads/main'
+        run: |
+          aws lambda invoke --function-name db-migrate output.json
 
       - name: Deploy AWS ECS task definition
         if: github.ref == 'refs/heads/main'
