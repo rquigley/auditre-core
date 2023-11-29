@@ -556,6 +556,7 @@ export async function aiClassifyCOARows({
     model: resp.model,
     query: { messages },
     identifier: 'accountMapping',
+    status: 'COMPLETE',
     usage: resp.usage,
     result: resp.message as string,
   });

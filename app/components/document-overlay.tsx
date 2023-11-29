@@ -16,7 +16,7 @@ import useSWR from 'swr';
 
 // import { Await } from '@/components/await';
 import { FiletypeIcon } from '@/components/filetype-icon';
-import { PageSpinner } from '@/components/spinner';
+import { MiniSpinner, PageSpinner } from '@/components/spinner';
 import { reprocessDocument } from '@/lib/actions';
 import Datetime from './datetime';
 
@@ -197,16 +197,14 @@ function Document({
             </div>
 
             <div className="mt-1">
-              <div className="text-sm text-slate-500">
-                <div>
-                  {Object.keys(document.dataWithLabels).map((identifier) => (
-                    <DataRow
-                      key={identifier}
-                      identifier={identifier}
-                      data={document.dataWithLabels[identifier]}
-                    />
-                  ))}
-                </div>
+              <div className="text-sm text-slate-500 mt-3">
+                {Object.keys(document.dataWithLabels).map((identifier) => (
+                  <DataRow
+                    key={identifier}
+                    identifier={identifier}
+                    data={document.dataWithLabels[identifier]}
+                  />
+                ))}
               </div>
             </div>
           </dl>
@@ -419,16 +417,23 @@ function DataRow({
   data,
 }: {
   identifier: string;
-  data: { value: string | undefined; label: string | undefined };
+  data: {
+    value: string | undefined;
+    label: string | undefined;
+    status: string | undefined;
+  };
 }) {
   if (!data.label) {
     return null;
   }
   return (
-    <div className="flex items-center justify-between">
-      {/* <span className="text-xs leading-5 text-gray-600 hover:text-gray-800 hover:underline cursor-pointer"> */}
-      <span className="text-xs leading-5 text-gray-600">{data.label}</span>
-      <p className="text-xs leading-5 text-gray-600">{data.value}</p>
+    <div className="mb-2">
+      <div className="text-xs leading-5 font-semibold text-gray-600">
+        {data.label}
+      </div>
+      <p className="text-xs leading-5 text-gray-600">
+        {data.status === 'PENDING' ? <MiniSpinner /> : data.value}
+      </p>
     </div>
   );
 }

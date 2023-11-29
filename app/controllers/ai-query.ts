@@ -25,6 +25,14 @@ export async function createAiQuery(aiQuery: NewAiQuery): Promise<AiQuery> {
     .executeTakeFirstOrThrow();
 }
 
+export async function updateAiQuery(id: AiQueryId, updateWith: AiQueryUpdate) {
+  return await db
+    .updateTable('aiQuery')
+    .set(updateWith)
+    .where('id', '=', id)
+    .execute();
+}
+
 export async function getById(id: AiQueryId): Promise<AiQuery> {
   return await db
     .selectFrom('aiQuery')
@@ -89,15 +97,27 @@ export async function getAllByDocumentId(
     .execute();
 }
 
+export async function getAllStatusByDocument(documentId: DocumentId) {
+  return (await getAllMostRecentByDocumentId(documentId)).map((row) => ({
+    identifier: row.identifier,
+    status: row.status,
+    isValidated: row.isValidated,
+  }));
+}
+
 export async function getAllMostRecentByDocumentId(
   documentId: DocumentId,
-): Promise<Pick<AiQuery, 'identifier' | 'isValidated' | 'result'>[]> {
+): Promise<
+  Pick<AiQuery, 'identifier' | 'isValidated' | 'result' | 'status'>[]
+> {
+  // TODO This should factor in status = 'COMPLETE'
   const subQuery = db
     .selectFrom('aiQuery')
     .select([
       'identifier',
       'result',
       'isValidated',
+      'status',
       sql`row_number() over (partition by identifier order by created_at desc)`.as(
         'rn',
       ),
@@ -109,7 +129,7 @@ export async function getAllMostRecentByDocumentId(
 
   const mostRecentRows = await db
     .selectFrom(subQuery)
-    .select(['identifier', 'isValidated', 'result'])
+    .select(['identifier', 'isValidated', 'result', 'status'])
     .where('rn', '=', 1)
     .execute();
 
@@ -158,6 +178,18 @@ export async function askQuestion({
     { role: 'user', content: `"""${content}"""` },
   ];
 
+  if (!identifier) {
+    identifier = 'OTHER';
+  }
+
+  const aiQuery = await createAiQuery({
+    documentId: document.id,
+    model,
+    status: 'PENDING',
+    query: { messages },
+    identifier,
+  });
+
   const {
     message,
     model: usedModel,
@@ -168,9 +200,8 @@ export async function askQuestion({
     respondInJSON,
   });
 
-  if (!identifier) {
-    identifier = 'OTHER';
-  }
+  // TODO deal with error
+
   let result;
   let isValidated = false;
   if (validate) {
@@ -187,13 +218,13 @@ export async function askQuestion({
     result = message as any;
   }
 
-  return await createAiQuery({
-    documentId: document.id,
+  await updateAiQuery(aiQuery.id, {
     model: usedModel,
-    query: { messages },
-    identifier,
+    status: 'COMPLETE',
     usage,
     result,
     isValidated,
+    answeredAt: new Date(),
   });
+  return await getById(aiQuery.id);
 }

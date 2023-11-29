@@ -203,3 +203,17 @@ export async function deleteRequestDataDocument({
     .where('documentId', '=', documentId)
     .execute();
 }
+
+export async function getAuditIdsForDocument(documentId: DocumentId) {
+  const rows = await db
+    .selectFrom('requestDataDocument')
+    .innerJoin(
+      'requestData',
+      'requestDataDocument.requestDataId',
+      'requestData.id',
+    )
+    .select(['auditId'])
+    .where('documentId', '=', documentId)
+    .execute();
+  return rows.map((r) => r.auditId);
+}

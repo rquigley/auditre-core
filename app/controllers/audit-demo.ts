@@ -355,6 +355,7 @@ async function createDemoDocument({
     }
     await createAiQuery({
       documentId: doc.id,
+      status: 'COMPLETE',
       model: 'gpt-4',
       query: { messages },
       identifier,
