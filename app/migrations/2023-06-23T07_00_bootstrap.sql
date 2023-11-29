@@ -149,12 +149,15 @@ CREATE TABLE "ai_query" (
   "audit_id" uuid REFERENCES "audit" ("id"),
   "document_id" uuid REFERENCES "document" ("id"),
   "identifier" text,
+  "status" text NOT NULL DEFAULT 'PENDING',
   "model" text,
   "query" JSONB,
   "result" text,
+  "error" text,
   "is_validated" boolean NOT NULL DEFAULT FALSE,
   "usage" JSONB,
   "created_at" timestamptz DEFAULT now() NOT NULL,
+  "answered_at" timestamptz,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
 
