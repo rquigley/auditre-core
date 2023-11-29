@@ -13,6 +13,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as rds from 'aws-cdk-lib/aws-rds';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
 export interface PostgresClusterProps {
@@ -21,6 +22,7 @@ export interface PostgresClusterProps {
   dbName: string;
   dbUsername: string;
   isProd: boolean;
+  migrationBucket: Bucket;
 }
 
 export class PostgresCluster extends Construct {
@@ -164,6 +166,12 @@ export class PostgresCluster extends Construct {
       },
     });
 
+    const lambdaParamsSecretsLayer = lambda.LayerVersion.fromLayerVersionArn(
+      this,
+      'AWS-Parameters-and-Secrets-Lambda-Extension-Layer-ARM64',
+      'arn:aws:lambda:us-east-2:590474943231:layer:AWS-Parameters-and-Secrets-Lambda-Extension-Arm64:4',
+    );
+
     // Note, changes to this Lambda or teardowns of the stack will take 40+ minutes.
     // This is because of the way AWS handles Lambdas within a VPC.
     // Explaination: https://stackoverflow.com/questions/47957820/lambda-in-vpc-deletion-takes-more-time
@@ -180,22 +188,6 @@ export class PostgresCluster extends Construct {
         memorySize: 256,
         timeout: cdk.Duration.minutes(10),
         handler: 'handler',
-        bundling: {
-          externalModules: ['@aws-sdk/*'],
-          nodeModules: ['pg', '@sentry/serverless'],
-          minify: false,
-          commandHooks: {
-            afterBundling(inputDir: string, outputDir: string): string[] {
-              return [`cp -r ${inputDir}/migrations ${outputDir}`];
-            },
-            beforeBundling() {
-              return [];
-            },
-            beforeInstall() {
-              return [];
-            },
-          },
-        },
         depsLockFilePath: path.resolve(
           __dirname,
           '../packages/db-migration',
@@ -207,20 +199,49 @@ export class PostgresCluster extends Construct {
           // PARAMETERS_SECRETS_EXTENSION_LOG_LEVEL: 'debug',
           DB_CREDS_SECRET_ID: credsSecretName,
           PARAMETERS_SECRETS_EXTENSION_HTTP_PORT: '2773',
+          MIGRATION_BUCKET_NAME: props.migrationBucket.bucketName,
         },
         vpc: props.vpc,
         vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
         role: lambdaRole,
-        //securityGroups: [securityGroup],
-        layers: [
-          lambda.LayerVersion.fromLayerVersionArn(
-            this,
-            'AWS-Parameters-and-Secrets-Lambda-Extension-Layer-ARM64',
-            'arn:aws:lambda:us-east-2:590474943231:layer:AWS-Parameters-and-Secrets-Lambda-Extension-Arm64:4',
-          ),
-        ],
+        layers: [lambdaParamsSecretsLayer],
       },
     );
     this.instance.grantConnect(migrationLambda);
+    props.migrationBucket.grantRead(migrationLambda);
+
+    //
+    // ONLY FOR STAGING
+    //
+    if (props.isProd === false) {
+      const resetLambda = new lambdaNodejs.NodejsFunction(
+        this,
+        'DBStagingResetFunction',
+        {
+          functionName: `db-staging-reset`,
+          entry: './packages/db-staging-reset/reset.js',
+          runtime: lambda.Runtime.NODEJS_20_X,
+          architecture: lambda.Architecture.ARM_64,
+          memorySize: 256,
+          timeout: cdk.Duration.seconds(30),
+          handler: 'handler',
+          depsLockFilePath: path.resolve(
+            __dirname,
+            '../packages/db-staging-reset',
+            'package-lock.json',
+          ),
+          projectRoot: path.resolve(__dirname, '../packages/db-staging-reset'),
+          environment: {
+            DB_CREDS_SECRET_ID: credsSecretName,
+            PARAMETERS_SECRETS_EXTENSION_HTTP_PORT: '2773',
+          },
+          vpc: props.vpc,
+          vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
+          role: lambdaRole,
+          layers: [lambdaParamsSecretsLayer],
+        },
+      );
+      this.instance.grantConnect(resetLambda);
+    }
   }
 }

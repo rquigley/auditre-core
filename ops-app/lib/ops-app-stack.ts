@@ -88,6 +88,7 @@ export class OpsAppStack extends Stack {
             'ecs:DescribeTaskDefinition',
             'ecs:RegisterTaskDefinition',
             'ecs:UpdateService',
+            'lambda:InvokeFunction',
           ],
           //resources: [repo.repositoryArn],
           // TODO: lock this down to the repo
@@ -267,18 +268,6 @@ export class OpsAppStack extends Stack {
       clusterName: 'fargate-node-cluster',
     });
 
-    const db = new PostgresCluster(this, 'PostgresCluster', {
-      vpc,
-      instanceIdentifier: 'app-psql2',
-      dbName: 'auditre',
-      dbUsername: 'arroot',
-      isProd,
-    });
-    db.instance.connections.allowDefaultPortFrom(cluster);
-    new CfnOutput(this, 'dbEndpoint', {
-      value: db.instance.instanceEndpoint.hostname,
-    });
-
     const dbMigrationsBucket = new Bucket(this, 'DBMigrationsS3Bucket', {
       bucketName: `auditre-app-db-migrations-${isProd ? 'prod' : 'dev'}`,
 
@@ -287,6 +276,20 @@ export class OpsAppStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY, // NOT recommended for production code
       autoDeleteObjects: true, // NOT recommended for production code
     });
+
+    const db = new PostgresCluster(this, 'PostgresCluster', {
+      vpc,
+      instanceIdentifier: 'app-psql2',
+      dbName: 'auditre',
+      dbUsername: 'arroot',
+      isProd,
+      migrationBucket: dbMigrationsBucket,
+    });
+    db.instance.connections.allowDefaultPortFrom(cluster);
+    new CfnOutput(this, 'dbEndpoint', {
+      value: db.instance.instanceEndpoint.hostname,
+    });
+
     dbMigrationsBucket.grantReadWrite(deployRole);
 
     const staticAssetBucket = new Bucket(this, 'StaticAssetS3Bucket', {
