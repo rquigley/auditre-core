@@ -36,12 +36,16 @@ export default async function AI({ document }: { document: Document }) {
             <div className="mb-2">
               Identifier: {query.identifier}
               <br />
+              Status: {query.status}
+              <br />
               Model: {query.model}
               <br />
               Tokens: {query.usage?.totalTokens} prompt,{' '}
               {query.usage?.completionTokens} completion
               <br />
-              Time: {(query.usage?.timeMs / 1000).toFixed(2)}s<br />
+              Time:{' '}
+              {query.usage ? (query.usage?.timeMs / 1000).toFixed(2) : '-'}s
+              <br />
               Created: <Datetime dateTime={query.createdAt} />
             </div>
 
@@ -55,7 +59,7 @@ export default async function AI({ document }: { document: Document }) {
                 className="w-180 whitespace-normal"
                 id={`result-${query.id}`}
               >
-                A: {nl2br(query.result)}
+                A: {query.result ? nl2br(query.result) : ''}
               </pre>
 
               {/* <CopyToClipboard elementId={`query-${query.id}`}>
