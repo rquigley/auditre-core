@@ -395,7 +395,11 @@ export async function getAiDataForDocumentId(
   documentId: DocumentId,
 ): Promise<FormattedQueryData> {
   const { classifiedType } = await getDocumentById(documentId);
-  const answeredQuestions = await getAllMostRecentByDocumentId(documentId);
+
+  const answeredQuestions = (
+    await getAllMostRecentByDocumentId(documentId)
+  ).filter((row) => row.status === 'COMPLETE' && row.isValidated);
+
   const defaultQuestions = { ...documentAiQuestions[classifiedType] };
   if (!defaultQuestions) {
     return {};

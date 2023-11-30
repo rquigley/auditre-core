@@ -181,7 +181,7 @@ export async function getBalancesByAccountType(
     .execute();
   const rows = originalRows.map((row) => ({
     accountType: row.accountType || 'UNKNOWN',
-    balance: row.balance as string,
+    balance: String(row.balance),
   }));
   return new AccountMap(Object.keys(accountTypes) as AccountType[], rows);
 }
@@ -742,6 +742,25 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
   }
 
   return true;
+}
+
+export async function getAccountsForCategory(
+  auditId: AuditId,
+  accountType: AccountType,
+) {
+  const rows = await db
+    .selectFrom('accountBalance as ab')
+    .innerJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')
+    .select([
+      'ab.accountNumber',
+      'ab.accountName',
+      sql<number>`ab.debit - ab.credit`.as('balance'),
+    ])
+    .where('ab.isDeleted', '=', false)
+    .where('ab.auditId', '=', auditId)
+    .where('am.accountType', '=', accountType)
+    .execute();
+  return rows;
 }
 
 /**

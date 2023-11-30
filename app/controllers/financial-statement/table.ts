@@ -1,6 +1,11 @@
 import React from 'react';
 
-import { AccountMap, AccountType } from '@/controllers/account-mapping';
+import {
+  AccountMap,
+  AccountType,
+  getAccountsForCategory,
+} from '@/controllers/account-mapping';
+import { groupFixedAccountsByCategories } from '@/lib/finance';
 import { addFP, getLastDayOfMonth, getMonthName } from '@/lib/util';
 
 import type { AuditData } from '../audit-output';
@@ -19,6 +24,7 @@ export const tableMap = {
   'balance-sheet': buildBalanceSheet,
   'statement-of-operations': buildStatementOfOperations,
   'property-and-equipment-lives': buildPropertyAndEquipmentLives,
+  'property-and-equipment-net': buildPropertyAndEquipmentNet,
 } as const;
 
 export function normalizeBalanceSheet(t: AccountMap) {
@@ -115,13 +121,6 @@ export function normalizeBalanceSheet(t: AccountMap) {
 }
 
 export function buildBalanceSheet(data: AuditData) {
-  const fiscalCloseStr = `As of ${getMonthName(
-    data.auditInfo.fiscalYearMonthEnd,
-  )} ${getLastDayOfMonth(
-    data.auditInfo.fiscalYearMonthEnd,
-    data.auditInfo.year,
-  )},`;
-
   return [
     {
       name: `As of ${data.fiscalYearEndParts.md},`,
@@ -372,6 +371,68 @@ export function buildPropertyAndEquipmentLives(data: AuditData) {
     {
       name: 'Leasehold improvements',
       value: 'Remaining life of the lease',
+    },
+  ];
+}
+
+export async function buildPropertyAndEquipmentNet(data: AuditData) {
+  const assetCategoriesStr = data.trialBalance.fixedAssetCategories;
+  let assetCategories: string[];
+  try {
+    // @ts-expect-error
+    assetCategories = JSON.parse(assetCategoriesStr)?.categories;
+  } catch (err) {
+    assetCategories = [];
+  }
+  const accounts = (
+    await getAccountsForCategory(data.auditId, 'ASSET_PROPERTY_AND_EQUIPMENT')
+  ).map((a) => ({
+    name: `${a.accountNumber}${a.accountNumber && a.accountName ? '-' : ''}${
+      a.accountName
+    }`,
+    balance: a.balance,
+  }));
+
+  const assets = accounts.filter(
+    (a) => a.name.toLowerCase().includes('accumulated depreciation') === false,
+  );
+  const out = groupFixedAccountsByCategories(assets, assetCategories);
+  const totalAccumulatedDepreciation = accounts
+    .filter((a) => a.name.toLowerCase().includes('accumulated depreciation'))
+    .reduce((acc, a) => addFP(acc, a.balance), 0);
+
+  assetCategories = assetCategories.sort();
+  let totalPropertyAndEquipment = 0;
+  return [
+    {
+      name: data.fiscalYearEndParts.md,
+      value: data.fiscalYearEndParts.y,
+      bold: true,
+      borderBottom: true,
+    },
+    ...Object.keys(out).map((category, idx) => {
+      const value = out[category].reduce((acc, a) => addFP(acc, a.balance), 0);
+      totalPropertyAndEquipment = addFP(totalPropertyAndEquipment, value);
+      return {
+        name: category,
+        value,
+        borderBottom: idx === assetCategories.length - 1,
+      };
+    }),
+    {
+      name: 'Total property and equipment',
+      value: totalPropertyAndEquipment,
+      borderBottom: true,
+    },
+    {
+      name: 'Less accumulated depreciation',
+      value: totalAccumulatedDepreciation,
+      borderBottom: true,
+    },
+    {
+      name: 'Property and equipment, net',
+      value: addFP(totalPropertyAndEquipment, totalAccumulatedDepreciation),
+      borderBottom: true,
     },
   ];
 }

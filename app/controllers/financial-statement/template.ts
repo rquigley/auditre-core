@@ -55,19 +55,19 @@ export async function sectionsToBody<T>(
     body: string;
     pageBreakBefore?: boolean;
     data: AuditData;
-  }) => T[],
+  }) => Promise<T[]>,
 ) {
   const ret = [];
   for (const s in sections) {
     if (sections[s].isShowing(data)) {
       const body = dedent(await sections[s].body(data));
       ret.push(
-        ...wrapper({
+        ...(await wrapper({
           header: sections[s].header,
           body,
           pageBreakBefore: sections[s].pageBreakBefore,
           data,
-        }),
+        })),
       );
     }
   }
@@ -282,9 +282,19 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Property and equipment, net',
-    isShowing: (data) => data.leases.didPerformASC842Analysis,
+    isShowing: (data) => data.trialBalance.hasfixedAssets,
+    body: (data) => `
+      Property and equipment, net, consist of the following:
+      [TABLE:property-and-equipment-net]
+    `,
+    pageBreakBefore: true,
+  }),
+  generateSection({
+    header: 'Intangible assets, net',
+    isShowing: (data) => data.trialBalance.hasIntangibleAssets,
     body: (data) => `
       [TABLE] https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=586543814&range=A4
+
     `,
     pageBreakBefore: true,
   }),
