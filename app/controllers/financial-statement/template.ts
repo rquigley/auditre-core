@@ -172,8 +172,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Property and Equipment',
-    isShowing: (data) => true,
-    // isShowing: (data) => data.trialBalance.hasfixedAssets === 'no',
+    isShowing: (data) => data.trialBalance.hasfixedAssets === 'yes',
     body: (data) => `
       Property and equipment are stated at cost, net of depreciation. Depreciation is computed using the straight-line method over the estimated useful lives of the assets. Leasehold improvements are amortized on a straight-line basis over the lesser of the estimated useful life of the asset or the remaining term of the related lease. Maintenance and repairs are charged to expense as incurred, and improvements and betterments are capitalized.
 
