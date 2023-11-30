@@ -124,8 +124,8 @@ export function buildBalanceSheet(data: AuditData) {
 
   return [
     {
-      name: fiscalCloseStr,
-      value: data.auditInfo.year,
+      name: `As of ${data.fiscalYearEndParts.md},`,
+      value: data.fiscalYearEndParts.y,
       bold: true,
       borderBottom: true,
     },
@@ -377,17 +377,10 @@ export function buildPropertyAndEquipmentLives(data: AuditData) {
 }
 
 export function buildStatementOfOperations(data: AuditData) {
-  const fiscalCloseStr = `As of ${getMonthName(
-    data.auditInfo.fiscalYearMonthEnd,
-  )} ${getLastDayOfMonth(
-    data.auditInfo.fiscalYearMonthEnd,
-    data.auditInfo.year,
-  )},`;
-
   return [
     {
-      name: fiscalCloseStr,
-      value: data.auditInfo.year,
+      name: `As of ${data.fiscalYearEndParts.md},`,
+      value: data.fiscalYearEndParts.y,
       bold: true,
       borderBottom: true,
     },

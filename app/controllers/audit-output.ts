@@ -91,6 +91,19 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   data.balanceSheet = normalizeBalanceSheet(totals);
   data.statementOfOps = normalizeStatementOfOps(totals);
 
+  data.fiscalYearEndParts = {
+    md: `${getMonthName(
+      // @ts-expect-error
+      data.auditInfo.fiscalYearMonthEnd,
+    )} ${getLastDayOfMonth(
+      // @ts-expect-error
+      data.auditInfo.fiscalYearMonthEnd,
+      // @ts-expect-error
+      data.auditInfo.year,
+    )}`,
+    // @ts-expect-error
+    y: data.auditInfo.year,
+  };
   data.fiscalYearEnd = `${getMonthName(
     // @ts-expect-error
     data.auditInfo.fiscalYearMonthEnd,
