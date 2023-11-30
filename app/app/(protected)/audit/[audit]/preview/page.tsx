@@ -204,7 +204,7 @@ async function DataSection({
       if (mapKey in tableMap) {
         const tableBuildFn = tableMap[mapKey as keyof typeof tableMap];
         output.push(
-          <span key={mapKey}> {buildTable(tableBuildFn(data))}</span>,
+          <span key={mapKey}> {buildTable(await tableBuildFn(data))}</span>,
         );
       } else {
         throw new Error(`Unknown table: ${mapKey}`);

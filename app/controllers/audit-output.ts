@@ -67,7 +67,9 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
     aiData[document.id] = await getAiDataForDocumentId(document.id);
   }
 
-  const data: Record<string, unknown> = {};
+  const data: Record<string, unknown> = {
+    auditId,
+  };
   for (const [key, fields] of Object.entries(requestData)) {
     let fieldsData = fields.data;
     for (const [field, fieldVal] of Object.entries(fieldsData)) {
@@ -500,9 +502,9 @@ function formatBodyText(text: string): (typeof TextRun)[] {
   return textRuns;
 }
 
-function templateToParagraph(
+async function templateToParagraph(
   template: t.Template & { pageBreakBefore?: boolean; data: AuditData },
-): Array<unknown> {
+): Promise<Array<unknown>> {
   const ret = [
     new Paragraph({
       text: template.header,
@@ -510,14 +512,14 @@ function templateToParagraph(
       pageBreakBefore: template.pageBreakBefore,
     }),
   ];
-  template.body.split('\n').forEach((p) => {
+  template.body.split('\n').forEach(async (p) => {
     if (p.startsWith('[TABLE:')) {
       const mapKey = p.match(/\[TABLE:(.*)\]/)?.[1];
       if (!mapKey || mapKey in tableMap === false) {
         throw new Error(`Unknown table: ${mapKey}`);
       }
       const tableBuildFn = tableMap[mapKey as keyof typeof tableMap];
-      ret.push(buildTable(tableBuildFn(template.data)));
+      ret.push(buildTable(await tableBuildFn(template.data)));
     } else {
       ret.push(new Paragraph({ children: formatBodyText(p) }));
     }

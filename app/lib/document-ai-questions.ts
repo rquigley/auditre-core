@@ -298,6 +298,30 @@ export const documentAiQuestions: Partial<
         extractLinesContaining(val, ['asset']).join('\n'),
       validate: yesNoSchema,
     },
+    fixedAssetCategories: {
+      label: 'Fixed asset categories',
+      question: `If there are "fixed asset" accounts in this trial balance data, provide the categories that would be used in a "Property and equipment, net" section of a financial statement.
+
+
+      For example, if there are "Land", "Buildings", "Equipment", and "Furniture and fixtures" accounts, return the following JSON:
+      {
+        "categories": ["Land", "Buildings", "Equipment", "Furniture and fixtures"]
+      }
+
+      If you find categories that are more specific variations on a category you have already selected, ignore those. For example, you find accounts named "142 Fixed Assets:Buildings" and "1532 Fixed Assets:Buildings:IT Infrastructure" only provide "Buildings" as a category. You can ignore "IT Infrastructure" as a unique category
+
+      If no fixed asset accounts are found, return the following JSON:
+      {
+        "categories": []
+      }
+      `,
+      preProcess: (val: string) =>
+        extractLinesContaining(val, ['asset']).join('\n'),
+      respondInJSON: true,
+      validate: z.object({
+        categories: z.array(z.string()),
+      }),
+    },
     hasConvertibleNote: {
       label: 'Has a convertible note account',
       question: `Does this data mention a "convertible note?" ${questionYesNo}`,
@@ -329,6 +353,14 @@ export const documentAiQuestions: Partial<
 
       2. Finally, ensure that you haven't included an introduction or conclusion. If included, remove them.
       `,
+    },
+  },
+  EQUITY_FINANCING: {
+    efDateOfDocument: {
+      label: 'Date of the document',
+      question: `What is the date this document was written? ${questionDate}`,
+      preProcess: (val: string) => head(val, 500),
+      validate: dateSchema,
     },
   },
 } as const;
