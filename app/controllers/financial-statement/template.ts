@@ -3,7 +3,7 @@ import dedent from 'dedent';
 
 import { ppCurrency } from '@/lib/util';
 
-import type { AuditData } from '../audit-output';
+import type { AuditData } from '../audit';
 
 function toDate(date: any) {
   return dayjs(date).format('MMMM D, YYYY');

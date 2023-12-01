@@ -1,6 +1,17 @@
 import { unstable_cache } from 'next/cache';
 
+import { getBalancesByAccountType } from '@/controllers/account-mapping';
+import {
+  getAiDataForDocumentId,
+  getAllByAuditId as getAllDocumentsByAuditId,
+} from '@/controllers/document';
+import { getDataForAuditId } from '@/controllers/request-data';
 import { db } from '@/lib/db';
+import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
+import {
+  normalizeBalanceSheet,
+  normalizeStatementOfOps,
+} from './financial-statement/table';
 import {
   getDataForRequestAttribute,
   getStatusesForAuditId,
@@ -52,6 +63,7 @@ export async function getByIdForClient(auditId: AuditId) {
     year,
   };
 }
+
 export const getByIdForClientCached = unstable_cache(
   async (auditId: AuditId) => getByIdForClient(auditId),
   ['audit-getByIdForClient'],
@@ -106,6 +118,81 @@ export async function getAllByOrgId(
     });
   }
   return ret;
+}
+
+export type AuditData = Record<string, any>;
+//  & {
+//   balanceSheet: ReturnType<typeof getBalanceSheetData>;
+// };
+
+/**
+ *
+ * This pulls all necessary data for an audit for the following formats:
+ * - Word .docx export
+ * - Preview page
+ * - Excel export
+ *
+ */
+export async function getAuditData(auditId: AuditId): Promise<AuditData> {
+  const requestData = await getDataForAuditId(auditId);
+  const documents = await getAllDocumentsByAuditId(auditId);
+
+  let aiData: Record<string, Record<string, string | undefined>> = {};
+  for (const document of documents) {
+    aiData[document.id] = await getAiDataForDocumentId(document.id);
+  }
+
+  const data: Record<string, unknown> = {
+    auditId,
+  };
+  for (const [key, fields] of Object.entries(requestData)) {
+    let fieldsData = fields.data;
+    for (const [field, fieldVal] of Object.entries(fieldsData)) {
+      if (fields.form[field].input === 'fileupload') {
+        // @ts-expect-error
+        const documentIds = fieldVal?.documentIds as DocumentId[];
+        documentIds.forEach((id) => {
+          fieldsData = {
+            ...fieldsData,
+            ...aiData[id],
+          };
+        });
+      }
+    }
+    data[kebabToCamel(key)] = fieldsData;
+  }
+
+  const totals = await getBalancesByAccountType(auditId);
+  data.totals = totals;
+
+  data.balanceSheet = normalizeBalanceSheet(totals);
+  data.statementOfOps = normalizeStatementOfOps(totals);
+
+  data.fiscalYearEndParts = {
+    md: `${getMonthName(
+      // @ts-expect-error
+      data.auditInfo.fiscalYearMonthEnd,
+    )} ${getLastDayOfMonth(
+      // @ts-expect-error
+      data.auditInfo.fiscalYearMonthEnd,
+      // @ts-expect-error
+      data.auditInfo.year,
+    )}`,
+    // @ts-expect-error
+    y: data.auditInfo.year,
+  };
+  data.fiscalYearEnd = `${getMonthName(
+    // @ts-expect-error
+    data.auditInfo.fiscalYearMonthEnd,
+  )} ${getLastDayOfMonth(
+    // @ts-expect-error
+    data.auditInfo.fiscalYearMonthEnd,
+    // @ts-expect-error
+    data.auditInfo.year,
+    // @ts-expect-error
+  )}, ${data.auditInfo.year}`;
+
+  return data;
 }
 
 export async function update(id: AuditId, updateWith: AuditUpdate) {
