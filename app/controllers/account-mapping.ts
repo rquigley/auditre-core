@@ -177,6 +177,7 @@ export async function getBalancesByAccountType(
     ])
     .where('ab.isDeleted', '=', false)
     .where('accountType', 'is not', null)
+    .where('ab.auditId', '=', auditId)
     .groupBy('accountType')
     .execute();
   const rows = originalRows.map((row) => ({
@@ -451,6 +452,10 @@ async function autoClassifyCOARows(
       accountType = 'LIABILITY_ACCOUNTS_PAYABLE';
     } else if (key.includes('common stock')) {
       accountType = 'EQUITY_COMMON_STOCK';
+    } else if (key.includes('fixed asset')) {
+      accountType = 'ASSET_PROPERTY_AND_EQUIPMENT';
+    } else if (key.includes('office expense')) {
+      accountType = 'INCOME_STATEMENT_G_AND_A';
     } else {
       remainingRows.push(row);
       continue;
