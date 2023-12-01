@@ -33,7 +33,7 @@
     "mime-types": "2.1.35",
     "mnemonist": "0.39.5",
     "next": "14.0.3",
-    "next-auth": "5.0.0-beta.3",
+    "next-auth": "5.0.0-beta.4",
     "openai": "4.20.1",
     "pg": "8.11.3",
     "picocolors": "1.0.0",
