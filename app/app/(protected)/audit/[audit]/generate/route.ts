@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { NextResponse } from 'next/server';
 
 import { getById as getAuditById } from '@/controllers/audit';
-import { generate } from '@/controllers/audit-output';
+import { generate } from '@/controllers/output/word';
 import { getCurrent } from '@/controllers/session-user';
 
 const { Packer } = require('docx');

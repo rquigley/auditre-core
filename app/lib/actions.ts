@@ -22,7 +22,6 @@ import {
   update as updateAuditById,
 } from '@/controllers/audit';
 import { addDemoData } from '@/controllers/audit-demo';
-import { generate as _generateFinancialStatement } from '@/controllers/audit-output';
 import {
   create as _createDocument,
   deleteDocument as _deleteDocument,
@@ -290,18 +289,6 @@ export async function getPresignedUploadUrl({
     key,
     bucket,
   };
-}
-
-export async function generateFinancialStatement(auditId: AuditId) {
-  const { user } = await getCurrent();
-  if (!user) {
-    throw new UnauthorizedError();
-  }
-  const audit = await getAuditById(auditId);
-  if (audit.orgId !== user.orgId) {
-    throw new UnauthorizedError();
-  }
-  await _generateFinancialStatement(auditId);
 }
 
 export async function extractAccountMapping(auditId: AuditId) {

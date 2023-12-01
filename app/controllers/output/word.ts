@@ -5,14 +5,14 @@ import {
   buildStatementOfOperations,
   BuildTableRowArgs,
   tableMap,
-} from './financial-statement/table';
+} from '../financial-statement/table';
 import {
   getOrganizationSections,
   getPolicySections,
   sectionsToBody,
-} from './financial-statement/template';
+} from '../financial-statement/template';
 
-import type { Template } from './financial-statement/template';
+import type { Template } from '../financial-statement/template';
 import type { AuditId } from '@/types';
 
 const {
