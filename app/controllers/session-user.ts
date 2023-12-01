@@ -29,7 +29,6 @@ export async function _getCurrent(): Promise<
 > {
   const session = await auth();
   if (session) {
-    // @ts-expect-error
     const userId: UserId | undefined = session?.user?.id;
     if (userId) {
       const user = await getByIdCached(userId);
