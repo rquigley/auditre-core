@@ -21,11 +21,10 @@ describe('User Controller', () => {
     it('should create a new user', async () => {
       const email = `newuser${Date.now().toString()}@example.com`;
       const newUser = {
-        orgId: testOrgId,
         name: 'New User',
         email,
       };
-      const createdUser = await createUser(newUser);
+      const createdUser = await createUser(testOrgId, newUser);
       expect(createdUser.name).toBe(newUser.name);
       expect(createdUser.email).toBe(newUser.email);
     });
@@ -33,8 +32,7 @@ describe('User Controller', () => {
 
   describe('getById', () => {
     it('should get a user by id', async () => {
-      const testUser = await createUser({
-        orgId: testOrgId,
+      const testUser = await createUser(testOrgId, {
         name: 'New User',
         email: `newuser${Date.now().toString()}@example.com`,
       });
@@ -47,8 +45,7 @@ describe('User Controller', () => {
 
   describe('update', () => {
     it('should update a user', async () => {
-      const testUser = await createUser({
-        orgId: testOrgId,
+      const testUser = await createUser(testOrgId, {
         name: 'New User',
         email: `newuser${Date.now().toString()}@example.com`,
       });
