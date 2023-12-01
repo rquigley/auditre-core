@@ -2,6 +2,8 @@ import { normalizeRequestData } from '../request-data';
 
 import type { DataObj } from '../request-data';
 
+// TODO: these are broken since we're now doing validation against
+// requestTypes in normalizeRequestData.
 describe('normalizeRequestData', () => {
   const defaultValues = {
     foo: 'default foo value',
@@ -21,9 +23,9 @@ describe('normalizeRequestData', () => {
 
   it('should return data when all fields are initialized', () => {
     const data: Array<DataObj> = [
-      { requestId: 'foo', data: { value: 'foo value' }, documentIds: [] },
-      { requestId: 'bar', data: { value: 'bar value' }, documentIds: [] },
-      { requestId: 'baz', data: { value: 'baz value' }, documentIds: [] },
+      { requestId: 'foo', data: { value: 'foo value' } },
+      { requestId: 'bar', data: { value: 'bar value' } },
+      { requestId: 'baz', data: { value: 'baz value' } },
     ];
     const { data: normalizedData } = normalizeRequestData(
       'some-rt',
@@ -39,8 +41,8 @@ describe('normalizeRequestData', () => {
 
   it('should return default values for uninitialized fields', () => {
     const data: Array<DataObj> = [
-      { requestId: 'foo', data: { value: 'foo value' }, documentIds: [] },
-      { requestId: 'baz', data: { value: 'baz value' }, documentIds: [] },
+      { requestId: 'foo', data: { value: 'foo value' } },
+      { requestId: 'baz', data: { value: 'baz value' } },
     ];
     const { data: normalizedData, uninitializedFields } = normalizeRequestData(
       'some-rt',
@@ -57,13 +59,12 @@ describe('normalizeRequestData', () => {
 
   it('should return documentIds for fields with documentIds data', () => {
     const data: Array<DataObj> = [
-      { requestId: 'foo', data: { value: 'foo value' }, documentIds: [] },
+      { requestId: 'foo', data: { value: 'foo value' } },
       {
         requestId: 'bar',
-        data: { value: 'bar value' },
-        documentIds: ['doc1', 'doc2'],
+        data: { isDocuments: true, documentIds: ['doc1', 'doc2'] },
       },
-      { requestId: 'baz', data: { value: 'baz value' }, documentIds: [] },
+      { requestId: 'baz', data: { value: 'baz value' } },
     ];
     const { data: normalizedData } = normalizeRequestData(
       'some-rt',
