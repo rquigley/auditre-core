@@ -151,9 +151,10 @@ export async function getAllAccountBalancesByAuditId(
       'ab.accountMappingId',
       'am.accountName as mappedToAccountName',
       'am.accountType',
-      'credit',
-      'debit',
-      'currency',
+      'ab.credit',
+      'ab.debit',
+      sql`ab.debit - ab.credit`.as('balance'),
+      'ab.currency',
       'ab.context',
     ])
     .where('ab.auditId', '=', auditId);
@@ -682,6 +683,7 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
       (row[colIdxs.debitColumnIdx] === '' &&
         row[colIdxs.creditColumnIdx] === '') ||
       // Naive, but we want ultimately want to ignore any type of total
+      String(accountNumber)?.toUpperCase() === 'TOTAL' ||
       String(accountName)?.toUpperCase() === 'TOTAL'
     ) {
       continue;

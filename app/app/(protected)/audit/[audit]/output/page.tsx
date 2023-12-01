@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getByIdForClientCached } from '@/controllers/audit';
 import { getAllByAuditId } from '@/controllers/document';
 import { getCurrent } from '@/controllers/session-user';
-import { GenerateFinancialStatementButton } from './generate-financial-statement-button';
+import { GenerateDocButton, GenerateExcelButton } from './generate-button';
 import Row from './row';
 
 export default async function AuditPage({
@@ -24,12 +24,13 @@ export default async function AuditPage({
 
   return (
     <div className="m-5">
-      <div className="mt-4 flex">
-        <GenerateFinancialStatementButton auditId={audit.id} />
+      <div className="mt-4 flex space-x-4">
+        <GenerateDocButton auditId={audit.id} />
+        <GenerateExcelButton auditId={audit.id} />
       </div>
 
       <div className="mt-4">
-        <div className="font-lg border-b pb-1 mb-3">Documents</div>
+        <div className="font-lg border-b pb-1 mb-3">Source Documents</div>
         {documents.map((document) => (
           <div key={document.id}>
             <Row auditId={audit.id} document={document} />
