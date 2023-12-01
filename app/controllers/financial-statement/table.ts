@@ -12,7 +12,7 @@ import type { AuditData } from '../audit-output';
 
 export type BuildTableRowArgs = {
   name: string;
-  value?: string;
+  value?: string | number;
   bold?: boolean;
   indent?: boolean;
   padTop?: boolean;
@@ -375,7 +375,9 @@ export function buildPropertyAndEquipmentLives(data: AuditData) {
   ];
 }
 
-export async function buildPropertyAndEquipmentNet(data: AuditData) {
+export async function buildPropertyAndEquipmentNet(
+  data: AuditData,
+): Promise<BuildTableRowArgs[]> {
   const assetCategoriesStr = data.trialBalance.fixedAssetCategories;
   let assetCategories: string[];
   try {
