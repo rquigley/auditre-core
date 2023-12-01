@@ -9,7 +9,8 @@
     "reset": "node bin/db-reset.js",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest"
+    "test": "jest",
+    "ts": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.456.0",
