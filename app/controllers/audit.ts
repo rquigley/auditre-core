@@ -86,8 +86,11 @@ export async function getAllByOrgId(
       'audit-info',
       'year',
     );
-    // @ts-expect-error
-    const year = yearRes?.data?.value as string | '';
+
+    let year = '';
+    if (yearRes && yearRes.data && 'value' in yearRes.data) {
+      year = (yearRes?.data?.value as string) || '';
+    }
     const statuses = await getStatusesForAuditId(audit.id);
     ret.push({
       ...audit,
@@ -103,10 +106,6 @@ export async function getAllByOrgId(
     });
   }
   return ret;
-}
-
-export async function getAll(): Promise<Audit[]> {
-  return await db.selectFrom('audit').selectAll().execute();
 }
 
 export async function update(id: AuditId, updateWith: AuditUpdate) {
