@@ -6,9 +6,9 @@ import {
   getAccountsForCategory,
 } from '@/controllers/account-mapping';
 import { groupFixedAccountsByCategories } from '@/lib/finance';
-import { addFP, getLastDayOfMonth, getMonthName } from '@/lib/util';
+import { addFP } from '@/lib/util';
 
-import type { AuditData } from '../audit-output';
+import type { AuditData } from '../audit';
 
 export type BuildTableRowArgs = {
   name: string;

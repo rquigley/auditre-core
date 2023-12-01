@@ -2,8 +2,7 @@ import clsx from 'clsx';
 import dedent from 'dedent';
 import { notFound } from 'next/navigation';
 
-import { getByIdForClientCached } from '@/controllers/audit';
-import { getAuditData } from '@/controllers/audit-output';
+import { getAuditData, getByIdForClientCached } from '@/controllers/audit';
 import {
   buildBalanceSheet,
   buildStatementOfOperations,
@@ -20,7 +19,7 @@ import DataModal from './data-modal';
 import { ShowChangesToggle } from './show-changes-toggle';
 import { ViewDataButton } from './view-data-button';
 
-import type { AuditData } from '@/controllers/audit-output';
+import type { AuditData } from '@/controllers/audit';
 import type { Section } from '@/controllers/financial-statement/template';
 
 export default async function AuditPage({

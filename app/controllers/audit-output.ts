@@ -1,42 +1,27 @@
-import { getBalancesByAccountType } from '@/controllers/account-mapping';
-import { getById as getAuditById } from '@/controllers/audit';
-import {
-  getAiDataForDocumentId,
-  getAllByAuditId as getAllDocumentsByAuditId,
-} from '@/controllers/document';
-import { getDataForAuditId } from '@/controllers/request-data';
-import {
-  getLastDayOfMonth,
-  getMonthName,
-  kebabToCamel,
-  ppCurrency,
-} from '@/lib/util';
+import { AuditData, getAuditData } from '@/controllers/audit';
+import { ppCurrency } from '@/lib/util';
 import {
   buildBalanceSheet,
   buildStatementOfOperations,
   BuildTableRowArgs,
-  normalizeBalanceSheet,
-  normalizeStatementOfOps,
   tableMap,
 } from './financial-statement/table';
-import * as t from './financial-statement/template';
+import {
+  getOrganizationSections,
+  getPolicySections,
+  sectionsToBody,
+} from './financial-statement/template';
 
-import type { AuditId, DocumentId } from '@/types';
+import type { Template } from './financial-statement/template';
+import type { AuditId } from '@/types';
 
 const {
-  // import {
   AlignmentType,
-  // Border,
   BorderStyle,
   convertInchesToTwip,
   Document,
-  // File,
   Footer,
-  // Header,
   HeadingLevel,
-  // LevelFormat,
-  // NumberFormat,
-  // Packer,
   PageBreak,
   PageNumber,
   Paragraph,
@@ -45,80 +30,12 @@ const {
   TableCell,
   TableOfContents,
   TableRow,
-  // TextDirection,
   TextRun,
   UnderlineType,
   VerticalAlign,
   WidthType,
   HeightRule,
-  // } from 'docx';
 } = require('docx');
-
-export type AuditData = Record<string, any>;
-//  & {
-//   balanceSheet: ReturnType<typeof getBalanceSheetData>;
-// };
-export async function getAuditData(auditId: AuditId): Promise<AuditData> {
-  const requestData = await getDataForAuditId(auditId);
-  const documents = await getAllDocumentsByAuditId(auditId);
-
-  let aiData: Record<string, Record<string, string | undefined>> = {};
-  for (const document of documents) {
-    aiData[document.id] = await getAiDataForDocumentId(document.id);
-  }
-
-  const data: Record<string, unknown> = {
-    auditId,
-  };
-  for (const [key, fields] of Object.entries(requestData)) {
-    let fieldsData = fields.data;
-    for (const [field, fieldVal] of Object.entries(fieldsData)) {
-      if (fields.form[field].input === 'fileupload') {
-        // @ts-expect-error
-        const documentIds = fieldVal?.documentIds as DocumentId[];
-        documentIds.forEach((id) => {
-          fieldsData = {
-            ...fieldsData,
-            ...aiData[id],
-          };
-        });
-      }
-    }
-    data[kebabToCamel(key)] = fieldsData;
-  }
-
-  const totals = await getBalancesByAccountType(auditId);
-  data.totals = totals;
-
-  data.balanceSheet = normalizeBalanceSheet(totals);
-  data.statementOfOps = normalizeStatementOfOps(totals);
-
-  data.fiscalYearEndParts = {
-    md: `${getMonthName(
-      // @ts-expect-error
-      data.auditInfo.fiscalYearMonthEnd,
-    )} ${getLastDayOfMonth(
-      // @ts-expect-error
-      data.auditInfo.fiscalYearMonthEnd,
-      // @ts-expect-error
-      data.auditInfo.year,
-    )}`,
-    // @ts-expect-error
-    y: data.auditInfo.year,
-  };
-  data.fiscalYearEnd = `${getMonthName(
-    // @ts-expect-error
-    data.auditInfo.fiscalYearMonthEnd,
-  )} ${getLastDayOfMonth(
-    // @ts-expect-error
-    data.auditInfo.fiscalYearMonthEnd,
-    // @ts-expect-error
-    data.auditInfo.year,
-    // @ts-expect-error
-  )}, ${data.auditInfo.year}`;
-
-  return data;
-}
 
 export async function generate(auditId: AuditId) {
   //const audit = await getAuditById(auditId);
@@ -338,6 +255,36 @@ function consolidatedStatementOfOperations(data: AuditData) {
   };
 }
 
+async function notes(data: AuditData) {
+  return {
+    ...getPageProperties(),
+
+    children: [
+      new Paragraph({
+        text: '1. Organization',
+        heading: HeadingLevel.HEADING_1,
+        pageBreakBefore: true,
+      }),
+
+      ...(await sectionsToBody(
+        getOrganizationSections(),
+        data,
+        templateToParagraph,
+      )),
+
+      new Paragraph({
+        text: '',
+      }),
+      new Paragraph({
+        text: '2. Summary of Significant Accounting Policies',
+        heading: HeadingLevel.HEADING_1,
+      }),
+
+      ...(await sectionsToBody(getPolicySections(), data, templateToParagraph)),
+    ],
+  };
+}
+
 function buildTable(arr: BuildTableRowArgs[]) {
   const table = new Table({
     borders: {
@@ -503,7 +450,7 @@ function formatBodyText(text: string): (typeof TextRun)[] {
 }
 
 async function templateToParagraph(
-  template: t.Template & { pageBreakBefore?: boolean; data: AuditData },
+  template: Template & { pageBreakBefore?: boolean; data: AuditData },
 ): Promise<Array<unknown>> {
   const ret = [
     new Paragraph({
@@ -526,38 +473,4 @@ async function templateToParagraph(
   });
 
   return ret;
-}
-
-async function notes(data: AuditData) {
-  return {
-    ...getPageProperties(),
-
-    children: [
-      new Paragraph({
-        text: '1. Organization',
-        heading: HeadingLevel.HEADING_1,
-        pageBreakBefore: true,
-      }),
-
-      ...(await t.sectionsToBody(
-        t.getOrganizationSections(),
-        data,
-        templateToParagraph,
-      )),
-
-      new Paragraph({
-        text: '',
-      }),
-      new Paragraph({
-        text: '2. Summary of Significant Accounting Policies',
-        heading: HeadingLevel.HEADING_1,
-      }),
-
-      ...(await t.sectionsToBody(
-        t.getPolicySections(),
-        data,
-        templateToParagraph,
-      )),
-    ],
-  };
 }
