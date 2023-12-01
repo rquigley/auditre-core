@@ -29,6 +29,7 @@
     "dedent": "1.5.1",
     "docx": "8.2.4",
     "encoding": "0.1.13",
+    "exceljs": "4.4.0",
     "kysely": "0.26.3",
     "mime-types": "2.1.35",
     "mnemonist": "0.39.5",
