@@ -5,6 +5,8 @@ import { getById as getAuditById } from '@/controllers/audit';
 import { generate } from '@/controllers/output/excel';
 import { getCurrent } from '@/controllers/session-user';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: Request,
   {
