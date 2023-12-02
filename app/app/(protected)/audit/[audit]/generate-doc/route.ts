@@ -5,6 +5,8 @@ import { getById as getAuditById } from '@/controllers/audit';
 import { generate } from '@/controllers/output/word';
 import { getCurrent } from '@/controllers/session-user';
 
+export const dynamic = 'force-dynamic';
+
 const { Packer } = require('docx');
 
 export async function GET(
