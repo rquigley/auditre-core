@@ -6,6 +6,7 @@ import {
 import { getByIdForClientCached } from '@/controllers/audit';
 import { getKV } from '@/controllers/kv';
 import { extractAccountMapping } from '@/lib/actions';
+import { groupAccountTypes } from '@/lib/finance';
 import { AccountMapping } from './account-mapping';
 import { StatusSpinner } from './status-spinner';
 
@@ -95,29 +96,4 @@ export async function ChartOfAccounts({ auditId }: { auditId: AuditId }) {
       </form>
     </div>
   );
-}
-
-function groupAccountTypes(
-  types: Record<string, string>,
-): Record<string, Record<string, string>> {
-  const grouped: Record<string, Record<string, any>> = {
-    Asset: {},
-    Liability: {},
-    Equity: {},
-    'Income Statement': {},
-  };
-
-  for (const key in types) {
-    if (key.startsWith('ASSET_')) {
-      grouped.Asset[key] = types[key];
-    } else if (key.startsWith('LIABILITY_')) {
-      grouped.Liability[key] = types[key];
-    } else if (key.startsWith('EQUITY_')) {
-      grouped.Equity[key] = types[key];
-    } else if (key.startsWith('INCOME_STATEMENT_')) {
-      grouped['Income Statement'][key] = types[key];
-    }
-  }
-
-  return grouped;
 }
