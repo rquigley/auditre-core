@@ -120,7 +120,8 @@ export function normalizeBalanceSheet(t: AccountMap) {
   } as const;
 }
 
-export function buildBalanceSheet(data: AuditData) {
+export async function buildBalanceSheet(data: AuditData) {
+  const balanceSheet = normalizeBalanceSheet(data.totals);
   return [
     {
       name: `As of ${data.fiscalYearEndParts.md},`,
@@ -139,58 +140,58 @@ export function buildBalanceSheet(data: AuditData) {
     },
     {
       name: 'Cash',
-      value: data.balanceSheet.assets.currentAssets.cash,
+      value: balanceSheet.assets.currentAssets.cash,
       indent: true,
     },
     {
       name: 'Inventory',
-      value: data.balanceSheet.assets.currentAssets.inventory,
+      value: balanceSheet.assets.currentAssets.inventory,
       indent: true,
       hideIfZero: true,
     },
     {
       name: 'Prepaid expenses',
-      value: data.balanceSheet.assets.currentAssets.prepaidExpenses,
+      value: balanceSheet.assets.currentAssets.prepaidExpenses,
       indent: true,
       hideIfZero: true,
     },
     {
       name: 'Prepaid expenses and other current assets',
-      value: data.balanceSheet.assets.currentAssets.other,
+      value: balanceSheet.assets.currentAssets.other,
       indent: true,
       borderBottom: true,
       hideIfZero: true,
     },
     {
       name: 'Total current assets',
-      value: data.balanceSheet.assets.totalCurrentAssets,
+      value: balanceSheet.assets.totalCurrentAssets,
       borderBottom: true,
       padTop: true,
     },
     {
       name: 'Property and equipment, net',
-      value: data.balanceSheet.assets.property,
+      value: balanceSheet.assets.property,
       hideIfZero: true,
     },
     {
       name: 'Intangible assets, net',
-      value: data.balanceSheet.assets.intangible,
+      value: balanceSheet.assets.intangible,
       hideIfZero: true,
     },
     {
       name: 'Operating lease right-of-use assets',
-      value: data.balanceSheet.assets.operatingLeaseRightOfUse,
+      value: balanceSheet.assets.operatingLeaseRightOfUse,
       hideIfZero: true,
     },
     {
       name: 'Other assets',
-      value: data.balanceSheet.assets.other,
+      value: balanceSheet.assets.other,
       borderBottom: true,
       hideIfZero: true,
     },
     {
       name: 'Total assets',
-      value: data.balanceSheet.assets.total,
+      value: balanceSheet.assets.total,
       bold: true,
       borderBottom: true,
       padTop: true,
@@ -207,65 +208,65 @@ export function buildBalanceSheet(data: AuditData) {
     },
     {
       name: 'Accounts payable',
-      value: data.balanceSheet.liabilities.current.accountsPayable,
+      value: balanceSheet.liabilities.current.accountsPayable,
       indent: true,
       hideIfZero: true,
     },
     {
       name: 'Accrued liabilities',
-      value: data.balanceSheet.liabilities.current.accrued,
+      value: balanceSheet.liabilities.current.accrued,
       indent: true,
       hideIfZero: true,
     },
     {
       name: 'Deferred revenue',
-      value: data.balanceSheet.liabilities.current.deferredRevenue,
+      value: balanceSheet.liabilities.current.deferredRevenue,
       indent: true,
       hideIfZero: true,
     },
     {
       name: 'Operating lease liabilities, current',
-      value: data.balanceSheet.liabilities.current.operatingLease,
+      value: balanceSheet.liabilities.current.operatingLease,
       indent: true,
       borderBottom: true,
       hideIfZero: true,
     },
     {
       name: 'Other',
-      value: data.balanceSheet.liabilities.current.other,
+      value: balanceSheet.liabilities.current.other,
       indent: true,
       hideIfZero: true,
     },
     {
       name: 'Total current liabilities',
-      value: data.balanceSheet.liabilities.totalCurrent,
+      value: balanceSheet.liabilities.totalCurrent,
       borderBottom: true,
       padTop: true,
     },
     {
       name: 'Accrued interest',
-      value: data.balanceSheet.liabilities.accruedInterest,
+      value: balanceSheet.liabilities.accruedInterest,
       indent: true,
     },
     {
       name: 'Convertible notes payable',
-      value: data.balanceSheet.liabilities.converableNotes,
+      value: balanceSheet.liabilities.converableNotes,
       indent: true,
     },
     {
       name: 'Debt',
-      value: data.balanceSheet.liabilities.debt,
+      value: balanceSheet.liabilities.debt,
       indent: true,
     },
     {
       name: 'Operating lease liabilities, net of current portion',
-      value: data.balanceSheet.liabilities.operatingLease,
+      value: balanceSheet.liabilities.operatingLease,
       indent: true,
       borderBottom: true,
     },
     {
       name: 'Total liabilities',
-      value: data.balanceSheet.liabilities.total,
+      value: balanceSheet.liabilities.total,
       bold: true,
       borderBottom: true,
       padTop: true,
@@ -277,45 +278,45 @@ export function buildBalanceSheet(data: AuditData) {
     },
     {
       name: 'Preferred stock',
-      value: data.balanceSheet.equity.preferredStock,
+      value: balanceSheet.equity.preferredStock,
       indent: true,
       hideIfZero: true,
     },
     {
       name: 'Common stock',
-      value: data.balanceSheet.equity.commonStock,
+      value: balanceSheet.equity.commonStock,
       indent: true,
       hideIfZero: true,
     },
     {
       name: 'Paid-in capital',
-      value: data.balanceSheet.equity.paidInCapital,
+      value: balanceSheet.equity.paidInCapital,
       indent: true,
       hideIfZero: true,
     },
     {
       name: 'Retained earnings',
-      value: data.balanceSheet.equity.retainedEarnings,
+      value: balanceSheet.equity.retainedEarnings,
       indent: true,
       hideIfZero: true,
     },
     {
       name: 'Accumulated deficit',
-      value: data.balanceSheet.equity.accumulatedDeficit,
+      value: balanceSheet.equity.accumulatedDeficit,
       indent: true,
       borderBottom: true,
       hideIfZero: true,
     },
     {
       name: 'Total stockholders’ deficit',
-      value: data.balanceSheet.totalStockholdersDeficit,
+      value: balanceSheet.totalStockholdersDeficit,
       bold: true,
       borderBottom: true,
       padTop: true,
     },
     {
       name: 'Total liabilities and stockholders’ deficit',
-      value: data.balanceSheet.totalLiabilitiesAndStockholdersDeficit,
+      value: balanceSheet.totalLiabilitiesAndStockholdersDeficit,
       bold: true,
       borderBottom: true,
       padTop: true,
@@ -439,7 +440,9 @@ export async function buildPropertyAndEquipmentNet(
   ];
 }
 
-export function buildStatementOfOperations(data: AuditData) {
+export async function buildStatementOfOperations(data: AuditData) {
+  const statementOfOps = normalizeStatementOfOps(data.totals);
+
   return [
     {
       name: `As of ${data.fiscalYearEndParts.md},`,
@@ -453,43 +456,43 @@ export function buildStatementOfOperations(data: AuditData) {
     },
     {
       name: 'Research and development',
-      value: data.statementOfOps.opEx.rAndD,
+      value: statementOfOps.opEx.rAndD,
       indent: true,
     },
     {
       name: 'General and administrative',
-      value: data.statementOfOps.opEx.gAndA,
+      value: statementOfOps.opEx.gAndA,
       indent: true,
     },
     {
       name: 'Total operating expenses',
-      value: data.statementOfOps.totalOpEx,
+      value: statementOfOps.totalOpEx,
       indent: true,
     },
     {
       name: 'Loss from operations',
-      value: data.statementOfOps.lossFromOps,
+      value: statementOfOps.lossFromOps,
     },
     {
       name: 'Other income (expense), net:',
     },
     {
       name: 'Interest expense, net',
-      value: data.statementOfOps.otherIncomeExpenseNet.interestExpenseNet,
+      value: statementOfOps.otherIncomeExpenseNet.interestExpenseNet,
       indent: true,
     },
     {
       name: 'Other income, net',
-      value: data.statementOfOps.otherIncomeExpenseNet.otherIncomeNet,
+      value: statementOfOps.otherIncomeExpenseNet.otherIncomeNet,
       indent: true,
     },
     {
       name: 'Total other income (expense), net',
-      value: data.statementOfOps.totalOtherIncomeExpenseNet,
+      value: statementOfOps.totalOtherIncomeExpenseNet,
     },
     {
       name: 'Net loss',
-      value: data.statementOfOps.netLoss,
+      value: statementOfOps.netLoss,
     },
   ];
 }

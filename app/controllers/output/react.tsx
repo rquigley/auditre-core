@@ -56,7 +56,7 @@ export async function AuditPreview({
       >
         <h2 className="text-lg font-bold">1. Consolidated Balance Sheet</h2>
 
-        {buildTable(buildBalanceSheet(data))}
+        {buildTable(await buildBalanceSheet(data))}
       </div>
 
       <div
@@ -67,7 +67,7 @@ export async function AuditPreview({
           2. Consolidated Statement of Operations
         </h2>
 
-        {buildTable(buildStatementOfOperations(data))}
+        {buildTable(await buildStatementOfOperations(data))}
       </div>
 
       <div

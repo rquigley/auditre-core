@@ -158,8 +158,8 @@ export async function generate(auditId: AuditId) {
       titlePage(data),
       tableOfContents(),
       independentAuditorsReport(data),
-      consolidatedFinancialStatements(data),
-      consolidatedStatementOfOperations(data),
+      await consolidatedFinancialStatements(data),
+      await consolidatedStatementOfOperations(data),
       await notes(data),
     ],
   });
@@ -225,7 +225,7 @@ function independentAuditorsReport(data: AuditData) {
   };
 }
 
-function consolidatedFinancialStatements(data: AuditData) {
+async function consolidatedFinancialStatements(data: AuditData) {
   return {
     ...getPageProperties(),
 
@@ -235,12 +235,12 @@ function consolidatedFinancialStatements(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
-      buildTable(buildBalanceSheet(data)),
+      buildTable(await buildBalanceSheet(data)),
     ],
   };
 }
 
-function consolidatedStatementOfOperations(data: AuditData) {
+async function consolidatedStatementOfOperations(data: AuditData) {
   return {
     ...getPageProperties(),
 
@@ -250,7 +250,7 @@ function consolidatedStatementOfOperations(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
-      buildTable(buildStatementOfOperations(data)),
+      buildTable(await buildStatementOfOperations(data)),
     ],
   };
 }

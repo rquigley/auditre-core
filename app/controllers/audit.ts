@@ -9,10 +9,6 @@ import { getDataForAuditId } from '@/controllers/request-data';
 import { db } from '@/lib/db';
 import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
 import {
-  normalizeBalanceSheet,
-  normalizeStatementOfOps,
-} from './financial-statement/table';
-import {
   getDataForRequestAttribute,
   getStatusesForAuditId,
 } from './request-data';
@@ -164,9 +160,6 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
 
   const totals = await getBalancesByAccountType(auditId);
   data.totals = totals;
-
-  data.balanceSheet = normalizeBalanceSheet(totals);
-  data.statementOfOps = normalizeStatementOfOps(totals);
 
   data.fiscalYearEndParts = {
     md: `${getMonthName(
