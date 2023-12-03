@@ -5,6 +5,7 @@ import { groupAccountTypes } from '@/lib/finance';
 import { isKey } from '@/lib/util';
 import { AuditId } from '@/types';
 import {
+  AccountType,
   accountTypes,
   getAllAccountBalancesByAuditId,
 } from '../account-mapping';
@@ -17,11 +18,15 @@ export async function generate(auditId: AuditId) {
 
   const workbook = new ExcelJS.Workbook();
 
-  await addBalanceSheet(workbook, data);
+  const bsWorksheet = workbook.addWorksheet('Balance Sheet');
 
   const statementOfOperations = workbook.addWorksheet('SOE');
   workbook.addWorksheet('Support---->');
-  await addTrialBalance(workbook, data);
+  const tbWorksheet = workbook.addWorksheet('Trial Balance');
+
+  const accountTypeToCellMap = await addTrialBalance(tbWorksheet, data);
+
+  await addBalanceSheet(bsWorksheet, data, accountTypeToCellMap, tbWorksheet);
 
   return {
     document: workbook,
@@ -29,13 +34,93 @@ export async function generate(auditId: AuditId) {
   };
 }
 
-async function addBalanceSheet(workbook: ExcelJS.Workbook, data: AuditData) {
-  const ws = workbook.addWorksheet('Balance Sheet');
+async function addBalanceSheet(
+  ws: ExcelJS.Worksheet,
+  data: AuditData,
+  accountTypeToCellMap: Map<AccountType, string>,
+  bsWorksheet: ExcelJS.Worksheet,
+) {
+  ws.addRow([data.basicInfo.businessName]);
+  ws.addRow(['Consolidated Balance Sheet']);
+  ws.addRow([`As of ${data.fiscalYearEnd}`]);
+  ws.addRow([]);
+  ws.addRow([]);
+
+  ws.columns = [
+    { key: 'account', width: 50 },
+    {
+      width: 1,
+      // style: {
+      //   fill: {
+      //     type: 'pattern',
+      //     pattern: 'solid',
+      //     // fgColor: { argb: 'FFDDDDDD' },
+      //   },
+      // },
+    },
+    { key: 'balance1', width: 20 },
+    {
+      width: 1,
+      // style: {
+      //   fill: {
+      //     type: 'pattern',
+      //     pattern: 'solid',
+      //     fgColor: { argb: 'FFDDDDDD' },
+      //   },
+      // },
+    },
+    { key: 'balance2' },
+  ];
+  const header = ws.addRow(['', '', '(DATE)']);
+  ws.getCell(`B${header.number}`).alignment = { horizontal: 'right' };
+  header.font = { bold: true };
+
+  let r = ws.addRow(['Assets']);
+  r.font = { bold: true };
+  ws.addRow(['Current assets:']);
+  const addRow = (label: string, accountType: AccountType) =>
+    ws.addRow([
+      label,
+      '',
+      {
+        formula: `=SUM('${bsWorksheet.name}'!${accountTypeToCellMap.get(
+          accountType,
+        )})`,
+        result: 7,
+      },
+    ]);
+
+  let r1, r2, rt;
+  r1 = addRow('Cash', 'ASSET_CASH_AND_CASH_EQUIVALENTS');
+  addRow('Inventory', 'ASSET_INVENTORY');
+  addRow('Prepaid expenses', 'ASSET_PREPAID_EXPENSES');
+  r2 = addRow('Prepaid expenses and other current assets', 'ASSET_OTHER');
+  rt = ws.addRow([
+    'Total current assets',
+    '',
+    {
+      formula: `=SUM(${r1.getCell(3).address},${r2.getCell(3).address})`,
+      result: 7,
+    },
+  ]);
+  rt.getCell(1).style = {
+    // font: { bold: true },
+    border: {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+    },
+  };
+  rt.getCell(3).style = {
+    // font: { bold: true },
+    border: {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+    },
+  };
+  // no cents, move up
+  ws.getColumn('balance1').numFmt =
+    '_($* #,##0_);_($* (#,##0);_($* "-"??_);_(@_)';
 }
 
-async function addTrialBalance(workbook: ExcelJS.Workbook, data: AuditData) {
-  const ws = workbook.addWorksheet('Trial Balance');
-
+async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
   ws.addRow([data.basicInfo.businessName]);
   ws.addRow(['Trial Balance']);
   const date = dayjs(data.trialBalance.trialBalanceDate).format('MMMM D, YYYY');
@@ -154,7 +239,7 @@ async function addTrialBalance(workbook: ExcelJS.Workbook, data: AuditData) {
   let curRowNumber = header.number;
 
   const groups = groupAccountTypes(accountTypes);
-
+  const accountTypeToCellMap = new Map<AccountType, string>();
   widths = [10, 20];
   for (const group of Object.keys(groups)) {
     ++curRowNumber;
@@ -168,6 +253,7 @@ async function addTrialBalance(workbook: ExcelJS.Workbook, data: AuditData) {
       ws.getCell(`E${curRowNumber}`).value = types[type];
       widths[0] = Math.max(widths[0], types[type].length);
 
+      accountTypeToCellMap.set(type as AccountType, `F${curRowNumber}`);
       ws.getCell(`F${curRowNumber}`).value = {
         formula: `SUMIFS(B${firstRowNumber}:B${totalRow.number}, C${firstRowNumber}:C${totalRow.number}, "${type}")`,
         result: 7,
@@ -199,4 +285,6 @@ async function addTrialBalance(workbook: ExcelJS.Workbook, data: AuditData) {
   }
   ws.getColumn('totals').width = widths[0] + 2;
   ws.getColumn('totals_balance').width = widths[1];
+
+  return accountTypeToCellMap;
 }
