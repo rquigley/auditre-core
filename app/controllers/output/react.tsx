@@ -102,6 +102,7 @@ export async function AuditPreview({
             data={data}
             highlightData={highlightData}
             key={idx}
+            idx={idx}
           />
         ))}
       </div>
@@ -116,6 +117,7 @@ export async function AuditPreview({
             data={data}
             highlightData={highlightData}
             key={idx}
+            idx={idx}
           />
         ))}
       </div>
@@ -126,16 +128,18 @@ async function DataSection({
   section,
   data,
   highlightData,
+  idx,
 }: {
   section: Section;
   data: AuditData;
   highlightData: boolean;
+  idx: number;
 }) {
   if (!section.isShowing(data)) {
     if (highlightData) {
       return (
         <div
-          id={humanToKebab(section.header)}
+          id={`${idx}-${section.slug}`}
           className="my-4 font-bold text-green-600"
         >
           {section.header} (Not showing)
@@ -189,7 +193,7 @@ async function DataSection({
 
   return (
     <div className="my-4">
-      <div id={humanToKebab(section.header)} className="font-bold text-black">
+      <div id={`${idx}-${section.slug}`} className="font-bold text-black">
         {section.header}
       </div>
       <div className="text-gray-700">{output}</div>
@@ -296,6 +300,7 @@ function TableOfContents({
       {orgSettings.map((section, idx) => (
         <ToCLink
           key={idx}
+          idx={idx}
           section={section}
           data={data}
           highlightData={highlightData}
@@ -310,6 +315,7 @@ function TableOfContents({
       {policySettings.map((section, idx) => (
         <ToCLink
           key={idx}
+          idx={idx}
           section={section}
           data={data}
           highlightData={highlightData}
@@ -320,10 +326,12 @@ function TableOfContents({
 }
 
 function ToCLink({
+  idx,
   section,
   data,
   highlightData,
 }: {
+  idx: number;
   section: Section;
   data: AuditData;
   highlightData: boolean;
@@ -332,7 +340,7 @@ function ToCLink({
     if (highlightData) {
       return (
         <a
-          href={`#${humanToKebab(section.header)}`}
+          href={`#${idx}-${section.slug}`}
           className="ml-4 block  text-green-600 underline hover:no-underline"
         >
           {section.header} (Not showing)
@@ -344,7 +352,7 @@ function ToCLink({
   }
   return (
     <a
-      href={`#${humanToKebab(section.header)}`}
+      href={`#${idx}-${section.slug}`}
       className="ml-4 block text-slate-700 underline hover:no-underline"
     >
       {section.header}
