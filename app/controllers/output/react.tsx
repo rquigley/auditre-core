@@ -255,11 +255,11 @@ function buildTableRow(row: Row): React.ReactNode {
         const styles = clsx({
           'font-bold': cell.style.bold,
           // Bug in Tailwind: specific borders don't map
-          'border-b border-b-slate-800': cell.style.borderBottom === 'single',
-          'border-b border-double border-b-2 border-b-slate-800':
+          'border-b border-b-slate-600': cell.style.borderBottom === 'single',
+          'border-b border-double border-b-2 border-b-slate-600':
             cell.style.borderBottom === 'double',
-          'border-t border-t-slate-800': cell.style.borderTop === 'single',
-          'border-t border-double border-t-slate-800':
+          'border-t border-t-slate-600': cell.style.borderTop === 'single',
+          'border-t border-double border-t-slate-600':
             cell.style.borderTop === 'double',
           'pl-4': cell.style.indent,
           'pt-2': cell.style.padTop,
