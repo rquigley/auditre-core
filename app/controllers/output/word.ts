@@ -3,7 +3,6 @@ import { ppCurrency } from '@/lib/util';
 import {
   buildBalanceSheet,
   buildStatementOfOperations,
-  BuildTableRowArgs,
   tableMap,
 } from '../financial-statement/table';
 import {
@@ -13,6 +12,7 @@ import {
 } from '../financial-statement/template';
 
 import type { Template } from '../financial-statement/template';
+import type { Row as ARRow, Table as ARTable } from '@/lib/table';
 import type { AuditId } from '@/types';
 
 const {
@@ -38,7 +38,6 @@ const {
 } = require('docx');
 
 export async function generate(auditId: AuditId) {
-  //const audit = await getAuditById(auditId);
   const data = await getAuditData(auditId);
 
   const document = new Document({
@@ -158,8 +157,8 @@ export async function generate(auditId: AuditId) {
       titlePage(data),
       tableOfContents(),
       independentAuditorsReport(data),
-      consolidatedFinancialStatements(data),
-      consolidatedStatementOfOperations(data),
+      await consolidatedFinancialStatements(data),
+      await consolidatedStatementOfOperations(data),
       await notes(data),
     ],
   });
@@ -225,7 +224,7 @@ function independentAuditorsReport(data: AuditData) {
   };
 }
 
-function consolidatedFinancialStatements(data: AuditData) {
+async function consolidatedFinancialStatements(data: AuditData) {
   return {
     ...getPageProperties(),
 
@@ -235,12 +234,12 @@ function consolidatedFinancialStatements(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
-      buildTable(buildBalanceSheet(data)),
+      buildTable(await buildBalanceSheet(data)),
     ],
   };
 }
 
-function consolidatedStatementOfOperations(data: AuditData) {
+async function consolidatedStatementOfOperations(data: AuditData) {
   return {
     ...getPageProperties(),
 
@@ -250,7 +249,7 @@ function consolidatedStatementOfOperations(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
-      buildTable(buildStatementOfOperations(data)),
+      buildTable(await buildStatementOfOperations(data)),
     ],
   };
 }
@@ -285,106 +284,98 @@ async function notes(data: AuditData) {
   };
 }
 
-function buildTable(arr: BuildTableRowArgs[]) {
-  const table = new Table({
+function buildTable(table: ARTable) {
+  const t = new Table({
     borders: {
       top: { style: BorderStyle.NONE },
       bottom: { style: BorderStyle.NONE },
       left: { style: BorderStyle.NONE },
       right: { style: BorderStyle.NONE },
     },
-    columnWidths: [7505, 1505],
-    rows: arr
-      .map((row: BuildTableRowArgs, idx: number) => {
-        return buildTableRow({
-          ...row,
-          key: idx,
-        });
-      })
-      .filter((x) => x !== null),
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+    rows: table.rows.map((row: ARRow) => buildTableRow(row)),
   });
 
-  return table;
+  return t;
 }
 
-function buildTableRow({
-  name,
-  value,
-  bold,
-  indent,
-  borderBottom,
-  padTop,
-}: BuildTableRowArgs) {
-  const borders = {
-    top: {
-      style: BorderStyle.NONE,
-      size: 1,
-      color: '000000',
-    },
-    bottom: {
-      style: borderBottom ? BorderStyle.SINGLE : BorderStyle.NONE,
-      size: 1,
-      color: '000000',
-    },
-    left: {
-      style: BorderStyle.NONE,
-      size: 1,
-      color: '000000',
-    },
-    right: {
-      style: BorderStyle.NONE,
-      size: 1,
-      color: '#000000',
-    },
-  };
-
-  const rowHeight = padTop
-    ? { value: convertInchesToTwip(0.3), type: HeightRule.EXACT }
-    : undefined;
+function buildTableRow(row: ARRow) {
   return new TableRow({
-    children: [
-      new TableCell({
-        width: {
-          size: 7505,
-          type: WidthType.DXA,
+    children: row.cells.map((cell) => {
+      const borders = {
+        top: {
+          style:
+            cell.style.borderTop === 'single'
+              ? BorderStyle.SINGLE
+              : cell.style.borderTop === 'double'
+                ? BorderStyle.DOUBLE
+                : BorderStyle.NONE,
+          size: 1,
+          color: '000000',
         },
+        bottom: {
+          style:
+            cell.style.borderBottom === 'single'
+              ? BorderStyle.SINGLE
+              : cell.style.borderBottom === 'double'
+                ? BorderStyle.DOUBLE
+                : BorderStyle.NONE,
+          size: 1,
+          color: '000000',
+        },
+        left: {
+          style: BorderStyle.NONE,
+          size: 1,
+          color: '000000',
+        },
+        right: {
+          style: BorderStyle.NONE,
+          size: 1,
+          color: '#000000',
+        },
+      };
+      let value;
+
+      if (typeof cell.value === 'number' && cell.style.numFmt) {
+        if (cell.style.numFmt === 'accounting') {
+          value = ppCurrency(
+            cell.value,
+            false,
+            cell.style.hideCurrency ? false : 'USD',
+          );
+        } else {
+          value = `${cell.style.numFmt} NOT IMPLEMENTED`;
+        }
+      } else {
+        value = cell.value;
+      }
+      return new TableCell({
         children: [
           new Paragraph({
             children: [
               new TextRun({
-                text: `${indent ? '   ' : ''}${name}`,
-                bold,
+                text: `${cell.style.indent ? '   ' : ''}${value}`,
+                bold: cell.style.bold,
               }),
             ],
+            alignment:
+              cell.style.align === 'right'
+                ? AlignmentType.RIGHT
+                : AlignmentType.LEFT,
           }),
         ],
+
         verticalAlign: VerticalAlign.BOTTOM,
         borders,
-      }),
-      new TableCell({
-        width: {
-          size: 1505,
-          type: WidthType.DXA,
-        },
-        children: [
-          new Paragraph({
-            children: [
-              new TextRun({
-                text:
-                  value && typeof value === 'number'
-                    ? ppCurrency(value)
-                    : value,
-                bold,
-              }),
-            ],
-            alignment: AlignmentType.RIGHT,
-          }),
-        ],
-        verticalAlign: VerticalAlign.BOTTOM,
-        borders,
-      }),
-    ],
-    height: rowHeight,
+      });
+    }),
+
+    height: row.style.padTop
+      ? { value: convertInchesToTwip(0.3), type: HeightRule.EXACT }
+      : undefined,
   });
 }
 
@@ -459,7 +450,9 @@ async function templateToParagraph(
       pageBreakBefore: template.pageBreakBefore,
     }),
   ];
-  template.body.split('\n').forEach(async (p) => {
+  const paragraphs = template.body.split('\n');
+
+  for (const p of paragraphs) {
     if (p.startsWith('[TABLE:')) {
       const mapKey = p.match(/\[TABLE:(.*)\]/)?.[1];
       if (!mapKey || mapKey in tableMap === false) {
@@ -470,7 +463,7 @@ async function templateToParagraph(
     } else {
       ret.push(new Paragraph({ children: formatBodyText(p) }));
     }
-  });
+  }
 
   return ret;
 }

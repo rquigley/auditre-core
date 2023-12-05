@@ -144,8 +144,30 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
     },
     { key: 'totals' },
     { key: 'totals_balance' },
+    {
+      width: 3,
+      style: {
+        fill: {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFDDDDDD' },
+        },
+      },
+    },
+    { key: 'account_types' },
+    { key: 'num_accounts' },
   ];
-  const header = ws.addRow(['Account', 'Balance', 'BS Mapping', '', 'Totals']);
+  const header = ws.addRow([
+    'Account',
+    'Balance',
+    'BS Mapping',
+    '',
+    'Totals',
+    '',
+    '',
+    'Account Types',
+    'Num Accounts',
+  ]);
   ws.getCell(`B${header.number}`).alignment = { horizontal: 'right' };
   header.font = { bold: true };
 
@@ -156,46 +178,47 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
     },
   ];
 
-  let widths = [10, 10, 10];
-  let firstRowNumber = 0;
+  let widths = [10, 10];
+  let curRowNumber = header.number;
+  let firstAccountTypeRowNumber = curRowNumber + 1;
+  for (const accountType of Object.keys(accountTypes)) {
+    ++curRowNumber;
+    ws.getCell(`H${curRowNumber}`).value = accountType;
+    widths[0] = Math.max(widths[0], accountType.length);
+    ws.getCell(`I${curRowNumber}`).value = {
+      formula: `=COUNTIF(C:C, "${accountType}")`,
+      result: 7,
+    };
+  }
+  applyBGFormatting(ws, `H${firstAccountTypeRowNumber}:I${curRowNumber}`, 'H');
 
-  // const accountTypeFormula = [
-  //   `"${Object.keys(accountTypes).slice(0, 9).join(',')}"`,
-  // ];
+  let lastAccountTypeRowNumber = curRowNumber;
+  ws.getColumn('account_types').width = widths[0] + 2;
+  ws.getColumn('num_accounts').width = widths[1] + 2;
 
+  widths = [10, 10, 10];
+  curRowNumber = header.number;
+  let firstRowNumber = curRowNumber + 1;
   const accounts = await getAllAccountBalancesByAuditId(data.auditId);
-  accounts.map((a, idx) => {
-    const row = ws.addRow([
-      `${a.accountNumber}${a.accountNumber && a.accountName ? ' - ' : ''}${
-        a.accountName
-      }`,
-      Math.round(Number(a.balance)),
-      a.accountType,
-    ]);
-    if (idx === 0) {
-      firstRowNumber = row.number;
-    }
-    if (!a.accountType) {
-      ws.getCell(`C${row.number}`).style = {
-        fill: {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFFF0000' },
-        },
-      };
-    }
-    // Disabling this for now. There is a limit of 255 characters for the formula
-    // See https://github.com/exceljs/exceljs/issues/2256#issuecomment-1523018123
-    // for a potential solution.
-    // ws.getCell(`D${row.number}`).dataValidation = {
-    //   type: 'list',
-    //   allowBlank: true,
-    //   formulae: accountTypeFormula,
-    //   showErrorMessage: true,
-    //   errorStyle: 'error',
-    //   errorTitle: 'Invalid account type',
-    //   error: 'The value must not be a valid account type',
-    // };
+  for (const a of accounts) {
+    ++curRowNumber;
+    ws.getCell(`A${curRowNumber}`).value = `${a.accountNumber}${
+      a.accountNumber && a.accountName ? ' - ' : ''
+    }${a.accountName}`;
+    ws.getCell(`B${curRowNumber}`).value = Math.round(Number(a.balance));
+    ws.getCell(`C${curRowNumber}`).value = a.accountType;
+
+    ws.getCell(`C${curRowNumber}`).dataValidation = {
+      type: 'list',
+      allowBlank: false,
+      formulae: [
+        `=$H$${firstAccountTypeRowNumber}:$H$${lastAccountTypeRowNumber}`,
+      ],
+      showErrorMessage: true,
+      errorStyle: 'error',
+      errorTitle: 'Invalid account type',
+      error: 'The value must not be a valid account type',
+    };
 
     widths[0] = Math.max(
       widths[0],
@@ -203,7 +226,9 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
     );
     widths[1] = Math.max(widths[1], String(a.balance).length);
     widths[2] = Math.max(widths[2], (a.mappedToAccountName || '').length);
-  });
+  }
+
+  applyBGFormatting(ws, `A${firstRowNumber}:C${curRowNumber}`, 'C');
 
   const totalRow = ws.addRow(['Total', 0]);
   ws.getCell(`B${totalRow.number}`).value = {
@@ -236,8 +261,7 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
   ws.getColumn('balance').width = widths[1] + 4;
   ws.getColumn('bs_mapping').width = widths[2];
 
-  let curRowNumber = header.number;
-
+  curRowNumber = header.number;
   const groups = groupAccountTypes(accountTypes);
   const accountTypeToCellMap = new Map<AccountType, string>();
   widths = [10, 20];
@@ -287,4 +311,48 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
   ws.getColumn('totals_balance').width = widths[1];
 
   return accountTypeToCellMap;
+}
+
+function applyBGFormatting(
+  ws: ExcelJS.Worksheet,
+  range: string,
+  accountTypeCol: string,
+) {
+  const accountTypeBG = {
+    ASSET: 'FFdef5c1',
+    LIABILITY: 'FFc1e0f5',
+    EQUITY: 'FFefd0f7',
+    INCOME: 'FFffefd9',
+
+    UNKNOWN: 'FFeb3d26',
+  } as const;
+  for (const [accountType, bgColor] of Object.entries(accountTypeBG)) {
+    ws.addConditionalFormatting({
+      ref: range,
+      rules: [
+        {
+          type: 'expression',
+          priority: 1,
+
+          formulae: [
+            `=SEARCH("${accountType}", INDIRECT("${accountTypeCol}" & ROW()))`,
+          ],
+
+          style: {
+            fill: {
+              type: 'pattern',
+              pattern: 'solid',
+              bgColor: { argb: bgColor },
+            },
+            font:
+              accountType === 'UNKNOWN'
+                ? {
+                    color: { argb: 'FFffffff' },
+                  }
+                : undefined,
+          },
+        },
+      ],
+    });
+  }
 }
