@@ -6,6 +6,7 @@ import {
   getAccountsForCategory,
 } from '@/controllers/account-mapping';
 import { groupFixedAccountsByCategories } from '@/lib/finance';
+import { Table } from '@/lib/table';
 import { addFP } from '@/lib/util';
 
 import type { AuditData } from '../audit';
@@ -120,208 +121,219 @@ export function normalizeBalanceSheet(t: AccountMap) {
   } as const;
 }
 
-export async function buildBalanceSheet(data: AuditData) {
+export async function buildBalanceSheet(data: AuditData): Promise<Table> {
   const balanceSheet = normalizeBalanceSheet(data.totals);
-  return [
-    {
-      name: `As of ${data.fiscalYearEndParts.md},`,
-      value: data.fiscalYearEndParts.y,
-      bold: true,
-      borderBottom: true,
-    },
-    {
-      name: 'Assets',
-      bold: true,
-      padTop: true,
-    },
-    {
-      name: 'Current assets:',
-      padTop: true,
-    },
-    {
-      name: 'Cash',
-      value: balanceSheet.assets.currentAssets.cash,
-      indent: true,
-    },
-    {
-      name: 'Inventory',
-      value: balanceSheet.assets.currentAssets.inventory,
-      indent: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Prepaid expenses',
-      value: balanceSheet.assets.currentAssets.prepaidExpenses,
-      indent: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Prepaid expenses and other current assets',
-      value: balanceSheet.assets.currentAssets.other,
-      indent: true,
-      borderBottom: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Total current assets',
-      value: balanceSheet.assets.totalCurrentAssets,
-      borderBottom: true,
-      padTop: true,
-    },
-    {
-      name: 'Property and equipment, net',
-      value: balanceSheet.assets.property,
-      hideIfZero: true,
-    },
-    {
-      name: 'Intangible assets, net',
-      value: balanceSheet.assets.intangible,
-      hideIfZero: true,
-    },
-    {
-      name: 'Operating lease right-of-use assets',
-      value: balanceSheet.assets.operatingLeaseRightOfUse,
-      hideIfZero: true,
-    },
-    {
-      name: 'Other assets',
-      value: balanceSheet.assets.other,
-      borderBottom: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Total assets',
-      value: balanceSheet.assets.total,
-      bold: true,
-      borderBottom: true,
-      padTop: true,
-    },
+  let t = new Table();
+  t.columns = [{}, { style: { numFmt: 'accounting' } }, {}];
 
-    {
-      name: 'Liabilities and Stockholders’ Deficit',
-      bold: true,
-      padTop: true,
-    },
-    {
-      name: 'Current liabilities:',
-      padTop: true,
-    },
-    {
-      name: 'Accounts payable',
-      value: balanceSheet.liabilities.current.accountsPayable,
-      indent: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Accrued liabilities',
-      value: balanceSheet.liabilities.current.accrued,
-      indent: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Deferred revenue',
-      value: balanceSheet.liabilities.current.deferredRevenue,
-      indent: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Operating lease liabilities, current',
-      value: balanceSheet.liabilities.current.operatingLease,
-      indent: true,
-      borderBottom: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Other',
-      value: balanceSheet.liabilities.current.other,
-      indent: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Total current liabilities',
-      value: balanceSheet.liabilities.totalCurrent,
-      borderBottom: true,
-      padTop: true,
-    },
-    {
-      name: 'Accrued interest',
-      value: balanceSheet.liabilities.accruedInterest,
-      indent: true,
-    },
-    {
-      name: 'Convertible notes payable',
-      value: balanceSheet.liabilities.converableNotes,
-      indent: true,
-    },
-    {
-      name: 'Debt',
-      value: balanceSheet.liabilities.debt,
-      indent: true,
-    },
-    {
-      name: 'Operating lease liabilities, net of current portion',
-      value: balanceSheet.liabilities.operatingLease,
-      indent: true,
-      borderBottom: true,
-    },
-    {
-      name: 'Total liabilities',
-      value: balanceSheet.liabilities.total,
-      bold: true,
-      borderBottom: true,
-      padTop: true,
-    },
+  let row;
+  row = t.addRow(
+    [`As of ${data.fiscalYearEndParts.md},`, data.fiscalYearEndParts.y],
+    { bold: true, borderBottom: 'single' },
+  );
+  row.cells[1].style = { align: 'right' };
 
-    {
-      name: 'Stockholders’ deficit:',
-      padTop: true,
-    },
-    {
-      name: 'Preferred stock',
-      value: balanceSheet.equity.preferredStock,
-      indent: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Common stock',
-      value: balanceSheet.equity.commonStock,
-      indent: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Paid-in capital',
-      value: balanceSheet.equity.paidInCapital,
-      indent: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Retained earnings',
-      value: balanceSheet.equity.retainedEarnings,
-      indent: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Accumulated deficit',
-      value: balanceSheet.equity.accumulatedDeficit,
-      indent: true,
-      borderBottom: true,
-      hideIfZero: true,
-    },
-    {
-      name: 'Total stockholders’ deficit',
-      value: balanceSheet.totalStockholdersDeficit,
-      bold: true,
-      borderBottom: true,
-      padTop: true,
-    },
-    {
-      name: 'Total liabilities and stockholders’ deficit',
-      value: balanceSheet.totalLiabilitiesAndStockholdersDeficit,
-      bold: true,
-      borderBottom: true,
-      padTop: true,
-    },
-  ];
+  t.addRow(['Assets', ''], {
+    bold: true,
+    borderBottom: 'single',
+    padTop: true,
+  });
+  t.addRow(['Current assets:', ''], { padTop: true });
+
+  row = t.addRow(['Cash', balanceSheet.assets.currentAssets.cash]);
+  row.cells[0].style = { indent: true };
+
+  if (balanceSheet.assets.currentAssets.inventory !== 0) {
+    row = t.addRow(['Inventory', balanceSheet.assets.currentAssets.inventory]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+
+  if (balanceSheet.assets.currentAssets.prepaidExpenses !== 0) {
+    row = t.addRow([
+      'Prepaid expenses',
+      balanceSheet.assets.currentAssets.prepaidExpenses,
+    ]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+
+  if (balanceSheet.assets.currentAssets.other !== 0) {
+    row = t.addRow([
+      'Prepaid expenses and other current assets',
+      balanceSheet.assets.currentAssets.other,
+    ]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+
+  t.addRow(['Total current assets', balanceSheet.assets.totalCurrentAssets], {
+    // padTop: true,
+    borderTop: 'single',
+  });
+  if (balanceSheet.assets.property !== 0) {
+    row = t.addRow([
+      'Property and equipment, net',
+      balanceSheet.assets.property,
+    ]);
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (balanceSheet.assets.intangible !== 0) {
+    row = t.addRow(['Intangible assets, net', balanceSheet.assets.intangible]);
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (balanceSheet.assets.operatingLeaseRightOfUse !== 0) {
+    row = t.addRow([
+      'Operating lease right-of-use assets',
+      balanceSheet.assets.operatingLeaseRightOfUse,
+    ]);
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (balanceSheet.assets.other !== 0) {
+    row = t.addRow(['Other assets', balanceSheet.assets.other]);
+    row.cells[1].style = { hideCurrency: true };
+  }
+  row = t.addRow(['Total assets', balanceSheet.assets.total], {
+    borderTop: 'single',
+    borderBottom: 'double',
+    bold: true,
+    padTop: true,
+  });
+
+  row = t.addRow(['Liabilities and Stockholders’ Deficit', ''], {
+    bold: true,
+    padTop: true,
+  });
+
+  row = t.addRow(['Current liabilities:', ''], { padTop: true });
+
+  if (balanceSheet.liabilities.current.accountsPayable !== 0) {
+    row = t.addRow([
+      'Accounts payable',
+      balanceSheet.liabilities.current.accountsPayable,
+    ]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (balanceSheet.liabilities.current.accrued !== 0) {
+    row = t.addRow([
+      'Accrued liabilities',
+      balanceSheet.liabilities.current.accrued,
+    ]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (balanceSheet.liabilities.current.deferredRevenue !== 0) {
+    row = t.addRow([
+      'Deferred revenue',
+      balanceSheet.liabilities.current.deferredRevenue,
+    ]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+
+  if (balanceSheet.liabilities.current.operatingLease !== 0) {
+    row = t.addRow(
+      [
+        'Operating lease liabilities, current',
+        balanceSheet.liabilities.current.operatingLease,
+      ],
+      { borderBottom: 'single' },
+    );
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (balanceSheet.liabilities.current.other !== 0) {
+    row = t.addRow(['Other', balanceSheet.liabilities.current.other]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  row = t.addRow(
+    ['Total current liabilities', balanceSheet.liabilities.totalCurrent],
+    { borderTop: 'single', borderBottom: 'single' },
+  );
+
+  if (balanceSheet.liabilities.accruedInterest !== 0) {
+    row = t.addRow([
+      'Accrued interest',
+      balanceSheet.liabilities.accruedInterest,
+    ]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (balanceSheet.liabilities.converableNotes !== 0) {
+    row = t.addRow([
+      'Convertible notes payable',
+      balanceSheet.liabilities.converableNotes,
+    ]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+
+  if (balanceSheet.liabilities.debt !== 0) {
+    row = t.addRow(['Debt', balanceSheet.liabilities.debt]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (balanceSheet.liabilities.operatingLease !== 0) {
+    row = t.addRow([
+      'Operating lease liabilities, net of current portion',
+      balanceSheet.liabilities.operatingLease,
+    ]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  row = t.addRow(['Total liabilities', balanceSheet.liabilities.total], {
+    bold: true,
+    padTop: true,
+    borderTop: 'single',
+    borderBottom: 'single',
+  });
+
+  row = t.addRow(['Stockholders’ deficit:', ''], { padTop: true });
+
+  if (balanceSheet.equity.preferredStock !== 0) {
+    row = t.addRow(['Preferred stock', balanceSheet.equity.preferredStock]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+
+  if (balanceSheet.equity.commonStock !== 0) {
+    row = t.addRow(['Common stock', balanceSheet.equity.commonStock]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (balanceSheet.equity.paidInCapital !== 0) {
+    row = t.addRow(['Paid-in capital', balanceSheet.equity.paidInCapital]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (balanceSheet.equity.retainedEarnings !== 0) {
+    row = t.addRow(['Retained earnings', balanceSheet.equity.retainedEarnings]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (balanceSheet.equity.accumulatedDeficit !== 0) {
+    row = t.addRow([
+      'Accumulated deficit',
+      balanceSheet.equity.accumulatedDeficit,
+    ]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  t.addRow(
+    ['Total stockholders’ deficit', balanceSheet.equity.preferredStock],
+    { bold: true, borderTop: 'single', borderBottom: 'single', padTop: true },
+  );
+  t.addRow(
+    [
+      'Total liabilities and stockholders’ deficit',
+      balanceSheet.totalLiabilitiesAndStockholdersDeficit,
+    ],
+    { bold: true, borderBottom: 'double', padTop: true },
+  );
+
+  return t;
 }
 
 export function normalizeStatementOfOps(t: AccountMap) {

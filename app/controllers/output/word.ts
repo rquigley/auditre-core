@@ -13,6 +13,7 @@ import {
 } from '../financial-statement/template';
 
 import type { Template } from '../financial-statement/template';
+import type { Row as ARRow, Table as ARTable } from '@/lib/table';
 import type { AuditId } from '@/types';
 
 const {
@@ -38,7 +39,6 @@ const {
 } = require('docx');
 
 export async function generate(auditId: AuditId) {
-  //const audit = await getAuditById(auditId);
   const data = await getAuditData(auditId);
 
   const document = new Document({
@@ -235,7 +235,7 @@ async function consolidatedFinancialStatements(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
-      buildTable(await buildBalanceSheet(data)),
+      buildTable2(await buildBalanceSheet(data)),
     ],
   };
 }
@@ -305,6 +305,24 @@ function buildTable(arr: BuildTableRowArgs[]) {
   });
 
   return table;
+}
+
+function buildTable2(table: ARTable) {
+  const t = new Table({
+    borders: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+    },
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+    rows: table.rows.map((row: ARRow) => buildTableRow2(row)),
+  });
+
+  return t;
 }
 
 function buildTableRow({
@@ -384,6 +402,86 @@ function buildTableRow({
         borders,
       }),
     ],
+    height: rowHeight,
+  });
+}
+
+function buildTableRow2(row: ARRow) {
+  const borders = {
+    top: {
+      style:
+        row.style.borderTop === 'single'
+          ? BorderStyle.SINGLE
+          : row.style.borderTop === 'double'
+            ? BorderStyle.DOUBLE
+            : BorderStyle.NONE,
+      size: 1,
+      color: '000000',
+    },
+    bottom: {
+      style:
+        row.style.borderBottom === 'single'
+          ? BorderStyle.SINGLE
+          : row.style.borderBottom === 'double'
+            ? BorderStyle.DOUBLE
+            : BorderStyle.NONE,
+      size: 1,
+      color: '000000',
+    },
+    left: {
+      style: BorderStyle.NONE,
+      size: 1,
+      color: '000000',
+    },
+    right: {
+      style: BorderStyle.NONE,
+      size: 1,
+      color: '#000000',
+    },
+  };
+
+  const rowHeight = row.style.padTop
+    ? { value: convertInchesToTwip(0.3), type: HeightRule.EXACT }
+    : undefined;
+  return new TableRow({
+    children: row.cells.map((cell) => {
+      let value;
+
+      if (typeof cell.value === 'number' && cell.style.numFmt) {
+        if (cell.style.numFmt === 'accounting') {
+          value = ppCurrency(
+            cell.value,
+            false,
+            cell.style.hideCurrency ? false : 'USD',
+          );
+        } else {
+          value = `${cell.style.numFmt} NOT IMPLEMENTED`;
+        }
+      } else {
+        value = cell.value;
+      }
+      console.log(cell.style, cell.value);
+      return new TableCell({
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `${row.style.indent ? '   ' : ''}${value}`,
+                bold: row.style.bold,
+              }),
+            ],
+            alignment:
+              cell.style.align === 'right' || cell.style.numFmt === 'accounting'
+                ? AlignmentType.RIGHT
+                : AlignmentType.LEFT,
+          }),
+        ],
+
+        verticalAlign: VerticalAlign.BOTTOM,
+        borders,
+      });
+    }),
+
     height: rowHeight,
   });
 }
