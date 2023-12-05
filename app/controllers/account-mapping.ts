@@ -132,10 +132,6 @@ export async function updateAccountMappingType(
     .execute();
 }
 
-// export type AccountBalanceAll = Pick<
-//   AccountBalance,
-//   'id' | 'accountNumber' | 'accountName' | 'accountType'
-// >;
 export async function getAllAccountBalancesByAuditId(
   auditId: AuditId,
   includeDeleted = false,
@@ -153,7 +149,6 @@ export async function getAllAccountBalancesByAuditId(
       'am.accountType',
       'ab.credit',
       'ab.debit',
-      sql`ab.debit - ab.credit`.as('balance'),
       'ab.currency',
       'ab.context',
     ])
@@ -161,7 +156,16 @@ export async function getAllAccountBalancesByAuditId(
   if (!includeDeleted) {
     query = query.where('ab.isDeleted', '=', includeDeleted);
   }
-  return await query.orderBy(['accountNumber', 'accountName']).execute();
+  const rows = await query.orderBy(['accountNumber', 'accountName']).execute();
+  return rows.map((r) => ({
+    ...r,
+    accountType: r.accountType || 'UNKNOWN',
+    balance: getBalanceUsingAccountType({
+      accountType: r.accountType || 'UNKNOWN',
+      credit: r.credit,
+      debit: r.debit,
+    }),
+  }));
 }
 
 export async function getBalancesByAccountType(
@@ -172,20 +176,48 @@ export async function getBalancesByAccountType(
     .innerJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')
     .select([
       'am.accountType',
-      // db.fn.sum('credit').as('credit'),
-      // db.fn.sum('debit').as('debit'),
-      sql`SUM(ab.debit) - SUM(ab.credit)`.as('balance'),
+      db.fn.sum<number>('credit').as('credit'),
+      db.fn.sum<number>('debit').as('debit'),
     ])
     .where('ab.isDeleted', '=', false)
     .where('accountType', 'is not', null)
     .where('ab.auditId', '=', auditId)
     .groupBy('accountType')
     .execute();
-  const rows = originalRows.map((row) => ({
-    accountType: row.accountType || 'UNKNOWN',
-    balance: String(row.balance),
+  const rows = originalRows.map((r) => ({
+    accountType: r.accountType || 'UNKNOWN',
+    balance: getBalanceUsingAccountType({
+      accountType: r.accountType || 'UNKNOWN',
+      credit: r.credit,
+      debit: r.debit,
+    }),
   }));
   return new AccountMap(Object.keys(accountTypes) as AccountType[], rows);
+}
+
+export function getBalanceUsingAccountType({
+  accountType,
+  credit,
+  debit,
+}: {
+  accountType: AccountType;
+  credit: number;
+  debit: number;
+}) {
+  if (!accountType) {
+    return 0;
+  }
+  if (accountType.startsWith('ASSET')) {
+    return debit - credit;
+  } else if (accountType.startsWith('LIABILITY')) {
+    return credit - debit;
+  } else if (accountType.startsWith('EQUITY')) {
+    return credit - debit;
+  } else if (accountType.startsWith('INCOME')) {
+    return credit - debit;
+  } else {
+    return credit - debit;
+  }
 }
 
 export class AccountMap {
@@ -193,7 +225,7 @@ export class AccountMap {
 
   constructor(
     aTypes: AccountType[],
-    initialPairs?: { accountType: AccountType; balance: string }[],
+    initialPairs?: { accountType: AccountType; balance: number }[],
   ) {
     this.map = new Map(aTypes.map((aType) => [aType, 0])) as Map<
       AccountType,

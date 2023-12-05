@@ -280,7 +280,7 @@ export const getPolicySections = () => [
     body: (data) => `
       The following tables summarize the Company’s financial liabilities measured at fair value on a recurring basis by level within the fair value hierarchy as of [${data.fiscalYearEnd}]:
 
-      [TABLE https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=2072488138&range=A6]
+      [TABLE:fvm-liabilities]
 
       The Company’s derivative liability relates to the Redemption Feature which is bifurcated from convertible notes. The valuation of the Company’s derivative liability contains unobservable inputs that reflect the Company’s own assumptions for which there is little, if any, market activity for at the measurement date. Accordingly, the Company’s derivative liability is measured at fair value on a recurring basis using unobservable inputs and is classified as Level 3 inputs, and any change in fair value is recognized as a component of other income (expense), net in the statement of operations.
 

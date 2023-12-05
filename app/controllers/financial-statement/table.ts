@@ -442,7 +442,7 @@ export async function buildPropertyAndEquipmentNet(
       borderBottom: 'double',
     },
   );
-  console.log(t);
+
   return t;
 }
 
