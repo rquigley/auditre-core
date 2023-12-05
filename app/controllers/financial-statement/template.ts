@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import dedent from 'dedent';
 
-import { ppCurrency } from '@/lib/util';
+import { addFP, ppCurrency } from '@/lib/util';
 
 import type { AuditData } from '../audit';
 
@@ -90,13 +90,22 @@ export const getOrganizationSections = () => [
 
   generateSection({
     header: 'Going Concern and Liquidity',
-    body: async (data) => `
+    body: async (data) => {
+      // TODO: brittle, doesn't account for different categories?
+      const totalCurrentLiabilities = addFP(
+        data.totals.get('LIABILITY_ACCRUED_LIABILITIES'),
+        data.totals.get('LIABILITY_ACCOUNTS_PAYABLE'),
+        data.totals.get('LIABILITY_DEFERRED_REVENUE'),
+        data.totals.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT'),
+        data.totals.get('LIABILITY_OTHER'),
+      );
+      return `
       The Company has incurred recurring losses and negative cash flows from operating activities since inception. As of [${
         data.fiscalYearEnd
       }], the Company had cash of [${ppCurrency(
-        data.balanceSheet.assets.currentAssets.cash,
+        data.totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS'),
       )}] and an accumulated deficit of [${ppCurrency(
-        data.balanceSheet.liabilities.totalCurrent,
+        totalCurrentLiabilities,
       )}]. Based on the Company’s forecasts, the Company’s current resources and cash balance are sufficient to enable the Company to continue as a going concern for 12 months from the date these consolidated financial statements are available to be issued. [TODO]
 
       The ability to continue as a going concern is dependent upon the Company obtaining necessary financing to meet its obligations and repay its liabilities arising from normal business operations when they come due. The Company may raise additional capital through the issuance of equity securities, debt financings or other sources in order to further implement its business plan. However, if such financing is not available when needed and at adequate levels, the Company will need to reevaluate its operating plan and may be required to delay the development of its products.
@@ -104,7 +113,8 @@ export const getOrganizationSections = () => [
       [if there was a recent financing event (what defines recent?)]
       In March 2023, the Company issued [number] shares of Series B-1 convertible preferred stock for proceeds of approximately [number]. In addition, the convertible notes with aggregate outstanding principal of [number] were converted into [number] shares of Series B-1 convertible preferred stock. In April 2023, the Company closed a subsequent round of Series B-1 convertible preferred stock for additional proceeds of $10,800,000 and issuance of [number] Series B-1 convertible preferred shares.
       [endif]
-    `,
+    `;
+    },
   }),
 ];
 
@@ -270,7 +280,7 @@ export const getPolicySections = () => [
     body: (data) => `
       The following tables summarize the Company’s financial liabilities measured at fair value on a recurring basis by level within the fair value hierarchy as of [${data.fiscalYearEnd}]:
 
-      [TABLE https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=2072488138&range=A6]
+      [TABLE:fvm-liabilities]
 
       The Company’s derivative liability relates to the Redemption Feature which is bifurcated from convertible notes. The valuation of the Company’s derivative liability contains unobservable inputs that reflect the Company’s own assumptions for which there is little, if any, market activity for at the measurement date. Accordingly, the Company’s derivative liability is measured at fair value on a recurring basis using unobservable inputs and is classified as Level 3 inputs, and any change in fair value is recognized as a component of other income (expense), net in the statement of operations.
 

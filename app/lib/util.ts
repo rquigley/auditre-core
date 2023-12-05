@@ -226,18 +226,24 @@ export function addFP(...args: number[]) {
   return args.reduce((existing, x) => existing + x * 1000, 0) / 1000;
 }
 
-export function ppCurrency(num: number) {
+export function ppCurrency(
+  num: number,
+  cents = false,
+  currency: 'USD' | false = 'USD',
+) {
+  if (num === 0) {
+    return '-';
+  }
   const isNeg = num < 0;
   if (isNeg) {
     num = num * -1;
   }
-  const ret = (Math.round(num * 100) / 100).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    currencySign: 'accounting',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
+  const ret = new Intl.NumberFormat('en-US', {
+    style: currency === false ? undefined : 'currency',
+    currency: currency === false ? undefined : currency,
+    minimumFractionDigits: cents ? 2 : 0,
+    maximumFractionDigits: cents ? 2 : 0,
+  }).format(Math.round(num * 100) / 100);
   if (isNeg) {
     return `(${ret})`;
   } else {

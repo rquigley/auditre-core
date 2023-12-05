@@ -4,12 +4,11 @@ import dedent from 'dedent';
 import {
   buildBalanceSheet,
   buildStatementOfOperations,
-  BuildTableRowArgs,
   tableMap,
 } from '@/controllers/financial-statement/table';
 import { humanToKebab, ppCurrency } from '@/lib/util';
 import { AuditId } from '@/types';
-import { getAuditData, getByIdForClientCached } from '../audit';
+import { getAuditData } from '../audit';
 import {
   getOrganizationSections,
   getPolicySections,
@@ -17,6 +16,7 @@ import {
 
 import type { AuditData } from '@/controllers/audit';
 import type { Section } from '@/controllers/financial-statement/template';
+import type { Row, Table } from '@/lib/table';
 
 export async function AuditPreview({
   auditId,
@@ -25,21 +25,19 @@ export async function AuditPreview({
   auditId: AuditId;
   highlightData: boolean;
 }) {
-  //const audit = await getByIdForClientCached(auditId);
-
   const orgSettings = getOrganizationSections();
   const policySettings = getPolicySections();
 
   const data = await getAuditData(auditId);
   return (
-    <div>
-      <div className="max-w-3xl mb-4 border rounded-md p-4 font-serif">
+    <div className="font-serif">
+      <div className="max-w-3xl mb-4 border rounded-md p-4">
         <h1 className="text-lg font-bold">{data.basicInfo.businessName}</h1>
         <div>Conslidated Financial Statements</div>
         <div>Year Ended {data.fiscalYearEnd}</div>
       </div>
 
-      <div className="max-w-3xl mb-4 border rounded-md p-4 font-serif">
+      <div className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">Contents</h2>
 
         <TableOfContents
@@ -52,27 +50,27 @@ export async function AuditPreview({
 
       <div
         id="section-balance-sheet"
-        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
+        className="max-w-3xl mb-4 border rounded-md p-4"
       >
         <h2 className="text-lg font-bold">1. Consolidated Balance Sheet</h2>
 
-        {buildTable(buildBalanceSheet(data))}
+        {buildTable(await buildBalanceSheet(data))}
       </div>
 
       <div
         id="section-statement-of-operations"
-        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
+        className="max-w-3xl mb-4 border rounded-md p-4"
       >
         <h2 className="text-lg font-bold">
           2. Consolidated Statement of Operations
         </h2>
 
-        {buildTable(buildStatementOfOperations(data))}
+        {buildTable(await buildStatementOfOperations(data))}
       </div>
 
       <div
         id="section-balance-sheet"
-        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
+        className="max-w-3xl mb-4 border rounded-md p-4"
       >
         <h2 className="text-lg font-bold">
           3. Conslidated Statement of Stockholders&apos; Equity (Deficit)
@@ -85,7 +83,7 @@ export async function AuditPreview({
 
       <div
         id="section-balance-sheet"
-        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
+        className="max-w-3xl mb-4 border rounded-md p-4"
       >
         <h2 className="text-lg font-bold">
           4. Conslidated Statement of Cash Flows
@@ -96,10 +94,7 @@ export async function AuditPreview({
         </table> */}
       </div>
 
-      <div
-        id="section-org"
-        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
-      >
+      <div id="section-org" className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">5. Organization</h2>
         {orgSettings.map((section, idx) => (
           <DataSection
@@ -107,14 +102,12 @@ export async function AuditPreview({
             data={data}
             highlightData={highlightData}
             key={idx}
+            idx={idx}
           />
         ))}
       </div>
 
-      <div
-        id="section-policy"
-        className="max-w-3xl mb-4 border rounded-md p-4 font-serif"
-      >
+      <div id="section-policy" className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
           6. Summary of Significant Accounting Policies
         </h2>
@@ -124,6 +117,7 @@ export async function AuditPreview({
             data={data}
             highlightData={highlightData}
             key={idx}
+            idx={idx}
           />
         ))}
       </div>
@@ -134,16 +128,18 @@ async function DataSection({
   section,
   data,
   highlightData,
+  idx,
 }: {
   section: Section;
   data: AuditData;
   highlightData: boolean;
+  idx: number;
 }) {
   if (!section.isShowing(data)) {
     if (highlightData) {
       return (
         <div
-          id={humanToKebab(section.header)}
+          id={`${idx}-${section.slug}`}
           className="my-4 font-bold text-green-600"
         >
           {section.header} (Not showing)
@@ -197,7 +193,7 @@ async function DataSection({
 
   return (
     <div className="my-4">
-      <div id={humanToKebab(section.header)} className="font-bold text-black">
+      <div id={`${idx}-${section.slug}`} className="font-bold text-black">
         {section.header}
       </div>
       <div className="text-gray-700">{output}</div>
@@ -205,50 +201,55 @@ async function DataSection({
   );
 }
 
-function buildTable(arr: BuildTableRowArgs[]): React.ReactNode {
+function buildTable(table: Table): React.ReactNode {
   return (
     <table className="w-full mt-2" key="12345">
-      <tbody>
-        {arr
-          .map((row: BuildTableRowArgs, idx: number) => {
-            return buildTableRow({
-              ...row,
-              key: idx,
-            });
-          })
-          .filter((x) => x !== null)}
-      </tbody>
+      <tbody>{table.rows.map((row: Row) => buildTableRow(row))}</tbody>
     </table>
   );
 }
 
-function buildTableRow({
-  name,
-  value,
-  bold,
-  indent,
-  borderBottom,
-  padTop,
-  key,
-  hideIfZero,
-}: BuildTableRowArgs): React.ReactNode {
-  if (hideIfZero && typeof value === 'number' && value === 0) {
-    return null;
-  }
-
+function buildTableRow(row: Row): React.ReactNode {
   return (
-    <tr
-      key={key}
-      className={clsx(
-        padTop ? 'pt-4' : '',
-        borderBottom ? 'border-b' : '',
-        bold ? 'font-bold' : '',
-      )}
-    >
-      <td className={clsx(indent ? 'pl-4' : '')}>{name}</td>
-      <td className="text-right">
-        {value && typeof value === 'number' ? ppCurrency(value) : value}
-      </td>
+    <tr key={row.number} className={row.number % 2 === 0 ? 'bg-slate-100' : ''}>
+      {row.cells.map((cell, idx) => {
+        const styles = clsx({
+          'font-bold': cell.style.bold,
+          // Bug in Tailwind: specific borders don't map
+          'border-b border-b-slate-800': cell.style.borderBottom === 'single',
+          'border-b border-double border-b-2 border-b-slate-800':
+            cell.style.borderBottom === 'double',
+          'border-t border-t-slate-800': cell.style.borderTop === 'single',
+          'border-t border-double border-t-slate-800':
+            cell.style.borderTop === 'double',
+          'pl-4': cell.style.indent,
+          'pt-2': cell.style.padTop,
+          'text-right': cell.style.align === 'right',
+        });
+
+        let value;
+        if (typeof cell.value === 'number' && cell.style.numFmt) {
+          if (cell.style.numFmt === 'accounting') {
+            value = (
+              <div className="flex justify-between">
+                <div>
+                  {cell.value !== 0 && !cell.style.hideCurrency ? '$' : ''}
+                </div>
+                <div>{ppCurrency(cell.value, false, false)}</div>
+              </div>
+            );
+          } else {
+            value = `${cell.style.numFmt} NOT IMPLEMENTED`;
+          }
+        } else {
+          value = cell.value;
+        }
+        return (
+          <td className={styles} key={idx}>
+            {value}
+          </td>
+        );
+      })}
     </tr>
   );
 }
@@ -299,6 +300,7 @@ function TableOfContents({
       {orgSettings.map((section, idx) => (
         <ToCLink
           key={idx}
+          idx={idx}
           section={section}
           data={data}
           highlightData={highlightData}
@@ -313,6 +315,7 @@ function TableOfContents({
       {policySettings.map((section, idx) => (
         <ToCLink
           key={idx}
+          idx={idx}
           section={section}
           data={data}
           highlightData={highlightData}
@@ -323,10 +326,12 @@ function TableOfContents({
 }
 
 function ToCLink({
+  idx,
   section,
   data,
   highlightData,
 }: {
+  idx: number;
   section: Section;
   data: AuditData;
   highlightData: boolean;
@@ -335,7 +340,7 @@ function ToCLink({
     if (highlightData) {
       return (
         <a
-          href={`#${humanToKebab(section.header)}`}
+          href={`#${idx}-${section.slug}`}
           className="ml-4 block  text-green-600 underline hover:no-underline"
         >
           {section.header} (Not showing)
@@ -347,7 +352,7 @@ function ToCLink({
   }
   return (
     <a
-      href={`#${humanToKebab(section.header)}`}
+      href={`#${idx}-${section.slug}`}
       className="ml-4 block text-slate-700 underline hover:no-underline"
     >
       {section.header}
