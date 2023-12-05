@@ -6,7 +6,7 @@ import {
   buildStatementOfOperations,
   tableMap,
 } from '@/controllers/financial-statement/table';
-import { humanToKebab, ppCurrency } from '@/lib/util';
+import { ppCurrency } from '@/lib/util';
 import { AuditId } from '@/types';
 import { getAuditData } from '../audit';
 import {
@@ -30,7 +30,7 @@ export async function AuditPreview({
 
   const data = await getAuditData(auditId);
   return (
-    <div className="font-serif">
+    <div className="text-sm text-slate-800">
       <div className="max-w-3xl mb-4 border rounded-md p-4">
         <h1 className="text-lg font-bold">{data.basicInfo.businessName}</h1>
         <div>Conslidated Financial Statements</div>
