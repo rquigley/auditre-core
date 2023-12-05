@@ -52,7 +52,12 @@ export async function AuditPreview({
         id="section-balance-sheet"
         className="max-w-3xl mb-4 border rounded-md p-4"
       >
-        <h2 className="text-lg font-bold">1. Consolidated Balance Sheet</h2>
+        <h2 className="text-lg font-bold">
+          <a href="#section-balance-sheet" className="group relative">
+            1. Consolidated Balance Sheet
+            <Paperclip />
+          </a>
+        </h2>
 
         {buildTable(await buildBalanceSheet(data))}
       </div>
@@ -62,18 +67,21 @@ export async function AuditPreview({
         className="max-w-3xl mb-4 border rounded-md p-4"
       >
         <h2 className="text-lg font-bold">
-          2. Consolidated Statement of Operations
+          <a href="#section-statement-of-operations" className="group relative">
+            2. Consolidated Statement of Operations
+            <Paperclip />
+          </a>
         </h2>
 
         {buildTable(await buildStatementOfOperations(data))}
       </div>
 
-      <div
-        id="section-balance-sheet"
-        className="max-w-3xl mb-4 border rounded-md p-4"
-      >
+      <div id="section-sose" className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
-          3. Conslidated Statement of Stockholders&apos; Equity (Deficit)
+          <a href="#section-sose" className="group relative">
+            3. Conslidated Statement of Stockholders&apos; Equity (Deficit)
+            <Paperclip />
+          </a>
         </h2>
 
         {/* <table className="w-full mt-2">
@@ -81,12 +89,12 @@ export async function AuditPreview({
         </table> */}
       </div>
 
-      <div
-        id="section-balance-sheet"
-        className="max-w-3xl mb-4 border rounded-md p-4"
-      >
+      <div id="section-socf" className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
-          4. Conslidated Statement of Cash Flows
+          <a href="#section-socf" className="group relative">
+            4. Conslidated Statement of Cash Flows
+            <Paperclip />
+          </a>
         </h2>
 
         {/* <table className="w-full mt-2">
@@ -95,7 +103,12 @@ export async function AuditPreview({
       </div>
 
       <div id="section-org" className="max-w-3xl mb-4 border rounded-md p-4">
-        <h2 className="text-lg font-bold">5. Organization</h2>
+        <h2 className="text-lg font-bold">
+          <a href="#section-org" className="group relative">
+            5. Organization
+            <Paperclip />
+          </a>
+        </h2>
         {orgSettings.map((section, idx) => (
           <DataSection
             section={section}
@@ -109,7 +122,10 @@ export async function AuditPreview({
 
       <div id="section-policy" className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
-          6. Summary of Significant Accounting Policies
+          <a href="#section-policy" className="group relative">
+            6. Summary of Significant Accounting Policies
+            <Paperclip />
+          </a>
         </h2>
         {policySettings.map((section, idx) => (
           <DataSection
@@ -193,11 +209,34 @@ async function DataSection({
 
   return (
     <div className="my-4">
-      <div id={`${idx}-${section.slug}`} className="font-bold text-black">
+      <a
+        id={`${idx}-${section.slug}`}
+        href={`#${idx}-${section.slug}`}
+        className="block font-bold text-gray-900 group relative"
+      >
         {section.header}
-      </div>
+        <Paperclip />
+      </a>
+
       <div className="text-gray-700">{output}</div>
     </div>
+  );
+}
+
+// Parent should have "group" and "relative" classes
+function Paperclip() {
+  return (
+    <span className="absolute -left-6 hidden group-hover:inline text-slate-600 font-normal">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        className="w-4 h-4 inline"
+      >
+        <path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
+        <path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
+      </svg>
+    </span>
   );
 }
 
