@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import dedent from 'dedent';
+import { Inconsolata } from 'next/font/google';
 
 import {
   buildBalanceSheet,
@@ -17,6 +18,11 @@ import {
 import type { AuditData } from '@/controllers/audit';
 import type { Section } from '@/controllers/financial-statement/template';
 import type { Row, Table } from '@/lib/table';
+
+export const financeFont = Inconsolata({
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 export async function AuditPreview({
   auditId,
@@ -270,7 +276,7 @@ function buildTableRow(row: Row): React.ReactNode {
         if (typeof cell.value === 'number' && cell.style.numFmt) {
           if (cell.style.numFmt === 'accounting') {
             value = (
-              <div className="flex justify-between">
+              <div className={`flex justify-between ${financeFont.className}`}>
                 <div>
                   {cell.value !== 0 && !cell.style.hideCurrency ? '$' : ''}
                 </div>
