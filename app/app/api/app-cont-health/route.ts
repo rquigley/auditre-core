@@ -8,8 +8,10 @@ export async function GET(request: Request) {
     try {
       await db.selectFrom('org').limit(1).execute();
     } catch (e) {
-      Sentry.captureException(e);
-      return NextResponse.json({ ok: false }, { status: 500 });
+      if (!shuttingDown) {
+        Sentry.captureException(e);
+        return NextResponse.json({ ok: false }, { status: 500 });
+      }
     }
   }
   return NextResponse.json({ ok: true }, { status: 200 });
