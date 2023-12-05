@@ -1,8 +1,5 @@
-import React from 'react';
-
 import {
   AccountMap,
-  AccountType,
   getAccountsForCategory,
 } from '@/controllers/account-mapping';
 import { groupFixedAccountsByCategories } from '@/lib/finance';
@@ -11,16 +8,6 @@ import { addFP } from '@/lib/util';
 
 import type { AuditData } from '../audit';
 
-export type BuildTableRowArgs = {
-  name: string;
-  value?: string | number;
-  bold?: boolean;
-  indent?: boolean;
-  padTop?: boolean;
-  borderBottom?: boolean;
-  key?: React.Key;
-  hideIfZero?: boolean;
-};
 export const tableMap = {
   'balance-sheet': buildBalanceSheet,
   'statement-of-operations': buildStatementOfOperations,
@@ -124,14 +111,14 @@ export function normalizeBalanceSheet(t: AccountMap) {
 export async function buildBalanceSheet(data: AuditData): Promise<Table> {
   const balanceSheet = normalizeBalanceSheet(data.totals);
   let t = new Table();
-  t.columns = [{}, { style: { numFmt: 'accounting' } }, {}];
+  t.columns = [{}, { style: { numFmt: 'accounting', align: 'right' } }];
 
   let row;
   row = t.addRow(
     [`As of ${data.fiscalYearEndParts.md},`, data.fiscalYearEndParts.y],
     { bold: true, borderBottom: 'single' },
   );
-  row.cells[1].style = { align: 'right' };
+  // row.cells[1].style = { align: 'right' };
 
   t.addRow(['Assets', ''], {
     bold: true,
@@ -366,31 +353,24 @@ export function normalizeStatementOfOps(t: AccountMap) {
 }
 
 export function buildPropertyAndEquipmentLives(data: AuditData) {
-  return [
-    {
-      name: 'Asset',
-      value: 'Useful life (years)',
-      bold: true,
-      borderBottom: true,
-    },
-    {
-      name: 'Furniture and fixtures',
-      value: '3',
-    },
-    {
-      name: 'Machinery and equipment',
-      value: '3 – 10',
-    },
-    {
-      name: 'Leasehold improvements',
-      value: 'Remaining life of the lease',
-    },
-  ];
+  let t = new Table();
+  t.columns = [{}, { style: { align: 'right' } }];
+
+  t.addRow(['Asset', 'Useful life (years)'], {
+    bold: true,
+    borderBottom: 'single',
+  });
+  t.addRow(['Furniture and fixtures', '3']);
+  t.addRow(['Machinery and equipment', '3 - 10']);
+  t.addRow(['Leasehold improvements', 'Remaining life of the lease']);
+  // row.cells[1].style = { align: 'right' };
+
+  return t;
 }
 
 export async function buildPropertyAndEquipmentNet(
   data: AuditData,
-): Promise<BuildTableRowArgs[]> {
+): Promise<Table> {
   const assetCategoriesStr = data.trialBalance.fixedAssetCategories;
   let assetCategories: string[];
   try {
@@ -418,93 +398,124 @@ export async function buildPropertyAndEquipmentNet(
 
   assetCategories = assetCategories.sort();
   let totalPropertyAndEquipment = 0;
-  return [
+
+  let t = new Table();
+  t.columns = [{}, { style: { numFmt: 'accounting', align: 'right' } }];
+
+  let row;
+  row = t.addRow([data.fiscalYearEndParts.md, data.fiscalYearEndParts.y], {
+    bold: true,
+    borderBottom: 'single',
+  });
+
+  let currShown = false;
+  Object.keys(out).forEach((category, idx) => {
+    const value = out[category].reduce((acc, a) => addFP(acc, a.balance), 0);
+    if (value === 0) {
+      return;
+    }
+    totalPropertyAndEquipment = addFP(totalPropertyAndEquipment, value);
+    const row = t.addRow([category, value], {
+      borderBottom: idx === assetCategories.length - 1 ? 'single' : undefined,
+    });
+    if (currShown) {
+      row.cells[1].style = { hideCurrency: true };
+    } else {
+      currShown = true;
+    }
+  });
+
+  t.addRow(['Total property and equipment', totalPropertyAndEquipment], {
+    borderTop: 'single',
+  });
+  t.addRow(['Less accumulated depreciation', totalAccumulatedDepreciation], {
+    borderBottom: 'single',
+  });
+  t.addRow(
+    [
+      'Property and equipment, net',
+      addFP(totalPropertyAndEquipment, totalAccumulatedDepreciation),
+    ],
     {
-      name: data.fiscalYearEndParts.md,
-      value: data.fiscalYearEndParts.y,
       bold: true,
-      borderBottom: true,
+      borderBottom: 'double',
     },
-    ...Object.keys(out).map((category, idx) => {
-      const value = out[category].reduce((acc, a) => addFP(acc, a.balance), 0);
-      totalPropertyAndEquipment = addFP(totalPropertyAndEquipment, value);
-      return {
-        name: category,
-        value,
-        borderBottom: idx === assetCategories.length - 1,
-      };
-    }),
-    {
-      name: 'Total property and equipment',
-      value: totalPropertyAndEquipment,
-      borderBottom: true,
-    },
-    {
-      name: 'Less accumulated depreciation',
-      value: totalAccumulatedDepreciation,
-      borderBottom: true,
-    },
-    {
-      name: 'Property and equipment, net',
-      value: addFP(totalPropertyAndEquipment, totalAccumulatedDepreciation),
-      borderBottom: true,
-    },
-  ];
+  );
+  console.log(t);
+  return t;
 }
 
-export async function buildStatementOfOperations(data: AuditData) {
+export async function buildStatementOfOperations(
+  data: AuditData,
+): Promise<Table> {
   const statementOfOps = normalizeStatementOfOps(data.totals);
+  let t = new Table();
+  t.columns = [{}, { style: { numFmt: 'accounting', align: 'right' } }];
 
-  return [
+  let row;
+  row = t.addRow(
+    [`As of ${data.fiscalYearEndParts.md},`, data.fiscalYearEndParts.y],
+    { bold: true, borderBottom: 'single' },
+  );
+  t.addRow(['Operating expenses:', ''], {
+    padTop: true,
+  });
+
+  let currShown = false;
+  if (statementOfOps.opEx.rAndD !== 0) {
+    row = t.addRow(['Research and development', statementOfOps.opEx.rAndD]);
+    row.cells[0].style = { indent: true };
+    currShown = true;
+  }
+  if (statementOfOps.opEx.gAndA !== 0) {
+    row = t.addRow(['General and administrative', statementOfOps.opEx.gAndA]);
+    row.cells[0].style = { indent: true };
+    if (currShown) {
+      row.cells[1].style = { hideCurrency: true };
+    } else {
+      currShown = true;
+    }
+  }
+  row = t.addRow(['Total operating expenses', statementOfOps.totalOpEx], {
+    borderTop: 'single',
+  });
+
+  row = t.addRow(['Loss from operations', statementOfOps.lossFromOps]);
+  row.cells[1].style = { hideCurrency: true };
+
+  t.addRow(['Other income (expense), net:', ''], {
+    padTop: true,
+  });
+  if (statementOfOps.otherIncomeExpenseNet.interestExpenseNet !== 0) {
+    row = t.addRow([
+      'Interest expense, net',
+      statementOfOps.otherIncomeExpenseNet.interestExpenseNet,
+    ]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  if (statementOfOps.otherIncomeExpenseNet.otherIncomeNet !== 0) {
+    row = t.addRow([
+      'Other income, net',
+      statementOfOps.otherIncomeExpenseNet.otherIncomeNet,
+    ]);
+    row.cells[0].style = { indent: true };
+    row.cells[1].style = { hideCurrency: true };
+  }
+  t.addRow(
+    [
+      'Total other income (expense), net',
+      statementOfOps.totalOtherIncomeExpenseNet,
+    ],
     {
-      name: `As of ${data.fiscalYearEndParts.md},`,
-      value: data.fiscalYearEndParts.y,
-      bold: true,
-      borderBottom: true,
+      borderTop: 'single',
     },
-    {
-      name: 'Operating expenses:',
-      padTop: true,
-    },
-    {
-      name: 'Research and development',
-      value: statementOfOps.opEx.rAndD,
-      indent: true,
-    },
-    {
-      name: 'General and administrative',
-      value: statementOfOps.opEx.gAndA,
-      indent: true,
-    },
-    {
-      name: 'Total operating expenses',
-      value: statementOfOps.totalOpEx,
-      indent: true,
-    },
-    {
-      name: 'Loss from operations',
-      value: statementOfOps.lossFromOps,
-    },
-    {
-      name: 'Other income (expense), net:',
-    },
-    {
-      name: 'Interest expense, net',
-      value: statementOfOps.otherIncomeExpenseNet.interestExpenseNet,
-      indent: true,
-    },
-    {
-      name: 'Other income, net',
-      value: statementOfOps.otherIncomeExpenseNet.otherIncomeNet,
-      indent: true,
-    },
-    {
-      name: 'Total other income (expense), net',
-      value: statementOfOps.totalOtherIncomeExpenseNet,
-    },
-    {
-      name: 'Net loss',
-      value: statementOfOps.netLoss,
-    },
-  ];
+  );
+
+  row = t.addRow(['Net loss', statementOfOps.netLoss], {
+    borderTop: 'single',
+    borderBottom: 'double',
+  });
+
+  return t;
 }

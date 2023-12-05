@@ -4,7 +4,6 @@ import dedent from 'dedent';
 import {
   buildBalanceSheet,
   buildStatementOfOperations,
-  BuildTableRowArgs,
   tableMap,
 } from '@/controllers/financial-statement/table';
 import { humanToKebab, ppCurrency } from '@/lib/util';
@@ -55,7 +54,7 @@ export async function AuditPreview({
       >
         <h2 className="text-lg font-bold">1. Consolidated Balance Sheet</h2>
 
-        {buildTable2(await buildBalanceSheet(data))}
+        {buildTable(await buildBalanceSheet(data))}
       </div>
 
       <div
@@ -198,62 +197,15 @@ async function DataSection({
   );
 }
 
-function buildTable(arr: BuildTableRowArgs[]): React.ReactNode {
+function buildTable(table: Table): React.ReactNode {
   return (
     <table className="w-full mt-2" key="12345">
-      <tbody>
-        {arr
-          .map((row: BuildTableRowArgs, idx: number) => {
-            return buildTableRow({
-              ...row,
-              key: idx,
-            });
-          })
-          .filter((x) => x !== null)}
-      </tbody>
-    </table>
-  );
-}
-function buildTable2(table: Table): React.ReactNode {
-  return (
-    <table className="w-full mt-2" key="12345">
-      <tbody>{table.rows.map((row: Row) => buildTableRow2(row))}</tbody>
+      <tbody>{table.rows.map((row: Row) => buildTableRow(row))}</tbody>
     </table>
   );
 }
 
-function buildTableRow({
-  name,
-  value,
-  bold,
-  indent,
-  borderBottom,
-  padTop,
-  key,
-  hideIfZero,
-}: BuildTableRowArgs): React.ReactNode {
-  if (hideIfZero && typeof value === 'number' && value === 0) {
-    return null;
-  }
-
-  return (
-    <tr
-      key={key}
-      className={clsx(
-        padTop ? 'pt-4' : '',
-        borderBottom ? 'border-b' : '',
-        bold ? 'font-bold' : '',
-      )}
-    >
-      <td className={clsx(indent ? 'pl-4' : '')}>{name}</td>
-      <td className="text-right">
-        {value && typeof value === 'number' ? ppCurrency(value) : value}
-      </td>
-    </tr>
-  );
-}
-
-function buildTableRow2(row: Row): React.ReactNode {
+function buildTableRow(row: Row): React.ReactNode {
   return (
     <tr key={row.number} className={row.number % 2 === 0 ? 'bg-slate-100' : ''}>
       {row.cells.map((cell, idx) => {
@@ -270,9 +222,8 @@ function buildTableRow2(row: Row): React.ReactNode {
           'pt-2': cell.style.padTop,
           'text-right': cell.style.align === 'right',
         });
-        console.log(styles);
-        let value;
 
+        let value;
         if (typeof cell.value === 'number' && cell.style.numFmt) {
           if (cell.style.numFmt === 'accounting') {
             value = (
