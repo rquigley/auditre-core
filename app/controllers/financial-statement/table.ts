@@ -13,6 +13,7 @@ export const tableMap = {
   'statement-of-operations': buildStatementOfOperations,
   'property-and-equipment-lives': buildPropertyAndEquipmentLives,
   'property-and-equipment-net': buildPropertyAndEquipmentNet,
+  'fvm-liabilities': buildFVMLiabilities,
 } as const;
 
 export function normalizeBalanceSheet(t: AccountMap) {
@@ -442,6 +443,25 @@ export async function buildPropertyAndEquipmentNet(
     },
   );
   console.log(t);
+  return t;
+}
+
+export async function buildFVMLiabilities(data: AuditData): Promise<Table> {
+  let t = new Table();
+  t.columns = [
+    {},
+    { style: { numFmt: 'currency' } },
+    { style: { numFmt: 'currency' } },
+    { style: { numFmt: 'currency' } },
+  ];
+  t.addRow(['', 'Level 1', 'Level 2', 'Level 3'], {
+    bold: true,
+    borderBottom: 'single',
+  });
+  t.addRow(['Liabilities:', '', '', '']);
+  let row;
+  row = t.addRow(['Derivatives liability:', 123, 345, 343]);
+  row.cells[0].style = { indent: true };
   return t;
 }
 
