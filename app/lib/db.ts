@@ -67,6 +67,13 @@ const dialect = new PostgresDialect({
   },
 });
 
+export async function shutdown() {
+  console.log('Shutting down db connection pool');
+  if (pgPool) {
+    await pgPool.end();
+  }
+}
+
 export function json<T>(value: T): RawBuilder<T> {
   return sql`CAST(${JSON.stringify(value)} AS JSONB)`;
 }
@@ -118,16 +125,3 @@ function prettyStack(error: any) {
   }
   return lines.join('\n           ');
 }
-
-export let shuttingDown = false;
-process.on('SIGTERM', async () => {
-  shuttingDown = true;
-  console.log('The service is about to shut down!');
-
-  if (pgPool) {
-    await pgPool.end();
-  }
-
-  // TODO, not the best place to do this, but it's the connection that counts.
-  process.exit(0);
-});
