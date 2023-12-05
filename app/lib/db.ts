@@ -67,7 +67,9 @@ const dialect = new PostgresDialect({
   },
 });
 
+export let shuttingDown = false;
 export async function shutdown() {
+  shuttingDown = true;
   console.log('Shutting down db connection pool');
   if (pgPool) {
     await pgPool.end();
