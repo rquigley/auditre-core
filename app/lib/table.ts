@@ -1,19 +1,25 @@
+import { addFP } from './util';
+
 export class Table {
   rows: Row[] = [];
   _columns: Column[] = [];
+  debug: boolean;
 
-  constructor() {}
+  constructor(debug?: boolean) {
+    this.debug = debug || false;
+  }
 
   private get lastRowNumber() {
     let n = this.rows.length;
     while (n > 0 && this.rows[n - 1] === undefined) {
       n--;
     }
+    this.debug && console.log('last row number', n);
     return n;
   }
 
   private get nextRow() {
-    return this.lastRowNumber + 1;
+    return this.lastRowNumber;
   }
 
   get lastRow() {
@@ -29,7 +35,7 @@ export class Table {
 
   set columns(columns: { style?: Style }[]) {
     this._columns = columns.map((props, i) => {
-      const col = new Column(this, i + 1);
+      const col = new Column(this, i);
       if (props.style) {
         col.style = props.style;
       }
@@ -37,39 +43,119 @@ export class Table {
     });
   }
 
-  getRow(r: number) {
-    let row = this.rows[r - 1];
+  getColumn(n: number) {
+    let col = this._columns[n];
+    if (!col) {
+      col = this._columns[n] = new Column(this, n);
+    }
+    return col;
+  }
+
+  getRow(n: number) {
+    let row = this.rows[n];
     if (!row) {
-      row = this.rows[r - 1] = new Row(this, r);
+      row = this.rows[n] = new Row(this, n);
     }
     return row;
   }
 
-  addRow(values: any[], style?: Style | Style[]): Row {
+  getRowById(id: string) {
+    const row = this.rows.find((r) => r && r.id === id);
+    if (!row) {
+      throw new Error(`Row not found: ${id}`);
+    }
+    return row;
+  }
+
+  getCell(row: number, column: number) {
+    return this.getRow(row).cells[column];
+  }
+
+  getCellByIdAndCol(id: string, column: number) {
+    return this.getRowById(id).cells[column];
+  }
+
+  getAddressRange(cell: Cell, rows: Row[], rowOffset: number = 0) {
+    let isContinuous = true;
+    for (let n = 0; n < rows.length; n++) {
+      if (rows[n].number !== rows[0].number + n) {
+        isContinuous = false;
+        break;
+      }
+    }
+    if (isContinuous) {
+      const start = rows[0].number + rowOffset;
+      const end = rows[rows.length - 1].number + rowOffset;
+      return `${cell.columnLetter}${start}:${cell.columnLetter}${end}`;
+    } else {
+      return rows
+        .map((row) => `${cell.columnLetter}${row.number + rowOffset}`)
+        .join(',');
+    }
+  }
+
+  duplicateColumn(sourceCol: number, targetCol: number) {
+    const source = this.getColumn(sourceCol);
+    const target = this.getColumn(targetCol);
+    target.style = source.style;
+
+    this.rows.forEach((row) => {
+      const cell = row.cells[sourceCol];
+      const newCell = new Cell(row.number, targetCol, this);
+      newCell.value = cell?.rawValue();
+      newCell.style = cell?.style;
+      row.cells[targetCol] = newCell;
+    });
+  }
+
+  addRow(
+    values: any[],
+    opts: {
+      id?: string;
+      tags?: string[];
+      style?: Style;
+      cellStyle?: Style[];
+    } = {},
+  ): Row {
     const rowNo = this.nextRow;
+    this.debug && console.log('addRow', rowNo, values);
     const row = this.getRow(rowNo);
     row.values = values;
     if (values.length > this.columns.length) {
-      this.columns = values.map((_, i) => new Column(this, i + 1));
+      this.columns = values.map((_, i) => new Column(this, i));
     }
-    if (style) {
-      if (Array.isArray(style)) {
-        row.cells.forEach((cell, i) => {
-          cell.style = style[i] || {};
-        });
-      } else {
-        row.style = style;
+    if (opts.id) {
+      if (this.rows.find((r) => r && r.id === opts.id)) {
+        throw new Error(`Duplicate row id: ${opts.id}`);
       }
+      row.id = opts.id;
+    }
+    if (opts.style) {
+      row.style = opts.style;
+    }
+    if (opts.tags) {
+      row.tags = opts.tags;
+    }
+    if (opts.cellStyle) {
+      const cellStyle = opts.cellStyle;
+      row.cells.forEach((cell, i) => {
+        if (cellStyle[i]) {
+          cell.style = cellStyle[i];
+        }
+      });
     }
     return row;
   }
 
-  getColumn(c: number) {
-    let col = this.columns[c - 1];
-    if (!col) {
-      col = this.columns[c - 1] = new Column(this, c);
-    }
-    return col;
+  getRowsByTag(tag: string) {
+    // const rows = this.rows.filter((row) => row.tags.includes(tag));
+    return this.rows.filter((row) => row.tags.includes(tag));
+  }
+
+  addColumnCellsByTag(column: number, tag: string) {
+    let values = this.getRowsByTag(tag).map((row) => row.cells[column].value);
+
+    return addFP(...values);
   }
 }
 
@@ -77,11 +163,17 @@ export class Row {
   table: Table;
   number: number;
   style: Style = {};
-  cells: any[] = [];
+  cells: any[];
+  tags: string[];
+  id?: string;
 
   constructor(table: Table, number: number) {
     this.table = table;
     this.number = number;
+    this.id = undefined;
+
+    this.cells = [];
+    this.tags = [];
   }
 
   get values() {
@@ -90,11 +182,15 @@ export class Row {
 
   set values(values) {
     this.cells = values.map((value, i) => {
-      const cell = new Cell(this.number, i + 1, this.table);
+      const cell = new Cell(this.number, i, this.table);
       cell.value = value;
       cell.style = {};
       return cell;
     });
+  }
+
+  hasTag(tag: string) {
+    return this.tags.includes(tag);
   }
 }
 
@@ -102,11 +198,12 @@ export class Column {
   table: Table;
   number: number;
   style: Style = {};
-  cells: any[] = [];
+  cells: any[];
 
   constructor(table: Table, number: number) {
     this.table = table;
     this.number = number;
+    this.cells = [];
   }
 
   get values() {
@@ -115,7 +212,7 @@ export class Column {
 
   set values(values) {
     this.cells = values.map((value, i) => {
-      const cell = new Cell(this.number, i + 1, this.table);
+      const cell = new Cell(this.number, i, this.table);
       cell.value = value;
       cell.style = {};
       return cell;
@@ -123,16 +220,16 @@ export class Column {
   }
 }
 
-class Cell {
+export class Cell {
   table: Table;
-  value: any = null;
+  _value: any;
   _style: Style = {};
 
   row: number;
   column: number;
 
   constructor(row: number, column: number, table: Table) {
-    if (!row || !column) {
+    if (row < 0 || column < 0) {
       throw new Error('Invalid row/column');
     }
 
@@ -141,9 +238,13 @@ class Cell {
     this.table = table;
   }
 
-  // get address() {
-  //   return `${this.columnToLetter(this.column)}${this.row}`;
-  // }
+  get columnLetter() {
+    return columnToLetter(this.column);
+  }
+
+  get address() {
+    return `${columnToLetter(this.column)}${this.row + 1}`;
+  }
 
   get style() {
     return {
@@ -156,15 +257,41 @@ class Cell {
   set style(style: Style) {
     this._style = style;
   }
+
+  set value(value: any) {
+    this._value = value;
+  }
+
+  rawValue() {
+    return this._value;
+  }
+
+  get value() {
+    if (typeof this._value === 'object' && this._value.operation) {
+      if (this._value.operation === 'addColumnCellsByTag') {
+        return this.table.addColumnCellsByTag(this.column, this._value.args[0]);
+      }
+    }
+    return this._value;
+  }
 }
 
 export type Style = {
   bold?: boolean;
-  borderBottom?: 'single' | 'double';
-  borderTop?: 'single' | 'double';
+  borderBottom?: 'thin' | 'double';
+  borderTop?: 'thin' | 'double';
   hideCurrency?: boolean;
   indent?: boolean;
   numFmt?: 'accounting' | 'currency' | 'date' | 'number' | 'percent';
   padTop?: boolean;
   align?: 'center' | 'left' | 'right';
 };
+
+export function columnToLetter(n: number) {
+  let s = '';
+  while (n >= 0) {
+    s = String.fromCharCode((n % 26) + 97) + s;
+    n = Math.floor(n / 26) - 1;
+  }
+  return s.toUpperCase();
+}

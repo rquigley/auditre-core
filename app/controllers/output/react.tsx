@@ -1,3 +1,4 @@
+import { XCircleIcon } from '@heroicons/react/20/solid';
 import clsx from 'clsx';
 import dedent from 'dedent';
 import { Inconsolata } from 'next/font/google';
@@ -36,12 +37,27 @@ export async function AuditPreview({
 
   const data = await getAuditData(auditId);
   return (
-    <div className="text-sm text-slate-800">
-      <div className="max-w-3xl mb-4 border rounded-md p-4">
+    <div className="text-sm text-slate-800 max-w-3xl">
+      <div className=" mb-4 border rounded-md p-4">
         <h1 className="text-lg font-bold">{data.basicInfo.businessName}</h1>
         <div>Conslidated Financial Statements</div>
         <div>Year Ended {data.fiscalYearEnd}</div>
       </div>
+
+      <Warning
+        messages={[
+          <span key="1">
+            <a
+              href="#section-balance-sheet"
+              className="underline hover:no-underline"
+            >
+              Consolidated Balance Sheet
+            </a>
+            : Total assets don&apos;t equal total liabilities and
+            stockholders&apos; deficit
+          </span>,
+        ]}
+      />
 
       <div className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">Contents</h2>
@@ -146,6 +162,7 @@ export async function AuditPreview({
     </div>
   );
 }
+
 async function DataSection({
   section,
   data,
@@ -255,16 +272,23 @@ function buildTable(table: Table): React.ReactNode {
 }
 
 function buildTableRow(row: Row): React.ReactNode {
+  if (row.hasTag('hide-if-zero')) {
+    const hasNonZeroValues = row.cells.some(
+      (cell) => typeof cell.value === 'number' && cell.value !== 0,
+    );
+    if (!hasNonZeroValues) {
+      return null;
+    }
+  }
   return (
     <tr key={row.number} className={row.number % 2 === 0 ? 'bg-slate-100' : ''}>
       {row.cells.map((cell, idx) => {
         const styles = clsx({
           'font-bold': cell.style.bold,
-          // Bug in Tailwind: specific borders don't map
-          'border-b border-b-slate-600': cell.style.borderBottom === 'single',
+          'border-b border-b-slate-600': cell.style.borderBottom === 'thin',
           'border-b border-double border-b-2 border-b-slate-600':
             cell.style.borderBottom === 'double',
-          'border-t border-t-slate-600': cell.style.borderTop === 'single',
+          'border-t border-t-slate-600': cell.style.borderTop === 'thin',
           'border-t border-double border-t-slate-600':
             cell.style.borderTop === 'double',
           'pl-4': cell.style.indent,
@@ -402,5 +426,29 @@ function ToCLink({
     >
       {section.header}
     </a>
+  );
+}
+
+function Warning({ messages }: { messages: React.ReactNode[] }) {
+  return (
+    <div className="rounded-md bg-red-50 p-4 my-4">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+        </div>
+        <div className="ml-3">
+          <h3 className="text-sm font-medium text-red-800">
+            There are errors:
+          </h3>
+          <div className="mt-2 text-sm text-red-700">
+            <ul role="list" className="list-disc space-y-1 pl-5">
+              {messages.map((msg, idx) => (
+                <li key={idx}>{msg}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
