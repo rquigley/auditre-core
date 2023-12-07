@@ -1,6 +1,10 @@
 import dayjs from 'dayjs';
 import ExcelJS from 'exceljs';
 
+import {
+  buildBalanceSheet,
+  filterHideIfZeroRows,
+} from '@/controllers/financial-statement/table';
 import { groupAccountTypes } from '@/lib/finance';
 import { isKey } from '@/lib/util';
 import { AuditId } from '@/types';
@@ -12,6 +16,7 @@ import {
 import { getAuditData } from '../audit';
 
 import type { AuditData } from '@/controllers/audit';
+import type { Cell as TableCell, Row as TableRow } from '@/lib/table';
 
 export async function generate(auditId: AuditId) {
   const data = await getAuditData(auditId);
@@ -40,84 +45,108 @@ async function addBalanceSheet(
   accountTypeToCellMap: Map<AccountType, string>,
   bsWorksheet: ExcelJS.Worksheet,
 ) {
+  const t = await buildBalanceSheet(data);
+
   ws.addRow([data.basicInfo.businessName]);
   ws.addRow(['Consolidated Balance Sheet']);
-  ws.addRow([`As of ${data.fiscalYearEnd}`]);
   ws.addRow([]);
   ws.addRow([]);
 
-  ws.columns = [
-    { key: 'account', width: 50 },
-    {
-      width: 1,
-      // style: {
-      //   fill: {
-      //     type: 'pattern',
-      //     pattern: 'solid',
-      //     // fgColor: { argb: 'FFDDDDDD' },
-      //   },
-      // },
-    },
-    { key: 'balance1', width: 20 },
-    {
-      width: 1,
-      // style: {
-      //   fill: {
-      //     type: 'pattern',
-      //     pattern: 'solid',
-      //     fgColor: { argb: 'FFDDDDDD' },
-      //   },
-      // },
-    },
-    { key: 'balance2' },
-  ];
-  const header = ws.addRow(['', '', '(DATE)']);
-  ws.getCell(`B${header.number}`).alignment = { horizontal: 'right' };
-  header.font = { bold: true };
+  const widths: number[] = [];
+  t.rows.forEach((row) => {
+    const { widths: rowWidths } = addTableRow(
+      ws,
+      row,
+      bsWorksheet,
+      accountTypeToCellMap,
+    );
+    rowWidths.forEach((w, i) => {
+      widths[i] = Math.max(widths[i] || 0, w);
+    });
+  });
 
-  let r = ws.addRow(['Assets']);
-  r.font = { bold: true };
-  ws.addRow(['Current assets:']);
-  const addRow = (label: string, accountType: AccountType) =>
-    ws.addRow([
-      label,
-      '',
-      {
+  widths.forEach((w, i) => {
+    ws.getColumn(i + 1).width = widths[0];
+  });
+}
+
+function addTableRow(
+  ws: ExcelJS.Worksheet,
+  row: TableRow,
+  bsWorksheet: ExcelJS.Worksheet,
+  accountTypeToCellMap: Map<AccountType, string>,
+) {
+  const values = row.cells.map((cell: TableCell) => {
+    const val = cell.rawValue();
+    if (typeof val === 'object') {
+      if (val.operation === 'addColumnCellsByTag') {
+        const tag = val.args[0];
+        const taggedRows = row.table.getRowsByTag(tag);
+        const curRow = (ws?.lastRow?.number || 0) + 1;
+        const rowOffset = curRow - row.number;
+        const range = cell.table.getAddressRange(cell, taggedRows, rowOffset);
+
+        return {
+          formula: `=SUM(${range})`,
+          result: 7,
+        };
+      }
+    }
+    if (isAccountType(row.id) && cell.column !== 0) {
+      return {
         formula: `=SUM('${bsWorksheet.name}'!${accountTypeToCellMap.get(
-          accountType,
+          row.id as AccountType,
         )})`,
         result: 7,
-      },
-    ]);
+      };
+    }
 
-  let r1, r2, rt;
-  r1 = addRow('Cash', 'ASSET_CASH_AND_CASH_EQUIVALENTS');
-  addRow('Inventory', 'ASSET_INVENTORY');
-  addRow('Prepaid expenses', 'ASSET_PREPAID_EXPENSES');
-  r2 = addRow('Prepaid expenses and other current assets', 'ASSET_OTHER');
-  rt = ws.addRow([
-    'Total current assets',
-    '',
-    {
-      formula: `=SUM(${r1.getCell(3).address},${r2.getCell(3).address})`,
-      result: 7,
-    },
-  ]);
-  rt.getCell(1).style = {
-    // font: { bold: true },
-    border: {
-      top: { style: 'thin', color: { argb: 'FF000000' } },
-    },
-  };
-  rt.getCell(3).style = {
-    // font: { bold: true },
-    border: {
-      top: { style: 'thin', color: { argb: 'FF000000' } },
-    },
-  };
-  // no cents, move up
-  ws.getColumn('balance1').numFmt =
-    '_($* #,##0_);_($* (#,##0);_($* "-"??_);_(@_)';
+    if (cell.style.indent) {
+      return `    ${cell.value}`;
+    }
+    return cell.value;
+  });
+
+  const r = ws.addRow(values);
+
+  const widths: number[] = [];
+  row.cells.forEach((cell: TableCell, i: number) => {
+    const xCell = r.getCell(i + 1);
+
+    if (cell.style.bold) {
+      xCell.font = { bold: true };
+    }
+    const border: any = {};
+
+    if (cell.style.borderTop) {
+      border.top = { style: cell.style.borderTop, color: { argb: 'FF000000' } };
+    }
+    if (cell.style.borderBottom) {
+      border.bottom = {
+        style: cell.style.borderBottom,
+        color: { argb: 'FF000000' },
+      };
+    }
+    if (border.top || border.bottom) {
+      xCell.border = border;
+    }
+    if (cell.style.numFmt === 'accounting') {
+      xCell.numFmt = '_($* #,##0_);_($* (#,##0);_($* "-"??_);_(@_)';
+    }
+
+    widths[i] = String(cell.value).length;
+  });
+
+  if (row.hasTag('hide-if-zero')) {
+    const hasNonZeroValues = row.cells.some(
+      (cell) => typeof cell.value === 'number' && cell.value !== 0,
+    );
+    if (!hasNonZeroValues) {
+      r.hidden = true;
+    }
+  }
+
+  return { widths };
 }
 
 async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
@@ -285,6 +314,7 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
       ws.getCell(`F${curRowNumber}`).numFmt =
         '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
     }
+    ++curRowNumber;
 
     ws.getCell(`E${curRowNumber}`).style = {
       font: { bold: true },
@@ -313,19 +343,20 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
   return accountTypeToCellMap;
 }
 
+const accountTypeBG = {
+  ASSET: 'FFdef5c1',
+  LIABILITY: 'FFc1e0f5',
+  EQUITY: 'FFefd0f7',
+  INCOME: 'FFffefd9',
+
+  UNKNOWN: 'FFeb3d26',
+} as const;
+
 function applyBGFormatting(
   ws: ExcelJS.Worksheet,
   range: string,
   accountTypeCol: string,
 ) {
-  const accountTypeBG = {
-    ASSET: 'FFdef5c1',
-    LIABILITY: 'FFc1e0f5',
-    EQUITY: 'FFefd0f7',
-    INCOME: 'FFffefd9',
-
-    UNKNOWN: 'FFeb3d26',
-  } as const;
   for (const [accountType, bgColor] of Object.entries(accountTypeBG)) {
     ws.addConditionalFormatting({
       ref: range,
@@ -355,4 +386,29 @@ function applyBGFormatting(
       ],
     });
   }
+}
+
+// function getAccountTypeStyle(accountType: AccountType) {
+//   const key = accountType.slice(
+//     0,
+//     accountType.indexOf('_'),
+//   ) as keyof typeof accountTypeBG;
+//   const bgColor = accountTypeBG[key];
+//   return {
+//     fill: {
+//       type: 'pattern',
+//       pattern: 'solid',
+//       bgColor: { argb: bgColor },
+//     },
+//     font:
+//       accountType === 'UNKNOWN'
+//         ? {
+//             color: { argb: 'FFffffff' },
+//           }
+//         : undefined,
+//   };
+// }
+
+function isAccountType(v: any): v is AccountType {
+  return isKey(accountTypes, v);
 }

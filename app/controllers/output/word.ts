@@ -3,6 +3,7 @@ import { ppCurrency } from '@/lib/util';
 import {
   buildBalanceSheet,
   buildStatementOfOperations,
+  filterHideIfZeroRows,
   tableMap,
 } from '../financial-statement/table';
 import {
@@ -296,7 +297,9 @@ function buildTable(table: ARTable) {
       size: 100,
       type: WidthType.PERCENTAGE,
     },
-    rows: table.rows.map((row: ARRow) => buildTableRow(row)),
+    rows: filterHideIfZeroRows(table.rows).map((row: ARRow) =>
+      buildTableRow(row),
+    ),
   });
 
   return t;
@@ -308,7 +311,7 @@ function buildTableRow(row: ARRow) {
       const borders = {
         top: {
           style:
-            cell.style.borderTop === 'single'
+            cell.style.borderTop === 'thin'
               ? BorderStyle.SINGLE
               : cell.style.borderTop === 'double'
                 ? BorderStyle.DOUBLE
@@ -318,7 +321,7 @@ function buildTableRow(row: ARRow) {
         },
         bottom: {
           style:
-            cell.style.borderBottom === 'single'
+            cell.style.borderBottom === 'thin'
               ? BorderStyle.SINGLE
               : cell.style.borderBottom === 'double'
                 ? BorderStyle.DOUBLE
