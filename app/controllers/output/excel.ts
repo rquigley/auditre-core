@@ -343,13 +343,13 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
   return accountTypeToCellMap;
 }
 
-const accountTypeBG = {
-  ASSET: 'FFdef5c1',
-  LIABILITY: 'FFc1e0f5',
-  EQUITY: 'FFefd0f7',
-  INCOME: 'FFffefd9',
+const accountTypeFgBgColors = {
+  ASSET: ['FF111111', 'FFdef5c1'],
+  LIABILITY: ['FF111111', 'FFc1e0f5'],
+  EQUITY: ['FF111111', 'FFefd0f7'],
+  INCOME: ['FF111111', 'FFffefd9'],
 
-  UNKNOWN: 'FFeb3d26',
+  UNKNOWN: ['FFffffff', 'FFeb3d26'],
 } as const;
 
 function applyBGFormatting(
@@ -357,7 +357,7 @@ function applyBGFormatting(
   range: string,
   accountTypeCol: string,
 ) {
-  for (const [accountType, bgColor] of Object.entries(accountTypeBG)) {
+  for (const [accountType, colors] of Object.entries(accountTypeFgBgColors)) {
     ws.addConditionalFormatting({
       ref: range,
       rules: [
@@ -373,14 +373,9 @@ function applyBGFormatting(
             fill: {
               type: 'pattern',
               pattern: 'solid',
-              bgColor: { argb: bgColor },
+              bgColor: { argb: colors[1] },
             },
-            font:
-              accountType === 'UNKNOWN'
-                ? {
-                    color: { argb: 'FFffffff' },
-                  }
-                : undefined,
+            font: { color: { argb: colors[0] } },
           },
         },
       ],
