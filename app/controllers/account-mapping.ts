@@ -192,7 +192,6 @@ export async function getBalancesByAccountType(
       debit: r.debit,
     }),
   }));
-  //console.log(rows);
   return new AccountMap(Object.keys(accountTypes) as AccountType[], rows);
 }
 
@@ -205,7 +204,6 @@ export function getBalanceUsingAccountType({
   credit: number;
   debit: number;
 }) {
-  console.log(credit, debit, accountType);
   if (!accountType) {
     return 0;
   }
