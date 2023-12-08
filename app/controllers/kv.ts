@@ -61,7 +61,6 @@ export async function updateKV({
       .executeTakeFirst();
 
     const newValue = String(updater(res?.value));
-    console.log('new Value', newValue, 'prev', res?.value);
 
     await trx
       .insertInto('kv')
