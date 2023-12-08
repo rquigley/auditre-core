@@ -20,7 +20,7 @@ import {
   isAIQuestionJSON,
 } from '@/lib/document-ai-questions';
 import leven from '@/lib/leven';
-import { bucket } from '@/lib/util';
+import { addFP, bucket } from '@/lib/util';
 import { setKV, updateKV } from './kv';
 
 import type { OpenAIMessage } from '@/lib/ai';
@@ -192,6 +192,7 @@ export async function getBalancesByAccountType(
       debit: r.debit,
     }),
   }));
+  //console.log(rows);
   return new AccountMap(Object.keys(accountTypes) as AccountType[], rows);
 }
 
@@ -204,19 +205,20 @@ export function getBalanceUsingAccountType({
   credit: number;
   debit: number;
 }) {
+  console.log(credit, debit, accountType);
   if (!accountType) {
     return 0;
   }
   if (accountType.startsWith('ASSET')) {
-    return debit - credit;
+    return addFP(debit, -credit);
   } else if (accountType.startsWith('LIABILITY')) {
-    return credit - debit;
+    return addFP(credit, -debit);
   } else if (accountType.startsWith('EQUITY')) {
-    return credit - debit;
+    return addFP(credit, -debit);
   } else if (accountType.startsWith('INCOME')) {
-    return credit - debit;
+    return addFP(credit, -debit);
   } else {
-    return credit - debit;
+    return addFP(credit, -debit);
   }
 }
 
@@ -638,6 +640,9 @@ export async function aiClassifyCOARows({
   return { numClassified: toUpdate.length };
 }
 
+export function parseNumber(num: string) {
+  return parseFloat(String(num).replace('=', '')) || 0;
+}
 export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
   const tbDocRequest = await getDataForRequestAttribute(
     auditId,
@@ -721,8 +726,10 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
       continue;
     }
     const searchKey = `${accountNumber}${accountName}`;
-    const newDebit = parseFloat(row[colIdxs.debitColumnIdx]) || 0;
-    const newCredit = parseFloat(row[colIdxs.creditColumnIdx]) || 0;
+
+    const newDebit = parseNumber(row[colIdxs.debitColumnIdx]);
+    const newCredit = parseNumber(row[colIdxs.creditColumnIdx]);
+
     const accountMappingId = getAccountMappingIdFromSearchIndex(
       searchKey,
       tree,

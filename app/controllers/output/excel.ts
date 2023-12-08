@@ -1,10 +1,7 @@
 import dayjs from 'dayjs';
 import ExcelJS from 'exceljs';
 
-import {
-  buildBalanceSheet,
-  filterHideIfZeroRows,
-} from '@/controllers/financial-statement/table';
+import { buildBalanceSheet } from '@/controllers/financial-statement/table';
 import {
   AccountTypeGroup,
   accountTypeGroupToLabel,
@@ -22,7 +19,7 @@ import { getAuditData } from '../audit';
 import type { AuditData } from '@/controllers/audit';
 import type { Cell as TableCell, Row as TableRow } from '@/lib/table';
 
-const numFmt = '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
+const numFmt = '_($* #,##0_);_($* (#,##0);_($* "-"??_);_(@_)';
 const numFmtWithCents = '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
 
 export async function generate(auditId: AuditId) {
@@ -101,9 +98,9 @@ function addTableRow(
     }
     if (isAccountType(row.id) && cell.column !== 0) {
       return {
-        formula: `=SUM('${bsWorksheet.name}'!${accountTypeToCellMap.get(
+        formula: `=ROUND(SUM('${bsWorksheet.name}'!${accountTypeToCellMap.get(
           row.id as AccountType,
-        )})`,
+        )}), 0)`,
         result: 7,
       };
     }
@@ -241,7 +238,7 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
     ws.getCell(`A${curRowNumber}`).value = `${a.accountNumber}${
       a.accountNumber && a.accountName ? ' - ' : ''
     }${a.accountName}`;
-    ws.getCell(`B${curRowNumber}`).value = Math.round(Number(a.balance));
+    ws.getCell(`B${curRowNumber}`).value = a.balance;
     ws.getCell(`C${curRowNumber}`).value = a.accountType;
 
     ws.getCell(`C${curRowNumber}`).dataValidation = {

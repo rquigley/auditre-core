@@ -223,7 +223,7 @@ export function getMonthName(month: string) {
 }
 
 export function addFP(...args: number[]) {
-  return args.reduce((existing, x) => existing + x * 1000, 0) / 1000;
+  return args.reduce((existing, x) => existing + x * 100, 0) / 100;
 }
 
 export function ppCurrency(
