@@ -228,8 +228,10 @@ export function addFP(...args: number[]) {
 
 export function ppCurrency(
   num: number,
-  cents = false,
-  currency: 'USD' | false = 'USD',
+  opts: {
+    cents?: boolean;
+    hideCurrency?: boolean;
+  } = {},
 ) {
   if (num === 0) {
     return '-';
@@ -239,10 +241,10 @@ export function ppCurrency(
     num = num * -1;
   }
   const ret = new Intl.NumberFormat('en-US', {
-    style: currency === false ? undefined : 'currency',
-    currency: currency === false ? undefined : currency,
-    minimumFractionDigits: cents ? 2 : 0,
-    maximumFractionDigits: cents ? 2 : 0,
+    style: opts.hideCurrency ? undefined : 'currency',
+    currency: opts.hideCurrency ? undefined : 'USD',
+    minimumFractionDigits: opts.cents ? 2 : 0,
+    maximumFractionDigits: opts.cents ? 2 : 0,
   }).format(Math.round(num * 100) / 100);
   if (isNeg) {
     return `(${ret})`;
