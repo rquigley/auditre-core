@@ -15,27 +15,37 @@ export function groupFixedAccountsByCategories(
   return result;
 }
 
-export function groupAccountTypes(
-  types: Record<string, string>,
-): Record<string, Record<string, string>> {
-  const grouped: Record<string, Record<string, any>> = {
-    Asset: {},
-    Liability: {},
-    Equity: {},
-    'Income Statement': {},
+export const groupLabels = {
+  ASSET: 'Asset',
+  LIABILITY: 'Liability',
+  EQUITY: 'Equity',
+  INCOME_STATEMENT: 'Income Statement',
+} as const;
+export type AccountTypeGroup = keyof typeof groupLabels;
+
+export function groupAccountTypes(types: Record<string, string>) {
+  const grouped: Record<AccountTypeGroup, Record<string, any>> = {
+    ASSET: {},
+    LIABILITY: {},
+    EQUITY: {},
+    INCOME_STATEMENT: {},
   };
 
   for (const key in types) {
     if (key.startsWith('ASSET_')) {
-      grouped.Asset[key] = types[key];
+      grouped.ASSET[key] = types[key];
     } else if (key.startsWith('LIABILITY_')) {
-      grouped.Liability[key] = types[key];
+      grouped.LIABILITY[key] = types[key];
     } else if (key.startsWith('EQUITY_')) {
-      grouped.Equity[key] = types[key];
+      grouped.EQUITY[key] = types[key];
     } else if (key.startsWith('INCOME_STATEMENT_')) {
-      grouped['Income Statement'][key] = types[key];
+      grouped.INCOME_STATEMENT[key] = types[key];
     }
   }
 
   return grouped;
+}
+
+export function accountTypeGroupToLabel(type: AccountTypeGroup): string {
+  return groupLabels[type];
 }

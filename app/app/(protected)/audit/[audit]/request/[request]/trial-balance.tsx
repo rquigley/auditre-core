@@ -74,19 +74,15 @@ export async function TrialBalance({ auditId }: { auditId: AuditId }) {
                   )}
                 </td>
                 <td
-                  className={`w-30 px-2 py-2 text-sm font-medium text-gray-900 text-right ${financeFont}`}
+                  className={`w-30 px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className}`}
                 >
                   {' '}
-                  {am.credit > 0
-                    ? ppCurrency(parseFloat(am.credit as unknown as string))
-                    : '-'}
+                  {am.credit > 0 ? ppCurrency(am.credit, { cents: true }) : '-'}
                 </td>
                 <td
-                  className={`w-30 px-2 py-2 text-sm font-medium text-gray-900 text-right ${financeFont}`}
+                  className={`w-30 px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className}`}
                 >
-                  {am.debit > 0
-                    ? ppCurrency(parseFloat(am.debit as unknown as string))
-                    : '-'}
+                  {am.debit > 0 ? ppCurrency(am.debit, { cents: true }) : '-'}
                 </td>
                 {/* <td className="w-full whitespace-nowrap px-2 py-2 text-sm text-gray-900">
                   <AccountBalance
@@ -112,26 +108,4 @@ export async function TrialBalance({ auditId }: { auditId: AuditId }) {
       </form>
     </div>
   );
-}
-
-function groupAccountTypes(
-  types: Record<string, string>,
-): Record<string, Record<string, string>> {
-  const grouped: Record<string, Record<string, any>> = {
-    Asset: {},
-    Liability: {},
-    Equity: {},
-  };
-
-  for (const key in types) {
-    if (key.startsWith('ASSET_')) {
-      grouped.Asset[key] = types[key];
-    } else if (key.startsWith('LIABILITY_')) {
-      grouped.Liability[key] = types[key];
-    } else if (key.startsWith('EQUITY_')) {
-      grouped.Equity[key] = types[key];
-    }
-  }
-
-  return grouped;
 }

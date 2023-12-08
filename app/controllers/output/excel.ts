@@ -5,7 +5,11 @@ import {
   buildBalanceSheet,
   filterHideIfZeroRows,
 } from '@/controllers/financial-statement/table';
-import { groupAccountTypes } from '@/lib/finance';
+import {
+  AccountTypeGroup,
+  accountTypeGroupToLabel,
+  groupAccountTypes,
+} from '@/lib/finance';
 import { isKey } from '@/lib/util';
 import { AuditId } from '@/types';
 import {
@@ -17,6 +21,9 @@ import { getAuditData } from '../audit';
 
 import type { AuditData } from '@/controllers/audit';
 import type { Cell as TableCell, Row as TableRow } from '@/lib/table';
+
+const numFmt = '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
+const numFmtWithCents = '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
 
 export async function generate(auditId: AuditId) {
   const data = await getAuditData(auditId);
@@ -131,7 +138,7 @@ function addTableRow(
       xCell.border = border;
     }
     if (cell.style.numFmt === 'accounting') {
-      xCell.numFmt = '_($* #,##0_);_($* (#,##0);_($* "-"??_);_(@_)';
+      xCell.numFmt = numFmt;
     }
 
     widths[i] = String(cell.value).length;
@@ -283,8 +290,7 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
     },
   };
 
-  ws.getColumn('balance').numFmt =
-    '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
+  ws.getColumn('balance').numFmt = numFmtWithCents;
 
   ws.getColumn('account').width = widths[0] + 2;
   ws.getColumn('balance').width = widths[1] + 4;
@@ -294,25 +300,39 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
   const groups = groupAccountTypes(accountTypes);
   const accountTypeToCellMap = new Map<AccountType, string>();
   widths = [10, 20];
-  for (const group of Object.keys(groups)) {
+  let rowNumbers = {
+    retainedEarnings: 0,
+    total: {
+      ASSET: 0,
+      LIABILITY: 0,
+      EQUITY: 0,
+      INCOME_STATEMENT: 0,
+    },
+  };
+  for (const g of Object.keys(groups)) {
+    const group = g as AccountTypeGroup;
     ++curRowNumber;
 
     const types = groups[group];
-    ws.getCell(`E${curRowNumber}`).value = group;
+    ws.getCell(`E${curRowNumber}`).value = accountTypeGroupToLabel(group);
     ws.getCell(`E${curRowNumber}`).style = { font: { bold: true } };
     const firstCellToTotal = curRowNumber + 1;
-    for (const type of Object.keys(types)) {
-      ++curRowNumber;
-      ws.getCell(`E${curRowNumber}`).value = types[type];
-      widths[0] = Math.max(widths[0], types[type].length);
 
-      accountTypeToCellMap.set(type as AccountType, `F${curRowNumber}`);
+    for (const accountType of Object.keys(types)) {
+      ++curRowNumber;
+      if (accountType === 'EQUITY_RETAINED_EARNINGS') {
+        rowNumbers.retainedEarnings = curRowNumber;
+      }
+      ws.getCell(`E${curRowNumber}`).value = types[accountType];
+      widths[0] = Math.max(widths[0], types[accountType].length);
+
+      accountTypeToCellMap.set(accountType as AccountType, `F${curRowNumber}`);
       ws.getCell(`F${curRowNumber}`).value = {
-        formula: `SUMIFS(B${firstRowNumber}:B${totalRow.number}, C${firstRowNumber}:C${totalRow.number}, "${type}")`,
+        formula: `SUMIFS(B${firstRowNumber}:B${
+          totalRow.number - 1
+        }, C${firstRowNumber}:C${totalRow.number - 1}, "${accountType}")`,
         result: 7,
       };
-      ws.getCell(`F${curRowNumber}`).numFmt =
-        '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
     }
     ++curRowNumber;
 
@@ -328,15 +348,71 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
         top: { style: 'double', color: { argb: 'FF000000' } },
       },
     };
-    ws.getCell(`E${curRowNumber}`).value = `Total ${group}`;
+    let label;
+    if (group === 'INCOME_STATEMENT') {
+      label = 'Net Income';
+
+      if (rowNumbers.retainedEarnings) {
+        ws.getCell(`F${rowNumbers.retainedEarnings}`).value = {
+          formula: `SUMIFS(B${firstRowNumber}:B${
+            totalRow.number - 1
+          }, C${firstRowNumber}:C${
+            totalRow.number - 1
+          }, "EQUITY_RETAINED_EARNINGS") + F${curRowNumber}`,
+          result: 7,
+        };
+      }
+    } else {
+      label = `Total ${accountTypeGroupToLabel(group).toLowerCase()}`;
+    }
+    rowNumbers.total[group] = curRowNumber;
+
+    ws.getCell(`E${curRowNumber}`).value = label;
     ws.getCell(`F${curRowNumber}`).value = {
       formula: `SUM(F${firstCellToTotal}:F${curRowNumber - 1})`,
       result: 7,
     };
-    ws.getCell(`F${curRowNumber}`).numFmt =
-      '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
+
     ++curRowNumber;
   }
+
+  curRowNumber += 4;
+  ws.getCell(`E${curRowNumber}`).value = 'Total assets';
+  ws.getCell(`F${curRowNumber}`).value = {
+    formula: `=F${rowNumbers.total.ASSET}`,
+    result: 7,
+  };
+
+  ++curRowNumber;
+  ws.getCell(`E${curRowNumber}`).value = 'Total liabilities + equity';
+  ws.getCell(`F${curRowNumber}`).value = {
+    formula: `SUM(F${rowNumbers.total.LIABILITY}, F${rowNumbers.total.EQUITY})`,
+    result: 7,
+  };
+
+  ++curRowNumber;
+  ws.getCell(`E${curRowNumber}`).value = 'Variance';
+  ws.getCell(`F${curRowNumber}`).value = {
+    formula: `=F${curRowNumber - 2} - F${curRowNumber - 1}`,
+    result: 7,
+  };
+
+  ws.getCell(`E${curRowNumber}`).style = {
+    font: { bold: true },
+    border: {
+      top: { style: 'double', color: { argb: 'FF000000' } },
+    },
+  };
+  ws.getCell(`F${curRowNumber}`).style = {
+    font: { bold: true },
+    border: {
+      top: { style: 'double', color: { argb: 'FF000000' } },
+    },
+  };
+
+  ws.getColumn('E').alignment = { horizontal: 'right' };
+  ws.getColumn('F').numFmt = numFmtWithCents;
+
   ws.getColumn('totals').width = widths[0] + 2;
   ws.getColumn('totals_balance').width = widths[1];
 

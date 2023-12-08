@@ -5,8 +5,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { overrideAccountMapping } from '@/lib/actions';
+import { accountTypeGroupToLabel } from '@/lib/finance';
 
 import type { AccountType } from '@/controllers/account-mapping';
+import type { AccountTypeGroup, groupLabels } from '@/lib/finance';
 import type { AccountMappingId, AuditId } from '@/types';
 
 export function AccountMapping({
@@ -18,7 +20,7 @@ export function AccountMapping({
   auditId: AuditId;
   accountMappingId: AccountMappingId;
   accountType: AccountType;
-  accountTypes: Record<string, Record<string, string>>;
+  accountTypes: Record<AccountTypeGroup, Record<string, string>>;
 }) {
   const [currentAccountType, setCurrentAccountType] =
     useState<AccountType | null>(accountType);
@@ -48,10 +50,13 @@ export function AccountMapping({
       >
         <option value="">None</option>
         {Object.keys(accountTypes).map((group) => (
-          <optgroup key={group} label={group}>
-            {Object.keys(accountTypes[group]).map((t) => (
+          <optgroup
+            key={group}
+            label={accountTypeGroupToLabel(group as AccountTypeGroup)}
+          >
+            {Object.keys(accountTypes[group as AccountTypeGroup]).map((t) => (
               <option key={t} value={t}>
-                {accountTypes[group][t]}
+                {accountTypes[group as AccountTypeGroup][t]}
               </option>
             ))}
           </optgroup>

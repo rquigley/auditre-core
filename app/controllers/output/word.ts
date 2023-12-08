@@ -344,11 +344,10 @@ function buildTableRow(row: ARRow) {
 
       if (typeof cell.value === 'number' && cell.style.numFmt) {
         if (cell.style.numFmt === 'accounting') {
-          value = ppCurrency(
-            cell.value,
-            false,
-            cell.style.hideCurrency ? false : 'USD',
-          );
+          value = ppCurrency(cell.value, {
+            cents: false,
+            hideCurrency: cell.style.hideCurrency,
+          });
         } else {
           value = `${cell.style.numFmt} NOT IMPLEMENTED`;
         }

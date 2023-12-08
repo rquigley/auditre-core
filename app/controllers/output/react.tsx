@@ -304,7 +304,9 @@ function buildTableRow(row: Row): React.ReactNode {
                 <div>
                   {cell.value !== 0 && !cell.style.hideCurrency ? '$' : ''}
                 </div>
-                <div>{ppCurrency(cell.value, false, false)}</div>
+                <div>
+                  {ppCurrency(cell.value, { cents: false, hideCurrency: true })}
+                </div>
               </div>
             );
           } else {
