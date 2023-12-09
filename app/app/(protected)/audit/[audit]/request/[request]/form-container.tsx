@@ -1,4 +1,5 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
 import { Await } from '@/components/await';
@@ -10,6 +11,7 @@ import {
 } from '@/controllers/document';
 import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestType } from '@/controllers/request-data';
+import { getCurrent } from '@/controllers/session-user';
 import { BasicForm } from './basic-form';
 import { ChartOfAccounts } from './chart-of-accounts';
 import { TrialBalance } from './trial-balance';
@@ -33,6 +35,11 @@ export default async function FormContainer({
     data: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     'use server';
+
+    const { user } = await getCurrent();
+    if (!user) {
+      return notFound();
+    }
 
     await saveRequestData({
       auditId: auditId,
