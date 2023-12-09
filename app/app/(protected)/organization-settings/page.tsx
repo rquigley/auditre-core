@@ -2,6 +2,7 @@ import { ChevronRightIcon } from '@heroicons/react/20/solid';
 import { revalidatePath } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { z } from 'zod';
 
 import { Content } from '@/components/content';
@@ -130,6 +131,11 @@ function Users({ users }: { users: User[] }) {
 function Invitations({ invitations }: { invitations: Invitation[] }) {
   async function deleteInvite(prevState: any, formData: FormData) {
     'use server';
+    const { user } = await getCurrent();
+    if (!user) {
+      return notFound();
+    }
+
     try {
       const data = deleteInviteSchema.parse({
         inviteId: formData.get('inviteId'),

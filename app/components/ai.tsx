@@ -1,8 +1,10 @@
 import { revalidatePath } from 'next/cache';
+import { notFound } from 'next/navigation';
 
 // import CopyToClipboard from '@/components/copy-to-clipboard';
 import { nl2br } from '@/components/nl2br';
 import { askQuestion, getAllByDocumentId } from '@/controllers/ai-query';
+import { getCurrent } from '@/controllers/session-user';
 import { OpenAIModel } from '@/types';
 import AIForm from './ai-form';
 import Datetime from './datetime';
@@ -14,6 +16,11 @@ export default async function AI({ document }: { document: Document }) {
 
   async function saveData({ query, model }: { query: string; model: string }) {
     'use server';
+    const { user } = await getCurrent();
+    if (!user) {
+      return notFound();
+    }
+
     const typedModel = model as OpenAIModel;
     const result = await askQuestion({
       document,

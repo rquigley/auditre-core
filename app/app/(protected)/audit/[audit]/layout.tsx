@@ -44,6 +44,10 @@ export default async function AuditLayout({
         description="Are you sure you want to delete this audit? It cannot be undone"
         action={async () => {
           'use server';
+          const { user } = await getCurrent();
+          if (!user) {
+            return notFound();
+          }
           await deleteAudit(auditId);
         }}
         postActionUrl="/audits"
