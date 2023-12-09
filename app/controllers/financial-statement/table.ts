@@ -455,7 +455,6 @@ export async function buildPropertyAndEquipmentNet(
     .filter((a) => a.name.toLowerCase().includes('accumulated depreciation'))
     .reduce((acc, a) => addFP(acc, a.balance), 0);
 
-  assetCategories = assetCategories.sort();
   let totalPropertyAndEquipment = 0;
 
   let t = new Table();
