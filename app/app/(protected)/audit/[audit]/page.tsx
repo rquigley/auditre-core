@@ -27,7 +27,7 @@ export default async function AuditPage({
 
   const statusesP = getStatusesForAuditId(auditId);
 
-  const groupedRequests = sortRows(requests, [
+  const groupedRequests = groupRows(requests, [
     'Background',
     'Accounting Information',
     'Business Operations',
@@ -90,7 +90,7 @@ interface Row {
   group: string;
 }
 
-function sortRows<T extends Row>(
+function groupRows<T extends Row>(
   rows: T[],
   groupOrder: string[],
 ): {
@@ -99,7 +99,6 @@ function sortRows<T extends Row>(
 }[] {
   const groupMap: Record<string, T[]> = {};
 
-  // Group rows by their 'group' property
   for (const row of rows) {
     if (!groupMap[row.group]) {
       groupMap[row.group] = [];
@@ -107,14 +106,6 @@ function sortRows<T extends Row>(
     groupMap[row.group].push(row);
   }
 
-  // Sort each group by 'name'
-  for (const group of Object.keys(groupMap)) {
-    groupMap[group] = groupMap[group].sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
-  }
-
-  // Create SortedRowGroup based on groupOrder
   const sortedRows = groupOrder.map((groupName) => ({
     name: groupName,
     rows: groupMap[groupName] || [],
