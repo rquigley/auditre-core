@@ -188,7 +188,7 @@ export function Table({
                         auditId={auditId}
                         accountBalanceId={row.id}
                         accountType={
-                          (row.accountType || 'UNKNOWN') as AccountType
+                          (row.accountTypeMerged || 'UNKNOWN') as AccountType
                         }
                       />
                     )}
