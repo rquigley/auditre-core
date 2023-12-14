@@ -1,6 +1,7 @@
-import { request } from 'http';
 import OpenAI from 'openai';
 import { z } from 'zod';
+
+import { delay } from './util';
 
 import type { AiQueryUsage, OpenAIModel } from '@/types';
 
@@ -39,11 +40,13 @@ export async function call({
   requestedModel,
   stopSequences,
   respondInJSON,
+  retryNum = 0,
 }: {
   messages: OpenAIMessage[];
   requestedModel: OpenAIModel;
   stopSequences?: string[];
   respondInJSON?: boolean;
+  retryNum?: number;
 }): Promise<{
   message: unknown;
   model: OpenAIModel;
@@ -63,21 +66,30 @@ export async function call({
       stop: stopSequences || undefined,
       response_format: { type: respondInJSON ? 'json_object' : 'text' },
     });
-  } catch (error) {
-    if (error instanceof OpenAI.APIError) {
-      // We might be able to use a larger model
-      // Example error:
-      // 400 This model's maximum context length is 4097 tokens. However, your messages resulted in 4358 tokens. Please reduce the length of the messages.
-      if (error.code === 'context_length_exceeded') {
+  } catch (err) {
+    if (err instanceof OpenAI.APIError) {
+      if (err.status === 429 && retryNum < 4) {
+        await delay(Math.random() * 1000 + 1000);
+        return await call({
+          messages,
+          requestedModel,
+          stopSequences,
+          respondInJSON,
+          retryNum: retryNum + 1,
+        });
+      } else if (err.code === 'context_length_exceeded') {
         if (requestedModel === 'gpt-3.5-turbo') {
           return await call({
             messages,
             requestedModel: DEFAULT_OPENAI_MODEL,
+            stopSequences,
+            respondInJSON,
+            retryNum: retryNum + 1,
           });
         }
       }
     }
-    throw error;
+    throw err;
   }
   if (!resp) {
     return {
@@ -100,7 +112,22 @@ export async function call({
   };
   let message;
   if (respondInJSON) {
-    message = JSON.parse(resp.choices[0].message.content || '');
+    // We've seen the OpenAI API respond with invalid JSON. If we see that, retry once
+    try {
+      message = JSON.parse(resp.choices[0].message.content || '');
+    } catch (error) {
+      if (retryNum === 0) {
+        return call({
+          messages,
+          requestedModel,
+          stopSequences,
+          respondInJSON,
+          retryNum: retryNum + 1,
+        });
+      } else {
+        throw error;
+      }
+    }
   } else {
     message = resp.choices[0].message.content || '';
   }
