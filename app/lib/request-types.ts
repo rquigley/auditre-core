@@ -465,24 +465,6 @@ export const requestTypes = [
 
   generateRequestType(
     {
-      id: 'chart-of-accounts',
-      name: 'Chart of accounts',
-      group: 'Accounting information',
-    },
-    {
-      documentId: {
-        label: "Upload the company's chart of accounts",
-        description:
-          'Use a consolidated chart of accounts if there are multiple lines of business.',
-        extensions: ['XLS', 'XLSX', 'CSV'],
-        input: 'fileupload',
-        aiClassificationType: 'CHART_OF_ACCOUNTS',
-      },
-    },
-  ),
-
-  generateRequestType(
-    {
       id: 'trial-balance',
       name: 'Trial balance',
       group: 'Accounting information',
