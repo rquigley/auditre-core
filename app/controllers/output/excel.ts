@@ -3,17 +3,15 @@ import ExcelJS from 'exceljs';
 
 import { buildBalanceSheet } from '@/controllers/financial-statement/table';
 import {
+  AccountType,
   AccountTypeGroup,
   accountTypeGroupToLabel,
+  accountTypes,
   groupAccountTypes,
 } from '@/lib/finance';
 import { isKey } from '@/lib/util';
 import { AuditId } from '@/types';
-import {
-  AccountType,
-  accountTypes,
-  getAllAccountBalancesByAuditId,
-} from '../account-mapping';
+import { getAllAccountBalancesByAuditId } from '../account-mapping';
 import { getAuditData } from '../audit';
 
 import type { AuditData } from '@/controllers/audit';
@@ -235,11 +233,9 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
   const accounts = await getAllAccountBalancesByAuditId(data.auditId);
   for (const a of accounts) {
     ++curRowNumber;
-    ws.getCell(`A${curRowNumber}`).value = `${a.accountNumber}${
-      a.accountNumber && a.accountName ? ' - ' : ''
-    }${a.accountName}`;
+    ws.getCell(`A${curRowNumber}`).value = a.account;
     ws.getCell(`B${curRowNumber}`).value = a.balance;
-    ws.getCell(`C${curRowNumber}`).value = a.accountType;
+    ws.getCell(`C${curRowNumber}`).value = a.accountTypeMerged;
 
     ws.getCell(`C${curRowNumber}`).dataValidation = {
       type: 'list',
@@ -253,12 +249,9 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
       error: 'The value must not be a valid account type',
     };
 
-    widths[0] = Math.max(
-      widths[0],
-      a.accountNumber.length + a.accountName.length,
-    );
+    widths[0] = Math.max(widths[0], a.accountNumber.length + a.account.length);
     widths[1] = Math.max(widths[1], String(a.balance).length);
-    widths[2] = Math.max(widths[2], (a.mappedToAccountName || '').length);
+    widths[2] = Math.max(widths[2], (a.accountTypeMerged || '').length);
   }
 
   applyBGFormatting(ws, `A${firstRowNumber}:C${curRowNumber}`, 'C');

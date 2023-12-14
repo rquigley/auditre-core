@@ -1,6 +1,6 @@
 import type { OpenAIMessage } from './lib/ai';
-import type { AccountType } from '@/controllers/account-mapping';
 import type { DocumentClassificationType } from '@/controllers/document';
+import type { AccountType } from '@/lib/finance';
 import type {
   ColumnType,
   Generated,
@@ -12,7 +12,6 @@ import type {
 } from 'kysely';
 
 export type AccountBalanceId = string;
-export type AccountMappingId = string;
 export type AuditId = string;
 export type CommentId = string;
 export type DocumentId = string;
@@ -290,35 +289,20 @@ export type CommentUpdate = Updateable<CommentTable>;
 export type NewComment = Insertable<CommentTable>;
 export type Comment = Selectable<CommentTable>;
 
-export interface AccountMappingTable {
-  id: GeneratedAlways<AccountMappingId>;
+export interface AccountBalanceTable {
+  id: GeneratedAlways<AccountBalanceId>;
   auditId: AuditId;
   accountNumber: string;
   accountName: string;
   accountType: AccountType | null;
-  context: string | null;
-  reasoning: string | null;
-  createdAt: ColumnType<Date, string | undefined, never>;
-  isDeleted: ColumnType<boolean, never, boolean>;
-}
-
-export type AccountMappingUpdate = Updateable<AccountMappingTable>;
-export type NewAccountMapping = Insertable<AccountMappingTable>;
-export type AccountMapping = Selectable<AccountMappingTable>;
-
-export interface AccountBalanceTable {
-  id: GeneratedAlways<AccountBalanceId>;
-  auditId: AuditId;
-  accountMappingId: AccountMappingId | null;
-  // account_number/account_name are persisted despite some redundancy with account_mapping.
-  // 1. The names are sometimes subtly different, specifically in Quickbooks
-  // 2. If we import the trial balance prior to the Chart of Accounts, we still want to show something to the user
-  accountNumber: string;
-  accountName: string;
+  accountTypeOverride: AccountType | null;
+  sortIdx: number;
   debit: number;
   credit: number;
   currency: string;
   context: string | null;
+  classificationScore: number | null;
+  reasoning: string | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
 }
@@ -328,14 +312,14 @@ export type NewAccountBalance = Insertable<AccountBalanceTable>;
 export type AccountBalance = Selectable<AccountBalanceTable>;
 
 export interface KVTable {
-  id: GeneratedAlways<AccountBalanceId>;
+  id: GeneratedAlways<number>;
   key: string;
   value: string;
+  modifiedAt: ColumnType<Date, string | undefined, never>;
 }
 
 export interface Database extends Kysely<Database> {
   accountBalance: AccountBalanceTable;
-  accountMapping: AccountMappingTable;
   aiQuery: AiQueryTable;
   audit: AuditTable;
   comment: CommentTable;

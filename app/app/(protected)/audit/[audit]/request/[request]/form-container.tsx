@@ -13,8 +13,7 @@ import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestType } from '@/controllers/request-data';
 import { getCurrent } from '@/controllers/session-user';
 import { BasicForm } from './basic-form';
-import { ChartOfAccounts } from './chart-of-accounts';
-import { TrialBalance } from './trial-balance';
+import { TrialBalance } from './trial-balance/trial-balance';
 
 import type { Props as BasicFormProps } from './basic-form';
 import type { Request } from '@/controllers/request';
@@ -78,10 +77,7 @@ export default async function FormContainer({
 
   let secondaryCmp;
   let postSaveAction;
-  if (request.id === 'chart-of-accounts') {
-    secondaryCmp = <ChartOfAccounts auditId={auditId} />;
-    postSaveAction = 'chart-of-accounts';
-  } else if (request.id === 'trial-balance') {
+  if (request.id === 'trial-balance') {
     secondaryCmp = <TrialBalance auditId={auditId} />;
     postSaveAction = 'trial-balance';
   } else {

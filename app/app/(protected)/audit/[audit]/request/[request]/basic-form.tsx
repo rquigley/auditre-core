@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import * as z from 'zod';
 
 import {
@@ -18,7 +19,7 @@ import {
   Year,
 } from '@/components/form-fields';
 import { nl2br } from '@/components/nl2br';
-import { extractAccountMapping, extractTrialBalance } from '@/lib/actions';
+import { extractTrialBalance } from '@/lib/actions';
 // import SaveNotice from '@/components/save-notice';
 import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
 import { isFieldVisible } from '@/lib/util';
@@ -51,6 +52,7 @@ export function BasicForm({
   documents,
   postSaveAction,
 }: Props) {
+  const { mutate } = useSWRConfig();
   const [numFilesUploading, setNumFilesUplading] = useState(0);
   const schema = getSchemaForId(request.id);
 
@@ -71,14 +73,11 @@ export function BasicForm({
   async function onSubmit(data: z.infer<typeof schema>) {
     const newData = await saveData(data);
     reset(newData);
-    if (postSaveAction === 'chart-of-accounts') {
-      toast.success('Chart of accounts saved. Extracting accounts...');
-
-      await extractAccountMapping(auditId);
-    } else if (postSaveAction === 'trial-balance') {
+    if (postSaveAction === 'trial-balance') {
       toast.success('Trial balance saved. Extracting balances...');
 
       await extractTrialBalance(auditId);
+      mutate(`/audit/${auditId}/account-balance`);
     } else if (postSaveAction) {
       throw new Error(`Unknown postSaveAction: ${postSaveAction}`);
     } else {
