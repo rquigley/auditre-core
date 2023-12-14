@@ -4,7 +4,6 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { extname } from 'path';
-import * as Sentry from '@sentry/nextjs';
 import retry from 'async-retry';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -12,8 +11,7 @@ import * as z from 'zod';
 
 import {
   extractTrialBalance as _extractTrialBalance,
-  classifyChartOfAccountsTypes,
-  extractChartOfAccountsMapping,
+  classifyTrialBalanceTypes,
   updateAccountMappingType,
 } from '@/controllers/account-mapping';
 import {
@@ -34,14 +32,8 @@ import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
 import { getPresignedUrl } from '@/lib/aws';
 import { getRequestTypeForId } from '@/lib/request-types';
 
-import type { AccountType } from '@/controllers/account-mapping';
-import type {
-  AccountMappingId,
-  AuditId,
-  DocumentId,
-  RequestData,
-  S3File,
-} from '@/types';
+import type { AccountType } from '@/lib/finance';
+import type { AccountBalanceId, AuditId, DocumentId, S3File } from '@/types';
 
 export { processDocument };
 
@@ -291,30 +283,6 @@ export async function getPresignedUploadUrl({
   };
 }
 
-export async function extractAccountMapping(auditId: AuditId) {
-  const { user } = await getCurrent();
-  if (!user) {
-    throw new UnauthorizedError();
-  }
-  const audit = await getAuditById(auditId);
-  if (audit.orgId !== user.orgId) {
-    throw new UnauthorizedError();
-  }
-  const success = await extractChartOfAccountsMapping(auditId);
-  console.log('completed extractAccountMapping', success);
-
-  revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
-
-  // Kick off classification. Don't await this
-  classifyChartOfAccountsTypes(audit.orgId, auditId)
-    .catch((err) => {
-      Sentry.captureException(err);
-    })
-    .finally(() => {
-      revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
-    });
-}
-
 export async function getAccountMappingStatus(auditId: AuditId) {
   const { user } = await getCurrent();
   if (!user) {
@@ -353,16 +321,19 @@ export async function extractTrialBalance(auditId: AuditId) {
   }
   const success = await _extractTrialBalance(auditId);
   console.log('completed extractTrialBalance', success);
-  revalidatePath(`/audit/${auditId}`);
+  revalidatePath(`/audit/${auditId}/request/trial-balance`);
+
+  // Kick off classification. Don't await this
+  classifyTrialBalanceTypes(audit.orgId, auditId);
 }
 
 export async function overrideAccountMapping({
   auditId,
-  accountMappingId,
+  accountBalanceId,
   accountType,
 }: {
   auditId: AuditId;
-  accountMappingId: AccountMappingId;
+  accountBalanceId: AccountBalanceId;
   accountType: AccountType | null;
 }) {
   const { user } = await getCurrent();
@@ -373,5 +344,5 @@ export async function overrideAccountMapping({
   if (audit.orgId !== user.orgId) {
     throw new UnauthorizedError();
   }
-  await updateAccountMappingType(accountMappingId, accountType);
+  await updateAccountMappingType(accountBalanceId, accountType);
 }

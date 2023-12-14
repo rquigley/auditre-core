@@ -1,8 +1,5 @@
-import {
-  AccountMap,
-  getAccountsForCategory,
-} from '@/controllers/account-mapping';
-import { groupFixedAccountsByCategories } from '@/lib/finance';
+import { getAccountsForCategory } from '@/controllers/account-mapping';
+import { AccountMap, groupFixedAccountsByCategories } from '@/lib/finance';
 import { Row, Table } from '@/lib/table';
 import { addFP } from '@/lib/util';
 

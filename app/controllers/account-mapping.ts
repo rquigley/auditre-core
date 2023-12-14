@@ -1,5 +1,5 @@
+import * as Sentry from '@sentry/nextjs';
 import dedent from 'dedent';
-import { PassjoinIndex } from 'mnemonist';
 import { revalidatePath } from 'next/cache';
 import { inferSchema, initParser } from 'udsv';
 import * as z from 'zod';
@@ -19,147 +19,61 @@ import {
   documentAiQuestions,
   isAIQuestionJSON,
 } from '@/lib/document-ai-questions';
-import leven from '@/lib/leven';
+import { AccountMap, accountTypes } from '@/lib/finance';
 import { addFP, bucket } from '@/lib/util';
-import { setKV, updateKV } from './kv';
+import { getByIdForClientCached } from './audit';
+import { deleteKV, getKV, setKV, updateKV } from './kv';
 
 import type { OpenAIMessage } from '@/lib/ai';
+import type { AccountType } from '@/lib/finance';
 import type {
-  AccountMapping,
-  AccountMappingId,
+  AccountBalance,
+  AccountBalanceId,
+  Audit,
   AuditId,
   Document,
-  NewAccountMapping,
   OpenAIModel,
   OrgId,
 } from '@/types';
 
-export const accountTypes = {
-  ASSET_CASH_AND_CASH_EQUIVALENTS: 'Cash and cash equivalents',
-  ASSET_INTANGIBLE_ASSETS: 'Intangible assets, net',
-  ASSET_INVENTORY: 'Inventory',
-  ASSET_OPERATING_LEASE_RIGHT_OF_USE: 'Operating lease right-of-use assets',
-  ASSET_CURRENT_OTHER: 'Other current assets',
-  ASSET_OTHER: 'Other assets',
-  ASSET_PREPAID_EXPENSES: 'Prepaid expenses',
-  ASSET_PROPERTY_AND_EQUIPMENT: 'Property and equipment, net',
-
-  LIABILITY_ACCOUNTS_PAYABLE: 'Accounts payable',
-  LIABILITY_ACCRUED_INTEREST: 'Accrued interest',
-  LIABILITY_ACCRUED_LIABILITIES: 'Accrued liabilities',
-  LIABILITY_CONVERTIBLE_NOTES_PAYABLE: 'Convertible notes payable',
-  LIABILITY_DEBT: 'Long-term debt',
-  LIABILITY_DEFERRED_REVENUE: 'Deferred revenue',
-  LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT:
-    'Operating lease liabilities, current',
-  LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION:
-    'Operating lease liabilities, net of current portion',
-  LIABILITY_OTHER: 'Other current liabilities',
-
-  EQUITY_ACCUMULATED_DEFICIT: 'Accumulated deficit',
-  EQUITY_COMMON_STOCK: 'Common stock',
-  EQUITY_PAID_IN_CAPITAL: 'Additional paid-in capital',
-  EQUITY_PREFERRED_STOCK: 'Convertible preferred stock',
-  EQUITY_RETAINED_EARNINGS: 'Retained earnings',
-
-  INCOME_STATEMENT_COST_OF_REVENUE: 'Cost of revenue',
-  INCOME_STATEMENT_G_AND_A: 'General and administrative',
-  INCOME_STATEMENT_INTEREST_EXPENSE: 'Interest expense',
-  INCOME_STATEMENT_INTEREST_INCOME: 'Interest income',
-  INCOME_STATEMENT_OTHER_INCOME: 'Other income',
-  INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT: 'Research and development',
-  INCOME_STATEMENT_REVENUE: 'Revenue',
-  INCOME_STATEMENT_SALES_AND_MARKETING: 'Sales and marketing',
-  INCOME_TAXES: 'Income taxes',
-
-  UNKNOWN: `You are unsure of the account type or it doesn't map to one of the other values`,
-} as const;
-
-export type AccountType = keyof typeof accountTypes;
-
-export function createAccountMapping(
-  accountMapping: NewAccountMapping,
-): Promise<AccountMapping | undefined> {
-  return db
-    .insertInto('accountMapping')
-    .values({ ...accountMapping })
-    .onConflict((oc) =>
-      oc.columns(['auditId', 'accountNumber', 'accountName']).doNothing(),
-    )
-    .returningAll()
-    .executeTakeFirst();
-}
-
-export function getAccountMappingById(
-  id: AccountMappingId,
-): Promise<AccountMapping> {
-  return db
-    .selectFrom('accountMapping')
-    .where('id', '=', id)
-    .where('isDeleted', '=', false)
-    .selectAll()
-    .executeTakeFirstOrThrow();
-}
-
 export type AccountMappingAll = Pick<
-  AccountMapping,
+  AccountBalance,
   'id' | 'accountNumber' | 'accountName' | 'accountType'
 >;
-export async function getAllAccountMappingsByAuditId(
-  auditId: AuditId,
-): Promise<AccountMappingAll[]> {
-  return await db
-    .selectFrom('accountMapping')
-    .select(['id', 'accountNumber', 'accountName', 'accountType'])
-    .where('auditId', '=', auditId)
-    .where('isDeleted', '=', false)
-    .orderBy(['accountNumber', 'accountName'])
-    .execute();
-}
-
-export async function updateAccountMappingType(
-  id: AccountMappingId,
-  accountType: AccountType | null,
-) {
-  if (accountType !== null && !accountTypes[accountType]) {
-    throw new Error(`Invalid account type: ${accountType}}`);
-  }
-
-  await db
-    .updateTable('accountMapping')
-    .set({ accountType })
-    .where('id', '=', id)
-    .execute();
-}
 
 export async function getAllAccountBalancesByAuditId(
   auditId: AuditId,
   includeDeleted = false,
 ) {
   let query = db
-    .selectFrom('accountBalance as ab')
-    .leftJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')
+    .selectFrom('accountBalance')
     .select([
-      'ab.id',
-      'ab.isDeleted',
-      'ab.accountNumber',
-      'ab.accountName',
-      'ab.accountMappingId',
-      'am.accountName as mappedToAccountName',
-      'am.accountType',
-      'ab.credit',
-      'ab.debit',
-      'ab.currency',
-      'ab.context',
+      'id',
+      'isDeleted',
+      'accountNumber',
+      'accountName',
+      'accountType',
+      'accountTypeOverride',
+      'credit',
+      'debit',
+      'currency',
+      'context',
+      'classificationScore',
+      'sortIdx',
     ])
-    .where('ab.auditId', '=', auditId);
+    .where('auditId', '=', auditId)
+    .orderBy(['sortIdx']);
   if (!includeDeleted) {
-    query = query.where('ab.isDeleted', '=', includeDeleted);
+    query = query.where('isDeleted', '=', includeDeleted);
   }
-  const rows = await query.orderBy(['accountNumber', 'accountName']).execute();
+  const rows = await query.execute();
   return rows.map((r) => ({
     ...r,
-    accountType: r.accountType || 'UNKNOWN',
+    account: `${r.accountNumber}${
+      r.accountNumber && r.accountName ? ' - ' : ''
+    }${r.accountName}`.trim(),
+    accountTypeMerged: r.accountTypeOverride || r.accountType,
+    accountType: r.accountType || '',
     balance: getBalanceUsingAccountType({
       accountType: r.accountType || 'UNKNOWN',
       credit: r.credit,
@@ -172,22 +86,22 @@ export async function getBalancesByAccountType(
   auditId: AuditId,
 ): Promise<AccountMap> {
   const originalRows = await db
-    .selectFrom('accountBalance as ab')
-    .innerJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')
-    .select([
-      'am.accountType',
+    .selectFrom('accountBalance')
+    .select((eb) => [
+      eb.fn
+        .coalesce('accountTypeOverride', 'accountType')
+        .as('accountTypeMerged'),
       db.fn.sum<number>('credit').as('credit'),
       db.fn.sum<number>('debit').as('debit'),
     ])
-    .where('ab.isDeleted', '=', false)
-    .where('accountType', 'is not', null)
-    .where('ab.auditId', '=', auditId)
-    .groupBy('accountType')
+    .where('isDeleted', '=', false)
+    .where('auditId', '=', auditId)
+    .groupBy('accountTypeMerged')
     .execute();
   const rows = originalRows.map((r) => ({
-    accountType: r.accountType || 'UNKNOWN',
+    accountType: r.accountTypeMerged || 'UNKNOWN',
     balance: getBalanceUsingAccountType({
-      accountType: r.accountType || 'UNKNOWN',
+      accountType: r.accountTypeMerged || 'UNKNOWN',
       credit: r.credit,
       debit: r.debit,
     }),
@@ -220,161 +134,19 @@ export function getBalanceUsingAccountType({
   }
 }
 
-export class AccountMap {
-  private map: Map<AccountType, number>;
-
-  constructor(
-    aTypes: AccountType[],
-    initialPairs?: { accountType: AccountType; balance: number }[],
-  ) {
-    this.map = new Map(aTypes.map((aType) => [aType, 0])) as Map<
-      AccountType,
-      number
-    >;
-
-    if (initialPairs) {
-      initialPairs.forEach((pair) => {
-        if (!aTypes.includes(pair.accountType)) {
-          throw new Error('Invalid account type');
-        }
-        this.map.set(pair.accountType, Number(pair.balance));
-      });
-    }
+export async function updateAccountMappingType(
+  id: AccountBalanceId,
+  accountType: AccountType | null,
+) {
+  if (accountType !== null && !accountTypes[accountType]) {
+    throw new Error(`Invalid account type: ${accountType}}`);
   }
 
-  set(key: AccountType, value: number): void {
-    if (!this.map.has(key)) {
-      throw new Error(
-        `key is not one of ${Array.from(this.map.keys())}: ${key}`,
-      );
-    }
-    this.map.set(key, value);
-  }
-
-  get(key: AccountType): number {
-    if (!this.map.has(key)) {
-      throw new Error(
-        `key is not one of ${Array.from(this.map.keys())}: ${key}`,
-      );
-    }
-    return this.map.get(key) || 0;
-  }
-
-  get size(): number {
-    return this.map.size;
-  }
-}
-
-export async function extractChartOfAccountsMapping(
-  auditId: AuditId,
-): Promise<boolean> {
-  const documentIdRes = await getDataForRequestAttribute(
-    auditId,
-    'chart-of-accounts',
-    'documentId',
-  );
-  if (
-    !documentIdRes ||
-    !documentIdRes.data ||
-    'value' in documentIdRes.data ||
-    !documentIdRes.data.isDocuments
-  ) {
-    return false;
-  }
-  const documentIds = documentIdRes.data.documentIds;
-  if (documentIds.length !== 1) {
-    return false;
-  }
-  const document = await getDocumentById(documentIds[0]);
-
-  if (document.classifiedType !== 'CHART_OF_ACCOUNTS') {
-    throw new Error('Invalid classified type');
-  }
-
-  const { rows, colIdxs, schema } = await getSheetData(document);
-  if (
-    colIdxs.accountIdColumnIdx === -1 &&
-    colIdxs.accountNameColumnIdx === -1
-  ) {
-    console.log(
-      'COA extraction, neither account id or account num columns present',
-      colIdxs,
-    );
-    return false;
-  }
-
-  const existingRows = await getAllAccountMappingsByAuditId(auditId);
-  const existingMap = new Map(
-    existingRows.map((r) => [
-      `${r.accountNumber || ''}${r.accountName || ''}`,
-      r,
-    ]),
-  );
-
-  const existingDeletedWithTypeRows = await db
-    .selectFrom('accountMapping')
-    .select(['id', 'accountNumber', 'accountName', 'accountType'])
-    .where('auditId', '=', auditId)
-    .where('isDeleted', '=', true)
-    .where('accountType', 'is not', null)
+  await db
+    .updateTable('accountBalance')
+    .set({ accountTypeOverride: accountType })
+    .where('id', '=', id)
     .execute();
-  const existingTypeMap = new Map(
-    existingDeletedWithTypeRows.map((r) => [
-      `${r.accountNumber || ''}${r.accountName || ''}`,
-      r.accountType,
-    ]),
-  );
-
-  const newMap = new Map();
-  const toAdd = [];
-  for (const row of rows) {
-    const accountNumber = row[colIdxs.accountIdColumnIdx] || '';
-    const accountName = row[colIdxs.accountNameColumnIdx] || '';
-    if (!accountNumber && !accountName) {
-      continue;
-    }
-    newMap.set(`${accountNumber}${accountName}`, {
-      accountNumber,
-      accountName,
-    });
-    if (!existingMap.has(`${accountNumber}${accountName}`)) {
-      // Try and provide the AI with any helpful non-balance data
-      const context = schema.cols.reduce((obj, col, idx) => {
-        if (!row[idx] || col.name.toLowerCase().includes('balance')) {
-          return obj;
-        }
-        return { ...obj, [col.name]: row[idx] };
-      }, {});
-
-      toAdd.push({
-        auditId: auditId,
-        accountNumber,
-        accountName,
-        accountType: existingTypeMap.get(`${accountNumber}${accountName}`),
-        context: JSON.stringify(context),
-      });
-    }
-  }
-
-  if (toAdd.length > 0) {
-    await db.insertInto('accountMapping').values(toAdd).execute();
-  }
-
-  const idsToDelete = [];
-  for (const row of existingRows) {
-    if (!newMap.has(`${row.accountNumber || ''}${row.accountName || ''}`)) {
-      idsToDelete.push(row.id);
-    }
-  }
-  if (idsToDelete.length > 0) {
-    await db
-      .updateTable('accountMapping')
-      .set({ isDeleted: true })
-      .where('id', 'in', idsToDelete)
-      .execute();
-  }
-
-  return true;
 }
 
 type AccountMappingToClassifyRow = {
@@ -385,92 +157,174 @@ type AccountMappingToClassifyRow = {
   context: string | null;
 };
 
-export async function classifyChartOfAccountsTypes(
+export async function classifyTrialBalanceTypes(
   orgId: OrgId,
   auditId: AuditId,
 ): Promise<void> {
-  const rows = await db
-    .selectFrom('accountMapping')
-    .select(['id', 'accountNumber', 'accountName', 'accountType', 'context'])
-    .where('auditId', '=', auditId)
-    .where('isDeleted', '=', false)
-    .where('accountType', 'is', null)
-    .execute();
+  try {
+    const rows = await db
+      .selectFrom('accountBalance')
+      .select(['id', 'accountNumber', 'accountName', 'accountType', 'context'])
+      .where('auditId', '=', auditId)
+      .where('isDeleted', '=', false)
+      .where('accountType', 'is', null)
+      .execute();
 
-  await setKV({
-    orgId,
-    auditId,
-    key: 'coa-to-process',
-    value: rows.length,
-  });
-  await setKV({
-    orgId,
-    auditId,
-    key: 'coa-to-process-total',
-    value: rows.length,
-  });
+    await setKV({
+      orgId,
+      auditId,
+      key: 'tb-processed',
+      value: 0,
+    });
+    await setKV({
+      orgId,
+      auditId,
+      key: 'tb-to-process-total',
+      value: rows.length,
+    });
 
-  if (!rows.length) {
-    console.log('Classifying CoA, no rows to classify');
-    return;
-  }
+    if (!rows.length) {
+      console.log('Classifying TB, no rows to classify');
+      return;
+    }
 
-  const { numClassified, remainingRows } = await autoClassifyCOARows(rows);
-  await setKV({
-    orgId,
-    auditId,
-    key: 'coa-to-process',
-    value: remainingRows.length,
-  });
-  revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
+    const { numClassified, remainingRows } =
+      await autoClassifyTrialBalanceRows(rows);
 
-  const aiP: Promise<any>[] = [];
-  const buckets = bucket(remainingRows, 20, 8);
-  const t0 = Date.now();
-  console.log(
-    `Classifying CoA via AI, ${remainingRows.length} rows, ${buckets.length} buckets`,
-  );
-  buckets.forEach((bucketRows, idx, buckets) => {
-    aiP.push(
-      aiClassifyCOARows({
-        auditId,
-        bucketRows,
-        bucketNum: idx + 1,
-        numBuckets: buckets.length,
-        quickPass: false,
-        includeReasoning: true,
-      }).then(async ({ numClassified }) => {
-        await updateKV({
-          orgId,
-          auditId,
-          key: 'coa-to-process',
-          updater: (prev) => {
-            return Math.max(parseInt(prev || '0') - bucketRows.length, 0);
-          },
-        });
-        revalidatePath(`/audit/${auditId}/request/chart-of-accounts`);
+    await setKV({
+      orgId,
+      auditId,
+      key: 'tb-processed',
+      value: numClassified,
+    });
+    revalidatePath(`/audit/${auditId}/request/trial-balance`);
+    const aiP: Promise<any>[] = [];
 
-        return { numClassified };
-      }),
+    let buckets = bucket(remainingRows, 10, 20);
+    const t0 = Date.now();
+    console.log(
+      `Classifying TB via AI, ${remainingRows.length} rows, ${buckets.length} buckets`,
     );
-  });
-  const res = await Promise.allSettled(aiP);
-  await Promise.all(aiP);
-  const numClassifiedViaAi = res.reduce(
-    (sum, r) => sum + (r.status === 'fulfilled' ? r.value.numClassified : 0),
-    0,
-  );
-  console.log(
-    `Classifying CoA, completed ${numClassified + numClassifiedViaAi}/${
-      rows.length
-    } in ${Date.now() - t0}ms`,
-  );
+
+    buckets.forEach((bucketRows, idx, buckets) => {
+      const bucketNum = idx + 1;
+      console.log(
+        `Classifying TB via AI, ${idx + 1}/${buckets.length}: ${
+          bucketRows.length
+        } rows`,
+      );
+      aiP.push(
+        aiClassifyTrialBalanceRows({
+          auditId,
+          rows: bucketRows,
+          quickPass: false,
+          includeReasoning: false,
+        }).then(async ({ numClassified, timeMs }) => {
+          console.log(
+            `Classified TB via AI, ${bucketNum}/${buckets.length}: ${numClassified} rows in ${timeMs}ms`,
+          );
+          await updateKV({
+            orgId,
+            auditId,
+            key: 'tb-processed',
+            updater: (prev) => {
+              return Math.max(Number(prev ?? 0) + numClassified, 0);
+            },
+          });
+          revalidatePath(`/audit/${auditId}/request/trial-balance`);
+
+          return { numClassified };
+        }),
+      );
+    });
+    const res = await Promise.allSettled(aiP);
+    await Promise.all(aiP);
+    const numClassifiedViaAi = res.reduce(
+      (sum, r) => sum + (r.status === 'fulfilled' ? r.value.numClassified : 0),
+      0,
+    );
+
+    // Retry any rows not classified by the first pass
+    const retryRows = await db
+      .selectFrom('accountBalance')
+      .select(['id', 'accountNumber', 'accountName', 'accountType', 'context'])
+      .where('auditId', '=', auditId)
+      .where('isDeleted', '=', false)
+      .where('accountType', 'is', null)
+      .execute();
+    const { numClassified: numClassifiedOnRetry } =
+      await aiClassifyTrialBalanceRows({
+        auditId,
+        rows: retryRows,
+        quickPass: false,
+        includeReasoning: false,
+      });
+    await updateKV({
+      orgId,
+      auditId,
+      key: 'tb-processed',
+      updater: (prev) => {
+        return Math.max(Number(prev ?? 0) + numClassifiedOnRetry, 0);
+      },
+    });
+
+    console.log(
+      `COMPLETED - Classifying TB, ${
+        numClassified + numClassifiedViaAi + numClassifiedOnRetry
+      }/${rows.length} in ${Date.now() - t0}ms`,
+    );
+  } catch (err) {
+    Sentry.captureException(err);
+  } finally {
+    await deleteKV({
+      orgId,
+      auditId,
+      key: 'tb-processed',
+    });
+    await deleteKV({
+      orgId,
+      auditId,
+      key: 'tb-to-process-total',
+    });
+    revalidatePath(`/audit/${auditId}/request/trial-balance`);
+  }
 }
 
-/**
- * Classify any rows that we can before handing off to the AI
- */
-async function autoClassifyCOARows(
+export async function getStatus(auditId: AuditId) {
+  const audit = await getByIdForClientCached(auditId);
+  if (!audit) {
+    throw new Error('Invalid audit');
+  }
+
+  const numProcessedP = getKV({
+    orgId: audit.orgId,
+    auditId: audit.id,
+    key: 'tb-processed',
+    sinceMs: 1000 * 60,
+  });
+  const numToProcessTotalP = getKV({
+    orgId: audit.orgId,
+    auditId: audit.id,
+    key: 'tb-to-process-total',
+    sinceMs: 1000 * 60,
+  });
+
+  const [numProcessedRaw, numToProcessTotalRaw] = await Promise.all([
+    numProcessedP,
+    numToProcessTotalP,
+  ]);
+
+  const numProcessed = Number(numProcessedRaw ?? 0);
+  const numToProcessTotal = Number(numToProcessTotalRaw ?? 0);
+
+  return {
+    isProcessing: numProcessed !== numToProcessTotal,
+    numProcessed,
+    numToProcessTotal,
+  };
+}
+
+async function autoClassifyTrialBalanceRows(
   rows: AccountMappingToClassifyRow[],
 ): Promise<{
   numClassified: number;
@@ -480,15 +334,43 @@ async function autoClassifyCOARows(
   let accountType: AccountType;
   const remainingRows = [];
   for (const row of rows) {
-    const key = String(row.accountName).toLowerCase();
-    if (key.includes('accounts payable')) {
-      accountType = 'LIABILITY_ACCOUNTS_PAYABLE';
-    } else if (key.includes('common stock')) {
-      accountType = 'EQUITY_COMMON_STOCK';
+    const key = String(row.accountNumber + row.accountName).toLowerCase();
+
+    // Asset
+    if (key.includes('depreciation')) {
+      if (key.includes('accumulated depreciation')) {
+        accountType = 'ASSET_PROPERTY_AND_EQUIPMENT';
+      } else {
+        accountType = 'INCOME_STATEMENT_G_AND_A';
+      }
     } else if (key.includes('fixed asset')) {
       accountType = 'ASSET_PROPERTY_AND_EQUIPMENT';
+    } else if (key.includes('security deposit')) {
+      accountType = 'ASSET_OTHER';
+
+      // Liability
+    } else if (key.includes('accounts payable')) {
+      accountType = 'LIABILITY_ACCOUNTS_PAYABLE';
+    } else if (key.match(/cash[\-\s]+rewards/)) {
+      accountType = 'LIABILITY_OTHER';
+
+      // Equity
+    } else if (key.includes('common stock')) {
+      accountType = 'EQUITY_COMMON_STOCK';
+
+      // Income statement
+    } else if (key.includes('business expense')) {
+      accountType = 'INCOME_STATEMENT_G_AND_A';
     } else if (key.includes('office expense')) {
       accountType = 'INCOME_STATEMENT_G_AND_A';
+    } else if (key.includes('insurance')) {
+      accountType = 'INCOME_STATEMENT_G_AND_A';
+    } else if (key.includes('compensation')) {
+      accountType = 'INCOME_STATEMENT_G_AND_A';
+
+      // Other
+    } else if (key.match(/inter\-?company/i)) {
+      accountType = 'INTERCOMPANY';
     } else {
       remainingRows.push(row);
       continue;
@@ -496,7 +378,7 @@ async function autoClassifyCOARows(
 
     toUpdate.push(
       db
-        .updateTable('accountMapping')
+        .updateTable('accountBalance')
         .set({ accountType })
         .where('id', '=', row.id)
         .execute(),
@@ -511,56 +393,107 @@ async function autoClassifyCOARows(
   };
 }
 
-export async function aiClassifyCOARows({
+function cleanRowForAI({
+  accountNumber,
+  accountName,
+  context,
+}: {
+  accountNumber: string;
+  accountName: string;
+  context: string | null;
+}) {
+  let name: string;
+  if (accountName !== '') {
+    name = accountName;
+  } else {
+    name = accountNumber;
+  }
+  return name
+    .toLowerCase()
+    .replace(/^\d+\s/, '')
+    .replaceAll('(deleted)', '')
+    .replaceAll(' & ', ' and ')
+    .trim();
+}
+
+export async function aiClassifyTrialBalanceRows({
   auditId,
-  bucketRows,
-  bucketNum,
-  numBuckets,
+  rows,
   quickPass,
   includeReasoning,
 }: {
   auditId: AuditId;
-  bucketRows: AccountMappingToClassifyRow[];
-  bucketNum: number;
-  numBuckets: number;
+  rows: AccountMappingToClassifyRow[];
   quickPass: boolean;
   includeReasoning: boolean;
-}): Promise<{ numClassified: number }> {
-  const rowMap = new Map(bucketRows.map((r, idx) => [idx, r.id]));
-  const toAiRows = bucketRows.map((r, idx) => [idx, r.context]);
+}): Promise<{ numClassified: number; timeMs: number }> {
+  const rowMap = new Map(rows.map((r, idx) => [idx, r.id]));
+  const toAiRows = rows.map((r, idx) => {
+    let name = cleanRowForAI(r);
+
+    return [idx, name];
+  });
 
   const t0 = Date.now();
 
   let unknownStr: string;
   let outputStr: string;
   if (includeReasoning) {
+    // unknownStr =
+    //   '- If you are classifying as UNKNOWN, provide your reasoning. Otherwise, you can leave reasoning as empty string.';
+    // outputStr =
+    //   '{"data":[[accountId1, classifiedType1, reasoning1],[accountId2, classifiedType2, reasoning2],...]}';
     unknownStr =
-      'If you are classifying as UNKNOWN, provide your reasoning. Otherwise, you can leave reasoning as empty string.';
+      '- Provide the confidence in your classification between 0.0 and 1.0. If your confidence is less than 0.9, also provide your reasoning.';
     outputStr =
-      '{"data":[[accountId1, classifiedAs1, reasoning1],[accountId2, classifiedAs2, reasoning2],[accountId3, classifiedAs3, reasoning3],...]}';
+      '{"data":[[accountId1, classifiedType1, confidenceScore1, reasoning1],[accountId2, classifiedType2, confidenceScore2, reasoning2],...]}';
   } else {
-    unknownStr = `--Ignore this line--`;
+    unknownStr = '';
     outputStr =
-      '{"data":[[accountId1, classifiedAs1, ""],[accountId2, classifiedAs2, ""],[accountId3, classifiedAs3, ""],...]}';
+      '{"data":[[accountId1, classifiedType1],[accountId2, classifiedType2],...]}';
   }
+
+  let organizationTypeStr = '';
+  // if (1 === 2) {
+  //   organizationTypeStr = 'The organization type is a  "manufacturing". ';
+  // }
   const messages: OpenAIMessage[] = [
     {
       role: 'system',
       content: dedent`
-      1. For each row in a company Chart of Accounts report, classify each row to one of the following
-      accountType(s) used for financial statements:
+      You will be provided an aray in JSON of account ids and account names from an organization's Trial Balance. ${organizationTypeStr}For each account, classify the account name into an account type. The account types you can use are:
 
       ${Object.entries(accountTypes)
-        .map(([aType, description]) => `- ${aType}: ${description}`)
+        // .map(([aType, description]) => `- ${aType}: ${description}`)
+        .map(([aType, description]) => aType)
         .join('\n')}
 
-      2. Confirm the classification is one of the listed accountType based on your reasoning. Do not use a type you make up.
+      It is important to only use account types listed above! Do not make one up.
 
-      3. ${unknownStr}
+      Examples:
+      [1, "mastercard cash rewards"] => LIABILITY_OTHER
+      [1, "amex"] => LIABILITY_OTHER
+      [1, "amazon credit"] => ASSET_OTHER
+      [1, "ops software"] => INCOME_STATEMENT_G_AND_A
+      [1, "technical software"] => INCOME_STATEMENT_G_AND_A
+      [1, "technical papers"] => INCOME_STATEMENT_G_AND_A
+      [1, "charges and fees"] => INCOME_STATEMENT_G_AND_A
+      [1, "office supplies and equipment"] => INCOME_STATEMENT_G_AND_A
+      [1, "protective and safety equipment"] => INCOME_STATEMENT_G_AND_A
+      [1, "tools and equip"] => INCOME_STATEMENT_G_AND_A
+      [1, "per diem"] => INCOME_STATEMENT_G_AND_A
+      [1, "paper and supplies"] => INCOME_STATEMENT_G_AND_A
 
-      4. Do not truncate for brevity. Return all rows in the CSV.
+      Other notes:
+      - Any account that is named for a bank that primarily holds cash should be classified as ASSET_CASH_AND_CASH_EQUIVALENTS unless it mentions a credit or debit card.
 
-      5. Output in JSON using the following structure:
+      - In the case of generic account names, e.g. "other", look at the previous and/or next accounts' classifications. If one or both are classified as INCOME_STATEMENT_* types, use INCOME_STATEMENT_G_AND_A. If one or both are ASSET_* types, use ASSET_OTHER. If one or both are LIABILITY_* types, use LIABILITY_OTHER. Otherwise, use UNKNOWN.
+
+      ${unknownStr}
+
+      - Do not truncate for brevity. Return all rows.
+
+      - Output in JSON using the following structure:
 
         ${outputStr}
       `,
@@ -571,9 +504,6 @@ export async function aiClassifyCOARows({
     },
   ];
 
-  console.log(
-    `Classifying CoA via AI, ${bucketNum}/${numBuckets}: ${toAiRows.length} rows`,
-  );
   let requestedModel: OpenAIModel;
   if (quickPass) {
     requestedModel = 'gpt-3.5-turbo-1106';
@@ -585,9 +515,24 @@ export async function aiClassifyCOARows({
     messages,
     respondInJSON: true,
   });
-  const schema = z.object({
-    data: z.array(z.tuple([z.number(), z.string(), z.string()])),
+
+  // 2-pass schema. The LLM can hallucinate values, sometimes only returning a single value,
+  // sometimes returning a single value instead of an array.
+  const firstPassSchema = z.object({
+    data: z.array(z.any()),
   });
+
+  let rowSchema;
+  if (includeReasoning) {
+    rowSchema = z.tuple([
+      z.number(),
+      z.string(),
+      z.number().nullable().optional(),
+      z.string().nullable().optional(),
+    ]);
+  } else {
+    rowSchema = z.tuple([z.number(), z.string()]);
+  }
 
   await createAiQuery({
     auditId,
@@ -599,33 +544,34 @@ export async function aiClassifyCOARows({
     result: resp.message as string,
   });
 
-  const parsed = schema.parse(resp.message);
-  const t1 = Date.now();
-  console.log(
-    `Classifying CoA via AI, ${bucketNum}/${numBuckets}: ${
-      toAiRows.length
-    } rows in ${t1 - t0}ms`,
-  );
+  const parsed = firstPassSchema.parse(resp.message);
 
   const toUpdate = [];
 
-  for (const [idx, accountType, reasoning] of parsed.data) {
-    const id = rowMap.get(idx) as AccountMappingId;
+  for (const row of parsed.data) {
+    const result = rowSchema.safeParse(row);
+    if (!result.success) {
+      console.log('Invalid row, skipping', row);
+      continue;
+    }
+    const [idx, accountType, ...other] = result.data;
+    const id = rowMap.get(idx) as AccountBalanceId;
     if (!id || accountType in accountTypes === false) {
       console.log('Invalid accountType', accountType);
       continue;
     }
-    // TODO: consider removing this to avoid constantly using AI
+
     if (accountType === 'UNKNOWN' && quickPass) {
       continue;
     }
 
     toUpdate.push(
       db
-        .updateTable('accountMapping')
+        .updateTable('accountBalance')
         .set({
           accountType: accountType as AccountType,
-          reasoning: reasoning || undefined,
+          classificationScore: other[0] || undefined,
+          reasoning: other[1] || undefined,
         })
         .where('id', '=', id)
         .execute(),
@@ -635,12 +581,13 @@ export async function aiClassifyCOARows({
   await Promise.allSettled(toUpdate);
   await Promise.all(toUpdate);
 
-  return { numClassified: toUpdate.length };
+  return { numClassified: toUpdate.length, timeMs: Date.now() - t0 };
 }
 
 export function parseNumber(num: string) {
   return parseFloat(String(num).replace('=', '')) || 0;
 }
+
 export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
   const tbDocRequest = await getDataForRequestAttribute(
     auditId,
@@ -665,54 +612,36 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
   }
 
   const { rows, colIdxs } = await getSheetData(document);
-  if (
-    (colIdxs.accountIdColumnIdx === -1 &&
-      colIdxs.accountNameColumnIdx === -1) ||
-    colIdxs.debitColumnIdx === -1 ||
-    colIdxs.creditColumnIdx === -1
-  ) {
-    console.log('Missing account colIdxs', colIdxs);
-    return false;
-  }
 
   const existingRows = await getAllAccountBalancesByAuditId(auditId, true);
   const existingMap = new Map(
     existingRows.map((r) => [
-      `${r.accountNumber || ''}${r.accountName || ''}`,
+      `${r.accountNumber || ''}-|-${r.accountName || ''}`,
       r,
     ]),
   );
 
-  const accountMappingRows = await db
-    .selectFrom('accountMapping')
-    .select(['id', 'accountNumber', 'accountName'])
-    .where('auditId', '=', auditId)
-    .where('isDeleted', '=', false)
-    // .where('accountType', 'is not', null)
-    .execute();
-
-  // Index for fuzzy search
-  const tree = PassjoinIndex.from(
-    accountMappingRows.map(
-      (r) => `${r.accountNumber || ''}${r.accountName || ''}`,
-    ),
-    leven,
-    7,
-  );
-
-  const accountMappingMap = new Map(
-    accountMappingRows.map((r) => [
-      `${r.accountNumber || ''}${r.accountName || ''}`,
-      r.id,
-    ]),
-  );
+  const accountNumberSchema = z.string().max(72);
+  const accountNameSchema = z.string().max(72);
 
   const toAdd = [];
   const toUpdate = [];
   const idsToRetain: string[] = [];
+  let sortIdx = 0;
   for (const row of rows) {
-    const accountNumber = row[colIdxs.accountIdColumnIdx] || '';
-    const accountName = row[colIdxs.accountNameColumnIdx] || '';
+    sortIdx++;
+
+    const accountNumberParsed = accountNumberSchema.safeParse(
+      row[colIdxs.accountIdColumnIdx] || '',
+    );
+    const accountNameParsed = accountNameSchema.safeParse(
+      row[colIdxs.accountNameColumnIdx] || '',
+    );
+
+    const accountNumber = accountNumberParsed.success
+      ? accountNumberParsed.data
+      : '';
+    const accountName = accountNameParsed.success ? accountNameParsed.data : '';
     if (
       (!accountNumber && !accountName) ||
       (row[colIdxs.debitColumnIdx] === '' &&
@@ -723,16 +652,10 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     ) {
       continue;
     }
-    const searchKey = `${accountNumber}${accountName}`;
+    const searchKey = `${accountNumber}-|-${accountName}`;
 
     const newDebit = parseNumber(row[colIdxs.debitColumnIdx]);
     const newCredit = parseNumber(row[colIdxs.creditColumnIdx]);
-
-    const accountMappingId = getAccountMappingIdFromSearchIndex(
-      searchKey,
-      tree,
-      accountMappingMap,
-    );
 
     if (existingMap.has(searchKey)) {
       const existing = existingMap.get(searchKey) as (typeof existingRows)[0];
@@ -740,17 +663,16 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
       if (
         existing.debit !== newDebit ||
         existing.credit !== newCredit ||
-        (accountMappingId && existing.accountMappingId !== accountMappingId) ||
         existing.isDeleted
       ) {
         toUpdate.push(
           db
             .updateTable('accountBalance')
             .set({
-              accountMappingId: existing.accountMappingId || accountMappingId,
               debit: newDebit,
               credit: newCredit,
               isDeleted: false,
+              sortIdx,
             })
             .where('id', '=', existing.id)
             .execute(),
@@ -760,12 +682,12 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     } else {
       toAdd.push({
         auditId,
-        accountMappingId,
         accountNumber,
         accountName,
         debit: newDebit,
         credit: newCredit,
         currency: 'USD',
+        sortIdx,
       });
     }
   }
@@ -785,6 +707,23 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
       .execute();
   }
 
+  const toClassifyRowCount = await db
+    .selectFrom('accountBalance')
+    .select([db.fn.countAll().as('count')])
+    .where('auditId', '=', auditId)
+    .where('isDeleted', '=', false)
+    .where('accountType', 'is', null)
+    .executeTakeFirstOrThrow();
+
+  const audit = await getByIdForClientCached(auditId);
+  if (audit) {
+    await setKV({
+      orgId: audit.orgId,
+      auditId,
+      key: 'tb-to-process-total',
+      value: toClassifyRowCount.count,
+    });
+  }
   return true;
 }
 
@@ -793,45 +732,17 @@ export async function getAccountsForCategory(
   accountType: AccountType,
 ) {
   const rows = await db
-    .selectFrom('accountBalance as ab')
-    .innerJoin('accountMapping as am', 'ab.accountMappingId', 'am.id')
+    .selectFrom('accountBalance')
     .select([
-      'ab.accountNumber',
-      'ab.accountName',
-      sql<number>`ab.debit - ab.credit`.as('balance'),
+      'accountNumber',
+      'accountName',
+      sql<number>`debit - credit`.as('balance'),
     ])
-    .where('ab.isDeleted', '=', false)
-    .where('ab.auditId', '=', auditId)
-    .where('am.accountType', '=', accountType)
+    .where('isDeleted', '=', false)
+    .where('auditId', '=', auditId)
+    .where('accountType', '=', accountType)
     .execute();
   return rows;
-}
-
-/**
- * This is the "Deal with Quickbooks" logic. Quickbooks places account IDs within the account name,
- * but doesn't do so consistently e.g. "1000 - Cash" vs "1000 Cash". We use a passjoin index to
- * find the closest match.
- **/
-function getAccountMappingIdFromSearchIndex(
-  key: string,
-  tree: PassjoinIndex<string>,
-  accountMappingMap: Map<string, AccountMappingId>,
-) {
-  let accountMappingId;
-  const suggestions = tree.search(key);
-  if (suggestions.size === 1) {
-    const first = Array.from(suggestions.entries())[0][0];
-    accountMappingId = accountMappingMap.get(first);
-  } else if (suggestions.size > 1) {
-    const distances: [distance: number, key: string][] = Array.from(
-      suggestions.entries(),
-    ).map(([suggestion]) => {
-      return [leven(key, suggestion), suggestion];
-    });
-    const bestMatch = distances.sort((a, b) => a[0] - b[0])[0];
-    accountMappingId = accountMappingMap.get(bestMatch[1]);
-  }
-  return accountMappingId || null;
 }
 
 async function getSheetData(document: Document) {
@@ -882,38 +793,22 @@ async function getColIdxs(
   if (!columnMappingsRes.result || !columnMappingsRes.isValidated) {
     throw new Error('Invalid columnMappings for document');
   }
-
-  const res = JSON.parse(columnMappingsRes.result);
-
-  const classifiedType = document.classifiedType;
-
-  if (classifiedType === 'CHART_OF_ACCOUNTS') {
-    if (
-      !documentAiQuestions.CHART_OF_ACCOUNTS ||
-      !isAIQuestionJSON(documentAiQuestions.CHART_OF_ACCOUNTS.columnMappings)
-    ) {
-      throw new Error('Invalid question');
-    }
-    return {
-      ...(res as z.infer<
-        typeof documentAiQuestions.CHART_OF_ACCOUNTS.columnMappings.validate
-      >),
-      classifiedType,
-    } as const;
-  } else if (classifiedType === 'TRIAL_BALANCE') {
-    if (
-      !documentAiQuestions.TRIAL_BALANCE ||
-      !isAIQuestionJSON(documentAiQuestions.TRIAL_BALANCE.columnMappings)
-    ) {
-      throw new Error('Invalid question');
-    }
-    return {
-      ...(res as z.infer<
-        typeof documentAiQuestions.TRIAL_BALANCE.columnMappings.validate
-      >),
-      classifiedType,
-    } as const;
-  } else {
-    throw new Error('Invalid classified type');
+  if (
+    !documentAiQuestions.TRIAL_BALANCE ||
+    !isAIQuestionJSON(documentAiQuestions.TRIAL_BALANCE.columnMappings)
+  ) {
+    throw new Error('Invalid question');
   }
+  const res = JSON.parse(columnMappingsRes.result) as z.infer<
+    typeof documentAiQuestions.TRIAL_BALANCE.columnMappings.validate
+  >;
+
+  if (
+    (res.accountIdColumnIdx === -1 && res.accountNameColumnIdx === -1) ||
+    res.debitColumnIdx === -1 ||
+    res.creditColumnIdx === -1
+  ) {
+    throw new Error('Missing required columnMappings');
+  }
+  return res;
 }
