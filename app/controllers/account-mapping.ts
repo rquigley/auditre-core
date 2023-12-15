@@ -25,7 +25,7 @@ import { getByIdForClientCached } from './audit';
 import { deleteKV, getKV, setKV, updateKV } from './kv';
 
 import type { OpenAIMessage } from '@/lib/ai';
-import type { AccountType } from '@/lib/finance';
+import type { AccountType, AccountTypeGroup } from '@/lib/finance';
 import type {
   AccountBalance,
   AccountBalanceId,
@@ -107,11 +107,13 @@ export async function getBalancesByAccountType(
 
 export async function getAccountByFuzzyMatch(
   auditId: AuditId,
+  accountTypeGroup: AccountTypeGroup,
   searchString: string,
 ) {
   const res = await db
     .selectFrom('accountBalance')
     .select((eb) => [
+      'accountName',
       eb.fn
         .coalesce('accountTypeOverride', 'accountType')
         .as('accountTypeMerged'),
@@ -120,18 +122,22 @@ export async function getAccountByFuzzyMatch(
         .as('score'),
       'credit',
       'debit',
-      // db.fn.sum<number>('credit').as('credit'),
-      // db.fn.sum<number>('debit').as('debit'),
     ])
     .where('auditId', '=', auditId)
     .where('isDeleted', '=', false)
-    // .groupBy('accountTypeMerged')
+    .where((eb) =>
+      eb.fn('starts_with', ['accountType', eb.val(accountTypeGroup)]),
+    )
+    .where(
+      (eb) =>
+        eb.fn<number>('similarity', ['accountName', eb.val(searchString)]),
+      '>',
+      0.09,
+    )
 
     .orderBy('score', 'desc')
     .limit(1)
     .execute();
-
-  console.log(res);
 
   return res[0];
 }
