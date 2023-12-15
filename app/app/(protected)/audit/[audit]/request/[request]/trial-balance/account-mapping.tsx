@@ -63,22 +63,15 @@ export function AccountMapping({
           </optgroup>
         );
       })}
+      {/* {currentAccountType === 'INTERCOMPANY' ? (
+        <optgroup label="Other">
+          <option value={currentAccountType}>
+            {accountTypes[currentAccountType]}
+          </option>
+        </optgroup>
+      ) : null} */}
     </select>
   );
-}
-
-{
-  /* <button
-  type="button"
-  className="p-1 text-left border-white rounded-md hover:bg-slate-100 hover:border-slate-600"
->
-  {row.accountType === 'UNKNOWN' ? (
-    <span className="text-red-600">Unknown</span>
-  ) : (
-    getAccountTypes()[row.accountType]
-    // row.accountType
-  )}
-</button>; */
 }
 
 function getStylesForAccountType(accountType: AccountType | null) {

@@ -38,7 +38,7 @@ import type {
 
 export type AccountMappingAll = Pick<
   AccountBalance,
-  'id' | 'accountNumber' | 'accountName' | 'accountType'
+  'id' | 'accountName' | 'accountType'
 >;
 
 export async function getAllAccountBalancesByAuditId(
@@ -50,7 +50,6 @@ export async function getAllAccountBalancesByAuditId(
     .select([
       'id',
       'isDeleted',
-      'accountNumber',
       'accountName',
       'accountType',
       'accountTypeOverride',
@@ -69,9 +68,6 @@ export async function getAllAccountBalancesByAuditId(
   const rows = await query.execute();
   return rows.map((r) => ({
     ...r,
-    account: `${r.accountNumber}${
-      r.accountNumber && r.accountName ? ' - ' : ''
-    }${r.accountName}`.trim(),
     accountTypeMerged: r.accountTypeOverride || r.accountType,
     accountType: r.accountType || '',
     balance: getBalanceUsingAccountType({
@@ -107,6 +103,37 @@ export async function getBalancesByAccountType(
     }),
   }));
   return new AccountMap(Object.keys(accountTypes) as AccountType[], rows);
+}
+
+export async function getAccountByFuzzyMatch(
+  auditId: AuditId,
+  searchString: string,
+) {
+  const res = await db
+    .selectFrom('accountBalance')
+    .select((eb) => [
+      eb.fn
+        .coalesce('accountTypeOverride', 'accountType')
+        .as('accountTypeMerged'),
+      eb
+        .fn<number>('similarity', ['accountName', eb.val(searchString)])
+        .as('score'),
+      'credit',
+      'debit',
+      // db.fn.sum<number>('credit').as('credit'),
+      // db.fn.sum<number>('debit').as('debit'),
+    ])
+    .where('auditId', '=', auditId)
+    .where('isDeleted', '=', false)
+    // .groupBy('accountTypeMerged')
+
+    .orderBy('score', 'desc')
+    .limit(1)
+    .execute();
+
+  console.log(res);
+
+  return res[0];
 }
 
 export function getBalanceUsingAccountType({
@@ -151,7 +178,6 @@ export async function updateAccountMappingType(
 
 type AccountMappingToClassifyRow = {
   id: string;
-  accountNumber: string;
   accountName: string;
   accountType: AccountType | null;
   context: string | null;
@@ -164,7 +190,7 @@ export async function classifyTrialBalanceTypes(
   try {
     const rows = await db
       .selectFrom('accountBalance')
-      .select(['id', 'accountNumber', 'accountName', 'accountType', 'context'])
+      .select(['id', 'accountName', 'accountType', 'context'])
       .where('auditId', '=', auditId)
       .where('isDeleted', '=', false)
       .where('accountType', 'is', null)
@@ -247,7 +273,7 @@ export async function classifyTrialBalanceTypes(
     // Retry any rows not classified by the first pass
     const retryRows = await db
       .selectFrom('accountBalance')
-      .select(['id', 'accountNumber', 'accountName', 'accountType', 'context'])
+      .select(['id', 'accountName', 'accountType', 'context'])
       .where('auditId', '=', auditId)
       .where('isDeleted', '=', false)
       .where('accountType', 'is', null)
@@ -334,7 +360,7 @@ async function autoClassifyTrialBalanceRows(
   let accountType: AccountType;
   const remainingRows = [];
   for (const row of rows) {
-    const key = String(row.accountNumber + row.accountName).toLowerCase();
+    const key = String(row.accountName).toLowerCase();
 
     // Asset
     if (key.includes('depreciation')) {
@@ -370,7 +396,7 @@ async function autoClassifyTrialBalanceRows(
 
       // Other
     } else if (key.match(/inter\-?company/i)) {
-      accountType = 'INTERCOMPANY';
+      accountType = 'OTHER_INTERCOMPANY';
     } else {
       remainingRows.push(row);
       continue;
@@ -394,21 +420,13 @@ async function autoClassifyTrialBalanceRows(
 }
 
 function cleanRowForAI({
-  accountNumber,
   accountName,
   context,
 }: {
-  accountNumber: string;
   accountName: string;
   context: string | null;
 }) {
-  let name: string;
-  if (accountName !== '') {
-    name = accountName;
-  } else {
-    name = accountNumber;
-  }
-  return name
+  return accountName
     .toLowerCase()
     .replace(/^\d+\s/, '')
     .replaceAll('(deleted)', '')
@@ -464,6 +482,7 @@ export async function aiClassifyTrialBalanceRows({
       You will be provided an aray in JSON of account ids and account names from an organization's Trial Balance. ${organizationTypeStr}For each account, classify the account name into an account type. The account types you can use are:
 
       ${Object.entries(accountTypes)
+        .filter(([aType]) => aType.startsWith('OTHER_'))
         // .map(([aType, description]) => `- ${aType}: ${description}`)
         .map(([aType, description]) => aType)
         .join('\n')}
@@ -614,15 +633,9 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
   const { rows, colIdxs } = await getSheetData(document);
 
   const existingRows = await getAllAccountBalancesByAuditId(auditId, true);
-  const existingMap = new Map(
-    existingRows.map((r) => [
-      `${r.accountNumber || ''}-|-${r.accountName || ''}`,
-      r,
-    ]),
-  );
+  const existingMap = new Map(existingRows.map((r) => [r.accountName, r]));
 
-  const accountNumberSchema = z.string().max(72);
-  const accountNameSchema = z.string().max(72);
+  const accountNameSchema = z.string().min(1).max(72);
 
   const toAdd = [];
   const toUpdate = [];
@@ -631,34 +644,30 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
   for (const row of rows) {
     sortIdx++;
 
-    const accountNumberParsed = accountNumberSchema.safeParse(
-      row[colIdxs.accountIdColumnIdx] || '',
-    );
-    const accountNameParsed = accountNameSchema.safeParse(
-      row[colIdxs.accountNameColumnIdx] || '',
-    );
+    let numberRaw = row[colIdxs.accountIdColumnIdx] || '';
+    let nameRaw = row[colIdxs.accountNameColumnIdx] || '';
+    let accountNameRaw = `${numberRaw}${
+      numberRaw && nameRaw ? ' - ' : ''
+    }${nameRaw}`.trim();
 
-    const accountNumber = accountNumberParsed.success
-      ? accountNumberParsed.data
-      : '';
-    const accountName = accountNameParsed.success ? accountNameParsed.data : '';
+    const accountNameParsed = accountNameSchema.safeParse(accountNameRaw);
+
     if (
-      (!accountNumber && !accountName) ||
+      !accountNameParsed.success ||
       (row[colIdxs.debitColumnIdx] === '' &&
         row[colIdxs.creditColumnIdx] === '') ||
       // Naive, but we want ultimately want to ignore any type of total
-      String(accountNumber)?.toUpperCase() === 'TOTAL' ||
-      String(accountName)?.toUpperCase() === 'TOTAL'
+      String(accountNameParsed.data)?.toUpperCase() === 'TOTAL'
     ) {
       continue;
     }
-    const searchKey = `${accountNumber}-|-${accountName}`;
+    const accountName = accountNameParsed.data;
 
     const newDebit = parseNumber(row[colIdxs.debitColumnIdx]);
     const newCredit = parseNumber(row[colIdxs.creditColumnIdx]);
 
-    if (existingMap.has(searchKey)) {
-      const existing = existingMap.get(searchKey) as (typeof existingRows)[0];
+    if (existingMap.has(accountName)) {
+      const existing = existingMap.get(accountName) as (typeof existingRows)[0];
 
       if (
         existing.debit !== newDebit ||
@@ -682,7 +691,6 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     } else {
       toAdd.push({
         auditId,
-        accountNumber,
         accountName,
         debit: newDebit,
         credit: newCredit,
@@ -733,11 +741,7 @@ export async function getAccountsForCategory(
 ) {
   const rows = await db
     .selectFrom('accountBalance')
-    .select([
-      'accountNumber',
-      'accountName',
-      sql<number>`debit - credit`.as('balance'),
-    ])
+    .select(['accountName', sql<number>`debit - credit`.as('balance')])
     .where('isDeleted', '=', false)
     .where('auditId', '=', auditId)
     .where('accountType', '=', accountType)

@@ -292,7 +292,6 @@ export type Comment = Selectable<CommentTable>;
 export interface AccountBalanceTable {
   id: GeneratedAlways<AccountBalanceId>;
   auditId: AuditId;
-  accountNumber: string;
   accountName: string;
   accountType: AccountType | null;
   accountTypeOverride: AccountType | null;
