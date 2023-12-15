@@ -63,13 +63,6 @@ export function AccountMapping({
           </optgroup>
         );
       })}
-      {/* {currentAccountType === 'INTERCOMPANY' ? (
-        <optgroup label="Other">
-          <option value={currentAccountType}>
-            {accountTypes[currentAccountType]}
-          </option>
-        </optgroup>
-      ) : null} */}
     </select>
   );
 }
