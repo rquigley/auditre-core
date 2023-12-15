@@ -60,7 +60,7 @@ export class AccountMap {
     if (initialPairs) {
       initialPairs.forEach((pair) => {
         if (!aTypes.includes(pair.accountType)) {
-          throw new Error('Invalid account type');
+          throw new Error(`Invalid account type: ${pair.accountType}`);
         }
         this.map.set(pair.accountType, Number(pair.balance));
       });
