@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import dedent from 'dedent';
 
 import { addFP, ppCurrency } from '@/lib/util';
+import { getAccountByFuzzyMatch } from '../account-mapping';
 
 import type { AuditData } from '../audit';
 
@@ -532,15 +533,23 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Employee Benefit Plan',
     isShowing: (data) => data.employee401k.has401K,
-    body: (data) => `
-      The Company maintains a 401(k) plan that covers substantially all of its employees.
+    body: async (data) => {
+      const res = await getAccountByFuzzyMatch(
+        data.auditId,
+        'INCOME_STATEMENT',
+        '401(k)',
+      );
+      const amt = ppCurrency(res.debit);
+      return `
+        The Company maintains a 401(k) plan that covers substantially all of its employees.
 
-      ${
-        data.employee401k.doesMatch
-          ? `The Company matches employee contributions up to [${data.employee401k.pctMatch}%]. For the year ended [${data.fiscalYearEnd}], the Company incurred total expense of [401k number from trial balance] for matching contributions.`
-          : ''
-      }
-    `,
+        ${
+          data.employee401k.doesMatch
+            ? `The Company matches employee contributions up to [${data.employee401k.pctMatch}%]. For the year ended [${data.fiscalYearEnd}], the Company incurred total expense of [${amt}] for matching contributions.`
+            : ''
+        }
+      `;
+    },
     pageBreakBefore: true,
   }),
   generateSection({
