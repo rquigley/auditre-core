@@ -482,7 +482,7 @@ export async function aiClassifyTrialBalanceRows({
       You will be provided an aray in JSON of account ids and account names from an organization's Trial Balance. ${organizationTypeStr}For each account, classify the account name into an account type. The account types you can use are:
 
       ${Object.entries(accountTypes)
-        .filter(([aType]) => aType.startsWith('OTHER_'))
+        .filter(([aType]) => !aType.startsWith('OTHER_'))
         // .map(([aType, description]) => `- ${aType}: ${description}`)
         .map(([aType, description]) => aType)
         .join('\n')}

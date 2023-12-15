@@ -297,6 +297,7 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
       LIABILITY: 0,
       EQUITY: 0,
       INCOME_STATEMENT: 0,
+      OTHER: 0,
     },
   };
   for (const g of Object.keys(groups)) {
@@ -414,6 +415,7 @@ const accountTypeFgBgColors = {
   LIABILITY: ['FF111111', 'FFc1e0f5'],
   EQUITY: ['FF111111', 'FFefd0f7'],
   INCOME: ['FF111111', 'FFffefd9'],
+  OTHER: ['FF111111', 'FFffffff'],
 
   UNKNOWN: ['FFffffff', 'FFeb3d26'],
 } as const;
