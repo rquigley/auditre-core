@@ -37,7 +37,8 @@ export const accountTypes = {
   INCOME_TAXES: 'Income taxes',
   INCOME_STATEMENT_TAXES: 'Income taxes',
 
-  INTERCOMPANY: 'Intercompany',
+  OTHER_INTERCOMPANY: 'Intercompany',
+  OTHER_IGNORE: 'Ignore',
 
   UNKNOWN: `You are unsure of the account type or it doesn't map to one of the other values`,
 } as const;
@@ -111,6 +112,7 @@ export const groupLabels = {
   LIABILITY: 'Liability',
   EQUITY: 'Equity',
   INCOME_STATEMENT: 'Income Statement',
+  OTHER: 'Other',
 } as const;
 export type AccountTypeGroup = keyof typeof groupLabels;
 
@@ -123,6 +125,7 @@ export function groupAccountTypes(types: Record<string, string>) {
     LIABILITY: {},
     EQUITY: {},
     INCOME_STATEMENT: {},
+    OTHER: {},
   };
 
   for (const key in types) {
@@ -134,6 +137,8 @@ export function groupAccountTypes(types: Record<string, string>) {
       grouped.EQUITY[key] = types[key];
     } else if (key.startsWith('INCOME_STATEMENT_')) {
       grouped.INCOME_STATEMENT[key] = types[key];
+    } else if (key.startsWith('OTHER_')) {
+      grouped.OTHER[key] = types[key];
     }
   }
 
@@ -154,12 +159,10 @@ export function accountTypeToGroup(
     return 'EQUITY';
   } else if (type.startsWith('INCOME_STATEMENT_')) {
     return 'INCOME_STATEMENT';
+  } else if (type.startsWith('OTHER_')) {
+    return 'OTHER';
   }
   return 'UNKNOWN';
-}
-
-export function getAccountTypes() {
-  return accountTypes;
 }
 
 export function accountTypeGroupToLabel(

@@ -168,7 +168,7 @@ export function Table({
                       className="h-4 w-4 rounded border-gray-300 text-sky-700 focus:ring-sky-700"
                     />
                   </span> */}
-                  {row.account}
+                  {row.accountName}
 
                   {row.classificationScore && row.classificationScore < 0.95 ? (
                     <span className="font-bold text-red-500">
@@ -240,4 +240,5 @@ export const accountTypeGroupBGColors = {
   EQUITY: 'bg-violet-100',
   INCOME_STATEMENT: 'bg-amber-100',
   UNKNOWN: 'bg-rose-100 ring-red-600 text-red-900',
+  OTHER: 'bg-white',
 } as const;

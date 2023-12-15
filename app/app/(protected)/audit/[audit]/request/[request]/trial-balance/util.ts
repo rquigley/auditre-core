@@ -1,6 +1,6 @@
 export function sortRows<
   T extends {
-    account: string;
+    accountName: string;
     accountType: string;
     credit: number;
     debit: number;
@@ -17,9 +17,9 @@ export function sortRows<
   return rows.toSorted((a, b) => {
     if (currentSort === 'account') {
       if (currentOrder === 'desc') {
-        return b.account.localeCompare(a.account);
+        return b.accountName.localeCompare(a.accountName);
       } else {
-        return a.account.localeCompare(b.account);
+        return a.accountName.localeCompare(b.accountName);
       }
     }
     if (currentSort === 'account-type') {

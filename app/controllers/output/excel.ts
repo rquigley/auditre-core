@@ -233,7 +233,7 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
   const accounts = await getAllAccountBalancesByAuditId(data.auditId);
   for (const a of accounts) {
     ++curRowNumber;
-    ws.getCell(`A${curRowNumber}`).value = a.account;
+    ws.getCell(`A${curRowNumber}`).value = a.accountName;
     ws.getCell(`B${curRowNumber}`).value = a.balance;
     ws.getCell(`C${curRowNumber}`).value = a.accountTypeMerged;
 
@@ -249,7 +249,7 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
       error: 'The value must not be a valid account type',
     };
 
-    widths[0] = Math.max(widths[0], a.accountNumber.length + a.account.length);
+    widths[0] = Math.max(widths[0], a.accountName.length);
     widths[1] = Math.max(widths[1], String(a.balance).length);
     widths[2] = Math.max(widths[2], (a.accountTypeMerged || '').length);
   }

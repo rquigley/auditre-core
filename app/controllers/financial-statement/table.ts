@@ -438,9 +438,7 @@ export async function buildPropertyAndEquipmentNet(
   const accounts = (
     await getAccountsForCategory(data.auditId, 'ASSET_PROPERTY_AND_EQUIPMENT')
   ).map((a) => ({
-    name: `${a.accountNumber}${a.accountNumber && a.accountName ? '-' : ''}${
-      a.accountName
-    }`,
+    name: a.accountName,
     balance: a.balance,
   }));
 
