@@ -7,7 +7,6 @@ import {
 } from '@heroicons/react/24/outline';
 import * as Sentry from '@sentry/nextjs';
 import clsx from 'clsx';
-import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import Calendar from '@/components/calendar';
