@@ -1,5 +1,5 @@
 import { AuditData, getAuditData } from '@/controllers/audit';
-import { ppCurrency } from '@/lib/util';
+import { ppCurrency, ppNumber } from '@/lib/util';
 import {
   buildBalanceSheet,
   buildStatementOfOperations,
@@ -343,11 +343,16 @@ function buildTableRow(row: ARRow) {
       let value;
 
       if (typeof cell.value === 'number' && cell.style.numFmt) {
-        if (cell.style.numFmt === 'accounting') {
+        if (
+          cell.style.numFmt === 'accounting' ||
+          cell.style.numFmt === 'currency'
+        ) {
           value = ppCurrency(cell.value, {
             cents: false,
             hideCurrency: cell.style.hideCurrency,
           });
+        } else if (cell.style.numFmt === 'number') {
+          value = ppNumber(cell.value);
         } else {
           value = `${cell.style.numFmt} NOT IMPLEMENTED`;
         }
