@@ -8,7 +8,7 @@ import {
   buildStatementOfOperations,
   tableMap,
 } from '@/controllers/financial-statement/table';
-import { ppCurrency } from '@/lib/util';
+import { ppCurrency, ppNumber } from '@/lib/util';
 import { AuditId } from '@/types';
 import { getAuditData } from '../audit';
 import {
@@ -308,6 +308,21 @@ function buildTableRow(row: Row): React.ReactNode {
                   {ppCurrency(cell.value, { cents: false, hideCurrency: true })}
                 </div>
               </div>
+            );
+          } else if (cell.style.numFmt === 'currency') {
+            value = (
+              <div className={financeFont.className}>
+                {ppCurrency(cell.value, {
+                  cents: false,
+                  hideCurrency: cell.style.hideCurrency,
+                })}
+              </div>
+            );
+          } else if (cell.style.numFmt === 'number') {
+            value = (
+              <span className={`${financeFont.className}`}>
+                {ppNumber(cell.value)}
+              </span>
             );
           } else {
             value = `${cell.style.numFmt} NOT IMPLEMENTED`;
