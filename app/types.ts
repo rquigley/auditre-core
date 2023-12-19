@@ -154,8 +154,7 @@ export interface RequestDataTable {
     // We save documentIds here in addition to RequestDataDocumentTable to reflect that a change
     // has occurred. I don't love that we're duplicating data here, but the simplicity tradeoff
     // feels worth it.
-    | { isDocuments: true; documentIds: DocumentId[] }
-    | null;
+    | { isDocuments: true; documentIds: DocumentId[] };
   actorUserId: UserId | null;
   createdAt: ColumnType<Date, Date | undefined, never>;
 }

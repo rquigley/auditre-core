@@ -127,7 +127,7 @@ export function normalizeRequestData(
         // @ts-expect-error
         documentIds: d.data?.documentIds as Array<DocumentId>,
       };
-    } else if (d.data && 'value' in d.data) {
+    } else if ('value' in d.data) {
       ret[key] = d.data.value;
     }
   }

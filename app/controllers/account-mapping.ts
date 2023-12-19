@@ -619,12 +619,7 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     'trial-balance',
     'documentId',
   );
-  if (
-    !tbDocRequest ||
-    !tbDocRequest.data ||
-    'value' in tbDocRequest.data ||
-    !tbDocRequest.data.isDocuments
-  ) {
+  if (!tbDocRequest || !('isDocuments' in tbDocRequest.data)) {
     return false;
   }
   if (tbDocRequest.data.documentIds.length !== 1) {
