@@ -68,12 +68,15 @@ export async function pollGetByDocumentIdAndIdentifier(
       .where('documentId', '=', documentId)
       .where('identifier', '=', identifier)
       .where('isDeleted', '=', false)
-      // We only want the most recent classification
+      // Do not include status check. We want the most recent classification, regardless.
       .orderBy('createdAt', 'desc')
       .limit(1)
       .executeTakeFirst();
     if (res && res.status === 'COMPLETE') {
-      return res;
+      return {
+        result: res.result,
+        isValidated: res.isValidated,
+      };
     }
     await delay(1000);
     console.log(
