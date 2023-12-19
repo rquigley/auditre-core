@@ -2,6 +2,7 @@ import { getAccountsForCategory } from '@/controllers/account-mapping';
 import { AccountMap, groupFixedAccountsByCategories } from '@/lib/finance';
 import { Row, Table } from '@/lib/table';
 import { addFP } from '@/lib/util';
+import { getConvertiblePreferredStockData } from '../equity';
 
 import type { AuditData } from '../audit';
 
@@ -11,6 +12,7 @@ export const tableMap = {
   'property-and-equipment-lives': buildPropertyAndEquipmentLives,
   'property-and-equipment-net': buildPropertyAndEquipmentNet,
   'fvm-liabilities': buildFVMLiabilities,
+  'convertible-preferred-stock': buildConvertiblePreferredStock,
 } as const;
 
 export function filterHideIfZeroRows(rows: Row[]) {
@@ -613,5 +615,63 @@ export async function buildStatementOfOperations(
     },
   });
 
+  return t;
+}
+
+export async function buildConvertiblePreferredStock(
+  data: AuditData,
+): Promise<Table> {
+  const certTransactionReport = await getConvertiblePreferredStockData(
+    data.auditId,
+  );
+  let t = new Table();
+  t.columns = [
+    {},
+    { style: { numFmt: 'number' } },
+    { style: { numFmt: 'number' } },
+    { style: { numFmt: 'accounting' } },
+    { style: { numFmt: 'accounting' } },
+  ];
+  t.addRow(
+    [
+      'Convertible Preferred Stock',
+      'Shares Authorized',
+      'Shares Issued and Outstanding',
+      'Carrying Value',
+      'Liquidation Preference',
+    ],
+    {
+      style: {
+        bold: true,
+        borderBottom: 'double',
+      },
+      cellStyle: [{}, {}, {}, { align: 'right' }, { align: 'right' }],
+    },
+  );
+  for (const row of certTransactionReport) {
+    t.addRow([
+      row.name,
+      row.sharesAuthorized,
+      row.sharesIssued,
+      row.carryingValue,
+      row.liquidationPreference,
+    ]);
+  }
+  t.addRow(
+    [
+      'Total',
+      certTransactionReport.reduce((acc, v) => acc + v.sharesAuthorized, 0),
+      certTransactionReport.reduce((acc, v) => acc + v.sharesIssued, 0),
+      addFP(...certTransactionReport.map((r) => r.carryingValue)),
+      addFP(...certTransactionReport.map((r) => r.liquidationPreference)),
+    ],
+    {
+      style: {
+        bold: true,
+        borderTop: 'thin',
+        borderBottom: 'double',
+      },
+    },
+  );
   return t;
 }
