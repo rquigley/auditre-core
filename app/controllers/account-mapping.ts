@@ -10,7 +10,7 @@ import {
 } from '@/controllers/ai-query';
 import {
   getById as getDocumentById,
-  PAGE_DELIMITER,
+  getSheetData,
 } from '@/controllers/document';
 import { getDataForRequestAttribute } from '@/controllers/request-data';
 import { call } from '@/lib/ai';
@@ -636,7 +636,12 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     throw new Error('Invalid classified type');
   }
 
-  const { rows, colIdxs } = await getSheetData(document);
+  const sheets = getSheetData(document);
+  if (!sheets) {
+    throw new Error('No sheets found');
+  }
+  const { rows, schema } = sheets[0];
+  const colIdxs = await getColIdxs(schema, document);
 
   const existingRows = await getAllAccountBalancesByAuditId(auditId, true);
   const existingMap = new Map(existingRows.map((r) => [r.accountName, r]));
@@ -753,37 +758,6 @@ export async function getAccountsForCategory(
     .where('accountType', '=', accountType)
     .execute();
   return rows;
-}
-
-async function getSheetData(document: Document) {
-  if (!document.extracted) {
-    throw new Error('Document has no extracted content');
-  }
-  let sheets = document.extracted.split(PAGE_DELIMITER);
-  let csvData;
-  let meta;
-  if (sheets.length === 1) {
-    // This is a CSV
-    csvData = sheets[0];
-    meta = {};
-  } else {
-    sheets = sheets.slice(1);
-    const lines = sheets[0].trim().split('\n');
-    const metaLine = lines[0];
-    if (metaLine.slice(0, 5) !== 'META:') {
-      throw new Error('Line 1 must be meta data');
-    }
-    meta = JSON.parse(metaLine.slice(5));
-    csvData = lines.slice(1).join('\n');
-  }
-
-  const schema = inferSchema(csvData);
-  const colIdxs = await getColIdxs(schema, document);
-
-  const parser = initParser(schema);
-  const rows = parser.stringArrs(csvData);
-
-  return { meta, schema, colIdxs, rows };
 }
 
 async function getColIdxs(
