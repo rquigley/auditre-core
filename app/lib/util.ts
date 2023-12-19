@@ -253,6 +253,19 @@ export function ppCurrency(
   }
 }
 
+export function ppNumber(num: number) {
+  if (num === 0) {
+    return '-';
+  }
+
+  const ret = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Math.round(num * 100) / 100);
+
+  return ret;
+}
+
 export function bucket<T>(
   arr: Array<T>,
   idealNumPerBucket: number,
