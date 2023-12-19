@@ -85,12 +85,13 @@ export function BasicForm({
     }
   }
 
+  const { isDirty } = formState; // -- uses Proxy.
   let enableSubmit;
   if (numFilesUploading > 0) {
     enableSubmit = false;
   } else if (formState.isSubmitting) {
     enableSubmit = false;
-  } else if (formState.isDirty) {
+  } else if (isDirty) {
     enableSubmit = true;
   } else if (!dataMatchesConfig) {
     enableSubmit = true;
@@ -220,7 +221,7 @@ export function BasicForm({
           </div>
         )} */}
 
-        {enableSubmit && formState.isDirty ? (
+        {enableSubmit && isDirty ? (
           <button
             type="button"
             className="text-sm font-semibold leading-6 text-gray-900"
