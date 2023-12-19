@@ -17,6 +17,9 @@ import type { OpenAIMessage } from '@/lib/ai';
 
 import '@/controllers/ai-query'; // here
 
+import { inferSchema, initParser } from 'udsv';
+import { z } from 'zod';
+
 import { getExtractedContent, NoSuchKey } from '@/lib/aws';
 import { getAuditIdsForDocument } from './request-data';
 
@@ -413,4 +416,49 @@ export async function getAiDataForDocumentId(
   });
 
   return res;
+}
+
+function parseSheet(sheet: string) {
+  sheet = sheet.trim();
+  if (!sheet) {
+    return undefined;
+  }
+
+  let sheetTitle;
+  let csvRaw;
+
+  // CSV files will lack the "META:" line
+  if (sheet.startsWith('META:')) {
+    const lines = sheet.split('\n');
+    const metaLine = lines.shift();
+    csvRaw = lines.join('\n');
+
+    if (!metaLine) {
+      throw new Error('No meta line');
+    }
+    const meta = JSON.parse(metaLine.slice(5));
+    const metaSchema = z.object({
+      sheetTitle: z.string(),
+    });
+    const parsed = metaSchema.parse(meta);
+    sheetTitle = parsed.sheetTitle;
+  } else {
+    sheetTitle = '';
+    csvRaw = sheet;
+  }
+
+  const schema = inferSchema(csvRaw);
+  const parser = initParser(schema);
+  const rows = parser.stringArrs(csvRaw);
+
+  return { sheetTitle, schema, rows };
+}
+
+export function getSheetData(document: Document) {
+  if (!document.extracted) {
+    throw new Error('Document has no extracted content');
+  }
+  let sheets = document.extracted.split(PAGE_DELIMITER);
+
+  return sheets.map(parseSheet).filter(Boolean);
 }
