@@ -67,6 +67,31 @@ export async function getDataForRequestAttribute(
     .executeTakeFirst();
 }
 
+export async function getDataForRequestAttribute2(
+  auditId: AuditId,
+  requestType: string,
+  requestId: string,
+): Promise<DocumentId[] | unknown | undefined> {
+  const res = await db
+    .selectFrom('requestData')
+    .select(['id', 'data'])
+    .where('auditId', '=', auditId)
+    .where('requestType', '=', requestType)
+    .where('requestId', '=', requestId)
+    .orderBy(['createdAt desc'])
+    .limit(1)
+    .executeTakeFirst();
+
+  if (!res) {
+    return undefined;
+  }
+  if ('isDocuments' in res.data) {
+    return res.data.documentIds;
+  } else {
+    return res.data.value;
+  }
+}
+
 export async function getDataForAuditId(auditId: AuditId) {
   const rows = await db
     .selectFrom('requestData')
