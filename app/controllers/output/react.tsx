@@ -301,7 +301,7 @@ function buildTableRow(row: Row): React.ReactNode {
           if (cell.style.numFmt === 'accounting') {
             value = (
               <div className={`flex justify-between ${financeFont.className}`}>
-                <div>
+                <div className="pl-5">
                   {cell.value !== 0 && !cell.style.hideCurrency ? '$' : ''}
                 </div>
                 <div>
