@@ -32,6 +32,7 @@ import type {
   OpenAIModel,
   OrgId,
 } from '@/types';
+import type { Schema } from 'udsv';
 
 export const documentClassificationTypes = {
   AUDIT: '',
@@ -447,6 +448,9 @@ function parseSheet(sheet: string) {
     csvRaw = sheet;
   }
 
+  const headerRowNum = findHeaderRow(csvRaw);
+  csvRaw = csvRaw.split('\n').slice(headerRowNum).join('\n');
+
   const schema = inferSchema(csvRaw);
   const parser = initParser(schema);
   const rows = parser.stringArrs(csvRaw);
@@ -461,4 +465,47 @@ export function getSheetData(document: Document) {
   let sheets = document.extracted.split(PAGE_DELIMITER);
 
   return sheets.map(parseSheet).filter(Boolean);
+}
+
+/**
+ * Find the header row number. Use the following:
+ * - Look for informative column names e.g. credit/debit.
+ * - If 70% of cols have a value, assume it's the header row.
+ **/
+function findHeaderRow(csvRaw: string, currRow = 0): number {
+  const schema = inferSchema(csvRaw);
+  if (
+    schema.cols.some(
+      (c) =>
+        c.name.toLowerCase() === 'credit' || c.name.toLowerCase() === 'debit',
+    )
+  ) {
+    return currRow;
+  }
+
+  const count = schema.cols.filter((c) => c.name !== '').length;
+  if (count / schema.cols.length > 0.7) {
+    return currRow;
+  } else {
+    csvRaw = csvRaw.split('\n').slice(1).join('\n');
+    // we're at the end of the file, give up.
+    if (!csvRaw.includes('\n')) {
+      return 0;
+    }
+    return findHeaderRow(csvRaw, currRow + 1);
+  }
+}
+
+export function getColumnMap(
+  schema: Schema,
+  map: Record<string, RegExp | string>,
+) {
+  let ret = Object.fromEntries(Object.keys(map).map((k) => [k, -1]));
+  for (const [key, needle] of Object.entries(map)) {
+    ret[key] = schema.cols.findIndex((col) =>
+      col.name.toLowerCase().match(needle),
+    );
+  }
+
+  return ret;
 }
