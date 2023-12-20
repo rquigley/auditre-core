@@ -93,7 +93,7 @@ export function Navbar({
                   height="30"
                   src="/img/auditre_mark.svg"
                   alt="AuditRe"
-                  className="si -5"
+                  className="si size-5"
                 />
                 <div className="ml-2 text-sm text-gray-600 whitespace-nowrap">
                   {orgName}
