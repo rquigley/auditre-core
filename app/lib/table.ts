@@ -163,7 +163,7 @@ export class Row {
   table: Table;
   number: number;
   style: Style = {};
-  cells: any[];
+  cells: Cell[];
   tags: string[];
   id?: string;
 
