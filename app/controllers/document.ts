@@ -448,6 +448,11 @@ function parseSheet(sheet: string) {
     csvRaw = sheet;
   }
 
+  // udsv will choke if there's no newline at the end of the file
+  if (!csvRaw.includes('\n')) {
+    csvRaw += '\n';
+  }
+
   const headerRowNum = findHeaderRow(csvRaw);
   csvRaw = csvRaw.split('\n').slice(headerRowNum).join('\n');
 
