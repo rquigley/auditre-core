@@ -132,7 +132,11 @@ function addTableRow(
     if (border.top || border.bottom) {
       xCell.border = border;
     }
-    if (cell.style.numFmt === 'accounting') {
+    if (
+      cell.style.numFmt === 'accounting' ||
+      (typeof cell.style.numFmt === 'object' &&
+        cell.style.numFmt.type === 'accounting')
+    ) {
       xCell.numFmt = numFmt;
     }
 

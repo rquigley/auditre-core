@@ -276,13 +276,15 @@ export class Cell {
   }
 }
 
+type NumFmt = 'accounting' | 'currency' | 'date' | 'number' | 'percent';
+
 export type Style = {
   bold?: boolean;
   borderBottom?: 'thin' | 'double';
   borderTop?: 'thin' | 'double';
   hideCurrency?: boolean;
   indent?: boolean;
-  numFmt?: 'accounting' | 'currency' | 'date' | 'number' | 'percent';
+  numFmt?: NumFmt | { type: NumFmt; cents?: boolean };
   padTop?: boolean;
   align?: 'center' | 'left' | 'right';
 };
