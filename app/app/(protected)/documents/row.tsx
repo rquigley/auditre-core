@@ -19,7 +19,7 @@ export default function Row({ document }: { document: OrgDocument }) {
             className="flex items-center gap-x-1"
           >
             <DocumentArrowDownIcon
-              className="h-4 w-4 text-green-700"
+              className="size-4 text-green-700"
               aria-hidden="true"
             />
 

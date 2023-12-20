@@ -227,7 +227,7 @@ export function Checkbox({
               id={`checkbox-${model.type}`}
               aria-describedby={`${model.type}-description`}
               type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-sky-700 focus:ring-sky-700"
+              className="size-4 rounded border-gray-300 text-sky-700 focus:ring-sky-700"
             />
           </div>
           <div className="ml-3 text-sm leading-6">
@@ -277,7 +277,7 @@ export function BooleanField({
           aria-hidden="true"
           className={clsx(
             enabled ? 'translate-x-5' : 'translate-x-0',
-            'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+            'pointer-events-none inline-block size-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
           )}
         />
       </Switch>
@@ -484,7 +484,7 @@ export function FileUpload({
           ) : fileState.state === 'readyToSave' ? (
             <>
               <CheckCircleIcon
-                className="-ml-0.5 mr-1 h-5 w-5 text-green-700"
+                className="-ml-0.5 mr-1 size-5 text-green-700"
                 aria-hidden="true"
               />
               Ready to save
@@ -772,7 +772,7 @@ async function getClassificationStatus(documentId: DocumentId) {
 //       <Menu as="div" className="relative flex-none">
 //         <Menu.Button className="-m-2.5 block p-2.5 text-gray-500 hover:text-gray-900">
 //           <span className="sr-only">Open options</span>
-//           <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
+//           <EllipsisVerticalIcon className="size-5" aria-hidden="true" />
 //         </Menu.Button>
 //         <Transition
 //           as={Fragment}

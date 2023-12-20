@@ -119,7 +119,7 @@ function Users({ users }: { users: User[] }) {
               ) : null} */}
             </div>
             <ChevronRightIcon
-              className="h-5 w-5 flex-none text-gray-400"
+              className="size-5 flex-none text-gray-400"
               aria-hidden="true"
             />
           </div>

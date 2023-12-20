@@ -25,7 +25,7 @@ export function Header({ title, subtitle, breadcrumbs, settings }: Props) {
               <span key={b.name}>
                 {idx > 0 ? (
                   <ChevronRightIcon
-                    className="h-4 w-4 text-gray-400 inline"
+                    className="size-4 text-gray-400 inline"
                     aria-hidden="true"
                   />
                 ) : null}
@@ -36,7 +36,7 @@ export function Header({ title, subtitle, breadcrumbs, settings }: Props) {
                   {b.name}
                   {idx === breadcrumbs.length - 1 ? (
                     <ChevronRightIcon
-                      className="h-4 w-4 text-gray-400 inline"
+                      className="size-4 text-gray-400 inline"
                       aria-hidden="true"
                     />
                   ) : (
@@ -74,7 +74,7 @@ function Search() {
       <div className="relative">
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
           <MagnifyingGlassIcon
-            className="h-5 w-5 text-gray-400"
+            className="size-5 text-gray-400"
             aria-hidden="true"
           />
         </div>
@@ -106,7 +106,7 @@ function Settings({ options }: { options: React.ReactNode }) {
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className="w-4 h-4 "
+          className="size-4 "
         >
           <path
             strokeLinecap="round"
