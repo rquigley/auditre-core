@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import dedent from 'dedent';
 import { revalidatePath } from 'next/cache';
-import { inferSchema, initParser } from 'udsv';
 import * as z from 'zod';
 
 import {
@@ -477,6 +476,7 @@ export async function aiClassifyTrialBalanceRows({
       '{"data":[[accountId1, classifiedType1],[accountId2, classifiedType2],...]}';
   }
 
+  // TODO
   let organizationTypeStr = '';
   // if (1 === 2) {
   //   organizationTypeStr = 'The organization type is a  "manufacturing". ';
@@ -636,7 +636,7 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     throw new Error('No sheets found');
   }
   const { rows, schema } = sheets[0];
-  const colIdxs = await getColIdxs(schema, document);
+  const colIdxs = await getColIdxs(document);
 
   const existingRows = await getAllAccountBalancesByAuditId(auditId, true);
   const existingMap = new Map(existingRows.map((r) => [r.accountName, r]));
@@ -755,13 +755,7 @@ export async function getAccountsForCategory(
   return rows;
 }
 
-async function getColIdxs(
-  schema: ReturnType<typeof inferSchema>,
-  document: Document,
-) {
-  if ('cols' in schema === false) {
-    throw new Error('Invalid schema');
-  }
+async function getColIdxs(document: Document) {
   const columnMappingsRes = await pollGetByDocumentIdAndIdentifier(
     document.id,
     'columnMappings',
