@@ -23,7 +23,7 @@ export function PrimaryButton(props: PrimaryButtonProps) {
       {props.submitting && <Spinner />}
 
       {props.icon === 'plus' ? (
-        <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />
+        <PlusIcon className="-ml-0.5 mr-1.5 size-5" aria-hidden="true" />
       ) : null}
 
       {props.label}

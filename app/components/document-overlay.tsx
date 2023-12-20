@@ -154,7 +154,7 @@ function Document({
               >
                 <span className="absolute -inset-2.5" />
                 <span className="sr-only">Close panel</span>
-                <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                <XMarkIcon className="size-6" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -182,7 +182,7 @@ function Document({
                       alt={document.uploadedByUser.name || ''}
                       width="36"
                       height="36"
-                      className="inline-block h-5 w-5 mr-2 rounded-full"
+                      className="inline-block size-5 mr-2 rounded-full"
                     />
                   ) : null}
                   {document.uploadedByUser.name}
@@ -271,7 +271,7 @@ function Document({
                     >
                       <span className="absolute -inset-2" />
                       <span className="sr-only">Add team member</span>
-                      <PlusIcon className="h-5 w-5" aria-hidden="true" />
+                      <PlusIcon className="size-5" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -288,7 +288,7 @@ function Document({
                         name="privacy"
                         aria-describedby="privacy-public-description"
                         type="radio"
-                        className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                        className="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                         defaultChecked
                       />
                     </div>
@@ -315,7 +315,7 @@ function Document({
                           name="privacy"
                           aria-describedby="privacy-private-to-project-description"
                           type="radio"
-                          className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                          className="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                         />
                       </div>
                       <div className="pl-7 text-sm leading-6">
@@ -342,7 +342,7 @@ function Document({
                           name="privacy"
                           aria-describedby="privacy-private-to-project-description"
                           type="radio"
-                          className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                          className="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                         />
                       </div>
                       <div className="pl-7 text-sm leading-6">
@@ -371,7 +371,7 @@ function Document({
                   className="group inline-flex items-center font-medium text-indigo-600 hover:text-indigo-900"
                 >
                   <LinkIcon
-                    className="h-5 w-5 text-indigo-500 group-hover:text-indigo-900"
+                    className="size-5 text-indigo-500 group-hover:text-indigo-900"
                     aria-hidden="true"
                   />
                   <span className="ml-2">Copy link</span>
@@ -383,7 +383,7 @@ function Document({
                   className="group inline-flex items-center text-gray-500 hover:text-gray-900"
                 >
                   <QuestionMarkCircleIcon
-                    className="h-5 w-5 text-gray-400 group-hover:text-gray-500"
+                    className="size-5 text-gray-400 group-hover:text-gray-500"
                     aria-hidden="true"
                   />
                   <span className="ml-2">Learn more about sharing</span>

@@ -43,7 +43,7 @@ export default function LoginButton({
         <>
           {service === 'github' ? (
             <svg
-              className="h-4 w-4 text-black dark:text-white"
+              className="size-4 text-black dark:text-white"
               aria-hidden="true"
               fill="currentColor"
               viewBox="0 0 24 24"
@@ -52,7 +52,7 @@ export default function LoginButton({
             </svg>
           ) : (
             <svg
-              className="h-4 w-4 text-black dark:text-white"
+              className="size-4 text-black dark:text-white"
               aria-hidden="true"
               fill="currentColor"
               viewBox="0 0 24 24"

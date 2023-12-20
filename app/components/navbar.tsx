@@ -54,7 +54,7 @@ export function Navbar({
           xmlns="http://www.w3.org/2000/svg"
           fill="currentColor"
           viewBox="0 0 16 16"
-          className="w-4 h-4 bg-white"
+          className="size-4 bg-white"
         >
           <path
             fillRule="evenodd"
@@ -93,7 +93,7 @@ export function Navbar({
                   height="30"
                   src="/img/auditre_mark.svg"
                   alt="AuditRe"
-                  className="w-5 h-5"
+                  className="si -5"
                 />
                 <div className="ml-2 text-sm text-gray-600 whitespace-nowrap">
                   {orgName}
@@ -104,7 +104,7 @@ export function Navbar({
             <Menu as="div" className="relative">
               <Menu.Button className="p-3 hover:bg-gray-50">
                 {userImage && (
-                  <div className="h-5 w-5 rounded-full bg-gray-50 overflow-hidden">
+                  <div className="size-5 rounded-full bg-gray-50 overflow-hidden">
                     <Image
                       width="36"
                       height="36"

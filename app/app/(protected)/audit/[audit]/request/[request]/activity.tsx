@@ -72,7 +72,7 @@ export default async function Activity({
                     alt=""
                     width="36"
                     height="36"
-                    className="relative mt-3 h-6 w-6 flex-none rounded-full bg-gray-50"
+                    className="relative mt-3 size-6 flex-none rounded-full bg-gray-50"
                   />
                 )}
                 <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-lime-500">
@@ -95,11 +95,11 @@ export default async function Activity({
               </>
             ) : (
               <>
-                <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-white">
+                <div className="relative flex size-6 flex-none items-center justify-center bg-white">
                   {/* {
                       item.type === 'paid' ? (
                         <InformationCircleIcon
-                          className="h-6 w-6 text-sky-700"
+                          className="size-6 text-sky-700"
                           aria-hidden="true"
                         />
                       ) : (
@@ -133,7 +133,7 @@ export default async function Activity({
             width="36"
             height="36"
             alt=""
-            className="h-6 w-6 flex-none rounded-full bg-gray-50"
+            className="size-6 flex-none rounded-full bg-gray-50"
           />
         )}
         <CommentForm saveData={saveData} />

@@ -165,7 +165,7 @@ export function Table({
                   {/* <span className="absolute -left-4 hidden group-hover:block">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300 text-sky-700 focus:ring-sky-700"
+                      className="size-4 rounded border-gray-300 text-sky-700 focus:ring-sky-700"
                     />
                   </span> */}
                   {row.accountName}

@@ -226,7 +226,7 @@ export function CalendarHeader({
         <h2>{calendarProps['aria-label']}</h2>
       </VisuallyHidden>
       <Button {...prevButtonProps}>
-        <ChevronLeftIcon className="h-6 w-6" />
+        <ChevronLeftIcon className="size-6" />
       </Button>
       <h2
         // We have a visually hidden heading describing the entire visible range,
@@ -248,7 +248,7 @@ export function CalendarHeader({
         )}
       </h2> */}
       <Button {...nextButtonProps}>
-        <ChevronRightIcon className="h-6 w-6" />
+        <ChevronRightIcon className="size-6" />
       </Button>
     </div>
   );

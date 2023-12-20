@@ -23,7 +23,7 @@ export default function SaveNotice({ cb }: { cb: (visible: boolean) => void }) {
       >
         <div className="flex-shrink-0">
           <CheckCircleIcon
-            className="h-5 w-5 text-green-400"
+            className="size-5 text-green-400"
             aria-hidden="true"
           />
         </div>
