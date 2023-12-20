@@ -298,34 +298,43 @@ function buildTableRow(row: Row): React.ReactNode {
 
         let value;
         if (typeof cell.value === 'number' && cell.style.numFmt) {
-          if (cell.style.numFmt === 'accounting') {
+          const numConfig = cell.style.numFmt;
+          const numFmt =
+            typeof numConfig === 'object' ? numConfig.type : numConfig;
+          const showCents =
+            typeof numConfig === 'object' ? numConfig.cents ?? false : false;
+
+          if (numFmt === 'accounting') {
             value = (
               <div className={`flex justify-between ${financeFont.className}`}>
                 <div className="pl-5">
                   {cell.value !== 0 && !cell.style.hideCurrency ? '$' : ''}
                 </div>
                 <div>
-                  {ppCurrency(cell.value, { cents: false, hideCurrency: true })}
+                  {ppCurrency(cell.value, {
+                    cents: showCents,
+                    hideCurrency: true,
+                  })}
                 </div>
               </div>
             );
-          } else if (cell.style.numFmt === 'currency') {
+          } else if (numFmt === 'currency') {
             value = (
               <div className={financeFont.className}>
                 {ppCurrency(cell.value, {
-                  cents: false,
+                  cents: showCents,
                   hideCurrency: cell.style.hideCurrency,
                 })}
               </div>
             );
-          } else if (cell.style.numFmt === 'number') {
+          } else if (numFmt === 'number') {
             value = (
               <span className={`${financeFont.className}`}>
                 {ppNumber(cell.value)}
               </span>
             );
           } else {
-            value = `${cell.style.numFmt} NOT IMPLEMENTED`;
+            value = `${numFmt} NOT IMPLEMENTED`;
           }
         } else {
           value = cell.value;
