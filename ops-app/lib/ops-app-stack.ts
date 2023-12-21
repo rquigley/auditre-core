@@ -371,6 +371,13 @@ export class OpsAppStack extends Stack {
                 '/app/NEXTAUTH_SECRET',
               ),
             ),
+            NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ecs.Secret.fromSsmParameter(
+              StringParameter.fromStringParameterName(
+                this,
+                'AppNextServerActionsEncryptionKeyParameter',
+                '/app/NEXT_SERVER_ACTIONS_ENCRYPTION_KEY',
+              ),
+            ),
             GOOGLE_CLIENT_SECRET: ecs.Secret.fromSsmParameter(
               StringParameter.fromStringParameterName(
                 this,
