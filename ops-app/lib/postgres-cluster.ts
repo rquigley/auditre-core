@@ -39,6 +39,7 @@ export class PostgresCluster extends Construct {
 
     let multiAz;
 
+    let allowMajorVersionUpgrade;
     let removalPolicy;
     let deletionProtection;
     let deleteAutomatedBackups;
@@ -50,23 +51,25 @@ export class PostgresCluster extends Construct {
     if (props.isProd) {
       multiAz = true;
 
+      allowMajorVersionUpgrade = false;
       removalPolicy = cdk.RemovalPolicy.RETAIN;
       deletionProtection = true;
       deleteAutomatedBackups = false;
       backupRetention = cdk.Duration.days(365);
 
       instanceType = InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO);
-      postgresVersion = rds.PostgresEngineVersion.VER_15_4;
+      postgresVersion = rds.PostgresEngineVersion.VER_16_1;
     } else {
       multiAz = false;
 
+      allowMajorVersionUpgrade = true;
       removalPolicy = cdk.RemovalPolicy.DESTROY;
       deletionProtection = false;
       deleteAutomatedBackups = true;
       backupRetention = cdk.Duration.days(0);
 
       instanceType = InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO);
-      postgresVersion = rds.PostgresEngineVersion.VER_15_4;
+      postgresVersion = rds.PostgresEngineVersion.VER_16_1;
     }
 
     const credsSecretName =
@@ -121,7 +124,7 @@ export class PostgresCluster extends Construct {
       }),
       instanceType,
       autoMinorVersionUpgrade: true,
-      allowMajorVersionUpgrade: false,
+      allowMajorVersionUpgrade,
       backupRetention,
       deleteAutomatedBackups,
       removalPolicy,
