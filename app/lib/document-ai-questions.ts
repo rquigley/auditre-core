@@ -304,5 +304,51 @@ export const documentAiQuestions: Partial<
       preProcess: (val: string) => head(val, 500),
       validate: dateSchema,
     },
+    equityFinancingSummary: {
+      label: 'Summary of the document',
+      question: `
+        In the view of a CPA Accountant preparing notes for audited financial statements, summarize "Dividends," "Liquidation," "Voting," "Conversion," and "Redemption" from the following document. Each should be 1-3 paragraphs in length, detailing any scenarios or events listed within the document.
+
+        - This summary should be in the format acceptable in AICPA audited financial statements.
+
+        - Do not reiterate what we you are going to do. For example, do not say "In this summary, I will summarize Dividends, Liquidation, Voting, Conversion, and Redemption from the following document." Do not say "Next I will..." or "Here is...". Simply mention the topic and summarize it.
+
+        - Do not mention the specific name of the company in your summary e.g. "Acme Corp". Always refer to it as "The Company".
+      `,
+      validate: z.string().min(100).max(20000),
+    },
+    // Don't run if false?
+    conversionRatio: {
+      label: 'Conversion ratio',
+      question: `
+        Extract the conversion ratio from preferred to common shares. This is typically included within the conversion section. If the answer is not 1, provide the sentence where the conversion ratio is mentioned.
+      `,
+      preProcess: (val: string) =>
+        extractLinesContaining(val, ['conversion']).join('\n'),
+      validate: z.string(),
+    },
+  },
+  CERTIFICATE_TRANSACTION: {
+    hasPreferredStock: {
+      label: 'Has preferred stock',
+      question: `Does this data mention preferred stock?" ${questionYesNo}`,
+      preProcess: (val: string) =>
+        extractLinesContaining(val, ['preferred']).join('\n'),
+      validate: yesNoSchema,
+    },
+    ctDateOfDocument: {
+      label: 'Date of the document',
+      question: `What is the date this document was written? ${questionDate}`,
+      preProcess: (val: string) => head(val, 500),
+      validate: dateSchema,
+    },
+  },
+  STOCK_PLAN: {
+    numAuthorizedShares: {
+      label: 'Number of shares authorized',
+      question:
+        'How many shares does the company have available for inssuance? Return only the number without commas. If there are no numbers in your answer, return "-"',
+      validate: numberSchema,
+    },
   },
 } as const;
