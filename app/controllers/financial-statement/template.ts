@@ -532,7 +532,10 @@ export const getPolicySections = () => [
         'INCOME_STATEMENT',
         '401(k)',
       );
-      const amt = ppCurrency(res.debit);
+      let amt = '-';
+      if (res) {
+        amt = ppCurrency(res.debit);
+      }
       return `
         The Company maintains a 401(k) plan that covers substantially all of its employees.
 
