@@ -11,8 +11,12 @@ import {
   getById as getDocumentById,
   getSheetData,
 } from '@/controllers/document';
-import { getDataForRequestAttribute } from '@/controllers/request-data';
+import {
+  getDataForRequestAttribute,
+  getDataForRequestAttribute2,
+} from '@/controllers/request-data';
 import { call } from '@/lib/ai';
+import { businessModelTypes } from '@/lib/business-models';
 import { db, sql } from '@/lib/db';
 import {
   documentAiQuestions,
@@ -476,11 +480,18 @@ export async function aiClassifyTrialBalanceRows({
       '{"data":[[accountId1, classifiedType1],[accountId2, classifiedType2],...]}';
   }
 
-  // TODO
+  const businessModelsArr = (await getDataForRequestAttribute2(
+    auditId,
+    'basic-info',
+    'businessModels',
+  )) as (keyof typeof businessModelTypes)[] | undefined;
   let organizationTypeStr = '';
-  // if (1 === 2) {
-  //   organizationTypeStr = 'The organization type is a  "manufacturing". ';
-  // }
+  if (businessModelsArr) {
+    const businessModelStr = businessModelsArr
+      .map((bm) => businessModelTypes[bm]?.name)
+      .join(', ');
+    organizationTypeStr = `The business type is "${businessModelStr}". `;
+  }
   const messages: OpenAIMessage[] = [
     {
       role: 'system',
