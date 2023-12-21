@@ -1,8 +1,13 @@
+import build from 'next/dist/build';
+
 import { getAccountsForCategory } from '@/controllers/account-mapping';
 import { AccountMap, groupFixedAccountsByCategories } from '@/lib/finance';
 import { Row, Table } from '@/lib/table';
 import { addFP } from '@/lib/util';
-import { getConvertiblePreferredStockData } from '../equity';
+import {
+  getCertificateTransactionDocumentData,
+  getSBCReportData,
+} from '../equity';
 
 import type { AuditData } from '../audit';
 
@@ -13,6 +18,9 @@ export const tableMap = {
   'property-and-equipment-net': buildPropertyAndEquipmentNet,
   'fvm-liabilities': buildFVMLiabilities,
   'convertible-preferred-stock': buildConvertiblePreferredStock,
+  'convertible-preferred-to-common': buildConvertibleToCommon,
+  'common-stock-reserved-for-future-issuance':
+    buildCommonStockReservedForFutureIssuance,
 } as const;
 
 export function filterHideIfZeroRows(rows: Row[]) {
@@ -621,7 +629,7 @@ export async function buildStatementOfOperations(
 export async function buildConvertiblePreferredStock(
   data: AuditData,
 ): Promise<Table> {
-  const certTransactionReport = await getConvertiblePreferredStockData(
+  const certTransactionReport = await getCertificateTransactionDocumentData(
     data.auditId,
   );
   let t = new Table();
@@ -673,5 +681,95 @@ export async function buildConvertiblePreferredStock(
       },
     },
   );
+  return t;
+}
+
+export async function buildConvertibleToCommon(
+  data: AuditData,
+): Promise<Table> {
+  const certTransactionReport = await getCertificateTransactionDocumentData(
+    data.auditId,
+  );
+  let t = new Table();
+  t.columns = [
+    {},
+    { style: { numFmt: 'accounting' } },
+    { style: { numFmt: { type: 'currency', cents: true }, align: 'right' } },
+    { style: { numFmt: 'number', align: 'right' } },
+  ];
+  t.addRow(
+    ['', 'Original issue price', 'Conversion price', 'Ratio to common'],
+    {
+      style: {
+        bold: true,
+        borderBottom: 'double',
+      },
+      cellStyle: [{}, { align: 'right' }, { align: 'right' }, {}],
+    },
+  );
+
+  const filtered = certTransactionReport.filter(
+    (r) => r.name.match(/common/i) === null,
+  );
+  for (const row of filtered) {
+    t.addRow([
+      row.name,
+      row.carryingValue,
+      row.carryingValue / row.sharesIssued,
+      row.sharesIssued / row.sharesAuthorized,
+    ]);
+  }
+
+  return t;
+}
+
+export async function buildCommonStockReservedForFutureIssuance(
+  data: AuditData,
+): Promise<Table> {
+  const certTransactionReport = await getCertificateTransactionDocumentData(
+    data.auditId,
+  );
+  const sbcReport = await getSBCReportData(data.auditId);
+  let t = new Table();
+  t.columns = [{}, { style: { numFmt: 'number', align: 'right' } }];
+  t.addRow(
+    [`As of ${data.fiscalYearEndParts.md},`, data.fiscalYearEndParts.y],
+    {
+      style: {
+        bold: true,
+        borderBottom: 'double',
+      },
+    },
+  );
+
+  let total = 0;
+  const numPreferred = certTransactionReport
+    .filter((sheet) => !sheet.name.match(/common/i))
+    .reduce((acc, sheet) => acc + sheet.sharesAuthorized, 0);
+
+  t.addRow(['Convertible preferred stock', numPreferred]);
+  total += numPreferred;
+
+  const numCommonOutstanding = sbcReport ? sbcReport.commonOutstanding : 0;
+  t.addRow(['Common stock options outstanding', numCommonOutstanding]);
+  total += numCommonOutstanding;
+
+  const numAuthorizedShares = data.equity.numAuthorizedShares
+    ? Number(data.equity.numAuthorizedShares)
+    : 0;
+  t.addRow([
+    'Common stock options available for future grant',
+    numAuthorizedShares - numCommonOutstanding,
+  ]);
+  total += numAuthorizedShares - numCommonOutstanding;
+
+  t.addRow(['Total', total], {
+    style: {
+      bold: true,
+      borderTop: 'thin',
+      borderBottom: 'double',
+    },
+  });
+
   return t;
 }

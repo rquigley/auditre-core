@@ -341,20 +341,19 @@ export const getPolicySections = () => [
   generateSection({
     header: `Stockholder's Equity (Deficit)`,
     body: async (data) => {
-      // insert Variable 1 from Carta Certificate Transaction Report
       const authorizedSharesTotal = await getAuthorizedSharesTotal(
         data.auditId,
-        data,
       );
       let preferredStr = '';
+
       if (data.equity.hasPreferredStock === 'yes') {
-        preferredStr = `
+        preferredStr = dedent`
           Convertible Preferred Stock
 
           As of [${
             data.fiscalYearEnd
           }], the Company was authorized to issue [${ppNumber(
-            authorizedSharesTotal,
+            authorizedSharesTotal.nonCommon,
           )}] shares of [$${
             data.articlesOfIncorporation.parValuePerShare
           }] par value convertible preferred stock.
@@ -367,63 +366,29 @@ export const getPolicySections = () => [
 
           The significant rights and preferences of the Company’s convertible preferred stock are as follows:
 
-          Dividends
-
-          [Use extractions from https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=181359587&range=B22]
-          "The Company shall not declare, pay or set aside any dividends on shares of the Company unless the holders of outstanding convertible preferred stock first receive, or simultaneously receive, a dividend in an amount equal to (i) in the case of a dividend on common stock or any class or series that is convertible into common stock, a dividend per share of the convertible preferred stock equal to the product of (A) the dividend payable on each share of such class as if all shares of such class had been converted into common stock and (B) the number of shares of common stock issuable upon conversion of a share of such convertible preferred stock or (ii) in the case of a dividend on any class or series that is not convertible into common stock, at a rate per share of the convertible preferred stock determined by (A) dividing the amount of the dividend payable on each share of such class of capital stock by the original issuance price of such class of capital stock and (B) multiplying such fraction by an amount equal to the applicable original issue price of [number] and [number] per share of Series Seed and Series A convertible preferred stock, respectively. If the Company declares, pays, or sets aside a dividend on shares of more than one class of capital stock, the dividend payable to the holders convertible preferred stock shall be calculated based upon the dividend on the class capital stock that would result in the highest dividend for such series of convertible preferred stock.
-
-          As of [${data.fiscalYearEnd}], no dividends have been declared. "
-
-
-          Liquidation
-          "In the event of any voluntary or involuntary liquidation, dissolution, or winding-up of the Company or a Deemed Liquidation Event (as defined below), the holders of each series of convertible preferred stock shall be entitled to receive an amount per share equal to the greater of (i) one times original issue price plus any declared but unpaid dividends, or (ii) such amount per share as would have been payable had all shares of such series of convertible preferred stock been converted into common stock. Following the satisfaction of the convertible preferred stock liquidation preference, all holders of shares of common stock would participate in any remaining distribution on a pro rata basis based on the number of shares held.
-
-          As of [${
-            data.fiscalYearEnd
-          }], each of the following events was considered a “Deemed Liquidation Event” unless the holders of a majority of the outstanding shares of convertible preferred stock elect by written notice sent to the Company at least 10 days prior to the effective date of any such event:
-
-          (a)	a merger or consolidation in which (i) the Company is a constituent party or (ii) a subsidiary of the Company is a constituent party and the Company issues shares of its capital stock pursuant to such merger or consolidation, except any such merger or consolidation involving the Company or a subsidiary in which the shares of capital stock of the Company outstanding immediately prior to such merger or consolidation continue to represent, or are converted into or exchanged for shares of capital stock that represent, immediately following such merger or consolidation, at least a majority, by voting power, of the capital stock of (1) the surviving or resulting corporation; or (2) if the surviving or resulting corporation is a wholly owned subsidiary of another corporation immediately following such merger or consolidation, the parent corporation of such surviving or resulting corporation; or
-
-          (b)	(1) the sale, lease, transfer, exclusive license or other disposition, in a single transaction or series of related transactions, by the Company or any subsidiary of the Company of all or substantially all the assets of the Company and its subsidiaries taken as a whole, or (2) the sale or disposition (whether by merger, consolidation or otherwise, and whether in a single transaction or a series of related transactions) of one or more subsidiaries of the Company if substantially all of the assets of the Company and its subsidiaries taken as a whole are held by such subsidiary or subsidiaries, except where such sale, lease, transfer, exclusive license or other disposition is to a wholly owned subsidiary of the Company."
-
-          Conversion
-          Each share of convertible preferred stock is convertible into common stock at the option of the holder, at any time after the date of issuance, at the then effective conversion rate by dividing the original issue price by the conversion price. The conversion price per share shall be the original issue price subject to adjustment for stock splits and certain dividends and distributions to holders of common stock.
-
-          All outstanding shares of convertible preferred stock shall automatically be converted into shares of common stock at the then effective conversion rate (discussed above) upon  (i) upon the vote or written consent of the holders of at least a majority of the outstanding shares of convertible preferred stock, or (ii) the closing of the sale of shares of common stock to the public in a firm-commitment underwritten public offering including, but not limited to an initial public offering or special purpose acquisition company listed and related private investment in public equity transaction.
+          ${data.financingDocuments.equityFinancingSummary || ''}
 
           The following table summarizes the number of shares of common stock into which each share of convertible preferred stock can be converted as of [${
             data.fiscalYearEnd
           }]:
-
-          [Insert Table B from Carta Certificate Transaction Report]
-
-
-          Series Seed
-          Series A
-
-
-          Voting
-          The holder of each share of convertible preferred stock is entitled to one vote for each share of common stock into which it would convert. As long as [number] shares of convertible preferred stock are outstanding, the holders of such shares shall be entitled to elect one director. The holders of shares of common stock shall be entitled to elect two directors. The holders of shares of convertible preferred stock and common stock, voting together as a single class and on an as converted to Common Stock basis, shall be entitled to elect two directors.
-
-          Redemption
-          The convertible preferred stock is not redeemable at the option of the holders.
+          [TABLE:convertible-preferred-to-common]
         `;
       }
 
-      let commonStr = `
+      let commonStr = dedent`
         Common Stock
-        "As of [${data.fiscalYearEnd}], the Company was authorized to issue [insert number from carta export] shares of [$${data.articlesOfIncorporation.parValuePerShare}] par value common stock.
+        As of [${
+          data.fiscalYearEnd
+        }], the Company was authorized to issue [${ppNumber(
+          authorizedSharesTotal.common,
+        )}] shares of [$${
+          data.articlesOfIncorporation.parValuePerShare
+        }] par value common stock.
 
         Common stockholders are entitled to dividends as and when declared, subject to the rights of holders of all classes of stock outstanding having priority rights as to dividends. There have been no dividends declared to date. The holder of each share of common stock is entitled to one vote.
 
-        The Company had common shares reserved for future issuance upon the exercise or conversion of the following:"
-
-        [Insert Table C from Carta Certificate Transaction Report]
-        As of [Fiscal End Month & Day, [${data.fiscalYearEnd}]]
-        Convertible preferred stock
-        Common stock options outstanding
-        Common stock options available for future grant
-        Total
+        The Company had common shares reserved for future issuance upon the exercise or conversion of the following:
+        [TABLE:common-stock-reserved-for-future-issuance]
       `;
       return `
         ${preferredStr}
