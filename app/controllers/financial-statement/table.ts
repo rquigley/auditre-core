@@ -42,13 +42,10 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
   t.columns = [{}, { style: { numFmt: 'accounting', align: 'right' } }];
 
   let row;
-  row = t.addRow(
-    [`As of ${data.fiscalYearEndParts.md},`, data.fiscalYearEndParts.y],
-    {
-      id: 'date-row',
-      style: { bold: true, borderBottom: 'thin' },
-    },
-  );
+  row = t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year], {
+    id: 'date-row',
+    style: { bold: true, borderBottom: 'thin' },
+  });
 
   t.addRow(['Assets', ''], {
     style: {
@@ -466,7 +463,7 @@ export async function buildPropertyAndEquipmentNet(
   t.columns = [{}, { style: { numFmt: 'accounting', align: 'right' } }];
 
   let row;
-  row = t.addRow([data.fiscalYearEndParts.md, data.fiscalYearEndParts.y], {
+  row = t.addRow([data.fiscalYearEndNoYear, data.year], {
     style: {
       bold: true,
       borderBottom: 'thin',
@@ -547,12 +544,9 @@ export async function buildStatementOfOperations(
   t.columns = [{}, { style: { numFmt: 'accounting', align: 'right' } }];
 
   let row;
-  row = t.addRow(
-    [`As of ${data.fiscalYearEndParts.md},`, data.fiscalYearEndParts.y],
-    {
-      style: { bold: true, borderBottom: 'thin' },
-    },
-  );
+  row = t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year], {
+    style: { bold: true, borderBottom: 'thin' },
+  });
   t.addRow(['Operating expenses:', ''], {
     style: {
       padTop: true,
@@ -732,15 +726,12 @@ export async function buildCommonStockReservedForFutureIssuance(
   const sbcReport = await getSBCReportData(data.auditId);
   let t = new Table();
   t.columns = [{}, { style: { numFmt: 'number', align: 'right' } }];
-  t.addRow(
-    [`As of ${data.fiscalYearEndParts.md},`, data.fiscalYearEndParts.y],
-    {
-      style: {
-        bold: true,
-        borderBottom: 'double',
-      },
+  t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.fiscalYearEndNoYear], {
+    style: {
+      bold: true,
+      borderBottom: 'double',
     },
-  );
+  });
 
   let total = 0;
   const numPreferred = certTransactionReport
