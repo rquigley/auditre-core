@@ -17,6 +17,7 @@ export const tableMap = {
   'property-and-equipment-lives': buildPropertyAndEquipmentLives,
   'property-and-equipment-net': buildPropertyAndEquipmentNet,
   'fvm-liabilities': buildFVMLiabilities,
+  'fvm-liabilities2': buildFVMLiabilities2,
   'convertible-preferred-stock': buildConvertiblePreferredStock,
   'convertible-preferred-to-common': buildConvertibleToCommon,
   'common-stock-reserved-for-future-issuance':
@@ -533,6 +534,28 @@ export async function buildFVMLiabilities(data: AuditData): Promise<Table> {
   let row;
   row = t.addRow(['Derivatives liability:', 123, 345, 343]);
   row.cells[0].style = { indent: true };
+  return t;
+}
+
+export async function buildFVMLiabilities2(data: AuditData): Promise<Table> {
+  let t = new Table();
+  t.columns = [
+    {},
+    { style: { numFmt: 'currency' } },
+    { style: { numFmt: 'currency' } },
+  ];
+  t.addRow(['', 'Issuance', `${data.fiscalYearEnd}`], {
+    style: {
+      bold: true,
+      borderBottom: 'thin',
+    },
+  });
+  t.addRow(['Term (years)', '', '']);
+  t.addRow(['Discount rate', '', '']);
+  t.addRow(['Probability of financing', '', ''], {
+    style: { borderBottom: 'double' },
+  });
+
   return t;
 }
 
