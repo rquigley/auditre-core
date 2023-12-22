@@ -224,6 +224,16 @@ export const getPolicySections = () => [
     `,
   }),
   generateSection({
+    header: 'Derivative Liability',
+    isShowing: (data) =>
+      data.totals.get('LIABILITY_CONVERTIBLE_NOTES_PAYABLE') > 0,
+    body: (data) => `
+      The Company accounts for certain redemption features that are associated with the terms of certain convertible notes, as a liability at fair value and adjusts the instruments to their fair value at each reporting period.
+
+      The redemption features qualify as derivatives as they continuously reset as the underlying stock price increases or decreases so as to provide a fixed value of equity shares or provide a fixed repayment premium to the holders at the conversion dates. The derivative liability is subject to remeasurement at each balance sheet date until exercised or extinguished, and any change in fair value is recognized in the Company’s statement of operations as a component of other income (expense), net. The fair value of the redemption features has been estimated using a ___ and under an ___ approach for subsequent measurement dates.
+    `,
+  }),
+  generateSection({
     header: 'Research and Development',
     isShowing: (data) =>
       data.totals.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') > 0,
@@ -293,7 +303,7 @@ export const getPolicySections = () => [
 
       In order to determine the fair value of the derivative liability, the Company utilized an ___ approach model based on a probability weighted with-and-without perspective as of the issuance date and [${data.fiscalYearEnd}]. Under this method, the fair value of debt instrument is measured with the redemption features and without the redemption features and the difference is the implied fair value. The income approach model incorporates assumptions and estimates to value the redemption feature. Estimates and assumptions impacting the fair value measurement include the probabilities of a Qualified or Non-Qualified Financing taking place, the estimated term remaining until the triggering event takes place, and the discount rate. The Company utilized the following assumptions at valuation dates: 
 
-      [TABLE https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=2072488138&range=A12]
+      [TABLE:fvm-liabilities2]
     `,
     pageBreakBefore: true,
   }),
