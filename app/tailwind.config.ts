@@ -6,6 +6,7 @@ const config: Config = {
     './components/**/*.tsx',
     './app/**/*.tsx',
     './controllers/output/react.tsx',
+    './lib/**/*.tsx',
   ],
   theme: {
     extend: {},
