@@ -288,3 +288,22 @@ export function bucket<T>(
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
+
+export function isSameYear(
+  auditYear: string,
+  date: Date | string | undefined | null,
+) {
+  if (!date) {
+    return false;
+  }
+  if (typeof date === 'string') {
+    const [year, month = '01', day = '01'] = date.split('-');
+    date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  }
+
+  return Number(auditYear) === date.getUTCFullYear();
+}
+
+export function isObject(value: unknown): value is object {
+  return typeof value === 'object';
+}
