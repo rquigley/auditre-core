@@ -1,3 +1,5 @@
+CREATE EXTENSION pg_stat_statements;
+
 CREATE OR REPLACE FUNCTION update_modified_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -262,8 +264,8 @@ WITH org_rows AS (
 )
 INSERT INTO public.invitation (org_id, email, expires_at)
 VALUES
-  ((SELECT id FROM org_rows WHERE name = 'AuditRe, Inc.'), 'ryan@auditre.co', CURRENT_DATE + INTERVAL '6 months'),
-  ((SELECT id FROM org_rows WHERE name = 'AuditRe, Inc.'), 'jason@auditre.co', CURRENT_DATE + INTERVAL '6 months');
+  ((SELECT id FROM org_rows), 'ryan@auditre.co', CURRENT_DATE + INTERVAL '6 months'),
+  ((SELECT id FROM org_rows), 'jason@auditre.co', CURRENT_DATE + INTERVAL '6 months');
 
 -- Demo Account 2
 WITH org_rows AS (
