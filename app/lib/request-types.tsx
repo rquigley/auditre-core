@@ -1,5 +1,6 @@
 import * as z from 'zod';
 
+import { DescriptionLink, DescriptionList } from '@/components/description';
 import { businessModelTypes } from './business-models';
 
 import type { DocumentClassificationType } from '@/controllers/document';
@@ -8,7 +9,7 @@ import type { ZodTypeAny } from 'zod';
 
 interface _FormFieldBase {
   label?: string;
-  description?: string;
+  description?: string | JSX.Element;
   dependsOn?: string | { field: string; state: boolean };
 }
 
@@ -543,12 +544,34 @@ export const requestTypes = [
     {
       capTableDetailDocumentId: {
         label: 'Cap table detail',
+        description: (
+          <>
+            This report provides an overview of the ownership within the
+            business.
+            <br />
+            <DescriptionLink href="https://docs.google.com/document/d/1Hnguqhlmz4aLQVLF_-vre1GjzR0-Orlb1E14_VqltMw/edit">
+              Here
+            </DescriptionLink>{' '}
+            is an example of how to generate this report from Carta.
+          </>
+        ),
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         aiClassificationType: 'CAP_TABLE',
       },
       certificateTransactionDocumentId: {
         label: 'Certificate Transaction',
+        description: (
+          <>
+            This report provides a detailed listing of every transaction within
+            the cap table.
+            <br />
+            <DescriptionLink href="https://docs.google.com/document/d/1KV_u6nRq6HdpwbeOcv6oz4WLrExUHWzamupUT1Um1UA/edit">
+              Here
+            </DescriptionLink>{' '}
+            is an example of how to generate this report from Carta.
+          </>
+        ),
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         aiClassificationType: 'CERTIFICATE_TRANSACTION',
@@ -559,6 +582,17 @@ export const requestTypes = [
       },
       stockBasedCompDocumentId: {
         label: 'Stock based compensation report',
+        description: (
+          <>
+            When issuing stock to employees, it’s considered compensation and
+            has to be reported on the income statement.
+            <br />
+            <DescriptionLink href="https://docs.google.com/document/d/16hHQqKHvw4UPYW-j7erKf3BOyGN0YOFs_bhYyiowC0k/edit">
+              Here
+            </DescriptionLink>{' '}
+            is an example of how to generate this report from Carta.
+          </>
+        ),
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         dependsOn: 'hasEmployeeStockPlan',
@@ -566,6 +600,8 @@ export const requestTypes = [
       },
       employeeStockPlanDocumentId: {
         label: 'Stock option plan & amendments',
+        description:
+          'The stock plan document that outlines the number of shares allocated to the company’s stock option plan.',
         extensions: ['PDF', 'DOC', 'DOCX'],
         input: 'fileupload',
         dependsOn: 'hasEmployeeStockPlan',
@@ -632,9 +668,22 @@ export const requestTypes = [
       relatedPartyTransactions: {
         input: 'textarea',
         label: 'Please disclose the related party transactions',
-        description: `Third-party transactions refer to agreements between two parties who have a preexisting business relationship. Commonly related parties are typically related to shareholders. Two common examples of a related-party transaction are:
-        - If you used shareholders company to perform a service for your business
-        - If you raised debt from an existing shareholder`,
+        description: (
+          <>
+            Third-party transactions refer to agreements between two parties who
+            have a preexisting business relationship. Commonly related parties
+            are typically related to shareholders.
+            <br />
+            Two common examples of a related-party transaction are:
+            <DescriptionList>
+              <li>
+                If you used shareholders company to perform a service for your
+                business
+              </li>
+              <li>If you raised debt from an existing shareholder</li>
+            </DescriptionList>
+          </>
+        ),
         dependsOn: 'hasRelatedPartyTransactions',
       },
     },
