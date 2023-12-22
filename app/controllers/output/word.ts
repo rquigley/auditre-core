@@ -1,3 +1,25 @@
+import {
+  AlignmentType,
+  BorderStyle,
+  convertInchesToTwip,
+  Document,
+  Footer,
+  HeadingLevel,
+  HeightRule,
+  PageBreak,
+  PageNumber,
+  Paragraph,
+  StyleLevel,
+  Table,
+  TableCell,
+  TableOfContents,
+  TableRow,
+  TextRun,
+  UnderlineType,
+  VerticalAlign,
+  WidthType,
+} from 'docx';
+
 import { AuditData, getAuditData } from '@/controllers/audit';
 import { ppCurrency, ppNumber } from '@/lib/util';
 import {
@@ -15,28 +37,6 @@ import {
 import type { Template } from '../financial-statement/template';
 import type { Row as ARRow, Table as ARTable } from '@/lib/table';
 import type { AuditId } from '@/types';
-
-const {
-  AlignmentType,
-  BorderStyle,
-  convertInchesToTwip,
-  Document,
-  Footer,
-  HeadingLevel,
-  PageBreak,
-  PageNumber,
-  Paragraph,
-  StyleLevel,
-  Table,
-  TableCell,
-  TableOfContents,
-  TableRow,
-  TextRun,
-  UnderlineType,
-  VerticalAlign,
-  WidthType,
-  HeightRule,
-} = require('docx');
 
 export async function generate(auditId: AuditId) {
   const data = await getAuditData(auditId);
@@ -384,7 +384,7 @@ function buildTableRow(row: ARRow) {
     }),
 
     height: row.style.padTop
-      ? { value: convertInchesToTwip(0.3), type: HeightRule.EXACT }
+      ? { value: convertInchesToTwip(0.3), rule: HeightRule.EXACT }
       : undefined,
   });
 }
@@ -416,8 +416,8 @@ function getPageProperties() {
   };
 }
 
-function formatBodyText(text: string): (typeof TextRun)[] {
-  const textRuns: (typeof TextRun)[] = [];
+function formatBodyText(text: string) {
+  const textRuns = [];
   let buffer = '';
   let insideBracket = false;
 
@@ -452,8 +452,8 @@ function formatBodyText(text: string): (typeof TextRun)[] {
 
 async function templateToParagraph(
   template: Template & { pageBreakBefore?: boolean; data: AuditData },
-): Promise<Array<unknown>> {
-  const ret = [
+) {
+  const ret: Array<Paragraph | Table> = [
     new Paragraph({
       text: template.header,
       heading: HeadingLevel.HEADING_2,

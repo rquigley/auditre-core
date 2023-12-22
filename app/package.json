@@ -29,7 +29,7 @@
     "dataloader": "2.2.2",
     "dayjs": "1.11.10",
     "dedent": "1.5.1",
-    "docx": "8.2.4",
+    "docx": "8.3.0",
     "encoding": "0.1.13",
     "exceljs": "4.4.0",
     "kysely": "0.26.3",
