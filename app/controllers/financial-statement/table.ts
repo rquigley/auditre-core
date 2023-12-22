@@ -1,5 +1,3 @@
-import build from 'next/dist/build';
-
 import { getAccountsForCategory } from '@/controllers/account-mapping';
 import { AccountMap, groupFixedAccountsByCategories } from '@/lib/finance';
 import { Row, Table } from '@/lib/table';
@@ -545,7 +543,7 @@ export async function buildFVMLiabilities2(data: AuditData): Promise<Table> {
     { style: { numFmt: 'currency' } },
     { style: { numFmt: 'currency' } },
   ];
-  t.addRow(['', 'Issuance', `${data.fiscalYearEnd}`], {
+  t.addRow(['', 'Issuance', data.fiscalYearEnd], {
     style: {
       bold: true,
       borderBottom: 'thin',
