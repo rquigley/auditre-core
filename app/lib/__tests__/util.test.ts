@@ -4,6 +4,7 @@ import {
   deepCopy,
   extractLinesContaining,
   isFieldVisible,
+  isSameYear,
   omit,
 } from '../util';
 
@@ -153,5 +154,27 @@ describe('extractLinesContaining', () => {
     const output = extractLinesContaining(input, ['cows', 'france']);
 
     expect(output).toEqual(['Cows', 'eat IN france']);
+  });
+});
+
+describe('isSameYear', () => {
+  it('should return false if date is not provided', () => {
+    expect(isSameYear('2022', undefined)).toBe(false);
+  });
+
+  it('should return true if auditYear and the year of date (as a Date object) are the same', () => {
+    expect(isSameYear('2022', new Date('2022-01-01'))).toBe(true);
+  });
+
+  it('should return false if auditYear and the year of date (as a Date object) are not the same', () => {
+    expect(isSameYear('2021', new Date('2022-01-01'))).toBe(false);
+  });
+
+  it('should return true if auditYear and the year of date (as a string) are the same', () => {
+    expect(isSameYear('2022', '2022-01-01')).toBe(true);
+  });
+
+  it('should return false if auditYear and the year of date (as a string) are not the same', () => {
+    expect(isSameYear('2021', '2022-01-01')).toBe(false);
   });
 });

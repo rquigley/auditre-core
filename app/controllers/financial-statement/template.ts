@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import dedent from 'dedent';
 
-import { addFP, ppCurrency, ppNumber } from '@/lib/util';
+import { addFP, isSameYear, ppCurrency, ppNumber } from '@/lib/util';
 import { getAccountByFuzzyMatch } from '../account-mapping';
 import { getAuthorizedSharesTotal } from '../equity';
 
@@ -101,6 +101,13 @@ export const getOrganizationSections = () => [
         data.totals.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT'),
         data.totals.get('LIABILITY_OTHER'),
       );
+
+      let recentFinancingEvents = '';
+      if (isSameYear(data.year, data.financingDocuments.efDateOfDocument)) {
+        recentFinancingEvents =
+          data.financingDocuments.equityFinancingQuickSummary;
+      }
+
       return `
       The Company has incurred recurring losses and negative cash flows from operating activities since inception. As of [${
         data.fiscalYearEnd
@@ -112,9 +119,7 @@ export const getOrganizationSections = () => [
 
       The ability to continue as a going concern is dependent upon the Company obtaining necessary financing to meet its obligations and repay its liabilities arising from normal business operations when they come due. The Company may raise additional capital through the issuance of equity securities, debt financings or other sources in order to further implement its business plan. However, if such financing is not available when needed and at adequate levels, the Company will need to reevaluate its operating plan and may be required to delay the development of its products.
 
-      [if there was a recent financing event (what defines recent?)]
-      In March 2023, the Company issued [number] shares of Series B-1 convertible preferred stock for proceeds of approximately [number]. In addition, the convertible notes with aggregate outstanding principal of [number] were converted into [number] shares of Series B-1 convertible preferred stock. In April 2023, the Company closed a subsequent round of Series B-1 convertible preferred stock for additional proceeds of $10,800,000 and issuance of [number] Series B-1 convertible preferred shares.
-      [endif]
+      ${recentFinancingEvents}
     `;
     },
   }),
