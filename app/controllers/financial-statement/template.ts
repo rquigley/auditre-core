@@ -86,7 +86,7 @@ export const getOrganizationSections = () => [
         data.articlesOfIncorporation.incorporationJurisdiction
       }] on [${toDate(data.articlesOfIncorporation.incorporationDate)}]. [${
         data.basicInfo.description
-      }]. [TODO: The Company has wholly owned subsidiaries], [SUBSIDIARY 1, SUBSIDIARY 2...].
+      }].
     `,
   }),
 
