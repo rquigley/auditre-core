@@ -488,30 +488,37 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Income Taxes',
-    body: (data) => `
-      [if accumulated deficit <$0]
-      The Company has incurred net operating losses since inception for both federal and state purposes and, as a result, has paid no federal and only minimal state income taxes.
+    body: async (data) => {
+      const accumulatedDeficit = data.totals.get('EQUITY_ACCUMULATED_DEFICIT');
 
-      [if accumulated deficit $0>]
-      The Company has incurred net operating gains for both federal and state purposes and, as a result, has paid [insert manual number from tax provisions] in federal income tax and [insert manual number from tax provisions] state income taxes.
-      [End if]
+      let accumulatedDeficitStr = '';
+      if (accumulatedDeficit < 0) {
+        accumulatedDeficitStr =
+          'The Company has incurred net operating losses since inception for both federal and state purposes and, as a result, has paid no federal and only minimal state income taxes.';
+      } else {
+        accumulatedDeficitStr = `The Company has incurred net operating gains for both federal and state purposes and, as a result, has paid [insert manual number from tax provisions] in federal income tax and [insert manual number from tax provisions] state income taxes.`;
+      }
 
-      For the year ended [${data.fiscalYearEnd}], the provision for income tax expense was [insert manual number from tax provision].
+      return `
+        ${accumulatedDeficitStr}
 
-      The tax effects of temporary differences and carry forwards that give rise to significant portions of the Company’s deferred tax assets are as follows (in thousands):
+        For the year ended [${data.fiscalYearEnd}], the provision for income tax expense was [insert manual number from tax provision].
 
-      [TABLE https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=1355186227&range=A15]
+        The tax effects of temporary differences and carry forwards that give rise to significant portions of the Company’s deferred tax assets are as follows (in thousands):
 
-      In assessing the realizability of deferred tax assets, management considers whether it is more likely than not that some portion or all of the deferred tax assets will not be realized. As a result of a history of taxable losses and uncertainties as to future profitability, the Company has recorded a full valuation allowance against its deferred tax assets.
+        [TABLE:income-taxes]
 
-      As of  [${data.fiscalYearEnd}], the Company had federal net operating loss carryovers of [insert manual number from income tax provision] and state net operating loss carryovers of approximately [insert manual number from income tax provision]. The federal and state net operating losses will begin to expire in [insert manual number from income tax provision] and [insert manual number from income tax provision], respectively.
+        In assessing the realizability of deferred tax assets, management considers whether it is more likely than not that some portion or all of the deferred tax assets will not be realized. As a result of a history of taxable losses and uncertainties as to future profitability, the Company has recorded a full valuation allowance against its deferred tax assets.
 
-      As of [${data.fiscalYearEnd}], the Company had federal credit carryovers of [insert manual number from income tax provision] and state credit carryovers of approximately [insert manual number from income tax provision]. The federal credits will begin to expire in [insert manual number from income tax provision], while the state credits will carryforward indefinitely.
+        As of  [${data.fiscalYearEnd}], the Company had federal net operating loss carryovers of [insert manual number from income tax provision] and state net operating loss carryovers of approximately [insert manual number from income tax provision]. The federal and state net operating losses will begin to expire in [insert manual number from income tax provision] and [insert manual number from income tax provision], respectively.
 
-      Utilization of the domestic net operating loss and tax credit carry forwards may be subject to a substantial annual limitation due to ownership change limitations that may have occurred or that could occur in the future, as required by the Internal Revenue Code Section 382, as well as similar state provisions. In general, an “ownership change,” as defined by the code, results from a transaction or series of transactions over a three-year period resulting in an ownership change of more than 50 percentage points of the outstanding stock of a company by certain stockholders or public groups. Any limitation may result in expiration of all or a portion of the net operating loss or tax credit carry forwards before utilization.
+        As of [${data.fiscalYearEnd}], the Company had federal credit carryovers of [insert manual number from income tax provision] and state credit carryovers of approximately [insert manual number from income tax provision]. The federal credits will begin to expire in [insert manual number from income tax provision], while the state credits will carryforward indefinitely.
 
-      The Company’s income tax returns for all years remain open to examination by federal and state taxing authorities due to the carryforward of tax attributes.
-    `,
+        Utilization of the domestic net operating loss and tax credit carry forwards may be subject to a substantial annual limitation due to ownership change limitations that may have occurred or that could occur in the future, as required by the Internal Revenue Code Section 382, as well as similar state provisions. In general, an “ownership change,” as defined by the code, results from a transaction or series of transactions over a three-year period resulting in an ownership change of more than 50 percentage points of the outstanding stock of a company by certain stockholders or public groups. Any limitation may result in expiration of all or a portion of the net operating loss or tax credit carry forwards before utilization.
+
+        The Company’s income tax returns for all years remain open to examination by federal and state taxing authorities due to the carryforward of tax attributes.
+      `;
+    },
     pageBreakBefore: true,
   }),
   generateSection({

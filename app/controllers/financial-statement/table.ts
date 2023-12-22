@@ -22,6 +22,7 @@ export const tableMap = {
   'convertible-preferred-to-common': buildConvertibleToCommon,
   'common-stock-reserved-for-future-issuance':
     buildCommonStockReservedForFutureIssuance,
+  'income-taxes': buildIncomeTaxes,
 } as const;
 
 export function filterHideIfZeroRows(rows: Row[]) {
@@ -783,6 +784,38 @@ export async function buildCommonStockReservedForFutureIssuance(
       borderTop: 'thin',
       borderBottom: 'double',
     },
+  });
+
+  return t;
+}
+
+export async function buildIncomeTaxes(data: AuditData): Promise<Table> {
+  let t = new Table();
+  t.columns = [
+    {},
+    { style: { numFmt: 'currency' } },
+    { style: { numFmt: 'currency' } },
+  ];
+  t.addRow([data.fiscalYearEnd, data.year], {
+    style: {
+      bold: true,
+      borderBottom: 'thin',
+    },
+  });
+  t.addRow(['Deferred tax assets', 0]);
+  t.addRow(['Net operating loss carry forwards', 0]);
+  t.addRow(['Reserves and accruals', 0]);
+  t.addRow(['Fixes assets', 0]);
+  t.addRow(['Other', 0]);
+
+  t.addRow(['Gross deferred tax assets', 0], {
+    style: { borderTop: 'thin' },
+  });
+  t.addRow(['Valuation allowance', 0], {
+    style: { borderTop: 'thin' },
+  });
+  t.addRow(['Deferred tax assets, net', 0], {
+    style: { bold: true, borderTop: 'thin', borderBottom: 'double' },
   });
 
   return t;
