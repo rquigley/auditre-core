@@ -7,7 +7,7 @@ import { Dialog, Transition } from '@headlessui/react';
 //   QuestionMarkCircleIcon,
 // } from '@heroicons/react/20/solid';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-// import clsx from 'clsx';
+import clsx from 'clsx';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -17,7 +17,7 @@ import useSWR from 'swr';
 // import { Await } from '@/components/await';
 import { FiletypeIcon } from '@/components/filetype-icon';
 import { MiniSpinner, PageSpinner } from '@/components/spinner';
-import { reprocessDocument } from '@/lib/actions';
+import { reprocessDocument, reprocessDocumentQuery } from '@/lib/actions';
 import Datetime from './datetime';
 
 import type { DocumentDetails } from '@/app/(protected)/document/[document]/detail/route';
@@ -201,6 +201,7 @@ function Document({
                 {Object.keys(document.dataWithLabels).map((identifier) => (
                   <DataRow
                     key={identifier}
+                    documentId={documentId}
                     identifier={identifier}
                     data={document.dataWithLabels[identifier]}
                   />
@@ -394,6 +395,16 @@ function Document({
         </div> */}
       </div>
       <div className="flex flex-shrink-0 justify-end px-4 py-4">
+        {/* <button
+          type="button"
+          className="mr-2 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          onClick={async () => {
+            onClose();
+            await deleteDocument(documentId);
+          }}
+        >
+          Delete
+        </button> */}
         <button
           type="button"
           className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
@@ -414,22 +425,49 @@ function Document({
 
 function DataRow({
   identifier,
+  documentId,
   data,
 }: {
   identifier: string;
+  documentId: DocumentId;
   data: {
     value: string | undefined;
     label: string | undefined;
     status: string | undefined;
   };
 }) {
+  const [processing, setProcessing] = useState(false);
   if (!data.label) {
     return null;
   }
   return (
     <div className="mb-2">
-      <div className="text-xs leading-5 font-semibold text-gray-600">
-        {data.label}
+      <div className="flex  items-center text-xs leading-5 font-semibold text-gray-600">
+        <span className="inline-block">{data.label}</span>
+        <button
+          onClick={async () => {
+            setProcessing(true);
+            await reprocessDocumentQuery(documentId, identifier);
+            setProcessing(false);
+          }}
+          className="ml-2 hover:bg-slate-100 rounded p-0.5"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            className={clsx(
+              processing ? 'animate-spin' : '',
+              'size-4 text-gray-500',
+            )}
+          >
+            <path
+              fillRule="evenodd"
+              d="M13.836 2.477a.75.75 0 0 1 .75.75v3.182a.75.75 0 0 1-.75.75h-3.182a.75.75 0 0 1 0-1.5h1.37l-.84-.841a4.5 4.5 0 0 0-7.08.932.75.75 0 0 1-1.3-.75 6 6 0 0 1 9.44-1.242l.842.84V3.227a.75.75 0 0 1 .75-.75Zm-.911 7.5A.75.75 0 0 1 13.199 11a6 6 0 0 1-9.44 1.241l-.84-.84v1.371a.75.75 0 0 1-1.5 0V9.591a.75.75 0 0 1 .75-.75H5.35a.75.75 0 0 1 0 1.5H3.98l.841.841a4.5 4.5 0 0 0 7.08-.932.75.75 0 0 1 1.025-.273Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
       </div>
       <p className="text-xs leading-5 text-gray-600">
         {data.status === 'PENDING' ? <MiniSpinner /> : data.value}
