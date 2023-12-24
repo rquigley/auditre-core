@@ -25,6 +25,7 @@ import {
   deleteDocument as _deleteDocument,
   getById as getDocumentById,
   process as processDocument,
+  reAskQuestion,
 } from '@/controllers/document';
 import { getKV } from '@/controllers/kv';
 import { create as addRequestData } from '@/controllers/request-data';
@@ -194,6 +195,25 @@ export async function reprocessDocument(id: DocumentId) {
   }
 
   await processDocument(id);
+}
+
+export async function reprocessDocumentQuery(
+  id: DocumentId,
+  identifier: string,
+) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const doc = await getDocumentById(id);
+  if (doc.orgId !== user.orgId) {
+    throw new UnauthorizedError();
+  }
+
+  await reAskQuestion(doc, identifier);
+
+  // Generic because the overlay can appear anywhere
+  revalidatePath(`/`);
 }
 
 export async function getDocumentStatus(id: DocumentId) {

@@ -362,6 +362,35 @@ export async function askDefaultQuestions(document: Document): Promise<number> {
   return aiPromises.length;
 }
 
+export async function reAskQuestion(document: Document, identifier: string) {
+  if (!document.extracted) {
+    throw new Error('Document has no extracted content');
+  }
+  const questions = documentAiQuestions[document.classifiedType];
+  if (!questions || !Object.keys(questions).length) {
+    return 0;
+  }
+  const obj = questions[identifier];
+  if (!obj) {
+    throw new Error('Invalid question identifier');
+  }
+  if ('fn' in obj) {
+    await obj.fn(document);
+  } else if ('question' in obj) {
+    await askQuestion({
+      document,
+      question: obj.question,
+      model: obj.model ? (obj.model as OpenAIModel) : undefined,
+      identifier,
+      preProcess: obj.preProcess ? obj.preProcess : undefined,
+      respondInJSON: 'respondInJSON' in obj ? obj.respondInJSON : false,
+      validate: obj.validate,
+    });
+  } else {
+    throw new Error('Invalid question');
+  }
+}
+
 type FormattedQueryDataWithLabels = Record<
   string,
   {
