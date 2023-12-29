@@ -450,7 +450,7 @@ function DataRow({
             await reprocessDocumentQuery(documentId, identifier);
             setProcessing(false);
           }}
-          className="ml-2 hover:bg-slate-100 rounded p-0.5"
+          className="ml-1 hover:bg-slate-100 rounded p-0.5"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -458,7 +458,7 @@ function DataRow({
             fill="currentColor"
             className={clsx(
               processing ? 'animate-spin' : '',
-              'size-4 text-gray-500',
+              'size-3 text-gray-500',
             )}
           >
             <path
