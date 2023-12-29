@@ -123,12 +123,7 @@ export function normalizeRequestData(
   rt: string,
   defaultValues: Record<string, unknown>,
   data: Array<DataObj>,
-): {
-  data: Record<string, NormalizedData>;
-  uninitializedFields: Array<string>;
-  form: Record<string, FormField>;
-  requestType: string;
-} {
+) {
   const form = getRequestTypeForId(rt).form;
   let dataMatchesConfig = true;
   let uninitializedFields = [];
@@ -145,12 +140,11 @@ export function normalizeRequestData(
       dataMatchesConfig = false;
       uninitializedFields.push(key);
 
-      ret[key] = defaultValues[key] as NormalizedData;
-    } else if (form[key].input === 'fileupload') {
+      ret[key] = defaultValues[key];
+    } else if (form[key].input === 'fileupload' && 'documentIds' in d.data) {
       ret[key] = {
         isDocuments: true,
-        // @ts-expect-error
-        documentIds: d.data?.documentIds as Array<DocumentId>,
+        documentIds: d.data.documentIds,
       };
     } else if ('value' in d.data) {
       ret[key] = d.data.value;
