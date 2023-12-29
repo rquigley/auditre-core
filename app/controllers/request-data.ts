@@ -236,3 +236,45 @@ export async function getAuditIdsForDocument(documentId: DocumentId) {
     .execute();
   return rows.map((r) => r.auditId);
 }
+
+export async function unlinkDocumentFromRequestData({
+  documentId,
+  auditId,
+  requestType,
+  requestId,
+  actorUserId,
+}: {
+  documentId: DocumentId;
+  auditId: AuditId;
+  requestType: string;
+  requestId: string;
+  actorUserId?: UserId;
+}) {
+  const existingRow = await getDataForRequestAttribute(
+    auditId,
+    requestType,
+    requestId,
+  );
+  if (!existingRow) {
+    throw new Error('No request data found');
+  }
+  if (!('isDocuments' in existingRow.data)) {
+    throw new Error('Request data is not a document type');
+  }
+  const newDocumentIds = existingRow.data.documentIds.filter(
+    (id) => id !== documentId,
+  );
+
+  await create({
+    auditId: auditId,
+    requestType,
+    requestId,
+    data: { isDocuments: true, documentIds: newDocumentIds } as const,
+    actorUserId: actorUserId || null,
+  });
+
+  await deleteRequestDataDocument({
+    requestDataId: existingRow.id,
+    documentId,
+  });
+}

@@ -28,13 +28,22 @@ import {
   reAskQuestion,
 } from '@/controllers/document';
 import { getKV } from '@/controllers/kv';
-import { create as addRequestData } from '@/controllers/request-data';
+import {
+  create as addRequestData,
+  unlinkDocumentFromRequestData,
+} from '@/controllers/request-data';
 import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
 import { getPresignedUrl } from '@/lib/aws';
 import { getRequestTypeForId } from '@/lib/request-types';
 
 import type { AccountType } from '@/lib/finance';
-import type { AccountBalanceId, AuditId, DocumentId, S3File } from '@/types';
+import type {
+  AccountBalanceId,
+  AuditId,
+  DocumentId,
+  RequestDataId,
+  S3File,
+} from '@/types';
 
 export { processDocument };
 
@@ -256,18 +265,53 @@ export async function getDocumentStatus(id: DocumentId) {
   }
 }
 
-export async function deleteDocument(id: DocumentId) {
+// Commenting out because of the ramifications for any linked request_data objects
+//
+// export async function deleteDocument(id: DocumentId) {
+//   const { user } = await getCurrent();
+//   if (!user) {
+//     throw new UnauthorizedError();
+//   }
+//   const document = await getDocumentById(id);
+//   if (document.orgId !== user.orgId) {
+//     throw new UnauthorizedError();
+//   }
+
+//   await _deleteDocument(id);
+//   revalidatePath('/');
+// }
+
+export async function unlinkDocument({
+  documentId,
+  auditId,
+  requestType,
+  requestId,
+}: {
+  documentId: DocumentId;
+  auditId: AuditId;
+  requestType: string;
+  requestId: string;
+}) {
   const { user } = await getCurrent();
   if (!user) {
     throw new UnauthorizedError();
   }
-  const document = await getDocumentById(id);
+  const document = await getDocumentById(documentId);
   if (document.orgId !== user.orgId) {
     throw new UnauthorizedError();
   }
 
-  await _deleteDocument(id);
-  revalidatePath('/');
+  await unlinkDocumentFromRequestData({
+    documentId,
+    auditId,
+    requestType,
+    requestId,
+    actorUserId: user.id,
+  });
+  // TODO: Refine
+  console.log(`/audit/${auditId}/request/${requestType}`);
+  revalidatePath(`/audit/${auditId}/request/${requestType}`);
+  revalidatePath(`/`);
 }
 
 const bucketSchema = z.string();
