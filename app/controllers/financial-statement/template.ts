@@ -416,8 +416,6 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Equity Incentive Plan',
     body: (data) => `
-      [TABLE] https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=485990093&range=A2
-
       On [insert adoption date from ESOP document "January 15, 20XX"], the Company adopted the [insert title from ESOP document] (“Equity Incentive Plan”) to permit the grant of share-based awards, such as stock grants and incentive and non-statutory stock options to employees, directors and consultants. As of [${data.fiscalYearEnd}], a total of [insert stock subject to this plan] shares of the Company’s common stock were reserved for issuance under the Equity Incentive Plan, of which [insert number from Carta] were available for grant.
 
       Restricted Stock Awards
