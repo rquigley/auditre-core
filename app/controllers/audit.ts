@@ -117,8 +117,8 @@ export async function getAllByOrgId(
 }
 
 export type AuditData = Record<string, any>;
-//  & {
-//   balanceSheet: ReturnType<typeof getBalanceSheetData>;
+// export type AuditData = Awaited<ReturnType<typeof getAuditData>> & {
+//   [key: string]: any;
 // };
 
 /**
@@ -138,9 +138,7 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
     aiData[document.id] = await getAiDataForDocumentId(document.id);
   }
 
-  const data: Record<string, unknown> = {
-    auditId,
-  };
+  const requestDataObj: Record<string, any> = {};
   for (const [key, fields] of Object.entries(requestData)) {
     let fieldsData = fields.data;
     for (const [field, fieldVal] of Object.entries(fieldsData)) {
@@ -155,27 +153,24 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
         });
       }
     }
-    data[kebabToCamel(key)] = fieldsData;
+    requestDataObj[kebabToCamel(key)] = fieldsData;
   }
 
   const totals = await getBalancesByAccountType(auditId);
-  data.totals = totals;
 
-  // @ts-expect-error
-  data.year = String(data.auditInfo?.year) || '';
-
-  data.fiscalYearEndNoYear = `${getMonthName(
-    // @ts-expect-error
-    data.auditInfo.fiscalYearMonthEnd,
-  )} ${getLastDayOfMonth(
-    // @ts-expect-error
-    data.auditInfo.fiscalYearMonthEnd,
-    // @ts-expect-error
-    data.auditInfo.year,
-  )}`;
-  data.fiscalYearEnd = `${data.fiscalYearEndNoYear}, ${data.year}`;
-
-  return data;
+  return {
+    auditId,
+    totals,
+    year: String(requestDataObj.auditInfo?.year) || '',
+    fiscalYearEndNoYear: `${getMonthName(
+      requestDataObj.auditInfo.fiscalYearMonthEnd,
+    )} ${getLastDayOfMonth(
+      requestDataObj.auditInfo.fiscalYearMonthEnd,
+      requestDataObj.auditInfo.year,
+    )}`,
+    fiscalYearEnd: `${requestDataObj.fiscalYearEndNoYear}, ${requestDataObj.year}`,
+    ...requestDataObj,
+  };
 }
 
 export async function update(id: AuditId, updateWith: AuditUpdate) {
