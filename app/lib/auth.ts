@@ -5,6 +5,7 @@ import { getByEmail as getInviteByEmail } from '@/controllers/invitation';
 import { getByEmail as getUserByEmail, updateUser } from '@/controllers/user';
 //import GitHubProvider from 'next-auth/providers/github';
 import { AuthAdapter } from '@/lib/auth-adapter';
+import { OrgId } from '@/types';
 
 import type {
   AdapterAccount,
@@ -94,18 +95,16 @@ export const {
     }: {
       session: { user: AdapterUser; expires: string };
       token: unknown;
-      user: AdapterUser;
+      user: AdapterUser & { id: string; currentOrgId: OrgId };
     }) => {
-      // console.log('session callback', { session, token, user });
-      session.user = {
-        ...session.user,
-        id: user.id,
-        // username: token?.user?.username || token?.user?.gh_username,
+      return {
+        expires: session.expires,
+        user: {
+          ...session.user,
+          id: user.id,
+        },
+        currentOrgId: user.currentOrgId,
       };
-      //console.log(user);
-      // session.user.id = user.id;
-      // session.orgId = 'this is going to be the selected orgId';
-      return session;
     },
     // redirect: async ({ url, baseUrl }) => {
     //   console.log('redirect callback', { url, baseUrl });

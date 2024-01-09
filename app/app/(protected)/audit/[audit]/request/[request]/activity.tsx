@@ -13,7 +13,6 @@ import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
 import CommentForm from './comment-form';
 
 import type { Request } from '@/controllers/request';
-import type { SessionUser } from '@/controllers/session-user';
 import type { AuditId } from '@/types';
 
 const schema = z.object({
@@ -27,7 +26,7 @@ export default async function Activity({
 }: {
   auditId: AuditId;
   request: Request;
-  user: SessionUser;
+  user: { image: string | null };
 }) {
   const feed = await getFeed(auditId, request);
 

@@ -39,13 +39,19 @@ CREATE TABLE "org" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "name" text,
   "parent_org_id" uuid REFERENCES "org" ("id"),
+  "can_have_child_orgs" boolean DEFAULT FALSE,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean DEFAULT FALSE
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "org" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
-CREATE TABLE "user" (
+--
+-- Begin auth schema
+--
+CREATE SCHEMA "auth";
+
+CREATE TABLE "auth"."user" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "name" text,
   "email" text UNIQUE,
@@ -55,24 +61,16 @@ CREATE TABLE "user" (
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
 );
-CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "user" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "auth"."user" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
-CREATE TABLE "user_role" (
-  "user_id" uuid NOT NULL REFERENCES "user" ("id"),
+CREATE TABLE "auth"."user_role" (
+  "user_id" uuid NOT NULL REFERENCES "auth"."user" ("id"),
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "role" text NOT NULL,
-  "created_at" timestamptz DEFAULT now() NOT NULL,
-  "is_deleted" boolean NOT NULL DEFAULT FALSE,
-  PRIMARY KEY ("user_id", "org_id")
+  PRIMARY KEY ("user_id", "org_id", "role")
 );
 
-CREATE TABLE "user_current_org" (
-  "user_id" uuid NOT NULL REFERENCES "user" ("id") PRIMARY KEY,
-  "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "created_at" timestamptz DEFAULT now() NOT NULL
-);
-
-CREATE TABLE "invitation" (
+CREATE TABLE "auth"."invitation" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
   "email" text NOT NULL,
@@ -81,12 +79,12 @@ CREATE TABLE "invitation" (
   "expires_at" timestamptz DEFAULT (now() + INTERVAL '7 days') NOT NULL,
   "is_used" boolean NOT NULL DEFAULT FALSE
 );
-ALTER TABLE "invitation" ADD CONSTRAINT constraint_unique_invite UNIQUE (org_id, email);
-CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "invitation" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
+ALTER TABLE "auth"."invitation" ADD CONSTRAINT constraint_unique_invite UNIQUE (org_id, email);
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "auth"."invitation" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
-CREATE TABLE "user_account" (
+CREATE TABLE "auth"."user_account" (
   "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  "user_id" uuid NOT NULL REFERENCES "user" ("id"),
+  "user_id" uuid NOT NULL REFERENCES "auth"."user" ("id"),
   "type" text NOT NULL,
   "provider" text NOT NULL,
   "provider_account_id" text NOT NULL,
@@ -100,21 +98,26 @@ CREATE TABLE "user_account" (
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL
 );
-CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "user_account" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
+CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "auth"."user_account" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
-CREATE TABLE "session" (
+CREATE TABLE "auth"."session" (
   "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "session_token" text NOT NULL UNIQUE,
-  "user_id" uuid NOT NULL REFERENCES "user" ("id"),
+  "user_id" uuid NOT NULL REFERENCES "auth"."user" ("id"),
+  "current_org_id" uuid REFERENCES "org" ("id"),
   "expires" timestamp without time zone NOT NULL
 );
 
-CREATE TABLE "verification_token" (
+CREATE TABLE "auth"."verification_token" (
   "identifier" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "token" text NOT NULL UNIQUE,
   "session_token" text NOT NULL UNIQUE,
   "expires" timestamp without time zone NOT NULL
 );
+
+--
+-- End auth schema
+--
 
 CREATE TABLE "audit" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
@@ -129,7 +132,7 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "audit" FOR EACH ROW 
 CREATE TABLE "document" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
   "org_id" uuid NOT NULL REFERENCES "org" ("id"),
-  "uploaded_by_user_id" uuid REFERENCES "user" ("id"),
+  "uploaded_by_user_id" uuid REFERENCES "auth"."user" ("id"),
   "key" text NOT NULL UNIQUE,
   "bucket" text NOT NULL,
   "name" text,
@@ -180,7 +183,7 @@ CREATE TABLE "request_data" (
   "request_type" text NOT NULL,
   "request_id" text NOT NULL,
   "data" jsonb,
-  "actor_user_id" uuid REFERENCES "user" ("id"),
+  "actor_user_id" uuid REFERENCES "auth"."user" ("id"),
   "created_at" timestamptz DEFAULT now() NOT NULL
 );
 CREATE INDEX idx_request_data_1 ON request_data (audit_id, request_type, request_id, created_at DESC);
@@ -199,7 +202,7 @@ CREATE TABLE "comment" (
   "audit_id" uuid REFERENCES "audit" ("id"),
   "request_type" text,
   "document_id" uuid REFERENCES "document" ("id"),
-  "user_id" uuid NOT NULL REFERENCES "user" ("id"),
+  "user_id" uuid NOT NULL REFERENCES "auth"."user" ("id"),
   "comment" text,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
@@ -259,18 +262,19 @@ CREATE TABLE "kv" (
 
 
 -- Demo Account
+INSERT INTO auth.user (email) VALUES ('ryan@auditre.co', 'jason@auditre.co');
 WITH org_rows AS (
-  INSERT INTO public.org (name) VALUES ('AuditRe, Inc.') RETURNING id
+  INSERT INTO org (name) VALUES ('AuditRe, Inc.') RETURNING id
 )
-INSERT INTO public.invitation (org_id, email, expires_at)
+INSERT INTO auth.user_role (org_id, user_id, role)
 VALUES
-  ((SELECT id FROM org_rows), 'ryan@auditre.co', CURRENT_DATE + INTERVAL '6 months'),
-  ((SELECT id FROM org_rows), 'jason@auditre.co', CURRENT_DATE + INTERVAL '6 months');
+  ((SELECT id FROM org_rows), (SELECT id FROM auth.user WHERE email = 'ryan@auditre.co'), 'SUPERUSER'),
+  ((SELECT id FROM org_rows), (SELECT id FROM auth.user WHERE email = 'jason@auditre.co'), 'USER');
 
 -- Demo Account 2
 WITH org_rows AS (
-  INSERT INTO public.org (name) VALUES ('Acme Test Org') RETURNING id
+  INSERT INTO org (name) VALUES ('Acme Test Org') RETURNING id
 )
-INSERT INTO public.invitation (org_id, email, expires_at)
+INSERT INTO auth.invitation (org_id, email, expires_at)
 VALUES
   ((SELECT id FROM org_rows), 'rquigley@gmail.com', CURRENT_DATE + INTERVAL '6 months');
