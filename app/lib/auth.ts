@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 
 import { getByEmail as getInviteByEmail } from '@/controllers/invitation';
-import { getByEmail as getUserByEmail } from '@/controllers/user';
+import { getByEmail as getUserByEmail, updateUser } from '@/controllers/user';
 //import GitHubProvider from 'next-auth/providers/github';
 import { AuthAdapter } from '@/lib/auth-adapter';
 
@@ -129,7 +129,16 @@ export const {
       // https://github.com/nextauthjs/next-auth/issues/3599#issuecomment-1069777477
       const newEmail = user?.email || profile?.email;
       if (newEmail) {
-        if (await getUserByEmail(newEmail)) {
+        const existingUser = await getUserByEmail(newEmail);
+        if (existingUser) {
+          await updateUser(user.id, {
+            name: profile?.name || !existingUser.name,
+            image: profile?.picture || !existingUser.image,
+            emailVerified:
+              !existingUser.emailVerified && profile?.email_verified
+                ? new Date()
+                : undefined,
+          });
           return true;
         }
         if (await getInviteByEmail(newEmail)) {
