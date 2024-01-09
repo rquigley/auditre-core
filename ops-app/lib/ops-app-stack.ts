@@ -136,7 +136,11 @@ export class OpsAppStack extends Stack {
     } else {
       appDomainName = 'app.ci.auditre.co';
       removalPolicy = RemovalPolicy.DESTROY;
-      allowedOrigins = ['http://localhost:3000', `https://${appDomainName}`];
+      allowedOrigins = [
+        'http://localhost:3000',
+        'https://localhost:3000',
+        `https://${appDomainName}`,
+      ];
       autoDeleteObjects = true;
       objectLockEnabled = false;
     }
