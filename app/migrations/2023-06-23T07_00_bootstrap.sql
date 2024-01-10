@@ -210,33 +210,22 @@ CREATE TABLE "comment" (
 );
 CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "comment" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
 
-CREATE TABLE "account_mapping" (
-  "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
-  "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
-  "account_number" text,
-  "account_name" text,
-  "account_type" text,
-  "context" text,
-  "reasoning" text,
-  "created_at" timestamptz DEFAULT now() NOT NULL,
-  "updated_at" timestamptz DEFAULT now() NOT NULL,
-  "is_deleted" boolean NOT NULL DEFAULT FALSE
-);
-CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account_mapping" FOR EACH ROW EXECUTE PROCEDURE update_modified_at();
-
 CREATE TABLE "account_balance" (
   "id" uuid NOT NULL DEFAULT uuid_generate_v7() PRIMARY KEY,
-  "account_mapping_id" uuid REFERENCES "account_mapping" ("id"),
+  "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
   -- account_number/account_name are persisted despite some redundancy with account_mapping.
   -- 1. The names are sometimes subtly different, specifically in Quickbooks
   -- 2. If we import the trial balance prior to the Chart of Accounts, we still want to show something to the user
-  "account_number" text,
-  "account_name" text,
-  "audit_id" uuid NOT NULL REFERENCES "audit" ("id"),
-  "debit" numeric(14,4),
-  "credit" numeric(14,4),
+  "account_name" text NOT NULL,
+  "account_type" text,
+  "account_type_override" text,
+  "sort_idx" integer,
+  "classification_score" numeric(3,2),
+  "debit" numeric(14,2),
+  "credit" numeric(14,2),
   "currency" text check (currency IN ('USD', 'EUR', 'GBP')) NOT NULL DEFAULT 'USD',
   "context" text,
+  "reasoning" text,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL,
   "is_deleted" boolean NOT NULL DEFAULT FALSE
@@ -257,12 +246,13 @@ CREATE TRIGGER update_modified_at_trigger BEFORE UPDATE ON "account_balance" FOR
 CREATE TABLE "kv" (
   "key" text NOT NULL PRIMARY KEY,
   "value" text,
-  "created_at" timestamptz DEFAULT now() NOT NULL
+  "modified_at" timestamptz DEFAULT now() NOT NULL
 );
 
 
 -- Demo Account
-INSERT INTO auth.user (email) VALUES ('ryan@auditre.co', 'jason@auditre.co');
+INSERT INTO auth.user (email) VALUES ('ryan@auditre.co'), ('jason@auditre.co');
+
 WITH org_rows AS (
   INSERT INTO org (name) VALUES ('AuditRe, Inc.') RETURNING id
 )
