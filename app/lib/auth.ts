@@ -130,7 +130,7 @@ export const {
       if (newEmail) {
         const existingUser = await getUserByEmail(newEmail);
         if (existingUser) {
-          await updateUser(user.id, {
+          await updateUser(existingUser.id, {
             name: profile?.name || !existingUser.name,
             image: profile?.picture || !existingUser.image,
             emailVerified:
