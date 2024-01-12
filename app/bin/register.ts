@@ -1,4 +1,5 @@
 import { program } from 'commander';
+
 import { create as createInvitation } from '@/controllers/invitation';
 import { create as createOrg } from '@/controllers/org';
 import { db } from '@/lib/db';
@@ -10,6 +11,7 @@ program
   .action(async (opts) => {
     const org = await createOrg({
       name: opts.name,
+      canHaveChildOrgs: false,
     });
     console.log(`Created Org with ID: ${org.id}`);
     await db.destroy();

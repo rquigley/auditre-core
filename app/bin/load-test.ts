@@ -9,7 +9,10 @@ import { db } from '@/lib/db';
 async function main() {
   const dn = Date.now();
   for (let m = 0; m < 1000; m++) {
-    const org = await createOrg({ name: `test ${dn} org ${m}` });
+    const org = await createOrg({
+      name: `test ${dn} org ${m}`,
+      canHaveChildOrgs: false,
+    });
     for (let n = 0; n < 5; n++) {
       const user = await createUser(org.id, {
         email: `user${n}@test-${dn}-org${m}.debug`,

@@ -304,6 +304,24 @@ export const documentAiQuestions: Partial<
       preProcess: (val: string) => head(val, 500),
       validate: dateSchema,
     },
+    equityFinancingQuickSummary: {
+      label: 'Quick summary of the document',
+      question: `
+        In the view of a CPA preparing notes for audited financial statements, summarize the document into 120 words or less with the highlights of the document.
+
+        - This summary should be in the format acceptable in AICPA audited financial statements.
+
+        - Do not reiterate what we you are going to do. For example, do not say "In this summary," "I will summarize,", "Next I will..." or "Here is...".
+
+        - Do not mention the name of the company in your summary e.g. "Acme Corp". Always refer to it as "The Company".
+
+        - After you have written your summary, review what you have written. Ensure that you have not included any information that is not in the document. If you have, remove it. Ensure that the company name isn't explicitely mentioned. Ensure that the information contains highlights and no generic information. If it is too specific or generalized information, remove it.
+
+        Example:
+        In March 2023, the Company issued 20,000,000 shares of Series B-1 convertible preferred stock for proceeds of approximately $100,000,000. In addition, the convertible notes with aggregate outstanding principal of $4,000,000 were converted into 2,000,000 shares of Series B-1 convertible preferred stock. In April 2023, the Company closed a subsequent round of Series B-1 convertible preferred stock for additional proceeds of $2,300,000 and issuance of 1,400,000 Series B-1 convertible preferred shares.
+      `,
+      validate: z.string().min(100).max(20000),
+    },
     equityFinancingSummary: {
       label: 'Summary of the document',
       question: `
@@ -344,6 +362,12 @@ export const documentAiQuestions: Partial<
     },
   },
   STOCK_PLAN: {
+    stockPlanDateOfDocument: {
+      label: 'Date of the document',
+      question: `What is the date this document was written? ${questionDate}`,
+      preProcess: (val: string) => head(val, 500),
+      validate: dateSchema,
+    },
     numAuthorizedShares: {
       label: 'Number of shares authorized',
       question:

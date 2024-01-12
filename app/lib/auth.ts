@@ -2,9 +2,10 @@ import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 
 import { getByEmail as getInviteByEmail } from '@/controllers/invitation';
-import { getByEmail as getUserByEmail } from '@/controllers/user';
+import { getByEmail as getUserByEmail, updateUser } from '@/controllers/user';
 //import GitHubProvider from 'next-auth/providers/github';
 import { AuthAdapter } from '@/lib/auth-adapter';
+import { OrgId } from '@/types';
 
 import type {
   AdapterAccount,
@@ -94,18 +95,16 @@ export const {
     }: {
       session: { user: AdapterUser; expires: string };
       token: unknown;
-      user: AdapterUser;
+      user: AdapterUser & { id: string; currentOrgId: OrgId };
     }) => {
-      // console.log('session callback', { session, token, user });
-      session.user = {
-        ...session.user,
-        id: user.id,
-        // username: token?.user?.username || token?.user?.gh_username,
+      return {
+        expires: session.expires,
+        user: {
+          ...session.user,
+          id: user.id,
+        },
+        currentOrgId: user.currentOrgId,
       };
-      //console.log(user);
-      // session.user.id = user.id;
-      // session.orgId = 'this is going to be the selected orgId';
-      return session;
     },
     // redirect: async ({ url, baseUrl }) => {
     //   console.log('redirect callback', { url, baseUrl });
@@ -129,7 +128,16 @@ export const {
       // https://github.com/nextauthjs/next-auth/issues/3599#issuecomment-1069777477
       const newEmail = user?.email || profile?.email;
       if (newEmail) {
-        if (await getUserByEmail(newEmail)) {
+        const existingUser = await getUserByEmail(newEmail);
+        if (existingUser) {
+          await updateUser(existingUser.id, {
+            name: profile?.name || !existingUser.name,
+            image: profile?.picture || !existingUser.image,
+            emailVerified:
+              !existingUser.emailVerified && profile?.email_verified
+                ? new Date()
+                : undefined,
+          });
           return true;
         }
         if (await getInviteByEmail(newEmail)) {

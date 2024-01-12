@@ -10,7 +10,7 @@ export async function createVerificationToken(
   user: NewVerificationToken,
 ): Promise<VerificationToken> {
   return await db
-    .insertInto('verificationToken')
+    .insertInto('auth.verificationToken')
     .values(user)
     .returningAll()
     .executeTakeFirstOrThrow();
@@ -20,7 +20,7 @@ export async function deleteVerificationToken(
   identifier: string,
 ): Promise<VerificationToken | undefined> {
   return await db
-    .deleteFrom('verificationToken')
+    .deleteFrom('auth.verificationToken')
     .where('identifier', '=', identifier)
     .returningAll()
     .executeTakeFirst();
@@ -29,7 +29,7 @@ export async function getByIdentifier(
   identifier: string,
 ): Promise<VerificationToken> {
   return await db
-    .selectFrom('verificationToken')
+    .selectFrom('auth.verificationToken')
     .where('identifier', '=', identifier)
     .selectAll()
     .executeTakeFirstOrThrow();
@@ -40,7 +40,7 @@ export async function updateVerificationToken(
   updateWith: VerificationTokenUpdate,
 ) {
   return await db
-    .updateTable('verificationToken')
+    .updateTable('auth.verificationToken')
     .set(updateWith)
     .where('identifier', '=', identifier)
     .execute();

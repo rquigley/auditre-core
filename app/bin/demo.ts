@@ -9,7 +9,7 @@ import { db } from '@/lib/db';
 import type { OrgId } from '@/types';
 
 async function setupAccount(): Promise<OrgId> {
-  const org = await createOrg({ name: 'Test Org' });
+  const org = await createOrg({ name: 'Test Org', canHaveChildOrgs: false });
 
   for (let email of ['ryan@auditre.co', 'jason@auditre.co']) {
     await createInvitation({

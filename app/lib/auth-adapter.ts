@@ -12,6 +12,7 @@ import {
 import {
   createUser,
   getBySessionTokenCached,
+  getOrgIdsByUserId,
   getByAccountProviderAndProviderId as getUserByAccountProviderAndProviderId,
   getByEmail as getUserByEmail,
   getById as getUserById,
@@ -27,7 +28,7 @@ import {
   getByIdentifier as getVerificationTokenByIdentifier,
 } from '@/controllers/verification-token';
 
-import type { User } from '@/types';
+import type { OrgId, User } from '@/types';
 import type {
   Adapter,
   AdapterAccount,
@@ -159,25 +160,40 @@ export function AuthAdapter(): Adapter {
         return null;
       }
       const { user, session } = userAndSession;
+      user.currentOrgId = session.currentOrgId;
       // expires is cast to string to allow it to be cached by next/cache unstable_cache.
       // See https://github.com/vercel/next.js/issues/51613
       const expires = new Date(session.expires);
       return {
-        user: user as AdapterUser,
+        user: user as AdapterUser & { currentOrgId: OrgId },
         session: {
           ...session,
           expires,
-          bar: 'baz',
         } as AdapterSession,
       };
     },
 
     createSession: async (data) => {
       const user = await getUserById(data.userId);
+      const availableOrgs = await getOrgIdsByUserId(data.userId);
+      let currentOrgId;
+      if (availableOrgs.length === 1) {
+        currentOrgId = availableOrgs[0].id;
+      } else if (availableOrgs.length > 1) {
+        // try to find the parent org. Not comprehensive, but should work for now.
+        currentOrgId = availableOrgs.find((org) => org.parentOrgId === null)
+          ?.id;
+        if (!currentOrgId) {
+          currentOrgId = availableOrgs[0].id;
+        }
+      } else {
+        throw new Error('No orgs found for user');
+      }
       const session = await createSession({
         sessionToken: data.sessionToken,
         userId: user.id,
         expires: data.expires,
+        currentOrgId,
       });
       return {
         sessionToken: session.sessionToken,
