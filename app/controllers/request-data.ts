@@ -181,12 +181,12 @@ export async function getChangesForRequestType(
 ): Promise<Array<Change>> {
   const rows = await db
     .selectFrom('requestData')
-    .leftJoin('user', 'requestData.actorUserId', 'user.id')
+    .leftJoin('auth.user as u', 'requestData.actorUserId', 'u.id')
     .select([
       'requestData.actorUserId',
       'requestData.createdAt',
-      'user.name',
-      'user.image',
+      'u.name',
+      'u.image',
     ])
     .distinctOn(['requestData.auditId', 'requestData.createdAt'])
     .where('requestData.auditId', '=', auditId)

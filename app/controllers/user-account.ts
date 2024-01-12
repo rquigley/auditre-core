@@ -11,7 +11,7 @@ export async function createUserAccount(
   user: NewUserAccount,
 ): Promise<UserAccount> {
   return await db
-    .insertInto('userAccount')
+    .insertInto('auth.userAccount')
     .values(user)
     .returningAll()
     .executeTakeFirstOrThrow();
@@ -22,7 +22,7 @@ export async function deleteUserAccount(
   providerAccountId: string,
 ): Promise<UserAccount | undefined> {
   return await db
-    .deleteFrom('userAccount')
+    .deleteFrom('auth.userAccount')
     .where('provider', '=', provider)
     .where('providerAccountId', '=', providerAccountId)
     .returningAll()
@@ -30,7 +30,7 @@ export async function deleteUserAccount(
 }
 export async function getById(id: UserAccountId): Promise<UserAccount> {
   return await db
-    .selectFrom('userAccount')
+    .selectFrom('auth.userAccount')
     .where('id', '=', id)
     .selectAll()
     .executeTakeFirstOrThrow();
@@ -38,7 +38,7 @@ export async function getById(id: UserAccountId): Promise<UserAccount> {
 
 export async function update(id: UserAccountId, updateWith: UserAccountUpdate) {
   return await db
-    .updateTable('userAccount')
+    .updateTable('auth.userAccount')
     .set(updateWith)
     .where('id', '=', id)
     .execute();

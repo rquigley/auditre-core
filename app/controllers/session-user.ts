@@ -1,17 +1,77 @@
-import { unstable_cache } from 'next/cache';
+import { Session } from 'next-auth';
+import { revalidateTag, unstable_cache } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { getById, getUserRole } from './user';
+import { getById, getOrgsAvailableforSwitching, getUserRole } from './user';
 
-import type { OrgId, User, UserId, UserRole } from '@/types';
+import type { AuthRole, OrgId, UserId } from '@/types';
 
-export type SessionUser = Pick<User, 'id' | 'name' | 'email' | 'image'> & {
+const permissions = {
+  SUPERUSER: ['ai:view', 'ai:create', 'documents:view'],
+  OWNER: [],
+  ADMIN: [],
+  USER: [],
+} as const;
+
+type OrgAgnosticPermission = 'orgs:manage';
+
+type Permission =
+  | (typeof permissions)[AuthRole][number]
+  | OrgAgnosticPermission;
+
+export class User {
+  id: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
   orgId: OrgId;
-  role: UserRole['role'];
-};
+  role: AuthRole;
+  orgs: Awaited<ReturnType<typeof getOrgsAvailableforSwitching>>;
+
+  constructor({
+    id,
+    name,
+    email,
+    image,
+    orgId,
+    role,
+    orgs,
+  }: {
+    id: UserId;
+    name: string | null;
+    email: string | null;
+    image: string | null;
+    orgId: OrgId;
+    role: AuthRole;
+    orgs: Awaited<ReturnType<typeof getOrgsAvailableforSwitching>>;
+  }) {
+    this.id = id;
+    this.name = name;
+    this.email = email;
+    this.image = image;
+    this.orgId = orgId;
+    this.role = role;
+    this.orgs = orgs;
+  }
+
+  hasPerm(perm: Permission) {
+    // Org agnostic perms
+    if (perm === 'orgs:manage') {
+      return this.orgs.some((org) =>
+        ['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role),
+      );
+    }
+    const org = this.orgs.find((org) => org.id === this.orgId);
+    throw new Error(`Unknown permission: ${perm}`);
+  }
+
+  get orgName() {
+    return this.orgs.find((org) => org.id === this.orgId)?.name || '';
+  }
+}
 
 export const getCurrent = cache(async () => {
   return await _getCurrent();
@@ -19,7 +79,7 @@ export const getCurrent = cache(async () => {
 
 export async function _getCurrent(): Promise<
   | {
-      user: SessionUser;
+      user: User;
       authRedirect: undefined;
     }
   | {
@@ -27,35 +87,30 @@ export async function _getCurrent(): Promise<
       authRedirect: () => typeof redirect;
     }
 > {
-  const session = await auth();
+  const session = (await auth()) as (Session & { currentOrgId: OrgId }) | null;
   if (session) {
     const userId: UserId | undefined = session?.user?.id;
     if (userId) {
-      const user = await getByIdCached(userId);
-      if (user) {
-        const orgId = await getCurrentOrgId(user.id);
-        if (!orgId) {
-          return {
-            user: undefined,
-            authRedirect: () => redirect('/org-select'),
-          };
-        }
-        const role = await getUserRole(user.id, orgId);
-        if (role) {
-          const sessionUser: SessionUser = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            image: user.image,
-            orgId,
-            role,
-          };
+      const userRes = await getByIdCached(userId);
+      // TODO make parallel
+      const orgs = await getOrgsAvailableforSwitching(userRes.id);
+      const role = orgs.find((org) => org.id === session.currentOrgId)?.role;
 
-          return {
-            user: sessionUser,
-            authRedirect: undefined,
-          };
-        }
+      if (role) {
+        const user = new User({
+          id: userRes.id,
+          name: userRes.name,
+          email: userRes.email,
+          image: userRes.image,
+          orgId: session.currentOrgId,
+          orgs: orgs,
+          role,
+        });
+
+        return {
+          user,
+          authRedirect: undefined,
+        };
       }
     }
   }
@@ -73,17 +128,6 @@ const getByIdCached = unstable_cache(
   },
 );
 
-export async function getCurrentOrgId(
-  userId: UserId,
-): Promise<OrgId | undefined> {
-  const res = await db
-    .selectFrom('userCurrentOrg')
-    .select('orgId')
-    .where('userId', '=', userId)
-    .executeTakeFirst();
-  return res?.orgId;
-}
-
 export class UnauthorizedError extends Error {
   statusCode: number;
 
@@ -93,4 +137,18 @@ export class UnauthorizedError extends Error {
     this.statusCode = 401;
     Object.setPrototypeOf(this, UnauthorizedError.prototype);
   }
+}
+
+export async function switchOrg(userId: UserId, orgId: OrgId) {
+  const role = await getUserRole(userId, orgId);
+  if (!role) {
+    throw new UnauthorizedError();
+  }
+  await db
+    .updateTable('auth.session')
+    .set({ currentOrgId: orgId })
+    .where('userId', '=', userId)
+    .execute();
+
+  revalidateTag('session-token-user');
 }

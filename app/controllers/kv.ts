@@ -41,7 +41,7 @@ export async function getKV({
     query = query.where(
       'modifiedAt',
       '>',
-      sql`now() - interval ${intervalStr}`,
+      sql<Date>`now() - interval ${intervalStr}`,
     );
   }
   const res = await query.executeTakeFirst();

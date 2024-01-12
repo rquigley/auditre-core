@@ -19,14 +19,16 @@ export type AiQueryId = string;
 export type DocumentQueueId = number;
 export type InvitationId = string;
 export type OrgId = string;
-export type UserRoleId = string;
+export type UserOrgId = string;
 export type RequestDataId = number;
 export type UserAccountId = number;
 export type UserId = string;
 
 export interface OrgTable {
-  id: GeneratedAlways<string>;
-  name: string | null;
+  id: GeneratedAlways<OrgId>;
+  parentOrgId: OrgId | null;
+  canHaveChildOrgs: boolean;
+  name: string;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
 }
@@ -37,7 +39,7 @@ export type Org = Selectable<OrgTable>;
 
 export type Actor = { userId: UserId; type: 'USER' } | { type: 'SYSTEM' };
 
-export interface UserTable {
+export interface AuthUserTable {
   id: GeneratedAlways<UserId>;
   name: string | null;
   email: string | null;
@@ -47,34 +49,36 @@ export interface UserTable {
   isDeleted: ColumnType<boolean, never, boolean>;
 }
 
-export type UserUpdate = Updateable<UserTable>;
-export type NewUser = Insertable<UserTable>;
-export type User = Selectable<UserTable>;
+export type UserUpdate = Updateable<AuthUserTable>;
+export type NewUser = Insertable<AuthUserTable>;
+export type User = Selectable<AuthUserTable>;
 
-export interface UserRoleTable {
-  id: GeneratedAlways<UserRoleId>;
+export type AuthRole =
+  // Can access all child orgs
+  | 'SUPERUSER'
+
+  // Reserved for first user in org
+  | 'OWNER'
+
+  // All permissions but only for current org/
+  // Can't change perms on owner
+  // Can set permissions for child orgs
+  | 'ADMIN'
+
+  // Normal user
+  | 'USER';
+export interface AuthUserRoleTable {
   userId: UserId;
   orgId: OrgId;
-  role: 'user' | 'admin' | 'owner';
-  createdAt: ColumnType<Date, string | undefined, never>;
-  isDeleted: ColumnType<boolean, never, boolean>;
-}
-
-export type UserRoleUpdate = Updateable<UserRoleTable>;
-export type NewUserRole = Insertable<UserRoleTable>;
-export type UserRole = Selectable<UserRoleTable>;
-
-export interface UserCurrentOrgTable {
-  userId: UserId;
-  orgId: OrgId;
+  // roleId: number;
+  role: AuthRole;
   createdAt: ColumnType<Date, string | undefined, never>;
 }
 
-export type UserCurrentOrgUpdate = Updateable<UserCurrentOrgTable>;
-export type NewUserCurrentOrg = Insertable<UserCurrentOrgTable>;
-export type UserCurrentOrg = Selectable<UserCurrentOrgTable>;
+export type NewAuthUserRole = Insertable<AuthUserRoleTable>;
+export type AuthUserRole = Selectable<AuthUserRoleTable>;
 
-export interface InvitationTable {
+export interface AuthInvitationTable {
   id: GeneratedAlways<InvitationId>;
   orgId: OrgId;
   email: string;
@@ -83,11 +87,11 @@ export interface InvitationTable {
   isUsed: ColumnType<boolean, never, boolean>;
 }
 
-export type InvitationUpdate = Updateable<InvitationTable>;
-export type NewInvitation = Insertable<InvitationTable>;
-export type Invitation = Selectable<InvitationTable>;
+export type InvitationUpdate = Updateable<AuthInvitationTable>;
+export type NewInvitation = Insertable<AuthInvitationTable>;
+export type Invitation = Selectable<AuthInvitationTable>;
 
-export interface UserAccountTable {
+export interface AuthUserAccountTable {
   id: GeneratedAlways<UserAccountId>;
   userId: UserId;
   type: string;
@@ -102,28 +106,29 @@ export interface UserAccountTable {
   session_state: string | null;
   createdAt: ColumnType<Date, string | undefined, never>;
 }
-export type UserAccountUpdate = Updateable<UserAccountTable>;
-export type NewUserAccount = Insertable<UserAccountTable>;
-export type UserAccount = Selectable<UserAccountTable>;
+export type UserAccountUpdate = Updateable<AuthUserAccountTable>;
+export type NewUserAccount = Insertable<AuthUserAccountTable>;
+export type UserAccount = Selectable<AuthUserAccountTable>;
 
-export interface SessionTable {
+export interface AuthSessionTable {
   id: GeneratedAlways<number>;
   sessionToken: ColumnType<string, string | undefined, never>;
   userId: UserId;
+  currentOrgId: OrgId | null;
   expires: Date;
 }
-export type SessionUpdate = Updateable<SessionTable>;
-export type NewSession = Insertable<SessionTable>;
-export type Session = Selectable<SessionTable>;
+export type SessionUpdate = Updateable<AuthSessionTable>;
+export type NewSession = Insertable<AuthSessionTable>;
+export type Session = Selectable<AuthSessionTable>;
 
-export interface VerificationTokenTable {
+export interface AuthVerificationTokenTable {
   identifier: GeneratedAlways<string>;
   token: string;
   expires: Date;
 }
-export type VerificationTokenUpdate = Updateable<VerificationTokenTable>;
-export type NewVerificationToken = Insertable<VerificationTokenTable>;
-export type VerificationToken = Selectable<VerificationTokenTable>;
+export type VerificationTokenUpdate = Updateable<AuthVerificationTokenTable>;
+export type NewVerificationToken = Insertable<AuthVerificationTokenTable>;
+export type VerificationToken = Selectable<AuthVerificationTokenTable>;
 
 export interface AuditTable {
   id: GeneratedAlways<AuditId>;
@@ -317,23 +322,22 @@ export interface KVTable {
 }
 
 export interface Database extends Kysely<Database> {
+  'auth.invitation': AuthInvitationTable;
+  'auth.session': AuthSessionTable;
+  'auth.user': AuthUserTable;
+  'auth.userAccount': AuthUserAccountTable;
+  'auth.userRole': AuthUserRoleTable;
+  'auth.verificationToken': AuthVerificationTokenTable;
   accountBalance: AccountBalanceTable;
   aiQuery: AiQueryTable;
   audit: AuditTable;
   comment: CommentTable;
   document: DocumentTable;
   documentQueue: DocumentQueueTable;
-  invitation: InvitationTable;
   kv: KVTable;
   org: OrgTable;
   requestData: RequestDataTable;
   requestDataDocument: RequestDataDocumentTable;
-  session: SessionTable;
-  user: UserTable;
-  userAccount: UserAccountTable;
-  userCurrentOrg: UserCurrentOrgTable;
-  userRole: UserRoleTable;
-  verificationToken: VerificationTokenTable;
 }
 
 export type IconSVGProps = React.PropsWithoutRef<

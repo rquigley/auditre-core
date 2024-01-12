@@ -4,6 +4,7 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { extname } from 'path';
+import * as Sentry from '@sentry/nextjs';
 import retry from 'async-retry';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -28,11 +29,17 @@ import {
   reAskQuestion,
 } from '@/controllers/document';
 import { getKV } from '@/controllers/kv';
+import { create as _createOrg, getById as getOrgById } from '@/controllers/org';
 import {
   create as addRequestData,
   unlinkDocumentFromRequestData,
 } from '@/controllers/request-data';
-import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
+import {
+  switchOrg as _switchOrg,
+  getCurrent,
+  UnauthorizedError,
+} from '@/controllers/session-user';
+import { addUserRole } from '@/controllers/user';
 import { getPresignedUrl } from '@/lib/aws';
 import { getRequestTypeForId } from '@/lib/request-types';
 
@@ -41,6 +48,7 @@ import type {
   AccountBalanceId,
   AuditId,
   DocumentId,
+  OrgId,
   RequestDataId,
   S3File,
 } from '@/types';
@@ -409,4 +417,54 @@ export async function overrideAccountMapping({
     throw new UnauthorizedError();
   }
   await updateAccountMappingType(accountBalanceId, accountType);
+}
+
+export async function createOrg(
+  prevState: {
+    message: string;
+  },
+  formData: FormData,
+) {
+  'use server';
+  try {
+    const { user } = await getCurrent();
+    if (!user) {
+      throw new UnauthorizedError();
+    }
+
+    const schema = z.object({
+      name: z.string().min(1).max(50),
+    });
+    const data = schema.parse({
+      name: formData.get('name'),
+    });
+
+    const res = await _createOrg({
+      name: data.name,
+      canHaveChildOrgs: false,
+      parentOrgId: user.orgId,
+    });
+
+    await addUserRole({
+      userId: user.id,
+      orgId: res.id,
+      role: 'ADMIN',
+    });
+
+    console.log(res);
+    revalidatePath('/org-select');
+    return { message: `Added ${data.name}` };
+  } catch (error) {
+    Sentry.captureException(error);
+    return { message: 'Failed to create invite' };
+  }
+}
+
+export async function switchOrg(orgId: OrgId) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+
+  await _switchOrg(user.id, orgId);
 }

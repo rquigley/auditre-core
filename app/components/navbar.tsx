@@ -5,18 +5,31 @@ import clsx from 'clsx';
 import { signOut } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Fragment, useState } from 'react';
 
+import { switchOrg } from '@/lib/actions';
+import { OrgId } from '@/types';
+
+type Props = {
+  userName: string | null;
+  userImage: string | null;
+  orgName: string;
+  orgId: OrgId;
+  availableOrgs: {
+    id: OrgId;
+    name: string;
+  }[];
+  canManageOrgs: boolean;
+};
 export function Navbar({
   userName,
   userImage,
   orgName,
-}: {
-  userName: string | null;
-  userImage: string | null;
-  orgName: string;
-}) {
+  orgId,
+  availableOrgs,
+  canManageOrgs,
+}: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const rootPathname = `/${pathname.split('/')[1]}`;
@@ -36,10 +49,6 @@ export function Navbar({
       href: '/documents',
       altRoots: ['/document'],
     },
-    // {
-    //   name: 'Organization',
-    //   href: '/organization-settings',
-    // },
   ];
 
   return (
@@ -99,7 +108,11 @@ export function Navbar({
                   {orgName}
                 </div>
               </Menu.Button>
-              <OrgMenuItems />
+              <OrgMenuItems
+                availableOrgs={availableOrgs}
+                activeOrgId={orgId}
+                canManageOrgs={canManageOrgs}
+              />
             </Menu>
             <Menu as="div" className="relative">
               <Menu.Button className="p-3 hover:bg-gray-50">
@@ -136,7 +149,16 @@ export function Navbar({
   );
 }
 
-function OrgMenuItems() {
+function OrgMenuItems({
+  availableOrgs,
+  activeOrgId,
+  canManageOrgs,
+}: {
+  availableOrgs: Props['availableOrgs'];
+  activeOrgId: OrgId;
+  canManageOrgs: boolean;
+}) {
+  const router = useRouter();
   return (
     <Transition
       as={Fragment}
@@ -149,19 +171,44 @@ function OrgMenuItems() {
     >
       <Menu.Items className="absolute left-4 mt-2 w-52 origin-top-left divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
         <div className="px-1 py-1">
-          <Menu.Item>
-            {({ active }) => (
-              <Link
-                href="#"
-                className={clsx(
-                  active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block px-4 py-2 text-xs rounded-md',
-                )}
-              >
-                Switch workspace
-              </Link>
-            )}
-          </Menu.Item>
+          {availableOrgs.map((org, idx) => (
+            <Menu.Item key={idx}>
+              {({ active }) => (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await switchOrg(org.id);
+                    router.refresh();
+                  }}
+                  className={clsx(
+                    active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                    'group flex justify-between w-full items-center rounded-md px-4 py-2 text-xs',
+                  )}
+                >
+                  <span className="inline-block">{org.name}</span>
+
+                  {org.id === activeOrgId && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="size-4 text-green-600"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m4.5 12.75 6 6 9-13.5"
+                      />
+                    </svg>
+                  )}
+                </button>
+              )}
+            </Menu.Item>
+          ))}
+        </div>
+        <div className="px-1 py-1">
           <Menu.Item>
             {({ active }) => (
               <Link
@@ -171,11 +218,28 @@ function OrgMenuItems() {
                   'block px-4 py-2 text-xs rounded-md',
                 )}
               >
-                Workplace settings
+                Organization settings
               </Link>
             )}
           </Menu.Item>
         </div>
+        {canManageOrgs ? (
+          <div className="px-1 py-1">
+            <Menu.Item>
+              {({ active }) => (
+                <Link
+                  href="/organizations"
+                  className={clsx(
+                    active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                    'block px-4 py-2 text-xs rounded-md',
+                  )}
+                >
+                  Manage organizations
+                </Link>
+              )}
+            </Menu.Item>
+          </div>
+        ) : null}
       </Menu.Items>
     </Transition>
   );

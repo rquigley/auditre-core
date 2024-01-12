@@ -51,13 +51,13 @@ export async function getAllForRequest(
 ): Promise<CommentWithUser[]> {
   return await db
     .selectFrom('comment')
-    .leftJoin('user', 'comment.userId', 'user.id')
+    .leftJoin('auth.user as u', 'comment.userId', 'u.id')
     .select([
       'comment.userId',
       'comment.createdAt',
       'comment.comment',
-      'user.name',
-      'user.image',
+      'u.name',
+      'u.image',
     ])
     .where('comment.auditId', '=', auditId)
     .where('comment.requestType', '=', requestType)

@@ -128,7 +128,7 @@ export function pWithResolvers() {
   return { resolve: _resolve, reject: _reject, promise: p };
 }
 
-export function humanCase(input: string): string {
+export function humanCase(input: string) {
   const words = input.toLowerCase().split('_');
   return words
     .map((word, index) =>
@@ -136,15 +136,15 @@ export function humanCase(input: string): string {
     )
     .join(' ');
 }
-export function humanToKebab(input: string): string {
+export function humanToKebab(input: string) {
   return input.replace(/\s+/g, '-').toLowerCase();
 }
 
-export function camelToKebab(input: string): string {
+export function camelToKebab(input: string) {
   return input.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 }
 
-export function kebabToCamel(input: string): string {
+export function kebabToCamel(input: string) {
   let result = '';
   let shouldCapitalize = false;
   for (let i = 0; i < input.length; i++) {
@@ -158,7 +158,7 @@ export function kebabToCamel(input: string): string {
   return result;
 }
 
-export function kebabToHuman(input: string): string {
+export function kebabToHuman(input: string) {
   let lowerCaseInput = input.toLowerCase();
   let capitalized =
     lowerCaseInput.charAt(0).toUpperCase() + lowerCaseInput.slice(1);

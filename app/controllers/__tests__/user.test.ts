@@ -9,7 +9,10 @@ describe('User Controller', () => {
   let testOrgId: OrgId;
 
   beforeAll(async () => {
-    const createdOrg = await orgCtrl.create({ name: 'my org' });
+    const createdOrg = await orgCtrl.create({
+      name: 'my org',
+      canHaveChildOrgs: false,
+    });
     testOrgId = createdOrg.id;
   });
 
