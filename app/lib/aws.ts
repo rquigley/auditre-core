@@ -58,9 +58,10 @@ export async function getExtractedContent({
   });
   const command = new GetObjectCommand({ Bucket: bucket, Key: extractedKey });
   const response = await client.send(command);
-  const stream = response.Body as Readable;
-  const content = Buffer.concat(await stream.toArray()).toString();
-  return content;
+  if (!response.Body) {
+    throw new Error('Missing response body');
+  }
+  return await response.Body.transformToString('utf-8');
 }
 
 export async function getPresignedUrl({
