@@ -20,7 +20,7 @@ import type { AuditData } from '@/controllers/audit';
 import type { Section } from '@/controllers/financial-statement/template';
 import type { Row, Table } from '@/lib/table';
 
-export const financeFont = Inconsolata({
+const financeFont = Inconsolata({
   subsets: ['latin'],
   display: 'swap',
 });
