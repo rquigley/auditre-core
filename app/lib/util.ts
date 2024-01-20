@@ -307,3 +307,13 @@ export function isSameYear(
 export function isObject(value: unknown): value is object {
   return typeof value === 'object';
 }
+
+export function dateLiketoYear(dateLike: string | Date | undefined | null) {
+  if (typeof dateLike === 'string') {
+    return dateLike.split('-')[0];
+  } else if (dateLike instanceof Date) {
+    return String(dateLike.getFullYear());
+  } else {
+    return '';
+  }
+}
