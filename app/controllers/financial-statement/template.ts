@@ -549,6 +549,7 @@ export const getPolicySections = () => [
     body: async (data) => {
       const res = await getAccountByFuzzyMatch(
         data.auditId,
+        data.year,
         'INCOME_STATEMENT',
         '401(k)',
       );

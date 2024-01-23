@@ -1,4 +1,7 @@
-import { getAccountsForCategory } from '@/controllers/account-mapping';
+import {
+  getAccountsForCategory,
+  getBalancesByAccountType,
+} from '@/controllers/account-mapping';
 import { AccountMap, groupFixedAccountsByCategories } from '@/lib/finance';
 import { Row, Table } from '@/lib/table';
 import { addFP } from '@/lib/util';
@@ -37,62 +40,98 @@ export function filterHideIfZeroRows(rows: Row[]) {
 
 export async function buildBalanceSheet(data: AuditData): Promise<Table> {
   const totals = data.totals;
+  const year2 = String(Number(data.year) - 1);
+  const totals2 = await getBalancesByAccountType(data.auditId, year2);
 
   let t = new Table();
-  t.columns = [{}, { style: { numFmt: 'accounting', align: 'right' } }];
+  t.columns = [
+    {},
+    { style: { numFmt: 'accounting', align: 'right' } },
+    { style: { numFmt: 'accounting', align: 'right' } },
+  ];
 
   let row;
-  row = t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year], {
+  row = t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, year2], {
     id: 'date-row',
     style: { bold: true, borderBottom: 'thin' },
   });
 
-  t.addRow(['Assets', ''], {
+  t.addRow(['Assets', '', ''], {
     style: {
       bold: true,
       borderBottom: 'thin',
       padTop: true,
     },
   });
-  t.addRow(['Current assets:', ''], {
+  t.addRow(['Current assets:', '', ''], {
     style: { padTop: true },
   });
 
   // TODO: Add accounting norm to hide if < 5% TOTAL
-  t.addRow(['Cash', totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS')], {
-    id: 'ASSET_CASH_AND_CASH_EQUIVALENTS',
-    tags: [
-      'total-current-assets',
-      'hide-if-zero',
-      'hide-if-less-than-5-percent',
+  t.addRow(
+    [
+      'Cash',
+      totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS'),
+      totals2.get('ASSET_CASH_AND_CASH_EQUIVALENTS'),
     ],
-    cellStyle: [{ indent: true }],
-  });
+    {
+      id: 'ASSET_CASH_AND_CASH_EQUIVALENTS',
+      tags: [
+        'total-current-assets',
+        'hide-if-zero',
+        'hide-if-less-than-5-percent',
+      ],
+      cellStyle: [{ indent: true }],
+    },
+  );
 
-  t.addRow(['Inventory', totals.get('ASSET_INVENTORY')], {
-    id: 'ASSET_INVENTORY',
-    tags: [
-      'total-current-assets',
-      'hide-if-zero',
-      'hide-if-less-than-5-percent',
+  t.addRow(
+    [
+      'Inventory',
+      totals.get('ASSET_INVENTORY'),
+      totals2.get('ASSET_INVENTORY'),
     ],
-    cellStyle: [{ indent: true }, { hideCurrency: true }],
-  });
+    {
+      id: 'ASSET_INVENTORY',
+      tags: [
+        'total-current-assets',
+        'hide-if-zero',
+        'hide-if-less-than-5-percent',
+      ],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
+    },
+  );
 
-  t.addRow(['Prepaid expenses', totals.get('ASSET_PREPAID_EXPENSES')], {
-    id: 'ASSET_PREPAID_EXPENSES',
-    tags: [
-      'total-current-assets',
-      'hide-if-zero',
-      'hide-if-less-than-5-percent',
+  t.addRow(
+    [
+      'Prepaid expenses',
+      totals.get('ASSET_PREPAID_EXPENSES'),
+      totals2.get('ASSET_PREPAID_EXPENSES'),
     ],
-    cellStyle: [{ indent: true }, { hideCurrency: true }],
-  });
+    {
+      id: 'ASSET_PREPAID_EXPENSES',
+      tags: [
+        'total-current-assets',
+        'hide-if-zero',
+        'hide-if-less-than-5-percent',
+      ],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
+    },
+  );
 
   t.addRow(
     [
       'Prepaid expenses and other current assets',
       totals.get('ASSET_CURRENT_OTHER'),
+      totals2.get('ASSET_CURRENT_OTHER'),
     ],
     {
       id: 'ASSET_CURRENT_OTHER',
@@ -101,13 +140,18 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
         'hide-if-zero',
         'hide-if-less-than-5-percent',
       ],
-      cellStyle: [{ indent: true }, { hideCurrency: true }],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
     },
   );
 
   t.addRow(
     [
       'Total current assets',
+      { operation: 'addColumnCellsByTag', args: ['total-current-assets'] },
       { operation: 'addColumnCellsByTag', args: ['total-current-assets'] },
     ],
     {
@@ -119,41 +163,57 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
   );
 
   t.addRow(
-    ['Property and equipment, net', totals.get('ASSET_PROPERTY_AND_EQUIPMENT')],
+    [
+      'Property and equipment, net',
+      totals.get('ASSET_PROPERTY_AND_EQUIPMENT'),
+      totals2.get('ASSET_PROPERTY_AND_EQUIPMENT'),
+    ],
     {
       id: 'ASSET_PROPERTY_AND_EQUIPMENT',
       tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-      cellStyle: [{}, { hideCurrency: true }],
+      cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
     },
   );
 
-  t.addRow(['Intangible assets, net', totals.get('ASSET_INTANGIBLE_ASSETS')], {
-    id: 'ASSET_INTANGIBLE_ASSETS',
-    tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-    cellStyle: [{}, { hideCurrency: true }],
-  });
+  t.addRow(
+    [
+      'Intangible assets, net',
+      totals.get('ASSET_INTANGIBLE_ASSETS'),
+      totals2.get('ASSET_INTANGIBLE_ASSETS'),
+    ],
+    {
+      id: 'ASSET_INTANGIBLE_ASSETS',
+      tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
+      cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
+    },
+  );
 
   t.addRow(
     [
       'Operating lease right-of-use assets',
       totals.get('ASSET_OPERATING_LEASE_RIGHT_OF_USE'),
+      totals2.get('ASSET_OPERATING_LEASE_RIGHT_OF_USE'),
     ],
     {
       id: 'ASSET_OPERATING_LEASE_RIGHT_OF_USE',
       tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-      cellStyle: [{}, { hideCurrency: true }],
+      cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
     },
   );
 
-  t.addRow(['Other assets', totals.get('ASSET_OTHER')], {
-    id: 'ASSET_OTHER',
-    tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-    cellStyle: [{}, { hideCurrency: true }],
-  });
+  t.addRow(
+    ['Other assets', totals.get('ASSET_OTHER'), totals2.get('ASSET_OTHER')],
+    {
+      id: 'ASSET_OTHER',
+      tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
+      cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
+    },
+  );
 
   t.addRow(
     [
       'Total assets',
+      { operation: 'addColumnCellsByTag', args: ['total-asset'] },
       { operation: 'addColumnCellsByTag', args: ['total-asset'] },
     ],
     {
@@ -167,30 +227,44 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
     },
   );
 
-  //////
-  t.addRow(['Liabilities and Stockholders’ Deficit', ''], {
+  t.addRow(['Liabilities and Stockholders’ Deficit', '', ''], {
     style: {
       bold: true,
       padTop: true,
     },
   });
-  t.addRow(['Current liabilities:', ''], {
+  t.addRow(['Current liabilities:', '', ''], {
     style: {
       padTop: true,
     },
   });
 
-  t.addRow(['Accounts payable', totals.get('LIABILITY_ACCOUNTS_PAYABLE')], {
-    id: 'LIABILITY_ACCOUNTS_PAYABLE',
-    tags: [
-      'total-current-liabilities',
-      'hide-if-zero',
-      'hide-if-less-than-5-percent',
-    ],
-    cellStyle: [{ indent: true }, { hideCurrency: true }],
-  });
   t.addRow(
-    ['Accrued liabilities', totals.get('LIABILITY_ACCRUED_LIABILITIES')],
+    [
+      'Accounts payable',
+      totals.get('LIABILITY_ACCOUNTS_PAYABLE'),
+      totals2.get('LIABILITY_ACCOUNTS_PAYABLE'),
+    ],
+    {
+      id: 'LIABILITY_ACCOUNTS_PAYABLE',
+      tags: [
+        'total-current-liabilities',
+        'hide-if-zero',
+        'hide-if-less-than-5-percent',
+      ],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
+    },
+  );
+  t.addRow(
+    [
+      'Accrued liabilities',
+      totals.get('LIABILITY_ACCRUED_LIABILITIES'),
+      totals2.get('LIABILITY_ACCRUED_LIABILITIES'),
+    ],
     {
       id: 'LIABILITY_ACCRUED_LIABILITIES',
       tags: [
@@ -198,22 +272,38 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
         'hide-if-zero',
         'hide-if-less-than-5-percent',
       ],
-      cellStyle: [{ indent: true }, { hideCurrency: true }],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
     },
   );
-  t.addRow(['Deferred revenue', totals.get('LIABILITY_DEFERRED_REVENUE')], {
-    id: 'LIABILITY_DEFERRED_REVENUE',
-    tags: [
-      'total-current-liabilities',
-      'hide-if-zero',
-      'hide-if-less-than-5-percent',
+  t.addRow(
+    [
+      'Deferred revenue',
+      totals.get('LIABILITY_DEFERRED_REVENUE'),
+      totals2.get('LIABILITY_DEFERRED_REVENUE'),
     ],
-    cellStyle: [{ indent: true }, { hideCurrency: true }],
-  });
+    {
+      id: 'LIABILITY_DEFERRED_REVENUE',
+      tags: [
+        'total-current-liabilities',
+        'hide-if-zero',
+        'hide-if-less-than-5-percent',
+      ],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
+    },
+  );
   t.addRow(
     [
       'Operating lease liabilities, current',
       totals.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT'),
+      totals2.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT'),
     ],
     {
       id: 'LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT',
@@ -222,22 +312,34 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
         'hide-if-zero',
         'hide-if-less-than-5-percent',
       ],
-      cellStyle: [{ indent: true }, { hideCurrency: true }],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
     },
   );
-  t.addRow(['Other', totals.get('LIABILITY_OTHER')], {
-    id: 'LIABILITY_OTHER',
-    tags: [
-      'total-current-liabilities',
-      'hide-if-zero',
-      'hide-if-less-than-5-percent',
-    ],
-    cellStyle: [{ indent: true }, { hideCurrency: true }],
-  });
+  t.addRow(
+    ['Other', totals.get('LIABILITY_OTHER'), totals2.get('LIABILITY_OTHER')],
+    {
+      id: 'LIABILITY_OTHER',
+      tags: [
+        'total-current-liabilities',
+        'hide-if-zero',
+        'hide-if-less-than-5-percent',
+      ],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
+    },
+  );
 
   t.addRow(
     [
       'Total current liabilities',
+      { operation: 'addColumnCellsByTag', args: ['total-current-liabilities'] },
       { operation: 'addColumnCellsByTag', args: ['total-current-liabilities'] },
     ],
     {
@@ -249,16 +351,28 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
     },
   );
 
-  t.addRow(['Accrued interest', totals.get('LIABILITY_ACCRUED_INTEREST')], {
-    id: 'LIABILITY_ACCRUED_INTEREST',
-    tags: ['total-liabilities', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-    cellStyle: [{}, { hideCurrency: true }],
-  });
+  t.addRow(
+    [
+      'Accrued interest',
+      totals.get('LIABILITY_ACCRUED_INTEREST'),
+      totals2.get('LIABILITY_ACCRUED_INTEREST'),
+    ],
+    {
+      id: 'LIABILITY_ACCRUED_INTEREST',
+      tags: [
+        'total-liabilities',
+        'hide-if-zero',
+        'hide-if-less-than-5-percent',
+      ],
+      cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
+    },
+  );
 
   t.addRow(
     [
       'Convertible notes payable',
       totals.get('LIABILITY_CONVERTIBLE_NOTES_PAYABLE'),
+      totals2.get('LIABILITY_CONVERTIBLE_NOTES_PAYABLE'),
     ],
     {
       id: 'LIABILITY_CONVERTIBLE_NOTES_PAYABLE',
@@ -267,20 +381,30 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
         'hide-if-zero',
         'hide-if-less-than-5-percent',
       ],
-      cellStyle: [{}, { hideCurrency: true }],
+      cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
     },
   );
 
-  t.addRow(['Debt', totals.get('LIABILITY_DEBT')], {
-    id: 'LIABILITY_DEBT',
-    tags: ['total-liabilities', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-    cellStyle: [{}, { hideCurrency: true }],
-  });
+  t.addRow(
+    ['Debt', totals.get('LIABILITY_DEBT'), totals2.get('LIABILITY_DEBT')],
+    {
+      id: 'LIABILITY_DEBT',
+      tags: [
+        'total-liabilities',
+        'hide-if-zero',
+        'hide-if-less-than-5-percent',
+      ],
+      cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
+    },
+  );
 
   t.addRow(
     [
       'Operating lease liabilities, net of current portion',
       totals.get(
+        'LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION',
+      ),
+      totals2.get(
         'LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION',
       ),
     ],
@@ -291,12 +415,13 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
         'hide-if-zero',
         'hide-if-less-than-5-percent',
       ],
-      cellStyle: [{}, { hideCurrency: true }],
+      cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
     },
   );
   t.addRow(
     [
       'Total liabilities',
+      { operation: 'addColumnCellsByTag', args: ['total-liabilities'] },
       { operation: 'addColumnCellsByTag', args: ['total-liabilities'] },
     ],
     {
@@ -309,41 +434,100 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
       },
     },
   );
-  t.addRow(['Stockholders’ deficit:', ''], {
+  t.addRow(['Stockholders’ deficit:', '', ''], {
     style: {
       padTop: true,
     },
   });
 
-  t.addRow(['Preferred stock', totals.get('EQUITY_PREFERRED_STOCK')], {
-    id: 'EQUITY_PREFERRED_STOCK',
-    tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-    cellStyle: [{ indent: true }, { hideCurrency: true }],
-  });
-  t.addRow(['Common stock', totals.get('EQUITY_COMMON_STOCK')], {
-    id: 'EQUITY_COMMON_STOCK',
-    tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-    cellStyle: [{ indent: true }, { hideCurrency: true }],
-  });
-  t.addRow(['Paid-in capital', totals.get('EQUITY_PAID_IN_CAPITAL')], {
-    id: 'EQUITY_PAID_IN_CAPITAL',
-    tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-    cellStyle: [{ indent: true }, { hideCurrency: true }],
-  });
-  t.addRow(['Retained earnings', totals.get('EQUITY_RETAINED_EARNINGS')], {
-    id: 'EQUITY_RETAINED_EARNINGS',
-    tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-    cellStyle: [{ indent: true }, { hideCurrency: true }],
-  });
-  t.addRow(['Accumulated deficit', totals.get('EQUITY_ACCUMULATED_DEFICIT')], {
-    id: 'EQUITY_ACCUMULATED_DEFICIT',
-    tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-    cellStyle: [{ indent: true }, { hideCurrency: true }],
-  });
+  t.addRow(
+    [
+      'Preferred stock',
+      totals.get('EQUITY_PREFERRED_STOCK'),
+      totals2.get('EQUITY_PREFERRED_STOCK'),
+    ],
+    {
+      id: 'EQUITY_PREFERRED_STOCK',
+      tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
+    },
+  );
+  t.addRow(
+    [
+      'Common stock',
+      totals.get('EQUITY_COMMON_STOCK'),
+      totals2.get('EQUITY_COMMON_STOCK'),
+    ],
+    {
+      id: 'EQUITY_COMMON_STOCK',
+      tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
+    },
+  );
+  t.addRow(
+    [
+      'Paid-in capital',
+      totals.get('EQUITY_PAID_IN_CAPITAL'),
+      totals2.get('EQUITY_PAID_IN_CAPITAL'),
+    ],
+    {
+      id: 'EQUITY_PAID_IN_CAPITAL',
+      tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
+    },
+  );
+  t.addRow(
+    [
+      'Retained earnings',
+      totals.get('EQUITY_RETAINED_EARNINGS'),
+      totals2.get('EQUITY_RETAINED_EARNINGS'),
+    ],
+    {
+      id: 'EQUITY_RETAINED_EARNINGS',
+      tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
+    },
+  );
+  t.addRow(
+    [
+      'Accumulated deficit',
+      totals.get('EQUITY_ACCUMULATED_DEFICIT'),
+      totals2.get('EQUITY_ACCUMULATED_DEFICIT'),
+    ],
+    {
+      id: 'EQUITY_ACCUMULATED_DEFICIT',
+      tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
+      cellStyle: [
+        { indent: true },
+        { hideCurrency: true },
+        { hideCurrency: true },
+      ],
+    },
+  );
 
   t.addRow(
     [
       'Total stockholders’ deficit',
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['total-equity'],
+      },
       {
         operation: 'addColumnCellsByTag',
         args: ['total-equity'],
@@ -366,6 +550,10 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
         operation: 'addColumnCellsByTag',
         args: ['total-liabilities-and-stockholders-deficit'],
       },
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['total-liabilities-and-stockholders-deficit'],
+      },
     ],
     {
       style: {
@@ -375,11 +563,6 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
       },
     },
   );
-
-  // t.duplicateColumn(1, 2);
-  // t.getCellByIdAndCol('ASSET_CASH_AND_CASH_EQUIVALENTS', 2).value = 12324;
-  // t.getCellByIdAndCol('ASSET_INVENTORY', 2).value = 33333;
-  // t.getCellByIdAndCol('date-row', 2).value = '2021';
 
   return t;
 }

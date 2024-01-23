@@ -11,7 +11,7 @@ import type {
   Updateable,
 } from 'kysely';
 
-export type AccountBalanceId = string;
+export type AccountMappingId = string;
 export type AuditId = string;
 export type CommentId = string;
 export type DocumentId = string;
@@ -149,17 +149,20 @@ export type RequestGroup =
   | 'Business operations'
   | 'Other';
 
+export type RequestDataValue =
+  | { value: string }
+  | { value: string[] }
+  | { value: boolean }
+  // We save documentIds here in addition to RequestDataDocumentTable to reflect that a change
+  // has occurred. I don't love that we're duplicating data here, but the simplicity tradeoff
+  // feels worth it.
+  | { isDocuments: true; documentIds: DocumentId[] };
 export interface RequestDataTable {
   id: Generated<RequestDataId>;
   auditId: AuditId;
   requestType: string;
   requestId: string;
-  data:
-    | { value: unknown }
-    // We save documentIds here in addition to RequestDataDocumentTable to reflect that a change
-    // has occurred. I don't love that we're duplicating data here, but the simplicity tradeoff
-    // feels worth it.
-    | { isDocuments: true; documentIds: DocumentId[] };
+  data: RequestDataValue;
   actorUserId: UserId | null;
   createdAt: ColumnType<Date, Date | undefined, never>;
 }
@@ -293,25 +296,30 @@ export type CommentUpdate = Updateable<CommentTable>;
 export type NewComment = Insertable<CommentTable>;
 export type Comment = Selectable<CommentTable>;
 
-export interface AccountBalanceTable {
-  id: GeneratedAlways<AccountBalanceId>;
+export interface AccountMappingTable {
+  id: GeneratedAlways<AccountMappingId>;
   auditId: AuditId;
   accountName: string;
   accountType: AccountType | null;
   accountTypeOverride: AccountType | null;
   sortIdx: number;
-  debit: number;
-  credit: number;
-  currency: string;
   context: string | null;
   classificationScore: number | null;
   reasoning: string | null;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
 }
+export type AccountMapping = Selectable<AccountMappingTable>;
 
-export type AccountBalanceUpdate = Updateable<AccountBalanceTable>;
-export type NewAccountBalance = Insertable<AccountBalanceTable>;
+export interface AccountBalanceTable {
+  id: GeneratedAlways<number>;
+  accountMappingId: AccountMappingId | null;
+  year: string;
+  debit: number;
+  credit: number;
+  currency: string;
+  createdAt: ColumnType<Date, string | undefined, never>;
+}
 export type AccountBalance = Selectable<AccountBalanceTable>;
 
 export interface KVTable {
@@ -329,6 +337,7 @@ export interface Database extends Kysely<Database> {
   'auth.userRole': AuthUserRoleTable;
   'auth.verificationToken': AuthVerificationTokenTable;
   accountBalance: AccountBalanceTable;
+  accountMapping: AccountMappingTable;
   aiQuery: AiQueryTable;
   audit: AuditTable;
   comment: CommentTable;

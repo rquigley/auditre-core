@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 import dedent from 'dedent';
 import { revalidatePath } from 'next/cache';
+import { uuidv7 } from 'uuidv7';
 import * as z from 'zod';
 
 import {
@@ -22,8 +23,8 @@ import {
   documentAiQuestions,
   isAIQuestionJSON,
 } from '@/lib/document-ai-questions';
-import { AccountMap, accountTypes } from '@/lib/finance';
-import { addFP, bucket } from '@/lib/util';
+import { AccountMap, accountTypes, getBalance } from '@/lib/finance';
+import { addFP, bucket, dateLiketoYear } from '@/lib/util';
 import { getByIdForClientCached } from './audit';
 import { deleteKV, getKV, setKV, updateKV } from './kv';
 
@@ -31,7 +32,8 @@ import type { OpenAIMessage } from '@/lib/ai';
 import type { AccountType, AccountTypeGroup } from '@/lib/finance';
 import type {
   AccountBalance,
-  AccountBalanceId,
+  AccountMapping,
+  AccountMappingId,
   Audit,
   AuditId,
   Document,
@@ -40,67 +42,139 @@ import type {
 } from '@/types';
 
 export type AccountMappingAll = Pick<
-  AccountBalance,
+  AccountMapping,
   'id' | 'accountName' | 'accountType'
 >;
 
-export async function getAllAccountBalancesByAuditId(
-  auditId: AuditId,
-  includeDeleted = false,
-) {
-  let query = db
-    .selectFrom('accountBalance')
+export async function getAllAccountMappingsByAuditId(auditId: AuditId) {
+  const rows = await db
+    .selectFrom('accountMapping')
     .select([
       'id',
-      'isDeleted',
       'accountName',
-      'accountType',
-      'accountTypeOverride',
-      'credit',
-      'debit',
-      'currency',
-      'context',
-      'classificationScore',
-      'sortIdx',
+      'isDeleted',
+      // 'accountType',
+      // 'accountTypeOverride',
+      // 'context',
+      // 'classificationScore',
+      // 'sortIdx',
     ])
     .where('auditId', '=', auditId)
-    .orderBy(['sortIdx']);
-  if (!includeDeleted) {
-    query = query.where('isDeleted', '=', includeDeleted);
-  }
-  const rows = await query.execute();
-  return rows.map((r) => ({
+    .orderBy(['sortIdx'])
+    .execute();
+  return rows;
+  // return rows.map((r) => ({
+  //   ...r,
+  //   accountTypeMerged: r.accountTypeOverride || r.accountType,
+  //   accountType: r.accountType || '',
+  //   balance: getBalance({
+  //     accountType: r.accountType || 'UNKNOWN',
+  //     credit: r.credit,
+  //     debit: r.debit,
+  //   }),
+  // }));
+}
+
+export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
+  const data = await db
+    .selectFrom('accountMapping as am')
+    .leftJoin(
+      (eb) =>
+        eb
+          .selectFrom('accountBalance')
+          .select([
+            'accountMappingId',
+            'year',
+            'debit',
+            'credit',
+            // account_mapping_id should be camelCase
+            sql`ROW_NUMBER() OVER (PARTITION BY account_mapping_id ORDER BY year)`.as(
+              'row_number',
+            ),
+          ])
+          .as('ab'),
+      (join) => join.onRef('ab.accountMappingId', '=', 'am.id'),
+    )
+    .select((eb) => [
+      'am.id',
+      'am.accountName',
+      eb.fn
+        .coalesce(
+          'am.accountTypeOverride',
+          'am.accountType',
+          sql<'UNKNOWN'>`'UNKNOWN'`,
+        )
+        .as('accountType'),
+      'am.sortIdx',
+      'am.classificationScore',
+      sql<string>`MAX(CASE WHEN ab.row_number = 1 THEN ab.year END)`.as(
+        'year1',
+      ),
+      sql<number>`MAX(CASE WHEN ab.row_number = 1 THEN ab.debit END)`.as(
+        'debit1',
+      ),
+      sql<number>`MAX(CASE WHEN ab.row_number = 1 THEN ab.credit END)`.as(
+        'credit1',
+      ),
+      sql<string>`MAX(CASE WHEN ab.row_number = 2 THEN ab.year END)`.as(
+        'year2',
+      ),
+      sql<number>`MAX(CASE WHEN ab.row_number = 2 THEN ab.debit END)`.as(
+        'debit2',
+      ),
+      sql<number>`MAX(CASE WHEN ab.row_number = 2 THEN ab.credit END)`.as(
+        'credit2',
+      ),
+    ])
+    .where('am.auditId', '=', auditId)
+    .groupBy(['am.id', 'am.accountName', 'am.accountType'])
+    .orderBy(['am.sortIdx'])
+    .execute();
+
+  return data.map((r) => ({
     ...r,
-    accountTypeMerged: r.accountTypeOverride || r.accountType,
-    accountType: r.accountType || '',
-    balance: getBalanceUsingAccountType({
-      accountType: r.accountType || 'UNKNOWN',
-      credit: r.credit,
-      debit: r.debit,
+    // Previous year is ordered first via the query
+    balancePrev: getBalance({
+      accountType: r.accountType,
+      credit: r.credit1,
+      debit: r.debit1,
+    }),
+    balance: getBalance({
+      accountType: r.accountType,
+      credit: r.credit2,
+      debit: r.debit2,
     }),
   }));
 }
 
 export async function getBalancesByAccountType(
   auditId: AuditId,
+  year: string,
 ): Promise<AccountMap> {
   const originalRows = await db
-    .selectFrom('accountBalance')
+    .selectFrom('accountMapping')
+    .innerJoin('accountBalance', 'accountMappingId', 'accountMapping.id')
     .select((eb) => [
       eb.fn
-        .coalesce('accountTypeOverride', 'accountType')
+        .coalesce(
+          'accountTypeOverride',
+          'accountType',
+          sql<'UNKNOWN'>`'UNKNOWN'`,
+        )
         .as('accountTypeMerged'),
       db.fn.sum<number>('credit').as('credit'),
       db.fn.sum<number>('debit').as('debit'),
     ])
     .where('isDeleted', '=', false)
     .where('auditId', '=', auditId)
+    .where('year', '=', year)
     .groupBy('accountTypeMerged')
     .execute();
   const rows = originalRows.map((r) => ({
-    accountType: r.accountTypeMerged || 'UNKNOWN',
-    balance: getBalanceUsingAccountType({
-      accountType: r.accountTypeMerged || 'UNKNOWN',
+    accountType: r.accountTypeMerged,
+
+    balance: getBalance({
+      accountType: r.accountTypeMerged,
       credit: r.credit,
       debit: r.debit,
     }),
@@ -110,15 +184,21 @@ export async function getBalancesByAccountType(
 
 export async function getAccountByFuzzyMatch(
   auditId: AuditId,
+  year: string,
   accountTypeGroup: AccountTypeGroup,
   searchString: string,
 ) {
   const res = await db
-    .selectFrom('accountBalance')
+    .selectFrom('accountMapping as am')
+    .innerJoin('accountBalance', 'accountMappingId', 'am.id')
     .select((eb) => [
       'accountName',
       eb.fn
-        .coalesce('accountTypeOverride', 'accountType')
+        .coalesce(
+          'accountTypeOverride',
+          'accountType',
+          sql<'UNKNOWN'>`'UNKNOWN'`,
+        )
         .as('accountTypeMerged'),
       eb
         .fn<number>('similarity', ['accountName', eb.val(searchString)])
@@ -128,6 +208,7 @@ export async function getAccountByFuzzyMatch(
     ])
     .where('auditId', '=', auditId)
     .where('isDeleted', '=', false)
+    .where('year', '=', year)
     .where((eb) =>
       eb.fn('starts_with', ['accountType', eb.val(accountTypeGroup)]),
     )
@@ -145,33 +226,8 @@ export async function getAccountByFuzzyMatch(
   return res[0];
 }
 
-export function getBalanceUsingAccountType({
-  accountType,
-  credit,
-  debit,
-}: {
-  accountType: AccountType;
-  credit: number;
-  debit: number;
-}) {
-  if (!accountType) {
-    return 0;
-  }
-  if (accountType.startsWith('ASSET')) {
-    return addFP(debit, -credit);
-  } else if (accountType.startsWith('LIABILITY')) {
-    return addFP(credit, -debit);
-  } else if (accountType.startsWith('EQUITY')) {
-    return addFP(credit, -debit);
-  } else if (accountType.startsWith('INCOME')) {
-    return addFP(credit, -debit);
-  } else {
-    return addFP(credit, -debit);
-  }
-}
-
 export async function updateAccountMappingType(
-  id: AccountBalanceId,
+  id: AccountMappingId,
   accountType: AccountType | null,
 ) {
   if (accountType !== null && !accountTypes[accountType]) {
@@ -179,7 +235,7 @@ export async function updateAccountMappingType(
   }
 
   await db
-    .updateTable('accountBalance')
+    .updateTable('accountMapping')
     .set({ accountTypeOverride: accountType })
     .where('id', '=', id)
     .execute();
@@ -198,7 +254,7 @@ export async function classifyTrialBalanceTypes(
 ): Promise<void> {
   try {
     const rows = await db
-      .selectFrom('accountBalance')
+      .selectFrom('accountMapping')
       .select(['id', 'accountName', 'accountType', 'context'])
       .where('auditId', '=', auditId)
       .where('isDeleted', '=', false)
@@ -281,7 +337,7 @@ export async function classifyTrialBalanceTypes(
 
     // Retry any rows not classified by the first pass
     const retryRows = await db
-      .selectFrom('accountBalance')
+      .selectFrom('accountMapping')
       .select(['id', 'accountName', 'accountType', 'context'])
       .where('auditId', '=', auditId)
       .where('isDeleted', '=', false)
@@ -413,7 +469,7 @@ async function autoClassifyTrialBalanceRows(
 
     toUpdate.push(
       db
-        .updateTable('accountBalance')
+        .updateTable('accountMapping')
         .set({ accountType })
         .where('id', '=', row.id)
         .execute(),
@@ -591,7 +647,7 @@ export async function aiClassifyTrialBalanceRows({
       continue;
     }
     const [idx, accountType, ...other] = result.data;
-    const id = rowMap.get(idx) as AccountBalanceId;
+    const id = rowMap.get(idx) as AccountMappingId;
     if (!id || accountType in accountTypes === false) {
       console.log('Invalid accountType', accountType);
       continue;
@@ -603,7 +659,7 @@ export async function aiClassifyTrialBalanceRows({
 
     toUpdate.push(
       db
-        .updateTable('accountBalance')
+        .updateTable('accountMapping')
         .set({
           accountType: accountType as AccountType,
           classificationScore: other[0] || undefined,
@@ -624,43 +680,49 @@ export function parseNumber(num: string) {
   return parseFloat(String(num).replace('=', '')) || 0;
 }
 
-export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
-  const tbDocRequest = await getDataForRequestAttribute(
+async function getDocumentData(
+  auditId: AuditId,
+  identifier: 'currentYearDocumentId' | 'previousYearDocumentId',
+) {
+  const data = await getDataForRequestAttribute(
     auditId,
     'trial-balance',
-    'documentId',
+    identifier,
   );
-  if (!tbDocRequest || !('isDocuments' in tbDocRequest.data)) {
-    return false;
+  if (
+    !data ||
+    !('isDocuments' in data.data) ||
+    data.data.documentIds.length === 0
+  ) {
+    return { data: [] };
   }
-  if (tbDocRequest.data.documentIds.length !== 1) {
-    return false;
-  }
-  const document = await getDocumentById(tbDocRequest.data.documentIds[0]);
 
+  const document = await getDocumentById(data.data.documentIds[0]);
   if (document.classifiedType !== 'TRIAL_BALANCE') {
     throw new Error('Invalid classified type');
   }
+
+  const aiDateRes = await pollGetByDocumentIdAndIdentifier(
+    document.id,
+    'trialBalanceDate',
+  );
 
   const sheets = getSheetData(document);
   if (!sheets) {
     throw new Error('No sheets found');
   }
-  const { rows, schema } = sheets[0];
+  const { rows } = sheets[0];
   const colIdxs = await getColIdxs(document);
 
-  const existingRows = await getAllAccountBalancesByAuditId(auditId, true);
-  const existingMap = new Map(existingRows.map((r) => [r.accountName, r]));
+  const accountNameSchema = z
+    .string()
+    .min(1)
+    .max(72)
+    // Naive, but "total" is common and we don't want it.
+    .refine((val) => val.toUpperCase() !== 'TOTAL');
 
-  const accountNameSchema = z.string().min(1).max(72);
-
-  const toAdd = [];
-  const toUpdate = [];
-  const idsToRetain: string[] = [];
-  let sortIdx = 0;
+  let ret = [];
   for (const row of rows) {
-    sortIdx++;
-
     let numberRaw = row[colIdxs.accountIdColumnIdx] || '';
     let nameRaw = row[colIdxs.accountNameColumnIdx] || '';
     let accountNameRaw = `${numberRaw}${
@@ -668,57 +730,115 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     }${nameRaw}`.trim();
 
     const accountNameParsed = accountNameSchema.safeParse(accountNameRaw);
-
-    if (
-      !accountNameParsed.success ||
-      (row[colIdxs.debitColumnIdx] === '' &&
-        row[colIdxs.creditColumnIdx] === '') ||
-      // Naive, but we want ultimately want to ignore any type of total
-      String(accountNameParsed.data)?.toUpperCase() === 'TOTAL'
-    ) {
+    if (!accountNameParsed.success) {
       continue;
     }
-    const accountName = accountNameParsed.data;
 
-    const newDebit = parseNumber(row[colIdxs.debitColumnIdx]);
-    const newCredit = parseNumber(row[colIdxs.creditColumnIdx]);
+    ret.push({
+      accountName: accountNameParsed.data,
+      debit: parseNumber(row[colIdxs.debitColumnIdx]),
+      credit: parseNumber(row[colIdxs.creditColumnIdx]),
+    });
+  }
 
+  return { data: ret, date: aiDateRes };
+}
+
+export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
+  const previousYear = await getDocumentData(auditId, 'previousYearDocumentId');
+  const currentYear = await getDocumentData(auditId, 'currentYearDocumentId');
+
+  type Row = {
+    debit1?: number;
+    credit1?: number;
+    debit2?: number;
+    credit2?: number;
+  };
+  let data = new Map<string, Row>();
+  for (const row of previousYear.data) {
+    data.set(row.accountName, {
+      debit1: row.debit,
+      credit1: row.credit,
+    });
+  }
+  for (const row of currentYear.data) {
+    if (data.has(row.accountName)) {
+      const existing = data.get(row.accountName) as Row;
+      data.set(row.accountName, {
+        ...existing,
+        debit2: row.debit,
+        credit2: row.credit,
+      });
+    } else {
+      data.set(row.accountName, {
+        debit2: row.debit,
+        credit2: row.credit,
+      });
+    }
+  }
+
+  const existingRows = await getAllAccountMappingsByAuditId(auditId);
+  const existingMap = new Map(existingRows.map((r) => [r.accountName, r]));
+
+  const toAdd = [];
+  const balances = [];
+  const toUpdate = [];
+  const idsToRetain: string[] = [];
+  let sortIdx = 0;
+  for (const [accountName, row] of Array.from(data)) {
+    sortIdx++;
+    let id;
     if (existingMap.has(accountName)) {
       const existing = existingMap.get(accountName) as (typeof existingRows)[0];
-
-      if (
-        existing.debit !== newDebit ||
-        existing.credit !== newCredit ||
-        existing.isDeleted
-      ) {
+      id = existing.id;
+      if (existing.isDeleted) {
         toUpdate.push(
           db
-            .updateTable('accountBalance')
+            .updateTable('accountMapping')
             .set({
-              debit: newDebit,
-              credit: newCredit,
               isDeleted: false,
               sortIdx,
             })
             .where('id', '=', existing.id)
             .execute(),
         );
-        idsToRetain.push(existing.id);
+        idsToRetain.push(id);
       }
     } else {
+      id = uuidv7();
       toAdd.push({
+        id,
         auditId,
         accountName,
-        debit: newDebit,
-        credit: newCredit,
-        currency: 'USD',
         sortIdx,
       });
     }
+
+    balances.push({
+      accountMappingId: id,
+      year: dateLiketoYear(previousYear.date?.result),
+      debit: row.debit1 || 0,
+      credit: row.credit1 || 0,
+      currency: 'USD',
+    });
+    balances.push({
+      accountMappingId: id,
+      year: dateLiketoYear(currentYear.date?.result),
+      debit: row.debit2 || 0,
+      credit: row.credit2 || 0,
+      currency: 'USD',
+    });
   }
 
+  // Delete balances before modifying accountMappings
+  db.deleteFrom('accountBalance as ab')
+    .using('accountMapping as am')
+    .whereRef('ab.accountMappingId', '=', 'am.id')
+    .where('am.auditId', '=', auditId)
+    .execute();
+
   if (toAdd.length > 0) {
-    await db.insertInto('accountBalance').values(toAdd).execute();
+    await db.insertInto('accountMapping').values(toAdd).execute();
   }
   const idsToDelete = existingRows
     .filter((r) => idsToRetain.includes(r.id) === false)
@@ -726,14 +846,18 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
 
   if (idsToDelete.length > 0) {
     await db
-      .updateTable('accountBalance')
+      .updateTable('accountMapping')
       .set({ isDeleted: true })
       .where('id', 'in', idsToDelete)
       .execute();
   }
 
+  if (balances.length > 0) {
+    await db.insertInto('accountBalance').values(balances).execute();
+  }
+
   const toClassifyRowCount = await db
-    .selectFrom('accountBalance')
+    .selectFrom('accountMapping')
     .select([db.fn.countAll().as('count')])
     .where('auditId', '=', auditId)
     .where('isDeleted', '=', false)
@@ -758,12 +882,20 @@ export async function getAccountsForCategory(
 ) {
   const rows = await db
     .selectFrom('accountBalance')
-    .select(['accountName', sql<number>`debit - credit`.as('balance')])
+    .innerJoin('accountMapping', 'accountMappingId', 'accountMapping.id')
+    .select(['accountName', 'credit', 'debit'])
     .where('isDeleted', '=', false)
     .where('auditId', '=', auditId)
     .where('accountType', '=', accountType)
     .execute();
-  return rows;
+  return rows.map((r) => ({
+    accountName: r.accountName,
+    balance: getBalance({
+      accountType,
+      credit: r.credit,
+      debit: r.debit,
+    }),
+  }));
 }
 
 async function getColIdxs(document: Document) {

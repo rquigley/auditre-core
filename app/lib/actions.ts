@@ -45,7 +45,7 @@ import { getRequestTypeForId } from '@/lib/request-types';
 
 import type { AccountType } from '@/lib/finance';
 import type {
-  AccountBalanceId,
+  AccountMappingId,
   AuditId,
   DocumentId,
   OrgId,
@@ -401,11 +401,11 @@ export async function extractTrialBalance(auditId: AuditId) {
 
 export async function overrideAccountMapping({
   auditId,
-  accountBalanceId,
+  accountMappingId,
   accountType,
 }: {
   auditId: AuditId;
-  accountBalanceId: AccountBalanceId;
+  accountMappingId: AccountMappingId;
   accountType: AccountType | null;
 }) {
   const { user } = await getCurrent();
@@ -416,7 +416,7 @@ export async function overrideAccountMapping({
   if (audit.orgId !== user.orgId) {
     throw new UnauthorizedError();
   }
-  await updateAccountMappingType(accountBalanceId, accountType);
+  await updateAccountMappingType(accountMappingId, accountType);
 }
 
 export async function createOrg(

@@ -64,6 +64,12 @@ export type FormField =
   | FormFieldCheckbox
   | FormFieldFile;
 
+export function isFormFieldFile(
+  config: Partial<FormField>,
+): config is FormFieldFile {
+  return config.input === 'fileupload';
+}
+
 function generateFormField(config: Partial<FormField>) {
   let schema;
   let validationSchema;
@@ -471,8 +477,16 @@ export const requestTypes = [
       group: 'Accounting information',
     },
     {
-      documentId: {
-        label: 'Upload the trial balance',
+      currentYearDocumentId: {
+        label: 'Upload the audit year trial balance',
+        description:
+          'Use a consolidated trial balance if there are multiple lines of business.',
+        extensions: ['XLS', 'XLSX', 'CSV'],
+        input: 'fileupload',
+        aiClassificationType: 'TRIAL_BALANCE',
+      },
+      previousYearDocumentId: {
+        label: 'Upload the previous year trial balance',
         description:
           'Use a consolidated trial balance if there are multiple lines of business.',
         extensions: ['XLS', 'XLSX', 'CSV'],

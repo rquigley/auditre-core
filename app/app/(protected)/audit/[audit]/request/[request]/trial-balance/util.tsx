@@ -2,8 +2,8 @@ export function sortRows<
   T extends {
     accountName: string;
     accountType: string;
-    credit: number;
-    debit: number;
+    balance1: number;
+    balance2: number;
     sortIdx: number;
   },
 >(
@@ -29,20 +29,29 @@ export function sortRows<
         return a.accountType.localeCompare(b.accountType);
       }
     }
-    if (currentSort === 'credit') {
+    if (currentSort === 'balance1') {
       if (currentOrder === 'desc') {
-        return b.credit - a.credit;
+        return b.balance1 - a.balance1;
       } else {
-        return a.credit - b.credit;
+        return a.balance1 - b.balance1;
       }
     }
-    if (currentSort === 'debit') {
+    if (currentSort === 'balance2') {
       if (currentOrder === 'desc') {
-        return b.debit - a.debit;
+        return b.balance2 - a.balance2;
       } else {
-        return a.debit - b.debit;
+        return a.balance2 - b.balance2;
       }
     }
     return a.sortIdx - b.sortIdx;
   });
 }
+
+export const accountTypeGroupBGColors = {
+  ASSET: 'bg-lime-100',
+  LIABILITY: 'bg-sky-100',
+  EQUITY: 'bg-violet-100',
+  INCOME_STATEMENT: 'bg-amber-100',
+  UNKNOWN: 'bg-rose-100 ring-red-600 text-red-900',
+  OTHER: 'bg-white',
+} as const;

@@ -1,3 +1,5 @@
+import { addFP } from './util';
+
 export const accountTypes = {
   ASSET_CASH_AND_CASH_EQUIVALENTS: 'Cash and cash equivalents',
   ASSET_INTANGIBLE_ASSETS: 'Intangible assets, net',
@@ -169,4 +171,20 @@ export function accountTypeGroupToLabel(
   type: AccountTypeGroup,
 ): (typeof groupLabels)[AccountTypeGroup] {
   return groupLabels[type];
+}
+
+export function getBalance({
+  accountType,
+  credit,
+  debit,
+}: {
+  accountType: AccountType;
+  credit: number;
+  debit: number;
+}) {
+  if (accountType.startsWith('ASSET')) {
+    return addFP(-credit, debit);
+  } else {
+    return addFP(credit, -debit);
+  }
 }

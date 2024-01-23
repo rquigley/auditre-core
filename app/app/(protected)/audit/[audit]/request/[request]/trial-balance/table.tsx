@@ -3,52 +3,44 @@
 import clsx from 'clsx';
 import { Inconsolata } from 'next/font/google';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import useSWR from 'swr';
 
 import { Spinner } from '@/components/spinner';
 import { SortableHeader } from '@/components/table';
-import { extractTrialBalance } from '@/lib/actions';
-import { AccountType, getGroupLabel, groupLabels } from '@/lib/finance';
+import { overrideAccountMapping } from '@/lib/actions';
+import {
+  AccountType,
+  getBalance,
+  getGroupLabel,
+  groupLabels,
+} from '@/lib/finance';
 import { ppCurrency } from '@/lib/util';
 import { AccountBalanceResp } from '../../../account-balance/route';
 import { AccountMapping } from './account-mapping';
-import { sortRows } from './util';
+import { accountTypeGroupBGColors, sortRows } from './util';
 
 import type { AuditId } from '@/types';
 
-export const financeFont = Inconsolata({
+const financeFont = Inconsolata({
   subsets: ['latin'],
   display: 'swap',
 });
-
-type Fetcher = (
-  input: RequestInfo,
-  init?: RequestInit,
-) => Promise<AccountBalanceResp>;
 
 async function fetcher(input: RequestInfo, init: RequestInit) {
   const res = await fetch(input, init);
   return (await res.json()) as AccountBalanceResp;
 }
 
-function useAccountBalances(
-  auditId: AuditId,
-  prefetchedData: AccountBalanceResp['rows'],
-  isProcessing: boolean,
-  setIsProcessing: (isProcessing: boolean) => void,
-) {
+function useAccountBalances(auditId: AuditId) {
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const { data, error, isLoading, mutate } = useSWR(
     `/audit/${auditId}/account-balance`,
     fetcher,
     {
       revalidateOnMount: true,
-      fallbackData: {
-        rows: prefetchedData,
-        isProcessing,
-        numProcessed: 0,
-        numToProcessTotal: 0,
-      },
+      revalidateOnFocus: true,
       refreshInterval: isProcessing ? 1000 : undefined,
     },
   );
@@ -67,49 +59,75 @@ function useAccountBalances(
       data && typeof data === 'object' && 'rows' in data
         ? (data.rows as AccountBalanceResp['rows'])
         : [],
-    isProcessing: data?.isProcessing || false,
+    isLoading,
+    isProcessing: isProcessing || data?.isProcessing || false,
+    isError: error,
     numProcessed: data?.numProcessed || 0,
     numToProcessTotal: data?.numToProcessTotal || 0,
-    isLoading,
-    isError: error,
     mutate,
   };
 }
 
-export function Table({
-  auditId,
-  prefetchRows,
-  isProcessing: _isProcessing,
-}: {
-  auditId: AuditId;
-  prefetchRows: AccountBalanceResp['rows'];
-  isProcessing: boolean;
-}) {
+export function Table({ auditId }: { auditId: AuditId }) {
   const searchParams = useSearchParams();
-  const [isProcessing, setIsProcessing] = useState(_isProcessing);
 
   const currentSort = searchParams.get('sort') as string;
   const currentOrder = searchParams.get('order') as string;
-  let { rows, numProcessed, numToProcessTotal, isLoading, mutate } =
-    useAccountBalances(auditId, prefetchRows, isProcessing, setIsProcessing);
 
-  useEffect(() => {
-    if (!isProcessing && !rows.length) {
-      extractTrialBalance(auditId).then(() => {
-        setIsProcessing(true);
-        mutate();
-      });
+  let {
+    rows,
+    isLoading,
+    isProcessing,
+    numProcessed,
+    numToProcessTotal,
+    mutate,
+  } = useAccountBalances(auditId);
+
+  const years = new Set<string>();
+  let year1 = '';
+  let year2 = '';
+  const rows2 = rows.map((row) => {
+    if (!year1) {
+      year1 = row.year1;
     }
-  }, [isProcessing, rows.length, auditId, mutate]);
+    if (!year2) {
+      year2 = row.year2;
+    }
+    years.add(row.year1);
+    years.add(row.year2);
+    return {
+      ...row,
+      balance1: getBalance({
+        accountType: row.accountType,
+        credit: row.credit1,
+        debit: row.debit1,
+      }),
+      balance2: getBalance({
+        accountType: row.accountType,
+        credit: row.credit2,
+        debit: row.debit2,
+      }),
+    };
+  });
+  const sortedRows = sortRows<(typeof rows2)[number]>(
+    rows2,
+    currentSort,
+    currentOrder,
+  );
 
-  const sortedRows = sortRows(rows, currentSort, currentOrder);
   return (
     <div className="mt-8">
       {isProcessing ? (
         <div className="flex">
           <div className="flex items-center text-xs text-gray-400 mt-3">
             <Spinner />
-            Classified {numProcessed}/{numToProcessTotal} accounts
+            {numToProcessTotal === -1 ? (
+              <>Extracting</>
+            ) : (
+              <>
+                Classified {numProcessed}/{numToProcessTotal} accounts
+              </>
+            )}
           </div>
         </div>
       ) : null}
@@ -133,15 +151,19 @@ export function Table({
             </th>
             <th
               scope="col"
-              className="align-bottom whitespace-nowrap min-w-min px-2 py-1 text-right text-xs font-medium"
+              className="align-bottom whitespace-nowrap min-w-min px-2 py-1 text-xs font-medium"
             >
-              <SortableHeader column="credit">Credit</SortableHeader>
+              <SortableHeader column="balance1">
+                {year1 || 'Previous year'}
+              </SortableHeader>
             </th>
             <th
               scope="col"
-              className="align-bottom whitespace-nowrap min-w-min px-2 py-1 text-right text-xs font-medium"
+              className="align-bottom whitespace-nowrap min-w-min px-2 py-1 text-xs font-medium"
             >
-              <SortableHeader column="debit">Debit</SortableHeader>
+              <SortableHeader column="balance2">
+                {year2 || 'Current year'}
+              </SortableHeader>
             </th>
           </tr>
         </thead>
@@ -178,18 +200,48 @@ export function Table({
                 </td>
                 <td className="px-2 py-2 text-xs text-gray-900 text-left">
                   <span className="block h-7">
-                    {isProcessing && row.accountType === '' ? (
+                    {isProcessing && row.accountType === 'UNKNOWN' ? (
                       <span className="h-full text-gray-400 flex items-center">
                         <span className="mr-2 animate-ping w-1.5 h-1.5 block rounded-full bg-gray-400 opacity-75"></span>{' '}
                         <span>Classifying</span>
                       </span>
                     ) : (
                       <AccountMapping
-                        auditId={auditId}
-                        accountBalanceId={row.id}
-                        accountType={
-                          (row.accountTypeMerged || 'UNKNOWN') as AccountType
-                        }
+                        accountType={row.accountType as AccountType}
+                        setMapping={async (accountType: AccountType) => {
+                          mutate(
+                            async (data: AccountBalanceResp | undefined) => {
+                              await overrideAccountMapping({
+                                auditId,
+                                accountMappingId: row.id,
+                                accountType,
+                              });
+                              const idx =
+                                data?.rows.findIndex((r) => r.id === row.id) ||
+                                0;
+                              const newRow = {
+                                ...row,
+                                accountType,
+                              } as unknown as AccountBalanceResp['rows'][number];
+                              const newRows = [
+                                ...rows.slice(0, idx),
+                                newRow,
+                                ...rows.slice(idx + 1),
+                              ];
+                              return {
+                                ...data,
+                                rows: newRows,
+                                isProcessing: data?.isProcessing || false,
+                                numProcessed: data?.numProcessed || 0,
+                                numToProcessTotal: data?.numToProcessTotal || 0,
+                              };
+                            },
+                            {
+                              revalidate: false,
+                              populateCache: true,
+                            },
+                          );
+                        }}
                       />
                     )}
                   </span>
@@ -197,15 +249,16 @@ export function Table({
                 <td
                   className={`px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className} group-hover:font-bold`}
                 >
-                  {' '}
-                  {row.credit > 0
-                    ? ppCurrency(row.credit, { cents: true })
-                    : '-'}
+                  {ppCurrency(row.balance1, {
+                    cents: true,
+                  })}
                 </td>
                 <td
                   className={`px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className} group-hover:font-bold`}
                 >
-                  {row.debit > 0 ? ppCurrency(row.debit, { cents: true }) : '-'}
+                  {ppCurrency(row.balance2, {
+                    cents: true,
+                  })}
                 </td>
               </tr>
             ))
@@ -233,12 +286,3 @@ function AccountTypeMappingKey() {
     </div>
   );
 }
-
-export const accountTypeGroupBGColors = {
-  ASSET: 'bg-lime-100',
-  LIABILITY: 'bg-sky-100',
-  EQUITY: 'bg-violet-100',
-  INCOME_STATEMENT: 'bg-amber-100',
-  UNKNOWN: 'bg-rose-100 ring-red-600 text-red-900',
-  OTHER: 'bg-white',
-} as const;
