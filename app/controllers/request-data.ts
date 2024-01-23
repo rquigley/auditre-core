@@ -17,7 +17,6 @@ import type {
   NewRequestData,
   RequestData,
   RequestDataId,
-  RequestDataValue,
   UserId,
 } from '@/types';
 
@@ -83,14 +82,7 @@ export async function getDataForRequestAttribute2(
     .limit(1)
     .executeTakeFirst();
 
-  if (!res) {
-    return undefined;
-  }
-  if ('isDocuments' in res.data) {
-    return res.data.documentIds;
-  } else {
-    return res.data.value;
-  }
+  return res?.data.value;
 }
 
 export async function getDataForAuditId(auditId: AuditId) {
@@ -117,12 +109,10 @@ export type DataObj = {
   requestId: string;
   data: RequestData['data'];
 };
-type NormalizedData =
-  | { isDocuments: true; documentIds: DocumentId[] }
-  | unknown;
+
 export function normalizeRequestData(
   rt: string,
-  defaultValues: Record<string, unknown>,
+  defaultValues: Record<string, FormField['defaultValue']>,
   data: Array<DataObj>,
 ) {
   const form = getRequestTypeForId(rt).form;
@@ -134,7 +124,7 @@ export function normalizeRequestData(
     dataMatchesConfig = false;
   }
 
-  const ret: Record<string, NormalizedData> = {};
+  const ret: Record<string, FormField['defaultValue']> = {};
   for (const key of Object.keys(defaultValues)) {
     const d = data.find((r) => r.requestId === key);
     if (!d) {
@@ -142,11 +132,6 @@ export function normalizeRequestData(
       uninitializedFields.push(key);
 
       ret[key] = defaultValues[key];
-    } else if (form[key].input === 'fileupload' && 'documentIds' in d.data) {
-      ret[key] = {
-        isDocuments: true,
-        documentIds: d.data.documentIds,
-      };
     } else if ('value' in d.data) {
       ret[key] = d.data.value;
     }
@@ -259,10 +244,10 @@ export async function unlinkDocumentFromRequestData({
   if (!existingRow) {
     throw new Error('No request data found');
   }
-  if (!('isDocuments' in existingRow.data)) {
+  if (!Array.isArray(existingRow.data.value)) {
     throw new Error('Request data is not a document type');
   }
-  const newDocumentIds = existingRow.data.documentIds.filter(
+  const newDocumentIds = existingRow.data.value.filter(
     (id) => id !== documentId,
   );
 
@@ -270,7 +255,7 @@ export async function unlinkDocumentFromRequestData({
     auditId: auditId,
     requestType,
     requestId,
-    data: { isDocuments: true, documentIds: newDocumentIds } as const,
+    data: { value: newDocumentIds } as const,
     actorUserId: actorUserId || null,
   });
 

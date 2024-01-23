@@ -2,6 +2,7 @@ import { getById as getAuditById } from '@/controllers/audit';
 import {
   getRequestTypeForId,
   getSchemaForId,
+  isFormFieldFile,
   requestTypes,
 } from '@/lib/request-types';
 import {
@@ -12,8 +13,8 @@ import {
   getDataForRequestType,
 } from './request-data';
 
-import type { RequestType } from '@/lib/request-types';
-import type { AuditId, OrgId, UserId } from '@/types';
+import type { FormField, RequestType } from '@/lib/request-types';
+import type { AuditId, DocumentId, OrgId, UserId } from '@/types';
 
 export type ClientSafeRequest = Pick<
   RequestType,
@@ -49,16 +50,14 @@ export async function saveRequestData({
 }: {
   auditId: AuditId;
   requestType: string;
-  data: Record<string, unknown>;
+  data: Record<string, FormField['defaultValue']>;
   actorUserId?: UserId;
 }) {
-  const audit = await getAuditById(auditId);
   const rt = getRequestTypeForId(requestType);
   const { data: requestData, uninitializedFields } =
     await getDataForRequestType(auditId, rt);
 
   const newData = getSchemaForId(rt.id).parse(newDataRaw);
-
   // Ensure that all changes have the same timestamp
   const createdAt = new Date();
 
@@ -68,10 +67,9 @@ export async function saveRequestData({
     if (!newData.hasOwnProperty(key)) {
       continue;
     }
-    if (rt.form[key].input === 'fileupload') {
-      // @ts-expect-error
-      const oldDocumentIds = requestData[key]?.documentIds;
-      const newDocumentIds = newData[key].documentIds;
+    if (isFormFieldFile(rt.form[key])) {
+      const oldDocumentIds = requestData[key] as DocumentId[];
+      const newDocumentIds = newData[key];
       const mods = getDocumentIdMods(oldDocumentIds, newDocumentIds);
       if (
         mods.toDelete.length === 0 &&
@@ -88,7 +86,7 @@ export async function saveRequestData({
         // We save documentIds here in addition to RequestDataDocuments to reflect that a change
         // has occurred. I don't love that we're duplicating data here, but the simplicity tradeoff
         // feels worth it.
-        data: { isDocuments: true, documentIds: newDocumentIds } as const,
+        data: { value: newDocumentIds },
         actorUserId,
         createdAt,
       });
@@ -149,20 +147,4 @@ export async function getRequestBySlug(
     description: rt.description,
     form: rt.form,
   };
-}
-
-export function getDocumentIds(
-  request: Request,
-  requestData: Record<string, unknown>,
-) {
-  const documentIds = [];
-  for (const key of Object.keys(requestData)) {
-    if (
-      request.form[key].input === 'fileupload' &&
-      typeof requestData[key] === 'string'
-    ) {
-      documentIds.push({ field: key, documentId: requestData[key] as string });
-    }
-  }
-  return documentIds;
 }

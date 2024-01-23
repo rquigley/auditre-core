@@ -18,9 +18,11 @@ import {
   Textarea,
   Year,
 } from '@/components/form-fields';
-import { extractTrialBalance } from '@/lib/actions';
-// import SaveNotice from '@/components/save-notice';
-import { getFieldDependencies, getSchemaForId } from '@/lib/request-types';
+import {
+  FormField,
+  getFieldDependencies,
+  getSchemaForId,
+} from '@/lib/request-types';
 import { isFieldVisible } from '@/lib/util';
 
 import type { Request } from '@/controllers/request';
@@ -29,9 +31,12 @@ import type { AuditId, DocumentId } from '@/types';
 export type Props = {
   auditId: AuditId;
   request: Request;
-  requestData: Record<string, unknown>;
+  requestData: Record<string, FormField['defaultValue']>;
   dataMatchesConfig: boolean;
-  saveData: (data: Record<string, unknown>) => Promise<Record<string, unknown>>;
+  saveData: (data: Record<string, FormField['defaultValue']>) => Promise<{
+    data: Record<string, FormField['defaultValue']>;
+    postSaveAction: string | undefined;
+  }>;
   documents: {
     [key: string]: Array<{
       id: DocumentId;

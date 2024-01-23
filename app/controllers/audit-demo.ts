@@ -5,7 +5,7 @@ import { createAiQuery } from '@/controllers/ai-query';
 import { getById } from '@/controllers/audit';
 import { create as createDocument } from '@/controllers/document';
 import { saveRequestData } from '@/controllers/request';
-import { getDataForRequestAttribute } from '@/controllers/request-data';
+import { getDataForRequestAttribute2 } from '@/controllers/request-data';
 import {
   AIQuestion,
   AIQuestionBasic,
@@ -34,21 +34,20 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
     },
     actorUserId,
   });
-  const existingYear = await getDataForRequestAttribute(
+  const existingYear = (await getDataForRequestAttribute2(
     auditId,
     'audit-info',
     'year',
-  );
+  )) as string;
   await saveRequestData({
     auditId,
     requestType: 'audit-info',
     data: {
       // year might be saved at creation.
-      // @ts-expect-error
-      year: existingYear?.data?.value || '2015',
+      year: existingYear,
       fiscalYearMonthEnd: '12',
       hasBeenAudited: false,
-      previousAuditDocumentId: { isDocuments: true, documentIds: [] },
+      previousAuditDocumentId: [],
     },
     actorUserId,
   });
@@ -71,46 +70,10 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
     auditId,
     requestType: 'articles-of-incorporation',
     data: {
-      documentId: { isDocuments: true, documentIds: [docId] },
+      documentId: [docId],
     },
     actorUserId,
   });
-
-  // Disabling CoA and TB for now until we refactor the actual functionality
-  // docId = await createDemoDocument({
-  //   orgId,
-  //   filename: 'Chart-of-accounts.xlsx',
-  //   classifiedType: 'CHART_OF_ACCOUNTS',
-  //   actorUserId,
-  //   ai: {
-  //     accountNameColumn: 'foo',
-  //     accountMapping: 'bar',
-  //   },
-  // });
-  // await saveRequestData({
-  //   auditId,
-  //   requestType: 'chart-of-accounts',
-  //   data: {
-  //     documentId: { isDocuments: true, documentIds: [docId] },
-  //   },
-  //   actorUserId,
-  // });
-
-  // docId = await createDemoDocument({
-  //   orgId,
-  //   filename: 'Trial Balance.xlsx',
-  //   classifiedType: 'TRIAL_BALANCE',
-  //   actorUserId,
-  //   ai: {},
-  // });
-  // await saveRequestData({
-  //   auditId,
-  //   requestType: 'trial-balance',
-  //   data: {
-  //     documentId: { isDocuments: true, documentIds: [docId] },
-  //   },
-  //   actorUserId,
-  // });
 
   docId = await createDemoDocument({
     orgId,
@@ -124,7 +87,7 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
     requestType: 'revenue-recognition-policy',
     data: {
       hasCompletedASC606Analysis: false,
-      asc606DocumentId: { isDocuments: true, documentIds: [docId] },
+      asc606DocumentId: [docId],
       revenueRecognitionProcess: 'We recognize revenue by trialing...',
     },
     actorUserId,
@@ -148,11 +111,8 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
     auditId,
     requestType: 'financing-documents',
     data: {
-      equityFinancingDocumentIds: { isDocuments: true, documentIds: [docId] },
-      debtFinancingAgreementDocumentIds: {
-        isDocuments: true,
-        documentIds: [docId2],
-      },
+      equityFinancingDocumentIds: [docId],
+      debtFinancingAgreementDocumentIds: [docId2],
     },
     actorUserId,
   });
@@ -171,7 +131,7 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
       hasLeases: false,
       didPerformASC842Analysis: false,
       yearOfASC842Analysis: '2000',
-      asc606DocumentId: { isDocuments: true, documentIds: [docId] },
+      asc606DocumentId: [docId],
     },
     actorUserId,
   });
@@ -208,20 +168,11 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
     auditId,
     requestType: 'equity',
     data: {
-      capTableDetailDocumentId: { isDocuments: true, documentIds: [docId] },
-      certificateTransactionDocumentId: {
-        isDocuments: true,
-        documentIds: [docId2],
-      },
+      capTableDetailDocumentId: [docId],
+      certificateTransactionDocumentId: [docId2],
       hasEmployeeStockPlan: false,
-      debtFinancingAgreementDocumentIds: {
-        isDocuments: true,
-        documentIds: [docId3],
-      },
-      employeeStockPlanDocumentId: {
-        isDocuments: true,
-        documentIds: [docId4],
-      },
+      debtFinancingAgreementDocumentIds: [docId3],
+      employeeStockPlanDocumentId: [docId4],
     },
     actorUserId,
   });
@@ -279,7 +230,7 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
     auditId,
     requestType: 'audit-year-tax-provision',
     data: {
-      documentId: { isDocuments: true, documentIds: [docId] },
+      documentId: [docId],
     },
     actorUserId,
   });

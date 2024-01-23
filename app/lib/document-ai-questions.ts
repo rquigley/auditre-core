@@ -40,7 +40,7 @@ export interface AIQuestionBasic {
   question: string;
   model?: string;
   preProcess?: (val: string) => string;
-  validate?: z.ZodType<any>;
+  validate: z.ZodType<any>;
 }
 export interface AIQuestionJSON {
   label?: string;
@@ -106,6 +106,7 @@ export const documentAiQuestions: Partial<
       label: 'Jurisdiction of incorporation',
       question:
         'What is the jurisdiction of incorporation? Answer only with the jurisdiction',
+      validate: z.string(),
     },
   },
   TRIAL_BALANCE: {
@@ -295,6 +296,7 @@ export const documentAiQuestions: Partial<
 
       2. Finally, ensure that you haven't included an introduction or conclusion. If included, remove them.
       `,
+      validate: z.string().min(200),
     },
   },
   EQUITY_FINANCING: {

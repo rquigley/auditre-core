@@ -24,55 +24,27 @@ import {
   isAIQuestionJSON,
 } from '@/lib/document-ai-questions';
 import { AccountMap, accountTypes, getBalance } from '@/lib/finance';
-import { addFP, bucket, dateLiketoYear } from '@/lib/util';
+import { bucket, dateLiketoYear } from '@/lib/util';
 import { getByIdForClientCached } from './audit';
 import { deleteKV, getKV, setKV, updateKV } from './kv';
 
 import type { OpenAIMessage } from '@/lib/ai';
 import type { AccountType, AccountTypeGroup } from '@/lib/finance';
 import type {
-  AccountBalance,
-  AccountMapping,
   AccountMappingId,
-  Audit,
   AuditId,
   Document,
   OpenAIModel,
   OrgId,
 } from '@/types';
 
-export type AccountMappingAll = Pick<
-  AccountMapping,
-  'id' | 'accountName' | 'accountType'
->;
-
 export async function getAllAccountMappingsByAuditId(auditId: AuditId) {
-  const rows = await db
+  return await db
     .selectFrom('accountMapping')
-    .select([
-      'id',
-      'accountName',
-      'isDeleted',
-      // 'accountType',
-      // 'accountTypeOverride',
-      // 'context',
-      // 'classificationScore',
-      // 'sortIdx',
-    ])
+    .select(['id', 'accountName', 'isDeleted'])
     .where('auditId', '=', auditId)
     .orderBy(['sortIdx'])
     .execute();
-  return rows;
-  // return rows.map((r) => ({
-  //   ...r,
-  //   accountTypeMerged: r.accountTypeOverride || r.accountType,
-  //   accountType: r.accountType || '',
-  //   balance: getBalance({
-  //     accountType: r.accountType || 'UNKNOWN',
-  //     credit: r.credit,
-  //     debit: r.debit,
-  //   }),
-  // }));
 }
 
 export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
@@ -691,13 +663,13 @@ async function getDocumentData(
   );
   if (
     !data ||
-    !('isDocuments' in data.data) ||
-    data.data.documentIds.length === 0
+    !Array.isArray(data.data.value) ||
+    data.data.value.length === 0
   ) {
     return { data: [] };
   }
 
-  const document = await getDocumentById(data.data.documentIds[0]);
+  const document = await getDocumentById(data.data.value[0]);
   if (document.classifiedType !== 'TRIAL_BALANCE') {
     throw new Error('Invalid classified type');
   }

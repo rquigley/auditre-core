@@ -34,7 +34,7 @@ export async function getCertificateTransactionDocumentData(auditId: AuditId) {
     'certificateTransactionDocumentId',
   )) as DocumentId[];
 
-  if (!documentIds) {
+  if (!documentIds || documentIds.length === 0) {
     return [];
   }
 
@@ -80,7 +80,7 @@ export async function getSBCReportData(auditId: AuditId) {
     'stockBasedCompDocumentId',
   )) as DocumentId[];
 
-  if (!documentIds) {
+  if (!documentIds || documentIds.length === 0) {
     return null;
   }
 

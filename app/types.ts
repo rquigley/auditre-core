@@ -1,3 +1,5 @@
+import { FormField } from './lib/request-types';
+
 import type { OpenAIMessage } from './lib/ai';
 import type { DocumentClassificationType } from '@/controllers/document';
 import type { AccountType } from '@/lib/finance';
@@ -149,20 +151,12 @@ export type RequestGroup =
   | 'Business operations'
   | 'Other';
 
-export type RequestDataValue =
-  | { value: string }
-  | { value: string[] }
-  | { value: boolean }
-  // We save documentIds here in addition to RequestDataDocumentTable to reflect that a change
-  // has occurred. I don't love that we're duplicating data here, but the simplicity tradeoff
-  // feels worth it.
-  | { isDocuments: true; documentIds: DocumentId[] };
 export interface RequestDataTable {
   id: Generated<RequestDataId>;
   auditId: AuditId;
   requestType: string;
   requestId: string;
-  data: RequestDataValue;
+  data: { value: FormField['defaultValue'] };
   actorUserId: UserId | null;
   createdAt: ColumnType<Date, Date | undefined, never>;
 }
