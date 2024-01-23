@@ -17,6 +17,7 @@ import type {
   NewRequestData,
   RequestData,
   RequestDataId,
+  RequestDataValue,
   UserId,
 } from '@/types';
 
@@ -55,7 +56,7 @@ export async function getDataForRequestAttribute(
   auditId: AuditId,
   requestType: string,
   requestId: string,
-): Promise<Pick<RequestData, 'id' | 'data'> | undefined> {
+) {
   return await db
     .selectFrom('requestData')
     .select(['id', 'data'])
@@ -71,7 +72,7 @@ export async function getDataForRequestAttribute2(
   auditId: AuditId,
   requestType: string,
   requestId: string,
-): Promise<DocumentId[] | unknown | undefined> {
+) {
   const res = await db
     .selectFrom('requestData')
     .select(['id', 'data'])

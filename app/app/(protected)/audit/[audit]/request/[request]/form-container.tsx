@@ -9,26 +9,30 @@ import {
   getAiDataWithLabels,
   getById as getDocumentById,
 } from '@/controllers/document';
+import { setKV } from '@/controllers/kv';
 import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestType } from '@/controllers/request-data';
 import { getCurrent } from '@/controllers/session-user';
+import { extractTrialBalance } from '@/lib/actions';
 import { BasicForm } from './basic-form';
 import { TrialBalance } from './trial-balance/trial-balance';
 
 import type { Props as BasicFormProps } from './basic-form';
 import type { Request } from '@/controllers/request';
-import type { AuditId, DocumentId, UserId } from '@/types';
+import type { AuditId, DocumentId, OrgId, UserId } from '@/types';
 
 type Props = {
   request: Request;
   userId: UserId;
   auditId: AuditId;
+  orgId: OrgId;
 };
 
 export default async function FormContainer({
   request,
   userId,
   auditId,
+  orgId,
 }: Props) {
   async function saveData(
     data: Record<string, unknown>,
@@ -47,11 +51,24 @@ export default async function FormContainer({
       actorUserId: userId,
     });
 
+    let postSaveAction;
+    if (request.id === 'trial-balance') {
+      postSaveAction = 'trial-balance';
+      await setKV({
+        orgId,
+        auditId,
+        key: 'tb-to-process-total',
+        value: -1,
+      });
+      // Kick off extraction. Don't await this
+      extractTrialBalance(auditId);
+    }
+
     revalidatePath(`/audit/${auditId}/request/${request.id}`);
     // audit-info.year is cached for the audit header
     revalidateTag('client-audit');
 
-    return data;
+    return { data, postSaveAction };
   }
 
   const { data: requestData, uninitializedFields } =
@@ -76,10 +93,8 @@ export default async function FormContainer({
   }
 
   let secondaryCmp;
-  let postSaveAction;
   if (request.id === 'trial-balance') {
     secondaryCmp = <TrialBalance auditId={auditId} />;
-    postSaveAction = 'trial-balance';
   } else {
     secondaryCmp = null;
   }
@@ -92,7 +107,6 @@ export default async function FormContainer({
         dataMatchesConfig={uninitializedFields.length === 0}
         saveData={saveData}
         documents={documents}
-        postSaveAction={postSaveAction}
       />
       {secondaryCmp ? (
         <Suspense fallback={null}>{secondaryCmp}</Suspense>

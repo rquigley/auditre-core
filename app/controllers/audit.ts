@@ -155,13 +155,14 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
     }
     requestDataObj[kebabToCamel(key)] = fieldsData;
   }
+  const year = String(requestDataObj.auditInfo?.year) || '';
 
-  const totals = await getBalancesByAccountType(auditId);
+  const totals = await getBalancesByAccountType(auditId, year);
 
   return {
     auditId,
     totals,
-    year: String(requestDataObj.auditInfo?.year) || '',
+    year,
     fiscalYearEndNoYear: `${getMonthName(
       requestDataObj.auditInfo.fiscalYearMonthEnd,
     )} ${getLastDayOfMonth(

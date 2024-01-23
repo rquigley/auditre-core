@@ -239,7 +239,7 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
     ++curRowNumber;
     ws.getCell(`A${curRowNumber}`).value = a.accountName;
     ws.getCell(`B${curRowNumber}`).value = a.balance;
-    ws.getCell(`C${curRowNumber}`).value = a.accountTypeMerged;
+    ws.getCell(`C${curRowNumber}`).value = a.accountType;
 
     ws.getCell(`C${curRowNumber}`).dataValidation = {
       type: 'list',
@@ -255,7 +255,7 @@ async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
 
     widths[0] = Math.max(widths[0], a.accountName.length);
     widths[1] = Math.max(widths[1], String(a.balance).length);
-    widths[2] = Math.max(widths[2], (a.accountTypeMerged || '').length);
+    widths[2] = Math.max(widths[2], a.accountType.length);
   }
 
   applyBGFormatting(ws, `A${firstRowNumber}:C${curRowNumber}`, 'C');

@@ -39,7 +39,6 @@ export type Props = {
       data: JSX.Element;
     }>;
   };
-  postSaveAction: string | undefined;
 };
 
 export function BasicForm({
@@ -49,7 +48,6 @@ export function BasicForm({
   dataMatchesConfig,
   saveData,
   documents,
-  postSaveAction,
 }: Props) {
   const { mutate } = useSWRConfig();
   const [numFilesUploading, setNumFilesUplading] = useState(0);
@@ -70,12 +68,12 @@ export function BasicForm({
   });
 
   async function onSubmit(data: z.infer<typeof schema>) {
-    const newData = await saveData(data);
+    const { data: newData, postSaveAction } = await saveData(data);
     reset(newData);
+
     if (postSaveAction === 'trial-balance') {
       toast.success('Trial balance saved. Extracting balances...');
 
-      await extractTrialBalance(auditId);
       mutate(`/audit/${auditId}/account-balance`);
     } else if (postSaveAction) {
       throw new Error(`Unknown postSaveAction: ${postSaveAction}`);
