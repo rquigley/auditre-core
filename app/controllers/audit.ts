@@ -5,15 +5,23 @@ import {
   getAiDataForDocumentId,
   getAllByAuditId as getAllDocumentsByAuditId,
 } from '@/controllers/document';
-import { getDataForAuditId } from '@/controllers/request-data';
 import { db } from '@/lib/db';
+import { FormField, isFormFieldFile } from '@/lib/request-types';
 import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
 import {
-  getDataForRequestAttribute,
+  getDataForAuditId,
+  getDataForRequestAttribute2,
   getStatusesForAuditId,
 } from './request-data';
 
-import type { Audit, AuditId, AuditUpdate, NewAudit, OrgId } from '@/types';
+import type {
+  Audit,
+  AuditId,
+  AuditUpdate,
+  DocumentId,
+  NewAudit,
+  OrgId,
+} from '@/types';
 
 export async function create(audit: NewAudit): Promise<Audit> {
   return await db
@@ -47,13 +55,12 @@ export async function getByIdForClient(auditId: AuditId) {
     return undefined;
   }
 
-  const yearRes = await getDataForRequestAttribute(
+  const year = (await getDataForRequestAttribute2(
     audit.id,
     'audit-info',
     'year',
-  );
-  // @ts-expect-error
-  const year = yearRes?.data?.value as string;
+  )) as string;
+
   return {
     ...audit,
     year,
@@ -89,16 +96,12 @@ export async function getAllByOrgId(
 
   const ret: AuditWithRequestCounts[] = [];
   for (const audit of audits) {
-    const yearRes = await getDataForRequestAttribute(
+    const year = (await getDataForRequestAttribute2(
       audit.id,
       'audit-info',
       'year',
-    );
+    )) as string;
 
-    let year = '';
-    if (yearRes && yearRes.data && 'value' in yearRes.data) {
-      year = (yearRes?.data?.value as string) || '';
-    }
     const statuses = await getStatusesForAuditId(audit.id);
     ret.push({
       ...audit,
@@ -132,25 +135,46 @@ export type AuditData = Record<string, any>;
 export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   const requestData = await getDataForAuditId(auditId);
   const documents = await getAllDocumentsByAuditId(auditId);
+  // console.log(documents);
 
-  let aiData: Record<string, Record<string, string | undefined>> = {};
+  let aiData: Record<string, Record<string, string>> = {};
   for (const document of documents) {
+    // TODO: slow
     aiData[document.id] = await getAiDataForDocumentId(document.id);
   }
 
-  const requestDataObj: Record<string, any> = {};
+  type RequestFieldData = Record<
+    string,
+    | FormField['defaultValue']
+    | Record<string, string>
+    | Record<string, string>[]
+  >;
+  const requestDataObj: Record<string, RequestFieldData> = {};
   for (const [key, fields] of Object.entries(requestData)) {
-    let fieldsData = fields.data;
-    for (const [field, fieldVal] of Object.entries(fieldsData)) {
-      if (fields.form[field].input === 'fileupload') {
-        // @ts-expect-error
-        const documentIds = fieldVal?.documentIds as DocumentId[];
-        documentIds.forEach((id) => {
-          fieldsData = {
-            ...fieldsData,
-            ...aiData[id],
-          };
-        });
+    let fieldsData: RequestFieldData = {};
+
+    for (const [field, fieldVal] of Object.entries(fields.data)) {
+      const config = fields.form[field];
+      if (isFormFieldFile(config)) {
+        const documentIds = fieldVal as DocumentId[];
+        if (documentIds.length === 0) {
+          fieldsData[field] = {};
+          continue;
+        }
+
+        if (config.allowMultiple) {
+          let d: Record<string, string>[] = [];
+          documentIds.forEach((id) => {
+            d.push({
+              ...aiData[id],
+            });
+          });
+          fieldsData[field] = d;
+        } else {
+          fieldsData[field] = aiData[documentIds[0]] || {};
+        }
+      } else {
+        fieldsData[field] = fields.data[field];
       }
     }
     requestDataObj[kebabToCamel(key)] = fieldsData;
@@ -164,8 +188,10 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
     totals,
     year,
     fiscalYearEndNoYear: `${getMonthName(
+      // @ts-expect-error
       requestDataObj.auditInfo.fiscalYearMonthEnd,
     )} ${getLastDayOfMonth(
+      // @ts-expect-error
       requestDataObj.auditInfo.fiscalYearMonthEnd,
       requestDataObj.auditInfo.year,
     )}`,

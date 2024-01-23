@@ -108,11 +108,7 @@ export async function getAllStatusByDocument(documentId: DocumentId) {
   }));
 }
 
-export async function getAllMostRecentByDocumentId(
-  documentId: DocumentId,
-): Promise<
-  Pick<AiQuery, 'identifier' | 'isValidated' | 'result' | 'status'>[]
-> {
+export async function getAllMostRecentByDocumentId(documentId: DocumentId) {
   // TODO This should factor in status = 'COMPLETE'
   const subQuery = db
     .selectFrom('aiQuery')

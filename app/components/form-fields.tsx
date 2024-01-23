@@ -436,25 +436,21 @@ export function FileUpload({
         });
       }
 
-      const documentIds = getValues(field).documentIds || [];
+      const documentIds = getValues(field) || [];
       let newDocumentIds;
       if (config.allowMultiple) {
         newDocumentIds = [...documentIds, id];
       } else {
         newDocumentIds = [id];
       }
-      setValue(
-        field,
-        { isDocuments: true, documentIds: newDocumentIds },
-        { shouldDirty: true, shouldTouch: true },
-      );
+      setValue(field, newDocumentIds, { shouldDirty: true, shouldTouch: true });
     } else {
       setFileState({ state: 'error', message: 'Error uploading file' });
       Sentry.captureException('Error uploading file');
     }
   }
 
-  const currentDocumentIds = getValues(field).documentIds || [];
+  const currentDocumentIds = getValues(field) || [];
 
   return (
     <>

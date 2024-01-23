@@ -62,7 +62,7 @@ describe('normalizeRequestData', () => {
       { requestId: 'foo', data: { value: 'foo value' } },
       {
         requestId: 'bar',
-        data: { isDocuments: true, documentIds: ['doc1', 'doc2'] },
+        data: { value: ['doc1', 'doc2'] },
       },
       { requestId: 'baz', data: { value: 'baz value' } },
     ];
@@ -73,19 +73,16 @@ describe('normalizeRequestData', () => {
     );
     expect(normalizedData).toEqual({
       foo: 'foo value',
-      bar: {
-        isDocuments: true,
-        documentIds: ['doc1', 'doc2'],
-      },
+      bar: ['doc1', 'doc2'],
       baz: 'baz value',
     });
   });
 
   // it('should return default values for fields with invalid data', () => {
   //   const data: Array<DataObj> = [
-  //     { requestId: 'foo', data: { value: 'foo value' }, documentIds: [] },
-  //     { requestId: 'bar', data: { value: 'bar value' }, documentIds: [] },
-  //     { requestId: 'baz', data: 'invalid data', documentIds: [] },
+  //     { requestId: 'foo', data: { value: 'foo value' } },
+  //     { requestId: 'bar', data: { value: 'bar value' } },
+  //     { requestId: 'baz', data: 'invalid data' },
   //   ];
   //   const { data: normalizedData, uninitializedFields } = normalizeRequestData(
   //     'some-rt',

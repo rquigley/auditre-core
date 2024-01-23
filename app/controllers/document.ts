@@ -78,9 +78,7 @@ export async function getById(id: DocumentId) {
     .executeTakeFirstOrThrow();
 }
 
-export async function getDocumentStatus(
-  id: DocumentId,
-): Promise<Pick<Document, 'orgId' | 'isProcessed' | 'classifiedType'>> {
+export async function getDocumentStatus(id: DocumentId) {
   return await db
     .selectFrom('document')
     .select(['orgId', 'isProcessed', 'classifiedType'])
@@ -88,8 +86,7 @@ export async function getDocumentStatus(
     .executeTakeFirstOrThrow();
 }
 
-export type OrgDocument = Pick<Document, 'id' | 'createdAt' | 'name'>;
-export async function getAllByOrgId(orgId: OrgId): Promise<OrgDocument[]> {
+export async function getAllByOrgId(orgId: OrgId) {
   return await db
     .selectFrom('document')
     .select(['id', 'createdAt', 'name'])
@@ -98,16 +95,7 @@ export async function getAllByOrgId(orgId: OrgId): Promise<OrgDocument[]> {
     .execute();
 }
 
-export type DocumentWithRequestData = Pick<
-  Document,
-  'id' | 'createdAt' | 'name' | 'key'
-> & {
-  requestType: string;
-  requestId: string;
-};
-export async function getAllByAuditId(
-  auditId: AuditId,
-): Promise<DocumentWithRequestData[]> {
+export async function getAllByAuditId(auditId: AuditId) {
   return await db
     .selectFrom('document as d')
     .innerJoin('requestDataDocument as rdd', 'd.id', 'rdd.documentId')
@@ -426,9 +414,6 @@ export async function getAiDataForDocumentId(documentId: DocumentId) {
   ).filter((row) => row.status === 'COMPLETE' && row.isValidated);
 
   const defaultQuestions = { ...documentAiQuestions[classifiedType] };
-  if (!defaultQuestions) {
-    return {};
-  }
   let res: Record<string, string> = {};
   Object.keys(defaultQuestions).forEach((identifier) => {
     const answered = answeredQuestions.find(

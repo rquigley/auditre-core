@@ -14,6 +14,7 @@ import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestType } from '@/controllers/request-data';
 import { getCurrent } from '@/controllers/session-user';
 import { extractTrialBalance } from '@/lib/actions';
+import { FormField, isFormFieldFile } from '@/lib/request-types';
 import { BasicForm } from './basic-form';
 import { TrialBalance } from './trial-balance/trial-balance';
 
@@ -34,9 +35,7 @@ export default async function FormContainer({
   auditId,
   orgId,
 }: Props) {
-  async function saveData(
-    data: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
+  async function saveData(data: Record<string, FormField['defaultValue']>) {
     'use server';
 
     const { user } = await getCurrent();
@@ -76,16 +75,11 @@ export default async function FormContainer({
 
   let documents: BasicFormProps['documents'] = {};
   for (const field of Object.keys(requestData)) {
-    // @ts-expect-error
-    if (!requestData[field]?.isDocuments) {
+    if (!isFormFieldFile(request.form[field])) {
       continue;
     }
-    const data = requestData[field] as {
-      documentIds: DocumentId[];
-      isDocuments: true;
-    };
-
-    documents[field] = data.documentIds.map((id: DocumentId) => ({
+    const fieldData = requestData[field] as DocumentId[];
+    documents[field] = fieldData.map((id: DocumentId) => ({
       id,
       doc: <AwaitDocument documentId={id} />,
       data: <DocumentData documentId={id} />,

@@ -40,7 +40,7 @@ export interface FormFieldMonth extends _FormFieldBase {
 
 export interface FormFieldCheckbox extends _FormFieldBase {
   input: 'checkbox';
-  defaultValue: readonly string[];
+  defaultValue: string[];
   items: {
     [key: string]: { name: string; description: string };
   };
@@ -50,7 +50,7 @@ export interface FormFieldFile extends _FormFieldBase {
   input: 'fileupload';
   extensions: readonly string[];
   maxFilesizeMB: number;
-  defaultValue: { isDocuments: true; documentIds: readonly string[] };
+  defaultValue: string[];
   allowMultiple?: true;
   aiClassificationType: DocumentClassificationType;
 }
@@ -109,20 +109,14 @@ function generateFormField(config: Partial<FormField>) {
       validationSchema = z.string().array().nonempty();
       break;
     case 'fileupload':
-      config.defaultValue = { isDocuments: true, documentIds: [] } as const;
+      config.defaultValue ??= [];
       if (!config.aiClassificationType) {
         throw new Error(`Fileupload 'aiClassificationType' must be provided.`);
       }
       config.maxFilesizeMB = 10;
       config.extensions ??= ['PDF', 'DOC', 'DOCX', 'XLSX', 'XLS', 'CSV'];
-      schema = z.object({
-        isDocuments: z.literal(true),
-        documentIds: z.array(z.string().optional()),
-      });
-      validationSchema = z.object({
-        isDocuments: z.literal(true),
-        documentIds: z.array(z.string()).min(1),
-      });
+      schema = z.string().array();
+      validationSchema = z.string().array().nonempty();
       break;
     case undefined:
       throw new Error(`'input' must be provided.`);
