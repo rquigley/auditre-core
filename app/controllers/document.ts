@@ -1,6 +1,8 @@
 import * as Sentry from '@sentry/nextjs';
 import dedent from 'dedent';
 import { revalidatePath } from 'next/cache';
+import { inferSchema, initParser } from 'udsv';
+import { z } from 'zod';
 
 import {
   askQuestion,
@@ -9,20 +11,13 @@ import {
 } from '@/controllers/ai-query';
 import { getById as getDocumentById } from '@/controllers/document';
 import { call, DEFAULT_OPENAI_MODEL } from '@/lib/ai';
+import { getExtractedContent, NoSuchKey } from '@/lib/aws';
 import { db } from '@/lib/db';
 import { documentAiQuestions } from '@/lib/document-ai-questions';
 import { delay, head, humanCase } from '@/lib/util';
-
-import type { OpenAIMessage } from '@/lib/ai';
-
-import '@/controllers/ai-query'; // here
-
-import { inferSchema, initParser } from 'udsv';
-import { z } from 'zod';
-
-import { getExtractedContent, NoSuchKey } from '@/lib/aws';
 import { getAuditIdsForDocument } from './request-data';
 
+import type { OpenAIMessage } from '@/lib/ai';
 import type {
   AuditId,
   Document,
@@ -66,7 +61,7 @@ export const documentClassificationTypes = {
 export type DocumentClassificationType =
   keyof typeof documentClassificationTypes;
 
-export async function create(document: NewDocument): Promise<Document> {
+export async function create(document: NewDocument) {
   return await db
     .insertInto('document')
     .values({ ...document })
@@ -74,7 +69,7 @@ export async function create(document: NewDocument): Promise<Document> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getById(id: DocumentId): Promise<Document> {
+export async function getById(id: DocumentId) {
   return await db
     .selectFrom('document')
     .where('id', '=', id)
@@ -329,7 +324,7 @@ export async function classifyDocument(
   return documentType as DocumentClassificationType;
 }
 
-export async function askDefaultQuestions(document: Document): Promise<number> {
+export async function askDefaultQuestions(document: Document) {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
   }
@@ -423,10 +418,7 @@ export async function getAiDataWithLabels(
   return res;
 }
 
-type FormattedQueryData = Record<string, string | undefined>;
-export async function getAiDataForDocumentId(
-  documentId: DocumentId,
-): Promise<FormattedQueryData> {
+export async function getAiDataForDocumentId(documentId: DocumentId) {
   const { classifiedType } = await getDocumentById(documentId);
 
   const answeredQuestions = (
@@ -437,7 +429,7 @@ export async function getAiDataForDocumentId(
   if (!defaultQuestions) {
     return {};
   }
-  let res: FormattedQueryData = {};
+  let res: Record<string, string> = {};
   Object.keys(defaultQuestions).forEach((identifier) => {
     const answered = answeredQuestions.find(
       (aq) => aq.identifier === identifier,
