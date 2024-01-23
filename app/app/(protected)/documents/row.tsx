@@ -4,9 +4,9 @@ import Link from 'next/link';
 
 import Datetime from '@/components/datetime';
 
-import type { OrgDocument } from '@/controllers/document';
+import type { Document } from './page';
 
-export default function Row({ document }: { document: OrgDocument }) {
+export default function Row({ document }: { document: Document }) {
   return (
     <tr key={document.id} className="hover:bg-gray-100">
       <td className="py-5 pl-5 pr-3 text-sm">

@@ -6,6 +6,8 @@ import { getCurrent } from '@/controllers/session-user';
 import { GenerateDocButton, GenerateExcelButton } from './generate-button';
 import Row from './row';
 
+export type AuditDocument = Awaited<ReturnType<typeof getAllByAuditId>>[number];
+
 export default async function AuditPage({
   params: { audit: id },
 }: {
