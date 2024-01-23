@@ -8,33 +8,14 @@ import { getAllByOrgId } from '@/controllers/document';
 import { getCurrent } from '@/controllers/session-user';
 import Row from './row';
 
+export type Document = Awaited<ReturnType<typeof getAllByOrgId>>[number];
+
 export default async function DocumentsPage() {
   const { user, authRedirect } = await getCurrent();
   if (!user) {
     return authRedirect();
   }
   const documents = getAllByOrgId(user.orgId);
-
-  // for (const document of documents) {
-  //   if (document.requestId) {
-  //     const request = await getRequestById(document.requestId);
-  //     const audit = await getAuditById(request.auditId, {
-  //       includeDeleted: true,
-  //     });
-  //     // @ts-expect-error
-  //     document.auditName = audit && !audit.isDeleted ? audit.name : '';
-  //     // @ts-expect-error
-  //     document.requestName = audit && !audit.isDeleted ? request.name : '';
-  //   }
-  //   // TODO: look into FF and dayjs date handling.
-  //   // @ts-expect-error
-  //   document.createdAt = document.createdAt.toString();
-  // }
-  // const clientSafeDocuments = clientSafe(documents) as ClientSafeDocument[] &
-  //   {
-  //     auditName?: string;
-  //     requestName?: string;
-  //   }[];
 
   return (
     <>

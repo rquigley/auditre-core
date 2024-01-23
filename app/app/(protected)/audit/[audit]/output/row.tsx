@@ -1,20 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
 
-import Datetime from '@/components/datetime';
 import { Document } from '@/components/document';
 import { kebabToHuman } from '@/lib/util';
 
-import type { DocumentWithRequestData } from '@/controllers/document';
+import type { AuditDocument } from './page';
 
 export default function Row({
   auditId,
   document,
 }: {
   auditId: string;
-  document: DocumentWithRequestData;
+  document: AuditDocument;
 }) {
   return (
     <div key={document.id}>
