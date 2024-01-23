@@ -85,17 +85,8 @@ function RowValOutput({ name, val }: { name: string; val: unknown }) {
   if (val === null) {
     out = 'null';
     isMissing = true;
-  } else if (
-    typeof val == 'object' &&
-    // @ts-expect-error
-    val?.isDocuments === true
-  ) {
-    // @ts-expect-error
-    if (val.documentIds.length === 0) {
-      isMissing = true;
-    }
-    // @ts-expect-error
-    out = val.documentIds.join(',');
+  } else if (typeof val == 'object') {
+    out = JSON.stringify(val);
   } else if (val === '' || val === undefined) {
     isMissing = true;
   } else {
