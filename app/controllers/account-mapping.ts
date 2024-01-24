@@ -96,6 +96,7 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
       ),
     ])
     .where('am.auditId', '=', auditId)
+    .where('am.isDeleted', '=', false)
     .groupBy(['am.id', 'am.accountName', 'am.accountType'])
     .orderBy(['am.sortIdx'])
     .execute();
@@ -112,6 +113,44 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
       accountType: r.accountType,
       credit: r.credit2,
       debit: r.debit2,
+    }),
+  }));
+}
+
+export async function getAllAccountBalancesByAuditIdAndYear(
+  auditId: AuditId,
+  year: string,
+) {
+  const data = await db
+    .selectFrom('accountMapping as am')
+    .innerJoin('accountBalance', 'accountMappingId', 'am.id')
+    .select((eb) => [
+      'am.id',
+      'am.accountName',
+      eb.fn
+        .coalesce(
+          'am.accountTypeOverride',
+          'am.accountType',
+          sql<'UNKNOWN'>`'UNKNOWN'`,
+        )
+        .as('accountType'),
+      'am.sortIdx',
+      'am.classificationScore',
+      'debit',
+      'credit',
+    ])
+    .where('am.auditId', '=', auditId)
+    .where('year', '=', year)
+    .where('am.isDeleted', '=', false)
+    .orderBy(['am.sortIdx'])
+    .execute();
+
+  return data.map((r) => ({
+    ...r,
+    balance: getBalance({
+      accountType: r.accountType,
+      credit: r.credit,
+      debit: r.debit,
     }),
   }));
 }
