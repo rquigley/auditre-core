@@ -26,29 +26,29 @@ export async function generate(auditId: AuditId) {
   const workbook = new ExcelJS.Workbook();
 
   const bsWorksheet = workbook.addWorksheet('Balance Sheet');
-
-  const statementOfOperations = workbook.addWorksheet('SOE');
+  const statementOfOperations = workbook.addWorksheet('IS');
   workbook.addWorksheet('Support---->');
   const tbWorksheet = workbook.addWorksheet(
     `Trial Balance - ${data.auditInfo.year}`,
   );
-  const accountTypeToCellMap = await addTrialBalance(
-    tbWorksheet,
-    data,
-    'current',
-  );
-
   const prevYear = dayjs(
     data.trialBalance.previousYearDocumentId.trialBalanceDate,
   ).format('YYYY');
   const tbWorksheetPrevious = workbook.addWorksheet(
     `Trial Balance - ${prevYear}`,
   );
+
+  const accountTypeToCellMap = await addTrialBalance(
+    tbWorksheet,
+    data,
+    'current',
+  );
   const accountTypeToCellMapPrev = await addTrialBalance(
     tbWorksheetPrevious,
     data,
     'previous',
   );
+
   await addBalanceSheet({
     ws: bsWorksheet,
     data,
