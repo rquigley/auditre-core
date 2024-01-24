@@ -649,7 +649,10 @@ export function parseNumber(num: string) {
   return parseFloat(String(num).replace('=', '')) || 0;
 }
 
-export async function checkDates(auditId: AuditId) {
+export async function checkDates(
+  auditId: AuditId,
+  checkForMissingFiles = true,
+) {
   const auditYear = (await getDataForRequestAttribute2(
     auditId,
     'audit-info',
@@ -667,7 +670,9 @@ export async function checkDates(auditId: AuditId) {
       identifier,
     );
     if (!data || !Array.isArray(data) || data.length === 0) {
-      errors.push(`Missing ${identifier}`);
+      if (checkForMissingFiles) {
+        errors.push(`Missing ${identifier}`);
+      }
       continue;
     }
 

@@ -19,7 +19,7 @@ export async function TrialBalance({ auditId }: { auditId: AuditId }) {
 }
 
 async function Checks({ auditId }: { auditId: AuditId }) {
-  const errors = await checkDates(auditId);
+  const errors = await checkDates(auditId, false);
   if (!errors.length) {
     return null;
   }
