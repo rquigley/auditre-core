@@ -1,7 +1,10 @@
 import dayjs from 'dayjs';
 import ExcelJS from 'exceljs';
 
-import { buildBalanceSheet } from '@/controllers/financial-statement/table';
+import {
+  buildBalanceSheet,
+  buildStatementOfOperations,
+} from '@/controllers/financial-statement/table';
 import {
   AccountType,
   AccountTypeGroup,
@@ -26,7 +29,7 @@ export async function generate(auditId: AuditId) {
   const workbook = new ExcelJS.Workbook();
 
   const bsWorksheet = workbook.addWorksheet('Balance Sheet');
-  const statementOfOperations = workbook.addWorksheet('IS');
+  const isWorksheet = workbook.addWorksheet('IS');
   workbook.addWorksheet('Support---->');
   const tbWorksheet = workbook.addWorksheet(
     `Trial Balance - ${data.auditInfo.year}`,
@@ -57,6 +60,14 @@ export async function generate(auditId: AuditId) {
     tbWorksheetPrevious,
   });
 
+  await addIncomeStatement({
+    ws: isWorksheet,
+    data,
+    accountTypeToCellMap,
+    tbWorksheet,
+    tbWorksheetPrevious,
+  });
+
   return {
     document: workbook,
     documentName: `Financial Statement - ${data.basicInfo.businessName} - ${data.auditInfo.year}.xlsx`,
@@ -79,7 +90,51 @@ async function addBalanceSheet({
   const t = await buildBalanceSheet(data);
 
   ws.addRow([data.basicInfo.businessName]);
-  ws.addRow(['Consolidated Balance Sheet']);
+  ws.addRow(['Consolidated balances sheet']);
+  ws.addRow([]);
+  ws.addRow([]);
+
+  const widths: number[] = [];
+  t.rows.forEach((row) => {
+    const { widths: rowWidths } = addTableRow({
+      ws,
+      row,
+      tbWorksheet,
+      tbWorksheetPrevious,
+      accountTypeToCellMap,
+    });
+    rowWidths.forEach((w, i) => {
+      widths[i] = Math.max(widths[i] || 0, w);
+    });
+  });
+
+  // TODO: I think this is setting the widths based on the char length of the formula,
+  // not the numbers themselves. Fake it for now.
+  // widths.forEach((w, i) => {
+  //   ws.getColumn(i + 1).width = widths[0];
+  // });
+  ws.getColumn(1).width = widths[0];
+  ws.getColumn(2).width = 17;
+  ws.getColumn(3).width = 17;
+}
+
+async function addIncomeStatement({
+  ws,
+  data,
+  accountTypeToCellMap,
+  tbWorksheet,
+  tbWorksheetPrevious,
+}: {
+  ws: ExcelJS.Worksheet;
+  data: AuditData;
+  accountTypeToCellMap: Map<AccountType, string>;
+  tbWorksheet: ExcelJS.Worksheet;
+  tbWorksheetPrevious: ExcelJS.Worksheet;
+}) {
+  const t = await buildStatementOfOperations(data);
+
+  ws.addRow([data.basicInfo.businessName]);
+  ws.addRow(['Consolidated statement of operations']);
   ws.addRow([]);
   ws.addRow([]);
 
