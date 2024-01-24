@@ -11,7 +11,7 @@ import {
 } from '@/lib/finance';
 import { isKey } from '@/lib/util';
 import { AuditId } from '@/types';
-import { getAllAccountBalancesByAuditId } from '../account-mapping';
+import { getAllAccountBalancesByAuditIdAndYear } from '../account-mapping';
 import { getAuditData } from '../audit';
 
 import type { AuditData } from '@/controllers/audit';
@@ -35,20 +35,22 @@ export async function generate(auditId: AuditId) {
   const accountTypeToCellMap = await addTrialBalance(
     tbWorksheet,
     data,
-    data.auditInfo.year,
+    'current',
   );
 
   await addBalanceSheet(bsWorksheet, data, accountTypeToCellMap, tbWorksheet);
 
-  // const prevYear = String(Number(data.auditInfo.year) - 1);
-  // const tbWorksheetPrevious = workbook.addWorksheet(
-  //   `Trial Balance - ${prevYear}`,
-  // );
-  // const accountTypeToCellMapPrev = await addTrialBalance(
-  //   tbWorksheet,
-  //   data,
-  //   prevYear,
-  // );
+  const prevYear = dayjs(
+    data.trialBalance.previousYearDocumentId.trialBalanceDate,
+  ).format('YYYY');
+  const tbWorksheetPrevious = workbook.addWorksheet(
+    `Trial Balance - ${prevYear}`,
+  );
+  const accountTypeToCellMapPrev = await addTrialBalance(
+    tbWorksheetPrevious,
+    data,
+    'previous',
+  );
 
   return {
     document: workbook,
@@ -173,14 +175,19 @@ function addTableRow(
 async function addTrialBalance(
   ws: ExcelJS.Worksheet,
   data: AuditData,
-  year: string,
+  type: 'current' | 'previous',
 ) {
   ws.addRow([data.basicInfo.businessName]);
-  ws.addRow([`Trial Balance - ${year}`]);
-  const date = dayjs(
-    data.trialBalance.currentYearDocumentIdtrialBalanceDate,
-  ).format('MMMM D, YYYY');
-  ws.addRow([`As of ${date}`]);
+  let date;
+  if (type === 'current') {
+    date = dayjs(data.trialBalance.currentYearDocumentId.trialBalanceDate);
+  } else {
+    date = dayjs(data.trialBalance.previousYearDocumentId.trialBalanceDate);
+  }
+  const year = date.format('YYYY');
+
+  ws.addRow([`Trial Balance`]);
+  ws.addRow([`As of ${date.format('MMMM D, YYYY')}`]);
   ws.addRow([]);
   ws.addRow([]);
 
@@ -255,7 +262,10 @@ async function addTrialBalance(
   widths = [10, 10, 10];
   curRowNumber = header.number;
   let firstRowNumber = curRowNumber + 1;
-  const accounts = await getAllAccountBalancesByAuditId(data.auditId);
+  const accounts = await getAllAccountBalancesByAuditIdAndYear(
+    data.auditId,
+    year,
+  );
   for (const a of accounts) {
     ++curRowNumber;
     ws.getCell(`A${curRowNumber}`).value = a.accountName;
