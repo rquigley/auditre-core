@@ -12,10 +12,7 @@ import {
   getById as getDocumentById,
   getSheetData,
 } from '@/controllers/document';
-import {
-  getDataForRequestAttribute,
-  getDataForRequestAttribute2,
-} from '@/controllers/request-data';
+import { getDataForRequestAttribute2 } from '@/controllers/request-data';
 import { call } from '@/lib/ai';
 import { businessModelTypes } from '@/lib/business-models';
 import { db, sql } from '@/lib/db';
@@ -652,24 +649,73 @@ export function parseNumber(num: string) {
   return parseFloat(String(num).replace('=', '')) || 0;
 }
 
+export async function checkDates(auditId: AuditId) {
+  const auditYear = (await getDataForRequestAttribute2(
+    auditId,
+    'audit-info',
+    'year',
+  )) as string;
+  const previousYear = String(Number(auditYear) - 1);
+  const errors = [];
+  for (const identifier of [
+    'currentYearDocumentId',
+    'previousYearDocumentId',
+  ]) {
+    const data = await getDataForRequestAttribute2(
+      auditId,
+      'trial-balance',
+      identifier,
+    );
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      errors.push(`Missing ${identifier}`);
+      continue;
+    }
+
+    const document = await getDocumentById(data[0]);
+    if (document.classifiedType !== 'TRIAL_BALANCE') {
+      throw new Error('Invalid classified type');
+    }
+
+    const aiDateRes = await pollGetByDocumentIdAndIdentifier(
+      document.id,
+      'trialBalanceDate',
+    );
+
+    if (!aiDateRes) {
+      errors.push(`Missing date for ${identifier}`);
+      continue;
+    }
+    const docYear = aiDateRes.result?.substring(0, 4);
+    if (docYear !== auditYear && identifier === 'currentYearDocumentId') {
+      errors.push(
+        `The trial balance document date (${docYear}) does not match the audit year (${auditYear})`,
+      );
+    } else if (
+      docYear !== previousYear &&
+      identifier === 'previousYearDocumentId'
+    ) {
+      errors.push(
+        `The trial balance document date (${docYear}) does not match the previous year (${previousYear})`,
+      );
+    }
+  }
+  return errors;
+}
+
 async function getDocumentData(
   auditId: AuditId,
   identifier: 'currentYearDocumentId' | 'previousYearDocumentId',
 ) {
-  const data = await getDataForRequestAttribute(
+  const data = await getDataForRequestAttribute2(
     auditId,
     'trial-balance',
     identifier,
   );
-  if (
-    !data ||
-    !Array.isArray(data.data.value) ||
-    data.data.value.length === 0
-  ) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
     return { data: [] };
   }
 
-  const document = await getDocumentById(data.data.value[0]);
+  const document = await getDocumentById(data[0]);
   if (document.classifiedType !== 'TRIAL_BALANCE') {
     throw new Error('Invalid classified type');
   }

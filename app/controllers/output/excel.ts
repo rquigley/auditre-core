@@ -29,11 +29,26 @@ export async function generate(auditId: AuditId) {
 
   const statementOfOperations = workbook.addWorksheet('SOE');
   workbook.addWorksheet('Support---->');
-  const tbWorksheet = workbook.addWorksheet('Trial Balance');
-
-  const accountTypeToCellMap = await addTrialBalance(tbWorksheet, data);
+  const tbWorksheet = workbook.addWorksheet(
+    `Trial Balance - ${data.auditInfo.year}`,
+  );
+  const accountTypeToCellMap = await addTrialBalance(
+    tbWorksheet,
+    data,
+    data.auditInfo.year,
+  );
 
   await addBalanceSheet(bsWorksheet, data, accountTypeToCellMap, tbWorksheet);
+
+  // const prevYear = String(Number(data.auditInfo.year) - 1);
+  // const tbWorksheetPrevious = workbook.addWorksheet(
+  //   `Trial Balance - ${prevYear}`,
+  // );
+  // const accountTypeToCellMapPrev = await addTrialBalance(
+  //   tbWorksheet,
+  //   data,
+  //   prevYear,
+  // );
 
   return {
     document: workbook,
@@ -155,10 +170,16 @@ function addTableRow(
   return { widths };
 }
 
-async function addTrialBalance(ws: ExcelJS.Worksheet, data: AuditData) {
+async function addTrialBalance(
+  ws: ExcelJS.Worksheet,
+  data: AuditData,
+  year: string,
+) {
   ws.addRow([data.basicInfo.businessName]);
-  ws.addRow(['Trial Balance']);
-  const date = dayjs(data.trialBalance.trialBalanceDate).format('MMMM D, YYYY');
+  ws.addRow([`Trial Balance - ${year}`]);
+  const date = dayjs(
+    data.trialBalance.currentYearDocumentIdtrialBalanceDate,
+  ).format('MMMM D, YYYY');
   ws.addRow([`As of ${date}`]);
   ws.addRow([]);
   ws.addRow([]);
