@@ -38,8 +38,6 @@ export async function generate(auditId: AuditId) {
     'current',
   );
 
-  await addBalanceSheet(bsWorksheet, data, accountTypeToCellMap, tbWorksheet);
-
   const prevYear = dayjs(
     data.trialBalance.previousYearDocumentId.trialBalanceDate,
   ).format('YYYY');
@@ -51,6 +49,13 @@ export async function generate(auditId: AuditId) {
     data,
     'previous',
   );
+  await addBalanceSheet({
+    ws: bsWorksheet,
+    data,
+    accountTypeToCellMap,
+    tbWorksheet,
+    tbWorksheetPrevious,
+  });
 
   return {
     document: workbook,
@@ -58,12 +63,19 @@ export async function generate(auditId: AuditId) {
   };
 }
 
-async function addBalanceSheet(
-  ws: ExcelJS.Worksheet,
-  data: AuditData,
-  accountTypeToCellMap: Map<AccountType, string>,
-  bsWorksheet: ExcelJS.Worksheet,
-) {
+async function addBalanceSheet({
+  ws,
+  data,
+  accountTypeToCellMap,
+  tbWorksheet,
+  tbWorksheetPrevious,
+}: {
+  ws: ExcelJS.Worksheet;
+  data: AuditData;
+  accountTypeToCellMap: Map<AccountType, string>;
+  tbWorksheet: ExcelJS.Worksheet;
+  tbWorksheetPrevious: ExcelJS.Worksheet;
+}) {
   const t = await buildBalanceSheet(data);
 
   ws.addRow([data.basicInfo.businessName]);
@@ -73,28 +85,41 @@ async function addBalanceSheet(
 
   const widths: number[] = [];
   t.rows.forEach((row) => {
-    const { widths: rowWidths } = addTableRow(
+    const { widths: rowWidths } = addTableRow({
       ws,
       row,
-      bsWorksheet,
+      tbWorksheet,
+      tbWorksheetPrevious,
       accountTypeToCellMap,
-    );
+    });
     rowWidths.forEach((w, i) => {
       widths[i] = Math.max(widths[i] || 0, w);
     });
   });
 
-  widths.forEach((w, i) => {
-    ws.getColumn(i + 1).width = widths[0];
-  });
+  // TODO: I think this is setting the widths based on the char length of the formula,
+  // not the numbers themselves. Fake it for now.
+  // widths.forEach((w, i) => {
+  //   ws.getColumn(i + 1).width = widths[0];
+  // });
+  ws.getColumn(1).width = widths[0];
+  ws.getColumn(2).width = 17;
+  ws.getColumn(3).width = 17;
 }
 
-function addTableRow(
-  ws: ExcelJS.Worksheet,
-  row: TableRow,
-  bsWorksheet: ExcelJS.Worksheet,
-  accountTypeToCellMap: Map<AccountType, string>,
-) {
+function addTableRow({
+  ws,
+  row,
+  tbWorksheet,
+  tbWorksheetPrevious,
+  accountTypeToCellMap,
+}: {
+  ws: ExcelJS.Worksheet;
+  row: TableRow;
+  tbWorksheet: ExcelJS.Worksheet;
+  tbWorksheetPrevious: ExcelJS.Worksheet;
+  accountTypeToCellMap: Map<AccountType, string>;
+}) {
   const values = row.cells.map((cell: TableCell) => {
     const val = cell.rawValue();
     if (typeof val === 'object') {
@@ -111,9 +136,16 @@ function addTableRow(
         };
       }
     }
-    if (isAccountType(row.id) && cell.column !== 0) {
+    if (isAccountType(row.id) && cell.column === 1) {
       return {
-        formula: `=ROUND(SUM('${bsWorksheet.name}'!${accountTypeToCellMap.get(
+        formula: `=ROUND(SUM('${tbWorksheet.name}'!${accountTypeToCellMap.get(
+          row.id as AccountType,
+        )}), 0)`,
+        result: 7,
+      };
+    } else if (isAccountType(row.id) && cell.column === 2) {
+      return {
+        formula: `=ROUND(SUM('${tbWorksheetPrevious.name}'!${accountTypeToCellMap.get(
           row.id as AccountType,
         )}), 0)`,
         result: 7,
@@ -157,7 +189,7 @@ function addTableRow(
       xCell.numFmt = numFmt;
     }
 
-    widths[i] = String(cell.value).length;
+    widths[cell.column] = String(cell.value).length;
   });
 
   if (row.hasTag('hide-if-zero')) {
