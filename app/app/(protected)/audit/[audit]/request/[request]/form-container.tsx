@@ -73,7 +73,7 @@ export default async function FormContainer({
   const { data: requestData, uninitializedFields } =
     await getDataForRequestType(auditId, request);
 
-  let documents: BasicFormProps['documents'] = {};
+  const documents: BasicFormProps['documents'] = {};
   for (const field of Object.keys(requestData)) {
     if (!isFormFieldFile(request.form[field])) {
       continue;
