@@ -726,14 +726,14 @@ export async function checkDates(
     const docYear = aiDateRes.result?.substring(0, 4);
     if (docYear !== auditYear && identifier === 'currentYearDocumentId') {
       errors.push(
-        `The trial balance document date (${docYear}) does not match the audit year (${auditYear})`,
+        `The audit year trial balance document date should be ${auditYear}. It is currently ${docYear}.`,
       );
     } else if (
       docYear !== previousYear &&
       identifier === 'previousYearDocumentId'
     ) {
       errors.push(
-        `The trial balance document date (${docYear}) does not match the previous year (${previousYear})`,
+        `The previous year trial balance document date should be ${previousYear}. It is currently ${docYear}.`,
       );
     }
   }
@@ -750,7 +750,7 @@ async function getDocumentData(
     identifier,
   );
   if (!data || !Array.isArray(data) || data.length === 0) {
-    return { data: [] };
+    return { data: [], year: '' };
   }
 
   const document = await getDocumentById(data[0]);
@@ -797,12 +797,25 @@ async function getDocumentData(
     });
   }
 
-  return { data: ret, date: aiDateRes };
+  return { data: ret, year: dateLiketoYear(aiDateRes?.result) };
 }
 
-export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
-  const previousYear = await getDocumentData(auditId, 'previousYearDocumentId');
-  const currentYear = await getDocumentData(auditId, 'currentYearDocumentId');
+export async function extractTrialBalance(auditId: AuditId) {
+  const previousYearData = await getDocumentData(
+    auditId,
+    'previousYearDocumentId',
+  );
+  const currentYearData = await getDocumentData(
+    auditId,
+    'currentYearDocumentId',
+  );
+
+  if (previousYearData.year === '' && currentYearData.year === '') {
+    return false;
+  }
+  if (previousYearData.year === currentYearData.year) {
+    return false;
+  }
 
   type Row = {
     debit1?: number;
@@ -811,13 +824,13 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     credit2?: number;
   };
   const data = new Map<string, Row>();
-  for (const row of previousYear.data) {
+  for (const row of previousYearData.data) {
     data.set(row.accountName, {
       debit1: row.debit,
       credit1: row.credit,
     });
   }
-  for (const row of currentYear.data) {
+  for (const row of currentYearData.data) {
     if (data.has(row.accountName)) {
       const existing = data.get(row.accountName) as Row;
       data.set(row.accountName, {
@@ -872,14 +885,14 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
 
     balances.push({
       accountMappingId: id,
-      year: dateLiketoYear(previousYear.date?.result),
+      year: previousYearData.year,
       debit: row.debit1 || 0,
       credit: row.credit1 || 0,
       currency: 'USD',
     });
     balances.push({
       accountMappingId: id,
-      year: dateLiketoYear(currentYear.date?.result),
+      year: currentYearData.year,
       debit: row.debit2 || 0,
       credit: row.credit2 || 0,
       currency: 'USD',
