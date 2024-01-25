@@ -101,7 +101,7 @@ if (process.env.LOG_QUERIES) {
           ? pc.red(`  params: ${event.query.parameters}\n`)
           : '',
         pc.red(` queryMs: ${event.queryDurationMillis}\n`),
-        pc.red(`   stack: ${prettyStack(event.error)}\n`),
+        pc.red(`   stack: ${prettyStack(event.error as Error)}\n`),
       );
     }
   };
@@ -115,11 +115,14 @@ export const db = new Kysely<Database>({
   log,
 });
 
-function prettyStack(error: any) {
+function prettyStack(error: Error) {
+  if (!error.stack) {
+    return 'Stack trace not available';
+  }
   const stack = error.stack.split('\n');
-  let lines = [];
+  const lines = [];
   while (true) {
-    let line: string = stack.pop();
+    const line = stack.pop() || '';
     if (line.indexOf('node_modules') !== -1) {
       break;
     }

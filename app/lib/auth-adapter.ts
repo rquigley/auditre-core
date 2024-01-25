@@ -181,8 +181,9 @@ export function AuthAdapter(): Adapter {
         currentOrgId = availableOrgs[0].id;
       } else if (availableOrgs.length > 1) {
         // try to find the parent org. Not comprehensive, but should work for now.
-        currentOrgId = availableOrgs.find((org) => org.parentOrgId === null)
-          ?.id;
+        currentOrgId = availableOrgs.find(
+          (org) => org.parentOrgId === null,
+        )?.id;
         if (!currentOrgId) {
           currentOrgId = availableOrgs[0].id;
         }

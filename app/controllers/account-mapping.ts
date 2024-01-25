@@ -297,9 +297,9 @@ export async function classifyTrialBalanceTypes(
       value: numClassified,
     });
     revalidatePath(`/audit/${auditId}/request/trial-balance`);
-    const aiP: Promise<any>[] = [];
+    const aiP: Array<Promise<{ numClassified: number }>> = [];
 
-    let buckets = bucket(remainingRows, 10, 20);
+    const buckets = bucket(remainingRows, 10, 20);
     const t0 = Date.now();
     console.log(
       `Classifying TB via AI, ${remainingRows.length} rows, ${buckets.length} buckets`,
@@ -492,13 +492,7 @@ async function autoClassifyTrialBalanceRows(
   };
 }
 
-function cleanRowForAI({
-  accountName,
-  context,
-}: {
-  accountName: string;
-  context: string | null;
-}) {
+function cleanRowForAI({ accountName }: { accountName: string }) {
   return accountName
     .toLowerCase()
     .replace(/^\d+\s/, '')
@@ -520,7 +514,7 @@ export async function aiClassifyTrialBalanceRows({
 }): Promise<{ numClassified: number; timeMs: number }> {
   const rowMap = new Map(rows.map((r, idx) => [idx, r.id]));
   const toAiRows = rows.map((r, idx) => {
-    let name = cleanRowForAI(r);
+    const name = cleanRowForAI(r);
 
     return [idx, name];
   });
@@ -565,7 +559,7 @@ export async function aiClassifyTrialBalanceRows({
       ${Object.entries(accountTypes)
         .filter(([aType]) => !aType.startsWith('OTHER_'))
         // .map(([aType, description]) => `- ${aType}: ${description}`)
-        .map(([aType, description]) => aType)
+        .map(([aType, _description]) => aType)
         .join('\n')}
 
       It is important to only use account types listed above! Do not make one up.
@@ -783,11 +777,11 @@ async function getDocumentData(
     // Naive, but "total" is common and we don't want it.
     .refine((val) => val.toUpperCase() !== 'TOTAL');
 
-  let ret = [];
+  const ret = [];
   for (const row of rows) {
-    let numberRaw = row[colIdxs.accountIdColumnIdx] || '';
-    let nameRaw = row[colIdxs.accountNameColumnIdx] || '';
-    let accountNameRaw = `${numberRaw}${
+    const numberRaw = row[colIdxs.accountIdColumnIdx] || '';
+    const nameRaw = row[colIdxs.accountNameColumnIdx] || '';
+    const accountNameRaw = `${numberRaw}${
       numberRaw && nameRaw ? ' - ' : ''
     }${nameRaw}`.trim();
 
@@ -816,7 +810,7 @@ export async function extractTrialBalance(auditId: AuditId): Promise<boolean> {
     debit2?: number;
     credit2?: number;
   };
-  let data = new Map<string, Row>();
+  const data = new Map<string, Row>();
   for (const row of previousYear.data) {
     data.set(row.accountName, {
       debit1: row.debit,

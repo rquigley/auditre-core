@@ -43,15 +43,14 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
   const year2 = String(Number(data.year) - 1);
   const totals2 = await getBalancesByAccountType(data.auditId, year2);
 
-  let t = new Table();
+  const t = new Table();
   t.columns = [
     {},
     { style: { numFmt: 'accounting', align: 'right' } },
     { style: { numFmt: 'accounting', align: 'right' } },
   ];
 
-  let row;
-  row = t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, year2], {
+  t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, year2], {
     id: 'date-row',
     style: { bold: true, borderBottom: 'thin' },
   });
@@ -568,7 +567,7 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
 }
 
 export function normalizeStatementOfOps(t: AccountMap) {
-  let ret = {
+  const ret = {
     opEx: {
       rAndD: t.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT'),
 
@@ -596,8 +595,8 @@ export function normalizeStatementOfOps(t: AccountMap) {
   return ret;
 }
 
-export function buildPropertyAndEquipmentLives(data: AuditData) {
-  let t = new Table();
+export function buildPropertyAndEquipmentLives(_data: AuditData) {
+  const t = new Table();
   t.columns = [{}, { style: { align: 'right' } }];
 
   t.addRow(['Asset', 'Useful life (years)'], {
@@ -642,11 +641,10 @@ export async function buildPropertyAndEquipmentNet(
 
   let totalPropertyAndEquipment = 0;
 
-  let t = new Table();
+  const t = new Table();
   t.columns = [{}, { style: { numFmt: 'accounting', align: 'right' } }];
 
-  let row;
-  row = t.addRow([data.fiscalYearEndNoYear, data.year], {
+  t.addRow([data.fiscalYearEndNoYear, data.year], {
     style: {
       bold: true,
       borderBottom: 'thin',
@@ -698,8 +696,8 @@ export async function buildPropertyAndEquipmentNet(
   return t;
 }
 
-export async function buildFVMLiabilities(data: AuditData): Promise<Table> {
-  let t = new Table();
+export async function buildFVMLiabilities(_data: AuditData): Promise<Table> {
+  const t = new Table();
   t.columns = [
     {},
     { style: { numFmt: 'currency' } },
@@ -713,14 +711,13 @@ export async function buildFVMLiabilities(data: AuditData): Promise<Table> {
     },
   });
   t.addRow(['Liabilities:', '', '', '']);
-  let row;
-  row = t.addRow(['Derivatives liability:', 123, 345, 343]);
+  const row = t.addRow(['Derivatives liability:', 'TODO', 'TODO', 'TODO']);
   row.cells[0].style = { indent: true };
   return t;
 }
 
 export async function buildFVMLiabilities2(data: AuditData): Promise<Table> {
-  let t = new Table();
+  const t = new Table();
   t.columns = [
     {},
     { style: { numFmt: 'currency' } },
@@ -745,7 +742,7 @@ export async function buildStatementOfOperations(
   data: AuditData,
 ): Promise<Table> {
   const statementOfOps = normalizeStatementOfOps(data.totals);
-  let t = new Table();
+  const t = new Table();
   t.columns = [{}, { style: { numFmt: 'accounting', align: 'right' } }];
 
   let row;
@@ -831,7 +828,7 @@ export async function buildConvertiblePreferredStock(
   const certTransactionReport = await getCertificateTransactionDocumentData(
     data.auditId,
   );
-  let t = new Table();
+  const t = new Table();
   t.columns = [
     {},
     { style: { numFmt: 'number' } },
@@ -889,7 +886,7 @@ export async function buildConvertibleToCommon(
   const certTransactionReport = await getCertificateTransactionDocumentData(
     data.auditId,
   );
-  let t = new Table();
+  const t = new Table();
   t.columns = [
     {},
     { style: { numFmt: 'accounting' } },
@@ -929,7 +926,7 @@ export async function buildCommonStockReservedForFutureIssuance(
     data.auditId,
   );
   const sbcReport = await getSBCReportData(data.auditId);
-  let t = new Table();
+  const t = new Table();
   t.columns = [{}, { style: { numFmt: 'number', align: 'right' } }];
   t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.fiscalYearEndNoYear], {
     style: {
@@ -971,7 +968,7 @@ export async function buildCommonStockReservedForFutureIssuance(
 }
 
 export async function buildIncomeTaxes(data: AuditData): Promise<Table> {
-  let t = new Table();
+  const t = new Table();
   t.columns = [
     {},
     { style: { numFmt: 'currency' } },

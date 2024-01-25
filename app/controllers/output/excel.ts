@@ -222,7 +222,10 @@ function addTableRow({
     if (cell.style.bold) {
       xCell.font = { bold: true };
     }
-    const border: any = {};
+    const border: {
+      top?: ExcelJS.Border;
+      bottom?: ExcelJS.Border;
+    } = {};
 
     if (cell.style.borderTop) {
       border.top = { style: cell.style.borderTop, color: { argb: 'FF000000' } };
@@ -330,7 +333,7 @@ async function addTrialBalance(
 
   let widths = [10, 10];
   let curRowNumber = header.number;
-  let firstAccountTypeRowNumber = curRowNumber + 1;
+  const firstAccountTypeRowNumber = curRowNumber + 1;
   for (const accountType of Object.keys(accountTypes)) {
     ++curRowNumber;
     ws.getCell(`H${curRowNumber}`).value = accountType;
@@ -342,13 +345,13 @@ async function addTrialBalance(
   }
   applyBGFormatting(ws, `H${firstAccountTypeRowNumber}:I${curRowNumber}`, 'H');
 
-  let lastAccountTypeRowNumber = curRowNumber;
+  const lastAccountTypeRowNumber = curRowNumber;
   ws.getColumn('account_types').width = widths[0] + 2;
   ws.getColumn('num_accounts').width = widths[1] + 2;
 
   widths = [10, 10, 10];
   curRowNumber = header.number;
-  let firstRowNumber = curRowNumber + 1;
+  const firstRowNumber = curRowNumber + 1;
   const accounts = await getAllAccountBalancesByAuditIdAndYear(
     data.auditId,
     year,
@@ -412,7 +415,7 @@ async function addTrialBalance(
   const groups = groupAccountTypes(accountTypes);
   const accountTypeToCellMap = new Map<AccountType, string>();
   widths = [10, 20];
-  let rowNumbers = {
+  const rowNumbers = {
     retainedEarnings: 0,
     total: {
       ASSET: 0,
@@ -594,6 +597,9 @@ function applyBGFormatting(
 //   };
 // }
 
-function isAccountType(v: any): v is AccountType {
+function isAccountType(v: string | undefined): v is AccountType {
+  if (v === undefined) {
+    return false;
+  }
   return isKey(accountTypes, v);
 }

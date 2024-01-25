@@ -145,9 +145,9 @@ export async function didExtractAndUpdateContent(document: Document) {
 
 export async function process(id: DocumentId): Promise<void> {
   try {
-    let t0 = Date.now();
+    const t0 = Date.now();
     let t1 = Date.now(); // for task-dependent timing
-    let usage = {
+    const usage = {
       extractMs: 0,
       classifyMs: 0,
       askQuestionsMs: 0,
@@ -274,7 +274,7 @@ export async function classifyDocument(
     },
   ];
 
-  let requestedModel: OpenAIModel = DEFAULT_OPENAI_MODEL;
+  const requestedModel: OpenAIModel = DEFAULT_OPENAI_MODEL;
 
   const resp = await call({
     requestedModel,
@@ -392,7 +392,7 @@ export async function getAiDataWithLabels(
     return {};
   }
 
-  let res: FormattedQueryDataWithLabels = {};
+  const res: FormattedQueryDataWithLabels = {};
   Object.keys(defaultQuestions).forEach((identifier) => {
     const answered = answeredQuestions.find(
       (aq) => aq.identifier === identifier,
@@ -414,7 +414,7 @@ export async function getAiDataForDocumentId(documentId: DocumentId) {
   ).filter((row) => row.status === 'COMPLETE' && row.isValidated);
 
   const defaultQuestions = { ...documentAiQuestions[classifiedType] };
-  let res: Record<string, string> = {};
+  const res: Record<string, string> = {};
   Object.keys(defaultQuestions).forEach((identifier) => {
     const answered = answeredQuestions.find(
       (aq) => aq.identifier === identifier,
@@ -473,7 +473,7 @@ export function getSheetData(document: Document) {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
   }
-  let sheets = document.extracted.split(PAGE_DELIMITER);
+  const sheets = document.extracted.split(PAGE_DELIMITER);
 
   return sheets.map(parseSheet).filter(Boolean);
 }
@@ -511,7 +511,7 @@ export function getColumnMap(
   schema: Schema,
   map: Record<string, RegExp | string>,
 ) {
-  let ret = Object.fromEntries(Object.keys(map).map((k) => [k, -1]));
+  const ret = Object.fromEntries(Object.keys(map).map((k) => [k, -1]));
   for (const [key, needle] of Object.entries(map)) {
     ret[key] = schema.cols.findIndex((col) =>
       col.name.toLowerCase().match(needle),
