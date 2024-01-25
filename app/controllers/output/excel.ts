@@ -34,9 +34,14 @@ export async function generate(auditId: AuditId) {
   const tbWorksheet = workbook.addWorksheet(
     `Trial Balance - ${data.auditInfo.year}`,
   );
-  const prevYear = dayjs(
+  let prevYear = dayjs(
     data.trialBalance.previousYearDocumentId.trialBalanceDate,
   ).format('YYYY');
+  if (prevYear === data.auditInfo.year) {
+    // defend against the case where the previous year is the same as the current year which
+    // throws an exception when trying to add a worksheet with the same name
+    prevYear = `${prevYear} (Previous)`;
+  }
   const tbWorksheetPrevious = workbook.addWorksheet(
     `Trial Balance - ${prevYear}`,
   );
