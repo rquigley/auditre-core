@@ -1,9 +1,15 @@
 {
-  "extends": ["next/core-web-vitals", "prettier"],
+  "extends": ["next/core-web-vitals", "plugin:@typescript-eslint/strict"],
   "rules": {
     "no-async-promise-executor": 1,
     "no-constant-binary-expression": "error",
     "no-promise-executor-return": 1,
-    "require-atomic-updates": 1
+    "require-atomic-updates": 1,
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      { "argsIgnorePattern": "^_" }
+    ],
+    "@typescript-eslint/ban-ts-comment": 0,
+    "prefer-const": "warn"
   }
 }
