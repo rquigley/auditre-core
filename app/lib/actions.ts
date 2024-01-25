@@ -451,7 +451,6 @@ export async function createOrg(
       role: 'ADMIN',
     });
 
-    console.log(res);
     revalidatePath('/org-select');
     return { message: `Added ${data.name}` };
   } catch (error) {
