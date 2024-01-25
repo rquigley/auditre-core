@@ -27,6 +27,7 @@ function SubmitButton() {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function Row({ org, action }: { org: any; action: () => void }) {
   const router = useRouter();
   return (
