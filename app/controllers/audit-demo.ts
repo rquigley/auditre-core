@@ -7,9 +7,7 @@ import { create as createDocument } from '@/controllers/document';
 import { saveRequestData } from '@/controllers/request';
 import { getDataForRequestAttribute2 } from '@/controllers/request-data';
 import {
-  AIQuestion,
   AIQuestionBasic,
-  AIQuestionCustom,
   AIQuestionJSON,
   documentAiQuestions,
 } from '@/lib/document-ai-questions';
@@ -150,14 +148,14 @@ export async function addDemoData(auditId: AuditId, actorUserId: UserId) {
     actorUserId,
     ai: {},
   });
-  let docId3 = await createDemoDocument({
+  const docId3 = await createDemoDocument({
     orgId,
     filename: 'Stock comp report.pdf',
     classifiedType: 'STOCK_BASED_COMPENSATION_REPORT',
     actorUserId,
     ai: {},
   });
-  let docId4 = await createDemoDocument({
+  const docId4 = await createDemoDocument({
     orgId,
     filename: 'Stock Plan 1.pdf',
     classifiedType: 'STOCK_PLAN',
@@ -240,13 +238,13 @@ async function createDemoDocument({
   orgId,
   filename,
   classifiedType,
-  ai,
+  ai = {},
   actorUserId,
 }: {
   orgId: OrgId;
   filename: string;
   classifiedType: DocumentClassificationType;
-  ai?: any;
+  ai: Record<string, string>;
   actorUserId: UserId;
 }) {
   const ext = extname(filename);

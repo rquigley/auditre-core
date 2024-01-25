@@ -337,7 +337,7 @@ function buildTableRow(row: Row): React.ReactNode {
             value = `${numFmt} NOT IMPLEMENTED`;
           }
         } else {
-          value = cell.value;
+          value = String(cell.value);
         }
         return (
           <td className={styles} key={idx}>

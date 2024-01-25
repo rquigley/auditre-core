@@ -64,7 +64,7 @@ export class User {
         ['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role),
       );
     }
-    const org = this.orgs.find((org) => org.id === this.orgId);
+    // const org = this.orgs.find((org) => org.id === this.orgId);
     throw new Error(`Unknown permission: ${perm}`);
   }
 

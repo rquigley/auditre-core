@@ -158,7 +158,7 @@ export async function askQuestion({
   model?: OpenAIModel;
   preProcess?: (content: string) => string;
   respondInJSON?: boolean;
-  validate?: z.ZodType<any>;
+  validate?: z.ZodTypeAny;
 }): Promise<AiQuery> {
   if (!document.extracted) {
     throw new Error('Document not extracted yet');
@@ -214,7 +214,7 @@ export async function askQuestion({
       );
     }
   } else {
-    result = message as any;
+    result = message as unknown;
   }
 
   await updateAiQuery(aiQuery.id, {

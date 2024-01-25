@@ -250,10 +250,10 @@ export function getFieldDependencies(
   field: string,
   formConfig: Record<string, FormField>,
 ) {
-  let deps = [];
+  const deps = [];
 
   while (true) {
-    let fieldConfig = formConfig[field];
+    const fieldConfig = formConfig[field];
     if (!fieldConfig) {
       throw new Error(`Field "${field}" not found in form config`);
     }
@@ -319,13 +319,16 @@ export function getValidationSchemaForId(
   data: Record<string, unknown>,
 ) {
   const request = getRequestTypeForId(id);
-  let validationSchema = { ...request.validationSchema };
+  const enabledFields = Object.keys(request.form).filter((field) =>
+    isFieldEnabled(field, request.form, data),
+  );
 
-  for (const field of Object.keys(request.form)) {
-    if (!isFieldEnabled(field, request.form, data)) {
-      delete validationSchema[field];
-    }
-  }
+  const validationSchema = Object.fromEntries(
+    Object.entries(request.validationSchema).filter(([key]) =>
+      enabledFields.includes(key),
+    ),
+  );
+
   return z.object(validationSchema);
 }
 
@@ -359,9 +362,9 @@ function generateRequestType(
   config: RequestTypeConfig,
   formConfig: RequestTypeFormConfig,
 ): RequestType {
-  let form: Record<string, FormField> = {};
-  let schemas: Record<string, ZodTypeAny> = {};
-  let validationSchema: Record<string, ZodTypeAny> = {};
+  const form: Record<string, FormField> = {};
+  const schemas: Record<string, ZodTypeAny> = {};
+  const validationSchema: Record<string, ZodTypeAny> = {};
   for (const [field, val] of Object.entries(formConfig)) {
     if (val === undefined) {
       continue;

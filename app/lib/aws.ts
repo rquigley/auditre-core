@@ -101,6 +101,7 @@ export async function streamFile({
   const client = new S3Client({ credentials: await getCredentials(), region });
   const command = new GetObjectCommand({ Bucket: bucket, Key: key });
   const resp = await client.send(command);
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const readStream = resp.Body!;
   const webStream = readStream.transformToWebStream();
   return webStream;

@@ -1,5 +1,3 @@
-import { FormField } from './request-types';
-
 export function classNames(...classes: string[]): string {
   return classes.filter(Boolean).join(' ');
 }
@@ -61,7 +59,12 @@ export function isKey<T extends object>(x: T, k: PropertyKey): k is keyof T {
 export function isFieldVisible(
   field: string,
   isVisibleA: Array<boolean>,
-  formConfig: Record<string, FormField>,
+  formConfig: Record<
+    string,
+    {
+      dependsOn?: string | { field: string; state: boolean };
+    }
+  >,
 ) {
   let isVisible = true;
   let currentField = field;

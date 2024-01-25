@@ -40,7 +40,7 @@ export interface AIQuestionBasic {
   question: string;
   model?: string;
   preProcess?: (val: string) => string;
-  validate: z.ZodType<any>;
+  validate: z.ZodTypeAny;
 }
 export interface AIQuestionJSON {
   label?: string;
@@ -49,7 +49,7 @@ export interface AIQuestionJSON {
   preProcess?: (val: string) => string;
   respondInJSON: boolean;
   // Always validate JSON repsonses
-  validate: z.ZodType<any>;
+  validate: z.ZodTypeAny;
 }
 export interface AIQuestionCustom {
   label?: string;

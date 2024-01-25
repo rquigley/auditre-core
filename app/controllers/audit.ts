@@ -119,6 +119,7 @@ export async function getAllByOrgId(
   return ret;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AuditData = Record<string, any>;
 // export type AuditData = Awaited<ReturnType<typeof getAuditData>> & {
 //   [key: string]: any;
@@ -137,7 +138,7 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   const documents = await getAllDocumentsByAuditId(auditId);
   // console.log(documents);
 
-  let aiData: Record<string, Record<string, string>> = {};
+  const aiData: Record<string, Record<string, string>> = {};
   for (const document of documents) {
     // TODO: slow
     aiData[document.id] = await getAiDataForDocumentId(document.id);
@@ -151,7 +152,7 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   >;
   const requestDataObj: Record<string, RequestFieldData> = {};
   for (const [key, fields] of Object.entries(requestData)) {
-    let fieldsData: RequestFieldData = {};
+    const fieldsData: RequestFieldData = {};
 
     for (const [field, fieldVal] of Object.entries(fields.data)) {
       const config = fields.form[field];
@@ -163,7 +164,7 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
         }
 
         if (config.allowMultiple) {
-          let d: Record<string, string>[] = [];
+          const d: Record<string, string>[] = [];
           documentIds.forEach((id) => {
             d.push({
               ...aiData[id],

@@ -109,7 +109,7 @@ export class Table {
   }
 
   addRow(
-    values: any[],
+    values: (typeof Cell.prototype._value)[],
     opts: {
       id?: string;
       tags?: string[];
@@ -153,7 +153,9 @@ export class Table {
   }
 
   addColumnCellsByTag(column: number, tag: string) {
-    let values = this.getRowsByTag(tag).map((row) => row.cells[column].value);
+    const values = this.getRowsByTag(tag).map(
+      (row) => row.cells[column].value,
+    ) as number[];
 
     return addFP(...values);
   }
@@ -198,7 +200,7 @@ export class Column {
   table: Table;
   number: number;
   style: Style = {};
-  cells: any[];
+  cells: Cell[];
 
   constructor(table: Table, number: number) {
     this.table = table;
@@ -222,7 +224,7 @@ export class Column {
 
 export class Cell {
   table: Table;
-  _value: any;
+  _value: number | string | { operation: string; args: string[] } | undefined;
   _style: Style = {};
 
   row: number;
@@ -258,7 +260,7 @@ export class Cell {
     this._style = style;
   }
 
-  set value(value: any) {
+  set value(value: typeof Cell.prototype._value) {
     this._value = value;
   }
 

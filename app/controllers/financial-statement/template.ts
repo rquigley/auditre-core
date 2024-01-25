@@ -7,7 +7,7 @@ import { getAuthorizedSharesTotal } from '../equity';
 
 import type { AuditData } from '../audit';
 
-function toDate(date: any) {
+function toDate(date: string) {
   return dayjs(date).format('MMMM D, YYYY');
 }
 
@@ -390,7 +390,7 @@ export const getPolicySections = () => [
         `;
       }
 
-      let commonStr = dedent`
+      const commonStr = dedent`
         Common Stock
         As of [${
           data.fiscalYearEnd

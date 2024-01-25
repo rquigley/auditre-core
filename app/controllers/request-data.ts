@@ -94,7 +94,7 @@ export async function getDataForAuditId(auditId: AuditId) {
     .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
     .execute();
 
-  let ret: Record<string, ReturnType<typeof normalizeRequestData>> = {};
+  const ret: Record<string, ReturnType<typeof normalizeRequestData>> = {};
   const allDefaultValues = getAllDefaultValues();
   for (const rt of Object.keys(allDefaultValues)) {
     const requestRows = rows.filter((r) => r.requestType === rt);
@@ -116,19 +116,12 @@ export function normalizeRequestData(
   data: Array<DataObj>,
 ) {
   const form = getRequestTypeForId(rt).form;
-  let dataMatchesConfig = true;
-  let uninitializedFields = [];
-
-  // First check if we've never saved data for this request type
-  if (data.length === 0) {
-    dataMatchesConfig = false;
-  }
+  const uninitializedFields = [];
 
   const ret: Record<string, FormField['defaultValue']> = {};
   for (const key of Object.keys(defaultValues)) {
     const d = data.find((r) => r.requestId === key);
     if (!d) {
-      dataMatchesConfig = false;
       uninitializedFields.push(key);
 
       ret[key] = defaultValues[key];
@@ -148,7 +141,7 @@ export function normalizeRequestData(
 export async function getStatusesForAuditId(auditId: AuditId) {
   const data = await getDataForAuditId(auditId);
 
-  let statuses: Record<string, RequestTypeStatus> = {};
+  const statuses: Record<string, RequestTypeStatus> = {};
   for (const rt of Object.keys(data)) {
     statuses[rt] = getStatusForRequestType(rt, data[rt]);
   }

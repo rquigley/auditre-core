@@ -117,10 +117,15 @@ export const {
       email,
       credentials,
     }: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       user: any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       account: any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       profile?: any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       email?: any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       credentials?: any;
     }) => {
       // oauth updates

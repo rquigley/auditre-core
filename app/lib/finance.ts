@@ -122,7 +122,7 @@ export function getGroupLabel(group: AccountTypeGroup) {
   return groupLabels[group];
 }
 export function groupAccountTypes(types: Record<string, string>) {
-  const grouped: Record<AccountTypeGroup, Record<string, any>> = {
+  const grouped: Record<AccountTypeGroup, Record<string, string>> = {
     ASSET: {},
     LIABILITY: {},
     EQUITY: {},
