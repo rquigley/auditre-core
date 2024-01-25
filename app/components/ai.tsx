@@ -22,7 +22,7 @@ export default async function AI({ document }: { document: Document }) {
     }
 
     const typedModel = model as OpenAIModel;
-    const result = await askQuestion({
+    await askQuestion({
       document,
       question: query,
       model: typedModel,

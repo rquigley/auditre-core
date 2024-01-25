@@ -4,8 +4,6 @@ import clsx from 'clsx';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-import { Header } from '@/components/header';
-
 type Props = {
   audit: { id: string; name: string; year: string };
   request0Slug: string;
@@ -25,8 +23,6 @@ export function AuditHeader(props: Props) {
     { name: 'Output', href: `/audit/${audit.id}/output` },
     // { name: 'Settings', href: `/audit/${audit.id}/settings` },
   ] as const;
-
-  const title = audit.year ? `${audit.name} (${audit.year})` : audit.name;
 
   const matchPath = tabs.find((tab) =>
     // @ts-expect-error

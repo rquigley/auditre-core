@@ -3,7 +3,7 @@
 import { Dialog, Transition } from '@headlessui/react';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Fragment, useRef, useState } from 'react';
+import { Fragment, useRef } from 'react';
 import { toast } from 'sonner';
 
 type Props = {

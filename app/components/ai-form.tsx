@@ -18,7 +18,7 @@ export default function AI({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
-    formState: { isDirty, dirtyFields },
+    formState: { isDirty },
     register,
     setValue,
     getValues,

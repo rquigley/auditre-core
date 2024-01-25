@@ -10,7 +10,7 @@ export function groupOrgs<
     children: WithChildren[];
   };
   const orgMap: { [key: string]: WithChildren } = {};
-  let ret: WithChildren[] = [];
+  const ret: WithChildren[] = [];
 
   orgs.forEach((org) => {
     orgMap[org.id] = { ...org, children: [] };

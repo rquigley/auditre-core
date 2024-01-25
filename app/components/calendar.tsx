@@ -26,14 +26,15 @@ export default function Calendar({
   onChange,
 }: {
   value: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange: (value: any) => void;
 }) {
-  let parsedValue = value
+  const parsedValue = value
     ? parseDate(value.toString().replace(/T.*/, ''))
     : undefined;
 
-  let { locale } = useLocale();
-  let state = useCalendarState({
+  const { locale } = useLocale();
+  const state = useCalendarState({
     value: parsedValue,
     visibleDuration: { months: 1 },
     locale,
@@ -43,8 +44,8 @@ export default function Calendar({
     },
   });
 
-  let ref = useRef();
-  let { calendarProps, prevButtonProps, nextButtonProps } = useCalendar(
+  const ref = useRef();
+  const { calendarProps, prevButtonProps, nextButtonProps } = useCalendar(
     {
       value: parsedValue,
     },
@@ -68,19 +69,19 @@ export default function Calendar({
 }
 // @ts-expect-error
 export function CalendarCell({ state, date, currentMonth }) {
-  let ref = useRef();
-  let { cellProps, buttonProps, isSelected, isDisabled, formattedDate } =
+  const ref = useRef();
+  const { cellProps, buttonProps, isSelected, isDisabled, formattedDate } =
     // @ts-expect-error
     useCalendarCell({ date }, state, ref);
 
-  let isOutsideMonth = !isSameMonth(currentMonth, date);
+  const isOutsideMonth = !isSameMonth(currentMonth, date);
 
   // The start and end date of the selected range will have
   // an emphasized appearance.
-  let isSelectionStart = state.highlightedRange
+  const isSelectionStart = state.highlightedRange
     ? isSameDay(date, state.highlightedRange.start)
     : isSelected;
-  let isSelectionEnd = state.highlightedRange
+  const isSelectionEnd = state.highlightedRange
     ? isSameDay(date, state.highlightedRange.end)
     : isSelected;
 
@@ -88,17 +89,17 @@ export function CalendarCell({ state, date, currentMonth }) {
   // the first day of each week, and the start date of the selection.
   // We add rounded corners on the right for the last day of the month,
   // the last day of each week, and the end date of the selection.
-  let { locale } = useLocale();
-  let dayOfWeek = getDayOfWeek(date, locale);
-  let isRoundedLeft =
+  const { locale } = useLocale();
+  const dayOfWeek = getDayOfWeek(date, locale);
+  const isRoundedLeft =
     isSelected && (isSelectionStart || dayOfWeek === 0 || date.day === 1);
-  let isRoundedRight =
+  const isRoundedRight =
     isSelected &&
     (isSelectionEnd ||
       dayOfWeek === 6 ||
       date.day === date.calendar.getDaysInMonth(date));
 
-  let { focusProps, isFocusVisible } = useFocusRing();
+  const { focusProps, isFocusVisible } = useFocusRing();
 
   return (
     <td
@@ -148,10 +149,10 @@ export function CalendarCell({ state, date, currentMonth }) {
 
 // @ts-expect-error
 export function CalendarGrid({ state, offset = {} }) {
-  let { locale } = useLocale();
-  let startDate = state.visibleRange.start.add(offset);
-  let endDate = endOfMonth(startDate);
-  let { gridProps, headerProps, weekDays } = useCalendarGrid(
+  const { locale } = useLocale();
+  const startDate = state.visibleRange.start.add(offset);
+  const endDate = endOfMonth(startDate);
+  const { gridProps, headerProps, weekDays } = useCalendarGrid(
     {
       startDate,
       // @ts-expect-error
@@ -161,7 +162,7 @@ export function CalendarGrid({ state, offset = {} }) {
   );
 
   // Get the number of weeks in the month so we can render the proper number of rows.
-  let weeksInMonth = getWeeksInMonth(startDate, locale);
+  const weeksInMonth = getWeeksInMonth(startDate, locale);
 
   return (
     <table {...gridProps} cellPadding="0" className="flex-1">
@@ -209,7 +210,7 @@ export function CalendarHeader({
   // @ts-expect-error
   nextButtonProps,
 }) {
-  let monthDateFormatter = useDateFormatter({
+  const monthDateFormatter = useDateFormatter({
     month: 'long',
     year: 'numeric',
     timeZone: state.timeZone,
@@ -256,10 +257,10 @@ export function CalendarHeader({
 
 // @ts-expect-error
 export function Button(props) {
-  let ref = useRef();
+  const ref = useRef();
   // @ts-expect-error
-  let { buttonProps } = useButton(props, ref);
-  let { focusProps, isFocusVisible } = useFocusRing();
+  const { buttonProps } = useButton(props, ref);
+  const { focusProps, isFocusVisible } = useFocusRing();
   return (
     <button
       {...mergeProps(buttonProps, focusProps)}

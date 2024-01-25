@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
 import { getCurrent } from '@/controllers/session-user';
-import { getPostAuthUrl } from '@/lib/actions';
 import LoginButton from './login-button';
 import Redirector from './redirector';
 
