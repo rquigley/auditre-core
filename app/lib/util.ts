@@ -1,3 +1,5 @@
+import { FormField } from './request-types';
+
 export function classNames(...classes: string[]): string {
   return classes.filter(Boolean).join(' ');
 }
@@ -31,36 +33,6 @@ export function delay(ms: number): Promise<void> {
 export function deepCopy<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj)) as T;
 }
-type AnyObject = {
-  [key: string]: any;
-};
-
-export function omit(
-  obj: AnyObject[] | AnyObject,
-  keysToOmit: string[],
-): AnyObject[] | AnyObject {
-  if (Array.isArray(obj)) {
-    // @ts-expect-error
-    return obj.map((item) => omit(item, keysToOmit));
-  } else if (typeof obj === 'object' && obj !== null) {
-    const newObj: AnyObject = {};
-    Object.keys(obj)
-      .filter((key) => !keysToOmit.includes(key))
-      .forEach((key) => {
-        newObj[key] = omit(obj[key], keysToOmit);
-      });
-    return newObj;
-  }
-  return obj;
-}
-
-const unsafeDbAttrs = ['orgId'];
-export function clientSafe(
-  obj: AnyObject[] | AnyObject,
-  keys = unsafeDbAttrs,
-): AnyObject[] | AnyObject {
-  return omit(obj, keys);
-}
 
 export function head(str: string, numLines: number): string {
   const lines = str.split('\n');
@@ -89,7 +61,7 @@ export function isKey<T extends object>(x: T, k: PropertyKey): k is keyof T {
 export function isFieldVisible(
   field: string,
   isVisibleA: Array<boolean>,
-  formConfig: any,
+  formConfig: Record<string, FormField>,
 ) {
   let isVisible = true;
   let currentField = field;
@@ -159,8 +131,8 @@ export function kebabToCamel(input: string) {
 }
 
 export function kebabToHuman(input: string) {
-  let lowerCaseInput = input.toLowerCase();
-  let capitalized =
+  const lowerCaseInput = input.toLowerCase();
+  const capitalized =
     lowerCaseInput.charAt(0).toUpperCase() + lowerCaseInput.slice(1);
   return capitalized.replace(/-/g, ' ');
 }
