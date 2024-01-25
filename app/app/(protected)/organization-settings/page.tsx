@@ -36,6 +36,7 @@ export default async function OrganizationSettingsPage() {
   const users = await getUsers(user.orgId);
   const invitations = await getInvitations(user.orgId);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function createInvite(prevState: any, formData: FormData) {
     'use server';
     try {
@@ -129,6 +130,7 @@ function Users({ users }: { users: User[] }) {
   );
 }
 function Invitations({ invitations }: { invitations: Invitation[] }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function deleteInvite(prevState: any, formData: FormData) {
     'use server';
     const { user } = await getCurrent();
