@@ -13,7 +13,13 @@ export default function GlobalError({ error }: { error: Error }) {
     <html>
       <body>
         {/* This is the default Next.js error component but it doesn't allow omitting the statusCode property yet. */}
-        <Error statusCode={undefined as any} />
+
+        <Error
+          statusCode={
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            undefined as any
+          }
+        />
       </body>
     </html>
   );

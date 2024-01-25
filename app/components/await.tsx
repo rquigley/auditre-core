@@ -7,7 +7,7 @@ export async function Await<T>({
   promise: Promise<T>;
   children: (result: T) => JSX.Element;
 }) {
-  let result = await promise;
+  const result = await promise;
 
   return children(result);
 }

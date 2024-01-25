@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { db, shuttingDown } from '@/lib/db';
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   if (!shuttingDown) {
     try {
       await db.selectFrom('org').limit(1).execute();

@@ -3,7 +3,7 @@ export function DescriptionLink({
   children,
 }: {
   href: string;
-  children: any;
+  children: React.ReactNode;
 }) {
   return (
     <a

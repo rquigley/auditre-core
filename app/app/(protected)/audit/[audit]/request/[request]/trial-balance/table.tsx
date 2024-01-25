@@ -74,7 +74,7 @@ export function Table({ auditId }: { auditId: AuditId }) {
   const currentSort = searchParams.get('sort') as string;
   const currentOrder = searchParams.get('order') as string;
 
-  let {
+  const {
     rows,
     isLoading,
     isProcessing,

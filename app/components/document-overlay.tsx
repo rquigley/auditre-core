@@ -133,7 +133,7 @@ function Document({
   documentId: DocumentId;
   onClose: () => void;
 }) {
-  const { document, isLoading, isError } = useDocument(documentId);
+  const { document } = useDocument(documentId);
 
   return (
     <div className="flex h-full flex-col divide-y divide-gray-200">

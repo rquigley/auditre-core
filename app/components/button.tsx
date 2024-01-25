@@ -1,6 +1,5 @@
 'use client';
 
-import { type } from 'os';
 import { PlusIcon } from '@heroicons/react/20/solid';
 
 import { Spinner } from '@/components/spinner';

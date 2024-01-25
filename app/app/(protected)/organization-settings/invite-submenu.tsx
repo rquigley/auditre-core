@@ -15,6 +15,7 @@ export default function InviteSubmenu({
 }: {
   invitation: Invitation;
   deleteInvite: (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     prevState: any,
     formData: FormData,
   ) => Promise<{ message: string }>;
@@ -73,12 +74,13 @@ function DeleteForm({
 }: {
   invitation: Invitation;
   active: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deleteInvite: any;
 }) {
   const initialState = {
     message: null,
   };
-  const [state, formAction] = useFormState(deleteInvite, initialState);
+  const [_state, formAction] = useFormState(deleteInvite, initialState);
   return (
     <form action={formAction}>
       <input type="hidden" name="inviteId" value={invitation.id} />

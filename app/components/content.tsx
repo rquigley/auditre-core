@@ -1,5 +1,3 @@
-import clsx from 'clsx';
-
 export async function Content({
   children,
   pad = false,

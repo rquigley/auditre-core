@@ -1,3 +1,4 @@
+import { Packer } from 'docx';
 import { notFound } from 'next/navigation';
 import { NextResponse } from 'next/server';
 
@@ -6,8 +7,6 @@ import { generate } from '@/controllers/output/word';
 import { getCurrent } from '@/controllers/session-user';
 
 export const dynamic = 'force-dynamic';
-
-const { Packer } = require('docx');
 
 export async function GET(
   req: Request,

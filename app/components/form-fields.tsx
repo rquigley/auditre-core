@@ -33,7 +33,9 @@ import type { DocumentId, S3File } from '@/types';
 
 type FormFieldProps = {
   field: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   register: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formState: any;
 };
 
@@ -98,7 +100,9 @@ export function DateField({
   config,
 }: FormFieldProps & {
   config: FormFieldDate;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getValues: (key: string) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setValue: (key: string, val: any, opts: any) => void;
 }) {
   const [currentDate, setCurrentDate] = useState(getValues(field));
@@ -209,12 +213,14 @@ export function Checkbox({
   formState: { errors },
   config,
 }: FormFieldProps & { config: FormFieldCheckbox }) {
-  const items = Object.keys(config.items).map((key, idx) => {
-    return { type: key, ...config.items[key] };
-  });
+  const items = Object.keys(config.items).map((key) => ({
+    ...config.items[key],
+    type: key,
+  }));
+
   return (
     <>
-      {items.map((model, idx) => (
+      {items.map((model) => (
         <label
           htmlFor={`checkbox-${model.type}`}
           key={model.type}
@@ -254,7 +260,9 @@ export function BooleanField({
   config,
 }: FormFieldProps & {
   config: FormFieldBoolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getValues: (field: string) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setValue: (key: string, val: any, opts?: any) => void;
 }) {
   const [enabled, setEnabled] = useState(getValues(field));
@@ -333,7 +341,9 @@ export function FileUpload({
   setNumFilesUplading,
 }: FormFieldProps & {
   config: FormFieldFile;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setValue: (key: string, val: any, opts: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getValues: (key?: string) => any;
   documents: { id: DocumentId; doc: JSX.Element; data: JSX.Element }[];
   resetField: (field: string) => void;
@@ -348,10 +358,15 @@ export function FileUpload({
   }, [isSubmitSuccessful, fileState]);
 
   async function uploadDocument(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files) {
+      return;
+    }
+
     setFileState({ state: 'uploading', pct: 0 });
     setNumFilesUplading((val: number) => val + 1);
 
-    const file = e.target.files?.[0]!;
+    const file = files[0];
     const filename = encodeURIComponent(file.name);
     //const fileType = encodeURIComponent(file.type);
 
@@ -404,7 +419,7 @@ export function FileUpload({
         key,
       });
 
-      const { isProcessed, classifiedType } = await getClassificationStatus(id);
+      const { classifiedType } = await getClassificationStatus(id);
 
       setNumFilesUplading((val: number) => val - 1);
 

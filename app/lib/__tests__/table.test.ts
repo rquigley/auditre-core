@@ -1,4 +1,4 @@
-import { Row, Table } from '../table';
+import { Table } from '../table';
 
 describe('Row', () => {
   test('constructor', () => {
