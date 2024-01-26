@@ -225,7 +225,7 @@ function addTableRow({
     }
 
     if (cell.style.indent) {
-      return `    ${cell.value}`;
+      return `${'    '.repeat(cell.style.indent)}${cell.value}`;
     }
     return cell.value;
   });

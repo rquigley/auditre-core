@@ -291,7 +291,10 @@ function buildTableRow(row: Row): React.ReactNode {
           'border-t border-t-slate-600': cell.style.borderTop === 'thin',
           'border-t border-double border-t-slate-600':
             cell.style.borderTop === 'double',
-          'pl-4': cell.style.indent,
+          'pl-4': cell.style.indent === 1,
+          'pl-8': cell.style.indent === 2,
+          'pl-12': cell.style.indent === 3,
+          'pl-16': cell.style.indent === 4,
           'pt-2': cell.style.padTop,
           'text-right': cell.style.align === 'right',
         });

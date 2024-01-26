@@ -367,7 +367,7 @@ function buildTableRow(row: ARRow) {
           new Paragraph({
             children: [
               new TextRun({
-                text: `${cell.style.indent ? '   ' : ''}${value}`,
+                text: `${cell.style.indent ? '   '.repeat(cell.style.indent) : ''}${value}`,
                 bold: cell.style.bold,
               }),
             ],

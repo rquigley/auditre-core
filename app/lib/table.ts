@@ -302,7 +302,7 @@ export type Style = {
   borderBottom?: 'thin' | 'double';
   borderTop?: 'thin' | 'double';
   hideCurrency?: boolean;
-  indent?: boolean;
+  indent?: number;
   numFmt?: NumFmt | { type: NumFmt; cents?: boolean };
   padTop?: boolean;
   align?: 'center' | 'left' | 'right';
