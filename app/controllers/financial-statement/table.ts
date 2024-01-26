@@ -2,7 +2,7 @@ import {
   getAccountsForCategory,
   getBalancesByAccountType,
 } from '@/controllers/account-mapping';
-import { AccountMap, groupFixedAccountsByCategories } from '@/lib/finance';
+import { groupFixedAccountsByCategories } from '@/lib/finance';
 import { Row, Table } from '@/lib/table';
 import { addFP } from '@/lib/util';
 import {
@@ -51,7 +51,7 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
   ];
 
   t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, year2], {
-    id: 'date-row',
+    id: 'date-row', // -- TODO, what is this???
     style: { bold: true, borderBottom: 'thin' },
   });
 
@@ -566,35 +566,6 @@ export async function buildBalanceSheet(data: AuditData): Promise<Table> {
   return t;
 }
 
-export function normalizeStatementOfOps(t: AccountMap) {
-  const ret = {
-    opEx: {
-      rAndD: t.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT'),
-
-      gAndA: addFP(
-        t.get('INCOME_STATEMENT_G_AND_A'),
-        t.get('INCOME_STATEMENT_SALES_AND_MARKETING'),
-      ),
-    },
-    totalOpEx: 0, // computed
-    lossFromOps: 0, // computed
-    otherIncomeExpenseNet: {
-      interestExpenseNet: t.get('INCOME_STATEMENT_INTEREST_EXPENSE'),
-      otherIncomeNet: t.get('INCOME_STATEMENT_OTHER_INCOME'),
-    },
-    totalOtherIncomeExpenseNet: 0, // computed
-    netLoss: 0, // computed
-  };
-  ret.totalOpEx = addFP(ret.opEx.rAndD, ret.opEx.gAndA);
-  ret.lossFromOps = addFP(ret.totalOpEx * -1);
-  ret.totalOtherIncomeExpenseNet = addFP(
-    ret.otherIncomeExpenseNet.interestExpenseNet,
-    ret.otherIncomeExpenseNet.otherIncomeNet,
-  );
-  ret.netLoss = addFP(ret.lossFromOps, ret.totalOtherIncomeExpenseNet);
-  return ret;
-}
-
 export function buildPropertyAndEquipmentLives(_data: AuditData) {
   const t = new Table();
   t.columns = [{}, { style: { align: 'right' } }];
@@ -741,83 +712,146 @@ export async function buildFVMLiabilities2(data: AuditData): Promise<Table> {
 export async function buildStatementOfOperations(
   data: AuditData,
 ): Promise<Table> {
-  const statementOfOps = normalizeStatementOfOps(data.totals);
-  const t = new Table();
-  t.columns = [{}, { style: { numFmt: 'accounting', align: 'right' } }];
+  const yearPrev = String(Number(data.year) - 1);
+  const totals = data.totals;
+  const totalsPrev = await getBalancesByAccountType(data.auditId, yearPrev);
 
-  let row;
-  row = t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year], {
+  const t = new Table();
+  t.columns = [
+    {},
+    { style: { numFmt: 'accounting', align: 'right' } },
+    { style: { numFmt: 'accounting', align: 'right' } },
+  ];
+
+  t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, yearPrev], {
     style: { bold: true, borderBottom: 'thin' },
   });
-  t.addRow(['Operating expenses:', ''], {
+  t.addRow(['Operating expenses:', '', ''], {
     style: {
       padTop: true,
     },
   });
 
-  let currShown = false;
-  if (statementOfOps.opEx.rAndD !== 0) {
-    row = t.addRow(['Research and development', statementOfOps.opEx.rAndD]);
-    row.cells[0].style = { indent: true };
-    currShown = true;
-  }
-  if (statementOfOps.opEx.gAndA !== 0) {
-    row = t.addRow(['General and administrative', statementOfOps.opEx.gAndA]);
-    row.cells[0].style = { indent: true };
-    if (currShown) {
-      row.cells[1].style = { hideCurrency: true };
-    } else {
-      currShown = true;
-    }
-  }
-  row = t.addRow(['Total operating expenses', statementOfOps.totalOpEx], {
-    style: {
-      borderTop: 'thin',
+  t.addRow(
+    [
+      'Research and development',
+      totals.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT'),
+      totalsPrev.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT'),
+    ],
+    {
+      tags: ['total-operating-expenses', 'hide-if-zero'],
+      cellStyle: [{ indent: true }],
     },
-  });
+  );
 
-  row = t.addRow(['Loss from operations', statementOfOps.lossFromOps]);
-  row.cells[1].style = { hideCurrency: true };
+  t.addRow(
+    [
+      'General and administrative',
+      addFP(
+        totals.get('INCOME_STATEMENT_G_AND_A'),
+        totals.get('INCOME_STATEMENT_SALES_AND_MARKETING'),
+      ),
+      addFP(
+        totalsPrev.get('INCOME_STATEMENT_G_AND_A'),
+        totalsPrev.get('INCOME_STATEMENT_SALES_AND_MARKETING'),
+      ),
+    ],
+    {
+      tags: ['total-operating-expenses', 'hide-if-zero'],
+      cellStyle: [{ indent: true }],
+    },
+  );
 
-  t.addRow(['Other income (expense), net:', ''], {
+  t.addRow(
+    [
+      'Total operating expenses',
+      { operation: 'addColumnCellsByTag', args: ['total-operating-expenses'] },
+      { operation: 'addColumnCellsByTag', args: ['total-operating-expenses'] },
+    ],
+    {
+      tags: ['total-opex'],
+      style: {
+        borderTop: 'thin',
+      },
+    },
+  );
+  t.addRow(
+    [
+      'Loss from operations',
+      { operation: 'multiplyCellTag', args: ['total-opex', -1] },
+      { operation: 'multiplyCellTag', args: ['total-opex', -1] },
+    ],
+    {
+      tags: ['net-loss'],
+    },
+  );
+
+  t.addRow(['Other income (expense), net:', '', ''], {
     style: {
       padTop: true,
     },
   });
-  if (statementOfOps.otherIncomeExpenseNet.interestExpenseNet !== 0) {
-    row = t.addRow([
+  t.addRow(
+    [
       'Interest expense, net',
-      statementOfOps.otherIncomeExpenseNet.interestExpenseNet,
-    ]);
-    row.cells[0].style = { indent: true };
-    row.cells[1].style = { hideCurrency: true };
-  }
-  if (statementOfOps.otherIncomeExpenseNet.otherIncomeNet !== 0) {
-    row = t.addRow([
+      totals.get('INCOME_STATEMENT_INTEREST_EXPENSE'),
+      totalsPrev.get('INCOME_STATEMENT_INTEREST_EXPENSE'),
+    ],
+    {
+      tags: ['total-other-income-expense-net', 'hide-if-zero'],
+      cellStyle: [{ indent: true }],
+    },
+  );
+  t.addRow(
+    [
       'Other income, net',
-      statementOfOps.otherIncomeExpenseNet.otherIncomeNet,
-    ]);
-    row.cells[0].style = { indent: true };
-    row.cells[1].style = { hideCurrency: true };
-  }
+      totals.get('INCOME_STATEMENT_OTHER_INCOME'),
+      totalsPrev.get('INCOME_STATEMENT_OTHER_INCOME'),
+    ],
+    {
+      tags: ['total-other-income-expense-net', 'hide-if-zero'],
+      cellStyle: [{ indent: true }],
+    },
+  );
   t.addRow(
     [
       'Total other income (expense), net',
-      statementOfOps.totalOtherIncomeExpenseNet,
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['total-other-income-expense-net'],
+      },
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['total-other-income-expense-net'],
+      },
     ],
     {
+      tags: ['total-other-income-expense-net-total', 'net-loss'],
       style: {
         borderTop: 'thin',
       },
     },
   );
 
-  row = t.addRow(['Net loss', statementOfOps.netLoss], {
-    style: {
-      borderTop: 'thin',
-      borderBottom: 'double',
+  t.addRow(
+    [
+      'Net loss',
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['net-loss'],
+      },
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['net-loss'],
+      },
+    ],
+    {
+      style: {
+        borderTop: 'thin',
+        borderBottom: 'double',
+      },
     },
-  });
+  );
 
   return t;
 }
