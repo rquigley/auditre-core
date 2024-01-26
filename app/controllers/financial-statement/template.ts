@@ -555,7 +555,7 @@ export const getPolicySections = () => [
       );
       let amt = '-';
       if (res) {
-        amt = ppCurrency(res.debit);
+        amt = ppCurrency(res.balance);
       }
       return `
         The Company maintains a 401(k) plan that covers substantially all of its employees.

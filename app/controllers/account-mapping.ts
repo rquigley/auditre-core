@@ -196,7 +196,7 @@ export async function getAccountByFuzzyMatch(
   accountTypeGroup: AccountTypeGroup,
   searchString: string,
 ) {
-  const res = await db
+  const row = await db
     .selectFrom('accountMapping as am')
     .innerJoin('accountBalance', 'accountMappingId', 'am.id')
     .select((eb) => [
@@ -207,7 +207,7 @@ export async function getAccountByFuzzyMatch(
           'accountType',
           sql<'UNKNOWN'>`'UNKNOWN'`,
         )
-        .as('accountTypeMerged'),
+        .as('accountType'),
       eb
         .fn<number>('similarity', ['accountName', eb.val(searchString)])
         .as('score'),
@@ -229,9 +229,20 @@ export async function getAccountByFuzzyMatch(
 
     .orderBy('score', 'desc')
     .limit(1)
-    .execute();
+    .executeTakeFirst();
 
-  return res[0];
+  if (!row) {
+    return undefined;
+  }
+
+  return {
+    ...row,
+    balance: getBalance({
+      accountType: row.accountType,
+      credit: row.credit,
+      debit: row.debit,
+    }),
+  };
 }
 
 export async function updateAccountMappingType(
@@ -602,7 +613,7 @@ export async function aiClassifyTrialBalanceRows({
   if (quickPass) {
     requestedModel = 'gpt-3.5-turbo-1106';
   } else {
-    requestedModel = 'gpt-4-1106-preview';
+    requestedModel = 'gpt-4-0125-preview';
   }
   const resp = await call({
     requestedModel,
