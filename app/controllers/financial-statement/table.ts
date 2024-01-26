@@ -80,7 +80,7 @@ export async function buildBalanceSheet(data: AuditData) {
         'hide-if-zero',
         'hide-if-less-than-5-percent',
       ],
-      cellStyle: [{ indent: true }],
+      cellStyle: [{ indent: 1 }],
     },
   );
 
@@ -98,7 +98,7 @@ export async function buildBalanceSheet(data: AuditData) {
         'hide-if-less-than-5-percent',
       ],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -119,7 +119,7 @@ export async function buildBalanceSheet(data: AuditData) {
         'hide-if-less-than-5-percent',
       ],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -140,7 +140,7 @@ export async function buildBalanceSheet(data: AuditData) {
         'hide-if-less-than-5-percent',
       ],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -252,7 +252,7 @@ export async function buildBalanceSheet(data: AuditData) {
         'hide-if-less-than-5-percent',
       ],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -272,7 +272,7 @@ export async function buildBalanceSheet(data: AuditData) {
         'hide-if-less-than-5-percent',
       ],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -292,7 +292,7 @@ export async function buildBalanceSheet(data: AuditData) {
         'hide-if-less-than-5-percent',
       ],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -312,7 +312,7 @@ export async function buildBalanceSheet(data: AuditData) {
         'hide-if-less-than-5-percent',
       ],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -328,7 +328,7 @@ export async function buildBalanceSheet(data: AuditData) {
         'hide-if-less-than-5-percent',
       ],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -449,7 +449,7 @@ export async function buildBalanceSheet(data: AuditData) {
       id: 'EQUITY_PREFERRED_STOCK',
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -465,7 +465,7 @@ export async function buildBalanceSheet(data: AuditData) {
       id: 'EQUITY_COMMON_STOCK',
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -481,7 +481,7 @@ export async function buildBalanceSheet(data: AuditData) {
       id: 'EQUITY_PAID_IN_CAPITAL',
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -497,7 +497,7 @@ export async function buildBalanceSheet(data: AuditData) {
       id: 'EQUITY_RETAINED_EARNINGS',
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -513,7 +513,7 @@ export async function buildBalanceSheet(data: AuditData) {
       id: 'EQUITY_ACCUMULATED_DEFICIT',
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [
-        { indent: true },
+        { indent: 1 },
         { hideCurrency: true },
         { hideCurrency: true },
       ],
@@ -681,7 +681,7 @@ export async function buildFVMLiabilities(_data: AuditData) {
   });
   t.addRow(['Liabilities:', '', '', '']);
   const row = t.addRow(['Derivatives liability:', 'TODO', 'TODO', 'TODO']);
-  row.cells[0].style = { indent: true };
+  row.cells[0].style = { indent: 1 };
   return t;
 }
 
@@ -736,7 +736,7 @@ export async function buildStatementOfOperations(data: AuditData) {
     ],
     {
       tags: ['total-operating-expenses', 'hide-if-zero'],
-      cellStyle: [{ indent: true }],
+      cellStyle: [{ indent: 1 }],
     },
   );
 
@@ -754,7 +754,7 @@ export async function buildStatementOfOperations(data: AuditData) {
     ],
     {
       tags: ['total-operating-expenses', 'hide-if-zero'],
-      cellStyle: [{ indent: true }],
+      cellStyle: [{ indent: 1 }],
     },
   );
 
@@ -795,7 +795,7 @@ export async function buildStatementOfOperations(data: AuditData) {
     ],
     {
       tags: ['total-other-income-expense-net', 'hide-if-zero'],
-      cellStyle: [{ indent: true }],
+      cellStyle: [{ indent: 1 }],
     },
   );
   t.addRow(
@@ -806,7 +806,7 @@ export async function buildStatementOfOperations(data: AuditData) {
     ],
     {
       tags: ['total-other-income-expense-net', 'hide-if-zero'],
-      cellStyle: [{ indent: true }],
+      cellStyle: [{ indent: 1 }],
     },
   );
   t.addRow(
