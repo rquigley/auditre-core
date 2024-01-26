@@ -194,6 +194,18 @@ function addTableRow({
           formula: `=SUM(${range})`,
           result: 7,
         };
+      } else if (val.operation === 'multiplyCellTag') {
+        const tag = val.args[0];
+        const multiplier = val.args[1];
+        const taggedRows = row.table.getRowsByTag(tag);
+        const curRow = (ws?.lastRow?.number || 0) + 1;
+        const rowOffset = curRow - row.number;
+        const range = cell.table.getAddressRange(cell, taggedRows, rowOffset);
+
+        return {
+          formula: `=SUM(${range}) * ${multiplier}`,
+          result: 7,
+        };
       }
     }
     if (isAccountType(row.id) && cell.column === 1) {
