@@ -38,7 +38,7 @@ export function filterHideIfZeroRows(rows: Row[]) {
   });
 }
 
-export async function buildBalanceSheet(data: AuditData): Promise<Table> {
+export async function buildBalanceSheet(data: AuditData) {
   const totals = data.totals;
   const year2 = String(Number(data.year) - 1);
   const totals2 = await getBalancesByAccountType(data.auditId, year2);
@@ -584,9 +584,7 @@ export function buildPropertyAndEquipmentLives(_data: AuditData) {
   return t;
 }
 
-export async function buildPropertyAndEquipmentNet(
-  data: AuditData,
-): Promise<Table> {
+export async function buildPropertyAndEquipmentNet(data: AuditData) {
   const assetCategoriesStr = data.trialBalance.fixedAssetCategories;
   let assetCategories: string[];
   try {
@@ -667,7 +665,7 @@ export async function buildPropertyAndEquipmentNet(
   return t;
 }
 
-export async function buildFVMLiabilities(_data: AuditData): Promise<Table> {
+export async function buildFVMLiabilities(_data: AuditData) {
   const t = new Table();
   t.columns = [
     {},
@@ -687,7 +685,7 @@ export async function buildFVMLiabilities(_data: AuditData): Promise<Table> {
   return t;
 }
 
-export async function buildFVMLiabilities2(data: AuditData): Promise<Table> {
+export async function buildFVMLiabilities2(data: AuditData) {
   const t = new Table();
   t.columns = [
     {},
@@ -709,9 +707,7 @@ export async function buildFVMLiabilities2(data: AuditData): Promise<Table> {
   return t;
 }
 
-export async function buildStatementOfOperations(
-  data: AuditData,
-): Promise<Table> {
+export async function buildStatementOfOperations(data: AuditData) {
   const yearPrev = String(Number(data.year) - 1);
   const totals = data.totals;
   const totalsPrev = await getBalancesByAccountType(data.auditId, yearPrev);
@@ -856,9 +852,7 @@ export async function buildStatementOfOperations(
   return t;
 }
 
-export async function buildConvertiblePreferredStock(
-  data: AuditData,
-): Promise<Table> {
+export async function buildConvertiblePreferredStock(data: AuditData) {
   const certTransactionReport = await getCertificateTransactionDocumentData(
     data.auditId,
   );
@@ -914,9 +908,7 @@ export async function buildConvertiblePreferredStock(
   return t;
 }
 
-export async function buildConvertibleToCommon(
-  data: AuditData,
-): Promise<Table> {
+export async function buildConvertibleToCommon(data: AuditData) {
   const certTransactionReport = await getCertificateTransactionDocumentData(
     data.auditId,
   );
@@ -955,7 +947,7 @@ export async function buildConvertibleToCommon(
 
 export async function buildCommonStockReservedForFutureIssuance(
   data: AuditData,
-): Promise<Table> {
+) {
   const certTransactionReport = await getCertificateTransactionDocumentData(
     data.auditId,
   );
@@ -1001,7 +993,7 @@ export async function buildCommonStockReservedForFutureIssuance(
   return t;
 }
 
-export async function buildIncomeTaxes(data: AuditData): Promise<Table> {
+export async function buildIncomeTaxes(data: AuditData) {
   const t = new Table();
   t.columns = [
     {},
