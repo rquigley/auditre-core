@@ -152,12 +152,22 @@ export class Table {
     return this.rows.filter((row) => row.tags.includes(tag));
   }
 
-  addColumnCellsByTag(column: number, tag: string) {
+  addColumnCellsByTag(column: number, args: [string]) {
+    const [tag] = args;
     const values = this.getRowsByTag(tag).map(
       (row) => row.cells[column].value,
     ) as number[];
 
     return addFP(...values);
+  }
+
+  multiplyCellTag(column: number, args: [string, number]) {
+    const [tag, multiplier] = args;
+    const values = this.getRowsByTag(tag).map(
+      (row) => row.cells[column].value,
+    ) as number[];
+
+    return addFP(...values) * multiplier;
   }
 }
 
@@ -224,7 +234,12 @@ export class Column {
 
 export class Cell {
   table: Table;
-  _value: number | string | { operation: string; args: string[] } | undefined;
+  _value:
+    | number
+    | string
+    | { operation: 'addColumnCellsByTag'; args: [string] }
+    | { operation: 'multiplyCellTag'; args: [string, number] }
+    | undefined;
   _style: Style = {};
 
   row: number;
@@ -271,7 +286,9 @@ export class Cell {
   get value() {
     if (typeof this._value === 'object' && this._value.operation) {
       if (this._value.operation === 'addColumnCellsByTag') {
-        return this.table.addColumnCellsByTag(this.column, this._value.args[0]);
+        return this.table.addColumnCellsByTag(this.column, this._value.args);
+      } else if (this._value.operation === 'multiplyCellTag') {
+        return this.table.multiplyCellTag(this.column, this._value.args);
       }
     }
     return this._value;
