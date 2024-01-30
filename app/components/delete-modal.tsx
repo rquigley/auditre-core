@@ -4,7 +4,6 @@ import { Dialog, Transition } from '@headlessui/react';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Fragment, useRef } from 'react';
-import { toast } from 'sonner';
 
 type Props = {
   toDelete: string;
@@ -83,7 +82,6 @@ export function DeleteModal(props: Props) {
                     className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
                     onClick={async () => {
                       await props.action();
-                      toast.success(`${props.toDelete} deleted`);
                       router.push(props.postActionUrl);
                     }}
                   >
