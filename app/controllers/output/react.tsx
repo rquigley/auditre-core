@@ -5,6 +5,7 @@ import { Inconsolata } from 'next/font/google';
 
 import {
   buildBalanceSheet,
+  buildCashFlows,
   buildStatementOfOperations,
   tableMap,
 } from '@/controllers/financial-statement/table';
@@ -119,9 +120,7 @@ export async function AuditPreview({
           </a>
         </h2>
 
-        {/* <table className="w-full mt-2">
-          <tbody>TODO</tbody>
-        </table> */}
+        {buildTable(await buildCashFlows(data))}
       </div>
 
       <div id="section-org" className="max-w-3xl mb-4 border rounded-md p-4">

@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 
 import {
   buildBalanceSheet,
+  buildCashFlows,
   buildStatementOfOperations,
 } from '@/controllers/financial-statement/table';
 import {
@@ -30,6 +31,7 @@ export async function generate(auditId: AuditId) {
 
   const bsWorksheet = workbook.addWorksheet('Balance Sheet');
   const isWorksheet = workbook.addWorksheet('IS');
+  const cfWorksheet = workbook.addWorksheet('CF');
   workbook.addWorksheet('Support---->');
 
   const tbNames = new Set();
@@ -67,18 +69,25 @@ export async function generate(auditId: AuditId) {
   }
 
   if (tbWorksheet1 && accountTypeToCellMap) {
-  await addBalanceSheet({
-    ws: bsWorksheet,
-    data,
-    accountTypeToCellMap,
+    await addBalanceSheet({
+      ws: bsWorksheet,
+      data,
+      accountTypeToCellMap,
       tbWorksheet: tbWorksheet1,
       tbWorksheet2,
-  });
+    });
 
-  await addIncomeStatement({
-    ws: isWorksheet,
-    data,
-    accountTypeToCellMap,
+    await addIncomeStatement({
+      ws: isWorksheet,
+      data,
+      accountTypeToCellMap,
+      tbWorksheet: tbWorksheet1,
+      tbWorksheet2,
+    });
+    await addCashFlow({
+      ws: cfWorksheet,
+      data,
+      accountTypeToCellMap,
       tbWorksheet: tbWorksheet1,
       tbWorksheet2,
     });
@@ -178,6 +187,33 @@ async function addIncomeStatement({
   ws.getColumn(3).width = 17;
 }
 
+async function addCashFlow({
+  ws,
+  data,
+  accountTypeToCellMap,
+  tbWorksheet,
+  tbWorksheet2,
+}: {
+  ws: ExcelJS.Worksheet;
+  data: AuditData;
+  accountTypeToCellMap: Map<AccountType, string>;
+  tbWorksheet: ExcelJS.Worksheet;
+  tbWorksheet2: ExcelJS.Worksheet | undefined;
+}) {
+  const t = await buildCashFlows(data);
+
+  ws.addRow([data.basicInfo.businessName]);
+  ws.addRow(['Consolidated statement of cash flows']);
+  ws.addRow([]);
+  ws.addRow([]);
+
+  const widths: number[] = [];
+  t.rows.forEach((row) => {
+    const { widths: rowWidths } = addTableRow({
+      ws,
+      row,
+      tbWorksheet,
+      tbWorksheet2,
       accountTypeToCellMap,
     });
     rowWidths.forEach((w, i) => {
