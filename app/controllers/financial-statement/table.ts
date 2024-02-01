@@ -864,6 +864,83 @@ export async function buildStatementOfOperations(data: AuditData) {
   return t;
 }
 
+export async function buildCashFlows(data: AuditData) {
+  const year2 = String(Number(data.year) - 1);
+  const totals = data.totals;
+  const totalsPrev = await getBalancesByAccountType(data.auditId, year2);
+
+  const t = new Table();
+  t.columns = [
+    {},
+    { style: { numFmt: 'accounting', align: 'right' } },
+    { style: { numFmt: 'accounting', align: 'right' } },
+  ];
+
+  t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, year2], {
+    style: { bold: true, borderBottom: 'thin' },
+  });
+  t.addRow(['Operating expenses:', '', ''], {
+    style: {
+      padTop: true,
+    },
+  });
+
+  t.addRow(['Cash flows from operating activities:', '', ''], {
+    style: {
+      bold: true,
+    },
+  });
+
+  const incomeStatementTable = await buildStatementOfOperations(data);
+  const netLossRow = incomeStatementTable.getRowById('NET-LOSS');
+  t.addRow(
+    ['Net income:', netLossRow.cells[1]?.value, netLossRow.cells[2]?.value],
+    {
+      style: {
+        indent: 1,
+      },
+    },
+  );
+  t.addRow(
+    [
+      'Adjustments to reconcile net loss to net cash used in operating activities:',
+      '',
+      '',
+    ],
+    {
+      style: {
+        indent: 2,
+      },
+    },
+  );
+
+  const stockComp = await getAccountByFuzzyMatch(
+    data.auditId,
+    data.year,
+    'INCOME_STATEMENT',
+    'stock based compensation',
+  );
+  const stockCompPrev = await getAccountByFuzzyMatch(
+    data.auditId,
+    year2,
+    'INCOME_STATEMENT',
+    'stock based compensation',
+  );
+  t.addRow(
+    [
+      'Stock-based compensation expense',
+      stockComp ? stockComp.balance : 0,
+      stockCompPrev ? stockCompPrev.balance : 0,
+    ],
+    {
+      tags: [],
+      cellStyle: [{ indent: 3 }],
+    },
+  );
+
+  return t;
+}
+
 export async function buildConvertiblePreferredStock(data: AuditData) {
   const certTransactionReport = await getCertificateTransactionDocumentData(
     data.auditId,
