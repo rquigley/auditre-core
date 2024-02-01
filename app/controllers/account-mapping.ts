@@ -702,8 +702,11 @@ export async function aiClassifyTrialBalanceRows({
   return { numClassified: toUpdate.length, timeMs: Date.now() - t0 };
 }
 
-export function parseNumber(num: string) {
-  return parseFloat(String(num).replace('=', '')) || 0;
+/**
+ * Deal with Quickbooks exports that prefix values with the "=" character.
+ */
+function parseNumber(num: string) {
+  return parseFloat(num.replace('=', '')) || 0;
 }
 
 export async function checkDates(
@@ -798,30 +801,40 @@ async function getDocumentData(
   const colIdxs = await getColIdxs(document);
 
   const accountNameSchema = z
-    .string()
-    .min(1)
-    .max(72)
-    // Naive, but "total" is common and we don't want it.
-    .refine((val) => val.toUpperCase() !== 'TOTAL');
+    .object({
+      accountName: z
+        .string()
+        .trim()
+        .min(1)
+        .max(72)
+        // Naive, but "total" is common and we don't want it.
+        .refine((val) => val.toUpperCase() !== 'TOTAL'),
+      credit: z.coerce.string(),
+      debit: z.coerce.string(),
+    })
+    .refine((val) => val.credit !== '' || val.debit !== '')
+    .transform((val) => ({
+      accountName: val.accountName,
+      credit: parseNumber(val.credit),
+      debit: parseNumber(val.debit),
+    }));
 
   const ret = [];
   for (const row of rows) {
     const numberRaw = row[colIdxs.accountIdColumnIdx] || '';
     const nameRaw = row[colIdxs.accountNameColumnIdx] || '';
-    const accountNameRaw = `${numberRaw}${
-      numberRaw && nameRaw ? ' - ' : ''
-    }${nameRaw}`.trim();
 
-    const accountNameParsed = accountNameSchema.safeParse(accountNameRaw);
-    if (!accountNameParsed.success) {
+    const parsed = accountNameSchema.safeParse({
+      accountName: `${numberRaw}${numberRaw && nameRaw ? ' - ' : ''}${nameRaw}`,
+      credit: row[colIdxs.creditColumnIdx],
+      debit: row[colIdxs.debitColumnIdx],
+    });
+
+    if (!parsed.success) {
       continue;
     }
 
-    ret.push({
-      accountName: accountNameParsed.data,
-      debit: parseNumber(row[colIdxs.debitColumnIdx]),
-      credit: parseNumber(row[colIdxs.creditColumnIdx]),
-    });
+    ret.push(parsed.data);
   }
 
   return { data: ret, year: dateLiketoYear(aiDateRes?.result) };
