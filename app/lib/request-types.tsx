@@ -474,18 +474,22 @@ export const requestTypes = [
       group: 'Accounting information',
     },
     {
-      currentYearDocumentId: {
-        label: 'Upload the audit year trial balance',
+      year1DocumentId: {
+        label: 'Upload the [YEAR] trial balance',
         description:
           'Use a consolidated trial balance if there are multiple lines of business.',
         extensions: ['XLS', 'XLSX', 'CSV'],
         input: 'fileupload',
         aiClassificationType: 'TRIAL_BALANCE',
       },
-      previousYearDocumentId: {
-        label: 'Upload the previous year trial balance',
-        description:
-          'Use a consolidated trial balance if there are multiple lines of business.',
+      year2DocumentId: {
+        label: 'Upload the [YEAR2] trial balance',
+        extensions: ['XLS', 'XLSX', 'CSV'],
+        input: 'fileupload',
+        aiClassificationType: 'TRIAL_BALANCE',
+      },
+      year3DocumentId: {
+        label: 'Upload the [YEAR3] trial balance',
         extensions: ['XLS', 'XLSX', 'CSV'],
         input: 'fileupload',
         aiClassificationType: 'TRIAL_BALANCE',

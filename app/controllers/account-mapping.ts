@@ -57,7 +57,7 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
             'debit',
             'credit',
             // account_mapping_id should be camelCase
-            sql`ROW_NUMBER() OVER (PARTITION BY account_mapping_id ORDER BY year)`.as(
+            sql`ROW_NUMBER() OVER (PARTITION BY account_mapping_id ORDER BY year DESC)`.as(
               'row_number',
             ),
           ])
@@ -94,6 +94,15 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
       sql<number>`MAX(CASE WHEN ab.row_number = 2 THEN ab.credit END)`.as(
         'credit2',
       ),
+      sql<string>`MAX(CASE WHEN ab.row_number = 3 THEN ab.year END)`.as(
+        'year3',
+      ),
+      sql<number>`MAX(CASE WHEN ab.row_number = 3 THEN ab.debit END)`.as(
+        'debit3',
+      ),
+      sql<number>`MAX(CASE WHEN ab.row_number = 3 THEN ab.credit END)`.as(
+        'credit3',
+      ),
     ])
     .where('am.auditId', '=', auditId)
     .where('am.isDeleted', '=', false)
@@ -103,16 +112,20 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
 
   return data.map((r) => ({
     ...r,
-    // Previous year is ordered first via the query
-    balancePrev: getBalance({
+    balance1: getBalance({
       accountType: r.accountType,
       credit: r.credit1,
       debit: r.debit1,
     }),
-    balance: getBalance({
+    balance2: getBalance({
       accountType: r.accountType,
       credit: r.credit2,
       debit: r.debit2,
+    }),
+    balance3: getBalance({
+      accountType: r.accountType,
+      credit: r.credit3,
+      debit: r.debit3,
     }),
   }));
 }
@@ -697,16 +710,18 @@ export async function checkDates(
   auditId: AuditId,
   checkForMissingFiles = true,
 ) {
-  const auditYear = (await getDataForRequestAttribute2(
+  const year1 = (await getDataForRequestAttribute2(
     auditId,
     'audit-info',
     'year',
   )) as string;
-  const previousYear = String(Number(auditYear) - 1);
+  const year2 = String(Number(year1) - 1);
+  const year3 = String(Number(year1) - 2);
   const errors = [];
   for (const identifier of [
-    'currentYearDocumentId',
-    'previousYearDocumentId',
+    'year1DocumentId',
+    'year2DocumentId',
+    'year3DocumentId',
   ]) {
     const data = await getDataForRequestAttribute2(
       auditId,
@@ -735,16 +750,17 @@ export async function checkDates(
       continue;
     }
     const docYear = aiDateRes.result?.substring(0, 4);
-    if (docYear !== auditYear && identifier === 'currentYearDocumentId') {
+    if (docYear !== year1 && identifier === 'year1DocumentId') {
       errors.push(
-        `The audit year trial balance document date should be ${auditYear}. It is currently ${docYear}.`,
+        `The audit year trial balance document date should be ${year1}. It is currently ${docYear}.`,
       );
-    } else if (
-      docYear !== previousYear &&
-      identifier === 'previousYearDocumentId'
-    ) {
+    } else if (docYear !== year2 && identifier === 'year2DocumentId') {
       errors.push(
-        `The previous year trial balance document date should be ${previousYear}. It is currently ${docYear}.`,
+        `The previous year trial balance document date should be ${year2}. It is currently ${docYear}.`,
+      );
+    } else if (docYear !== year3 && identifier === 'year3DocumentId') {
+      errors.push(
+        `The previous year trial balance document date should be ${year3}. It is currently ${docYear}.`,
       );
     }
   }
@@ -753,7 +769,7 @@ export async function checkDates(
 
 async function getDocumentData(
   auditId: AuditId,
-  identifier: 'currentYearDocumentId' | 'previousYearDocumentId',
+  identifier: 'year1DocumentId' | 'year2DocumentId' | 'year3DocumentId',
 ) {
   const data = await getDataForRequestAttribute2(
     auditId,
@@ -812,48 +828,32 @@ async function getDocumentData(
 }
 
 export async function extractTrialBalance(auditId: AuditId) {
-  const previousYearData = await getDocumentData(
-    auditId,
-    'previousYearDocumentId',
-  );
-  const currentYearData = await getDocumentData(
-    auditId,
-    'currentYearDocumentId',
-  );
+  const year3Data = await getDocumentData(auditId, 'year3DocumentId');
+  const year2Data = await getDocumentData(auditId, 'year2DocumentId');
+  const year1Data = await getDocumentData(auditId, 'year1DocumentId');
 
-  if (previousYearData.year === '' && currentYearData.year === '') {
+  if (year3Data.year === '' && year2Data.year === '' && year1Data.year === '') {
     return false;
   }
-  if (previousYearData.year === currentYearData.year) {
+  if (year2Data.year === year1Data.year) {
     return false;
   }
 
   type Row = {
-    debit1?: number;
-    credit1?: number;
-    debit2?: number;
-    credit2?: number;
+    year: string;
+    debit: number;
+    credit: number;
   };
-  const data = new Map<string, Row>();
-  for (const row of previousYearData.data) {
-    data.set(row.accountName, {
-      debit1: row.debit,
-      credit1: row.credit,
-    });
-  }
-  for (const row of currentYearData.data) {
-    if (data.has(row.accountName)) {
-      const existing = data.get(row.accountName) as Row;
-      data.set(row.accountName, {
-        ...existing,
-        debit2: row.debit,
-        credit2: row.credit,
+  const data = new Map<string, Row[]>();
+  for (const yearData of [year1Data, year2Data, year3Data]) {
+    for (const row of yearData.data) {
+      const balances = data.get(row.accountName) || [];
+      balances.push({
+        year: yearData.year,
+        debit: row.debit || 0,
+        credit: row.credit || 0,
       });
-    } else {
-      data.set(row.accountName, {
-        debit2: row.debit,
-        credit2: row.credit,
-      });
+      data.set(row.accountName, balances);
     }
   }
 
@@ -865,7 +865,7 @@ export async function extractTrialBalance(auditId: AuditId) {
   const toUpdate = [];
   const idsToRetain: string[] = [];
   let sortIdx = 0;
-  for (const [accountName, row] of Array.from(data)) {
+  for (const [accountName, accountBalances] of Array.from(data)) {
     sortIdx++;
     let id;
     if (existingMap.has(accountName)) {
@@ -894,20 +894,15 @@ export async function extractTrialBalance(auditId: AuditId) {
       });
     }
 
-    balances.push({
-      accountMappingId: id,
-      year: previousYearData.year,
-      debit: row.debit1 || 0,
-      credit: row.credit1 || 0,
-      currency: 'USD',
-    });
-    balances.push({
-      accountMappingId: id,
-      year: currentYearData.year,
-      debit: row.debit2 || 0,
-      credit: row.credit2 || 0,
-      currency: 'USD',
-    });
+    for (const row of accountBalances) {
+      balances.push({
+        accountMappingId: id,
+        year: row.year,
+        debit: row.debit,
+        credit: row.credit,
+        currency: 'USD',
+      });
+    }
   }
 
   // Delete balances before modifying accountMappings

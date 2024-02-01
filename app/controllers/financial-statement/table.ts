@@ -1,4 +1,7 @@
+import dayjs from 'dayjs';
+
 import {
+  getAccountByFuzzyMatch,
   getAccountsForCategory,
   getBalancesByAccountType,
 } from '@/controllers/account-mapping';
@@ -40,9 +43,13 @@ export function filterHideIfZeroRows(rows: Row[]) {
 
 export async function buildBalanceSheet(data: AuditData) {
   const totals = data.totals;
-  const year2 = String(Number(data.year) - 1);
-  const totals2 = await getBalancesByAccountType(data.auditId, year2);
 
+  const date2Str = data.trialBalance.year2DocumentId.trialBalanceDate;
+  const date2 = dayjs(date2Str);
+  const year2 = date2.format('YYYY');
+
+  const totals2 = await getBalancesByAccountType(data.auditId, year2);
+  console.log(totals);
   const t = new Table();
   t.columns = [
     {},
@@ -708,9 +715,13 @@ export async function buildFVMLiabilities2(data: AuditData) {
 }
 
 export async function buildStatementOfOperations(data: AuditData) {
-  const yearPrev = String(Number(data.year) - 1);
   const totals = data.totals;
-  const totalsPrev = await getBalancesByAccountType(data.auditId, yearPrev);
+
+  const date2Str = data.trialBalance.year2DocumentId.trialBalanceDate;
+  const date2 = dayjs(date2Str);
+  const year2 = date2.format('YYYY');
+
+  const totalsPrev = await getBalancesByAccountType(data.auditId, year2);
 
   const t = new Table();
   t.columns = [
@@ -719,7 +730,7 @@ export async function buildStatementOfOperations(data: AuditData) {
     { style: { numFmt: 'accounting', align: 'right' } },
   ];
 
-  t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, yearPrev], {
+  t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, year2], {
     style: { bold: true, borderBottom: 'thin' },
   });
   t.addRow(['Operating expenses:', '', ''], {
@@ -842,6 +853,7 @@ export async function buildStatementOfOperations(data: AuditData) {
       },
     ],
     {
+      id: 'NET-LOSS',
       style: {
         borderTop: 'thin',
         borderBottom: 'double',
