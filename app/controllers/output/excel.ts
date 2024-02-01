@@ -31,47 +31,58 @@ export async function generate(auditId: AuditId) {
   const bsWorksheet = workbook.addWorksheet('Balance Sheet');
   const isWorksheet = workbook.addWorksheet('IS');
   workbook.addWorksheet('Support---->');
-  const tbWorksheet = workbook.addWorksheet(
-    `Trial Balance - ${data.auditInfo.year}`,
-  );
-  let prevYear = dayjs(
-    data.trialBalance.previousYearDocumentId.trialBalanceDate,
-  ).format('YYYY');
-  if (prevYear === data.auditInfo.year) {
-    // defend against the case where the previous year is the same as the current year which
-    // throws an exception when trying to add a worksheet with the same name
-    prevYear = `${prevYear} (Previous)`;
+
+  const tbNames = new Set();
+  let tbWorksheet1: ExcelJS.Worksheet | undefined;
+  let tbWorksheet2: ExcelJS.Worksheet | undefined;
+  let accountTypeToCellMap: Map<AccountType, string> | undefined;
+  for (const identifier of [
+    'year1DocumentId',
+    'year2DocumentId',
+    'year3DocumentId',
+  ]) {
+    const dateStr = data.trialBalance[identifier].trialBalanceDate;
+    if (!dateStr) {
+      continue;
+    }
+    const date = dayjs(dateStr);
+    const year = date.format('YYYY');
+    let wsName = `Trial Balance - ${year}`;
+    if (tbNames.has(wsName)) {
+      // prevent worksheet name conflicts which throw
+      wsName = `${wsName} (${identifier.substring(4, 1)})`;
+    } else {
+      tbNames.add(wsName);
+    }
+
+    const tbWorksheet = workbook.addWorksheet(wsName);
+
+    const atMap = await addTrialBalance(tbWorksheet, data, date);
+    if (identifier === 'year1DocumentId') {
+      tbWorksheet1 = tbWorksheet;
+      accountTypeToCellMap = atMap;
+    } else if (identifier === 'year2DocumentId') {
+      tbWorksheet2 = tbWorksheet;
+    }
   }
-  const tbWorksheetPrevious = workbook.addWorksheet(
-    `Trial Balance - ${prevYear}`,
-  );
 
-  const accountTypeToCellMap = await addTrialBalance(
-    tbWorksheet,
-    data,
-    'current',
-  );
-  const accountTypeToCellMapPrev = await addTrialBalance(
-    tbWorksheetPrevious,
-    data,
-    'previous',
-  );
-
+  if (tbWorksheet1 && accountTypeToCellMap) {
   await addBalanceSheet({
     ws: bsWorksheet,
     data,
     accountTypeToCellMap,
-    tbWorksheet,
-    tbWorksheetPrevious,
+      tbWorksheet: tbWorksheet1,
+      tbWorksheet2,
   });
 
   await addIncomeStatement({
     ws: isWorksheet,
     data,
     accountTypeToCellMap,
-    tbWorksheet,
-    tbWorksheetPrevious,
-  });
+      tbWorksheet: tbWorksheet1,
+      tbWorksheet2,
+    });
+  }
 
   return {
     document: workbook,
@@ -84,13 +95,13 @@ async function addBalanceSheet({
   data,
   accountTypeToCellMap,
   tbWorksheet,
-  tbWorksheetPrevious,
+  tbWorksheet2,
 }: {
   ws: ExcelJS.Worksheet;
   data: AuditData;
   accountTypeToCellMap: Map<AccountType, string>;
   tbWorksheet: ExcelJS.Worksheet;
-  tbWorksheetPrevious: ExcelJS.Worksheet;
+  tbWorksheet2: ExcelJS.Worksheet | undefined;
 }) {
   const t = await buildBalanceSheet(data);
 
@@ -105,7 +116,7 @@ async function addBalanceSheet({
       ws,
       row,
       tbWorksheet,
-      tbWorksheetPrevious,
+      tbWorksheet2,
       accountTypeToCellMap,
     });
     rowWidths.forEach((w, i) => {
@@ -128,13 +139,13 @@ async function addIncomeStatement({
   data,
   accountTypeToCellMap,
   tbWorksheet,
-  tbWorksheetPrevious,
+  tbWorksheet2,
 }: {
   ws: ExcelJS.Worksheet;
   data: AuditData;
   accountTypeToCellMap: Map<AccountType, string>;
   tbWorksheet: ExcelJS.Worksheet;
-  tbWorksheetPrevious: ExcelJS.Worksheet;
+  tbWorksheet2: ExcelJS.Worksheet | undefined;
 }) {
   const t = await buildStatementOfOperations(data);
 
@@ -149,7 +160,24 @@ async function addIncomeStatement({
       ws,
       row,
       tbWorksheet,
-      tbWorksheetPrevious,
+      tbWorksheet2,
+      accountTypeToCellMap,
+    });
+    rowWidths.forEach((w, i) => {
+      widths[i] = Math.max(widths[i] || 0, w);
+    });
+  });
+
+  // TODO: I think this is setting the widths based on the char length of the formula,
+  // not the numbers themselves. Fake it for now.
+  // widths.forEach((w, i) => {
+  //   ws.getColumn(i + 1).width = widths[0];
+  // });
+  ws.getColumn(1).width = widths[0];
+  ws.getColumn(2).width = 17;
+  ws.getColumn(3).width = 17;
+}
+
       accountTypeToCellMap,
     });
     rowWidths.forEach((w, i) => {
@@ -171,13 +199,13 @@ function addTableRow({
   ws,
   row,
   tbWorksheet,
-  tbWorksheetPrevious,
+  tbWorksheet2,
   accountTypeToCellMap,
 }: {
   ws: ExcelJS.Worksheet;
   row: TableRow;
   tbWorksheet: ExcelJS.Worksheet;
-  tbWorksheetPrevious: ExcelJS.Worksheet;
+  tbWorksheet2: ExcelJS.Worksheet | undefined;
   accountTypeToCellMap: Map<AccountType, string>;
 }) {
   const values = row.cells.map((cell: TableCell) => {
@@ -215,9 +243,9 @@ function addTableRow({
         )}), 0)`,
         result: 7,
       };
-    } else if (isAccountType(row.id) && cell.column === 2) {
+    } else if (tbWorksheet2 && isAccountType(row.id) && cell.column === 2) {
       return {
-        formula: `=ROUND(SUM('${tbWorksheetPrevious.name}'!${accountTypeToCellMap.get(
+        formula: `=ROUND(SUM('${tbWorksheet2.name}'!${accountTypeToCellMap.get(
           row.id as AccountType,
         )}), 0)`,
         result: 7,
@@ -282,15 +310,10 @@ function addTableRow({
 async function addTrialBalance(
   ws: ExcelJS.Worksheet,
   data: AuditData,
-  type: 'current' | 'previous',
+  date: dayjs.Dayjs,
 ) {
   ws.addRow([data.basicInfo.businessName]);
-  let date;
-  if (type === 'current') {
-    date = dayjs(data.trialBalance.currentYearDocumentId.trialBalanceDate);
-  } else {
-    date = dayjs(data.trialBalance.previousYearDocumentId.trialBalanceDate);
-  }
+
   const year = date.format('YYYY');
 
   ws.addRow([`Trial Balance`]);

@@ -4,6 +4,7 @@ export function sortRows<
     accountType: string;
     balance1: number;
     balance2: number;
+    balance3: number;
     sortIdx: number;
   },
 >(
@@ -41,6 +42,13 @@ export function sortRows<
         return b.balance2 - a.balance2;
       } else {
         return a.balance2 - b.balance2;
+      }
+    }
+    if (currentSort === 'balance3') {
+      if (currentOrder === 'desc') {
+        return b.balance3 - a.balance3;
+      } else {
+        return a.balance3 - b.balance3;
       }
     }
     return a.sortIdx - b.sortIdx;

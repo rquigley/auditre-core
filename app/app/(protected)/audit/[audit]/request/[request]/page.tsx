@@ -27,6 +27,16 @@ export default async function RequestPage({
     return notFound();
   }
 
+  for (const field in request.form) {
+    const label = request.form[field].label;
+    if (label && label.includes('[')) {
+      request.form[field].label = label
+        .replace('[YEAR]', audit.year)
+        .replace('[YEAR2]', String(Number(audit.year) - 1))
+        .replace('[YEAR3]', String(Number(audit.year) - 2));
+    }
+  }
+
   return (
     <div className="m-8 mt-7">
       <Suspense fallback={<PageSpinner />}>

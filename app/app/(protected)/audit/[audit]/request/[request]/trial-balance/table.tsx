@@ -86,6 +86,7 @@ export function Table({ auditId }: { auditId: AuditId }) {
   const years = new Set<string>();
   let year1 = '';
   let year2 = '';
+  let year3 = '';
   const rows2 = rows.map((row) => {
     if (!year1) {
       year1 = row.year1;
@@ -93,8 +94,12 @@ export function Table({ auditId }: { auditId: AuditId }) {
     if (!year2) {
       year2 = row.year2;
     }
+    if (!year3) {
+      year3 = row.year3;
+    }
     years.add(row.year1);
     years.add(row.year2);
+    years.add(row.year3);
     return {
       ...row,
       balance1: getBalance({
@@ -106,6 +111,11 @@ export function Table({ auditId }: { auditId: AuditId }) {
         accountType: row.accountType,
         credit: row.credit2,
         debit: row.debit2,
+      }),
+      balance3: getBalance({
+        accountType: row.accountType,
+        credit: row.credit3,
+        debit: row.debit3,
       }),
     };
   });
@@ -163,6 +173,14 @@ export function Table({ auditId }: { auditId: AuditId }) {
             >
               <SortableHeader column="balance2">
                 {year2 || 'Current year'}
+              </SortableHeader>
+            </th>
+            <th
+              scope="col"
+              className="align-bottom whitespace-nowrap min-w-min px-2 py-1 text-xs font-medium"
+            >
+              <SortableHeader column="balance3">
+                {year3 || 'Current year'}
               </SortableHeader>
             </th>
           </tr>
@@ -257,6 +275,13 @@ export function Table({ auditId }: { auditId: AuditId }) {
                   className={`px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className} group-hover:font-bold`}
                 >
                   {ppCurrency(row.balance2, {
+                    cents: true,
+                  })}
+                </td>
+                <td
+                  className={`px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className} group-hover:font-bold`}
+                >
+                  {ppCurrency(row.balance3, {
                     cents: true,
                   })}
                 </td>
