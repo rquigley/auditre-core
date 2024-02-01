@@ -806,7 +806,7 @@ async function getDocumentData(
         .string()
         .trim()
         .min(1)
-        .max(72)
+        .max(256)
         // Naive, but "total" is common and we don't want it.
         .refine((val) => val.toUpperCase() !== 'TOTAL'),
       credit: z.coerce.string(),
@@ -830,11 +830,9 @@ async function getDocumentData(
       debit: row[colIdxs.debitColumnIdx],
     });
 
-    if (!parsed.success) {
-      continue;
+    if (parsed.success) {
+      ret.push(parsed.data);
     }
-
-    ret.push(parsed.data);
   }
 
   return { data: ret, year: dateLiketoYear(aiDateRes?.result) };
@@ -846,9 +844,6 @@ export async function extractTrialBalance(auditId: AuditId) {
   const year1Data = await getDocumentData(auditId, 'year1DocumentId');
 
   if (year3Data.year === '' && year2Data.year === '' && year1Data.year === '') {
-    return false;
-  }
-  if (year2Data.year === year1Data.year) {
     return false;
   }
 
@@ -881,22 +876,20 @@ export async function extractTrialBalance(auditId: AuditId) {
   for (const [accountName, accountBalances] of Array.from(data)) {
     sortIdx++;
     let id;
-    if (existingMap.has(accountName)) {
-      const existing = existingMap.get(accountName) as (typeof existingRows)[0];
+    const existing = existingMap.get(accountName);
+    if (existing) {
       id = existing.id;
-      if (existing.isDeleted) {
-        toUpdate.push(
-          db
-            .updateTable('accountMapping')
-            .set({
-              isDeleted: false,
-              sortIdx,
-            })
-            .where('id', '=', existing.id)
-            .execute(),
-        );
-        idsToRetain.push(id);
-      }
+      idsToRetain.push(id);
+      toUpdate.push(
+        db
+          .updateTable('accountMapping')
+          .set({
+            isDeleted: false,
+            sortIdx,
+          })
+          .where('id', '=', id)
+          .execute(),
+      );
     } else {
       id = uuidv7();
       toAdd.push({
@@ -929,8 +922,8 @@ export async function extractTrialBalance(auditId: AuditId) {
     await db.insertInto('accountMapping').values(toAdd).execute();
   }
   const idsToDelete = existingRows
-    .filter((r) => idsToRetain.includes(r.id) === false)
-    .map((r) => r.id);
+    .map((r) => r.id)
+    .filter((id) => !idsToRetain.includes(id));
 
   if (idsToDelete.length > 0) {
     await db
