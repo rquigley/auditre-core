@@ -274,16 +274,16 @@ function addTableRow({
     }
     if (isAccountType(row.id) && cell.column === 1) {
       return {
-        formula: `=ROUND(SUM('${tbWorksheet.name}'!${accountTypeToCellMap.get(
+        formula: `=SUM('${tbWorksheet.name}'!${accountTypeToCellMap.get(
           row.id as AccountType,
-        )}), 0)`,
+        )})`,
         result: 7,
       };
     } else if (tbWorksheet2 && isAccountType(row.id) && cell.column === 2) {
       return {
-        formula: `=ROUND(SUM('${tbWorksheet2.name}'!${accountTypeToCellMap.get(
+        formula: `=SUM('${tbWorksheet2.name}'!${accountTypeToCellMap.get(
           row.id as AccountType,
-        )}), 0)`,
+        )})`,
         result: 7,
       };
     }
