@@ -7,7 +7,7 @@ import type { AiQueryUsage, OpenAIModel } from '@/types';
 
 const openaiConfig = z.string().min(3).max(255);
 
-export const DEFAULT_OPENAI_MODEL = 'gpt-4-1106-preview';
+export const DEFAULT_OPENAI_MODEL = 'gpt-4-0125-preview';
 
 export async function askQuestion({
   question,
