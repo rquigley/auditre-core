@@ -4,6 +4,7 @@ import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as ses from 'aws-cdk-lib/aws-ses';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { GithubActionsIdentityProvider } from 'aws-cdk-github-oidc';
 
@@ -30,6 +31,10 @@ export class OpsCertificateStack extends cdk.Stack {
       assumedBy: new iam.OrganizationPrincipal('o-9u8fiprcz7'),
     });
     parentZone.grantDelegation(role);
+
+    new ses.EmailIdentity(this, 'DomainIdentity', {
+      identity: ses.Identity.publicHostedZone(parentZone),
+    });
 
     new route53.MxRecord(this, 'MainMxRecord', {
       values: [
