@@ -55,21 +55,25 @@ export class OpsAppStack extends Stack {
     super(scope, id, props);
     const isProd = props?.isProd || false;
 
-    // const repo = new ecr.Repository(this, 'Repo', {
-    //   repositoryName: 'auditre-fargate-app',
-    //   lifecycleRules: [
-    //     {
-    //       description: 'keep 5 images',
-    //       maxImageCount: 5,
-    //     },
-    //   ],
-    //   removalPolicy: RemovalPolicy.DESTROY,
-    // });
-    const repo = ecr.Repository.fromRepositoryName(
-      this,
-      'Repo',
-      'auditre-fargate-app',
-    );
+    let repo;
+    if (isProd) {
+      repo = new ecr.Repository(this, 'AppRepo', {
+        repositoryName: 'auditre-fargate-app',
+        lifecycleRules: [
+          {
+            description: 'keep 5 images',
+            maxImageCount: 5,
+          },
+        ],
+        removalPolicy: RemovalPolicy.DESTROY,
+      });
+    } else {
+      repo = ecr.Repository.fromRepositoryName(
+        this,
+        'Repo',
+        'auditre-fargate-app',
+      );
+    }
     const policy = new iam.ManagedPolicy(this, 'AppDeployIamUserPolicy', {
       managedPolicyName: 'AppDeployIamUserPolicy',
       statements: [
@@ -127,12 +131,15 @@ export class OpsAppStack extends Stack {
     let allowedOrigins;
     let autoDeleteObjects;
     let objectLockEnabled;
+    let googleClientId;
     if (isProd) {
       appDomainName = 'app.auditre.co';
       removalPolicy = RemovalPolicy.RETAIN;
       allowedOrigins = [`https://${appDomainName}`];
       autoDeleteObjects = false;
       objectLockEnabled = true;
+      googleClientId =
+        '274008686939-b2gql0d6mtbq8ma6g292hd27dpd36p3m.apps.googleusercontent.com';
     } else {
       appDomainName = 'app.ci.auditre.co';
       removalPolicy = RemovalPolicy.DESTROY;
@@ -143,13 +150,15 @@ export class OpsAppStack extends Stack {
       ];
       autoDeleteObjects = true;
       objectLockEnabled = false;
+      googleClientId =
+        '274008686939-oejqk1po6q1qd8krlcqsgk3brih10qgm.apps.googleusercontent.com';
     }
     const s3Bucket = new Bucket(this, 's3', {
       bucketName: `auditre-app-org-files-${isProd ? 'prod' : 'dev'}`,
       publicReadAccess: false,
       removalPolicy,
       enforceSSL: true,
-      versioned: isProd, // should be true for prod
+      versioned: false,
       cors: [
         {
           allowedMethods: [HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT],
@@ -277,8 +286,8 @@ export class OpsAppStack extends Stack {
 
       publicReadAccess: false,
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: RemovalPolicy.DESTROY, // NOT recommended for production code
-      autoDeleteObjects: true, // NOT recommended for production code
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
     });
 
     const db = new PostgresCluster(this, 'PostgresCluster', {
@@ -301,8 +310,8 @@ export class OpsAppStack extends Stack {
 
       publicReadAccess: false,
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: RemovalPolicy.DESTROY, // NOT recommended for production code
-      autoDeleteObjects: true, // NOT recommended for production code
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
     });
     staticAssetBucket.grantReadWrite(deployRole);
 
@@ -356,11 +365,10 @@ export class OpsAppStack extends Stack {
           // ),
           image: ecs.ContainerImage.fromEcrRepository(repo, 'latest'),
           environment: {
-            NEXT_PUBLIC_ROOT_DOMAIN: 'app.ci.auditre.co',
-            NEXTAUTH_URL: 'https://app.ci.auditre.co',
+            NEXT_PUBLIC_ROOT_DOMAIN: appDomainName,
+            NEXTAUTH_URL: `https://${appDomainName}`,
             NEXT_RUNTIME: 'nodejs',
-            GOOGLE_CLIENT_ID:
-              '274008686939-oejqk1po6q1qd8krlcqsgk3brih10qgm.apps.googleusercontent.com',
+            GOOGLE_CLIENT_ID: googleClientId,
             AWS_S3_BUCKET: s3Bucket.bucketName,
             ENVIRONMENT: 'production',
             NODE_ENV: 'production',
