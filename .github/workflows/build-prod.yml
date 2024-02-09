@@ -1,0 +1,146 @@
+name: Build and Deploy to AWS
+on:
+  push:
+    branches:
+      - prod
+    paths:
+      - 'app/**'
+      - '.github/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7 # AWS Timeouts can keep GA jobs alive
+    permissions:
+      id-token: write # needed to interact with GitHub's OIDC Token endpoint.
+      contents: read
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+        with:
+          show-progress: false
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::857535158880:role/AppDeployRole
+          aws-region: us-east-2
+
+      - name: Login to Amazon ECR Private
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: 'true'
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition fargate-node-task-defn --query taskDefinition > task-definition.json
+
+      - name: Create .env.local
+        working-directory: ./app
+        run: |
+          touch .env.local
+          echo DB_USER=${{ secrets.CI_DB_USER }} >> .env.local
+          echo DB_HOSTNAME=${{ secrets.CI_DB_HOSTNAME }} >> .env.local
+          echo DB_PASSWORD=${{ secrets.CI_DB_PASSWORD }} >> .env.local
+          echo NEXTAUTH_URL=${{ vars.CI_NEXTAUTH_URL }} >> .env.local
+          echo NEXTAUTH_SECRET=${{ secrets.CI_NEXTAUTH_SECRET }} >> .env.local
+          echo GOOGLE_CLIENT_ID=${{ secrets.CI_GOOGLE_CLIENT_ID }} >> .env.local
+          echo GOOGLE_CLIENT_SECRET=${{ secrets.CI_GOOGLE_CLIENT_SECRET }} >> .env.local
+          echo AWS_PROFILE=${{ secrets.CI_AWS_PROFILE }} >> .env.local
+          echo AWS_S3_BUCKET=${{ secrets.CI_AWS_S3_BUCKET }} >> .env.local
+          echo OPENAI_API_KEY=${{ secrets.CI_OPENAI_API_KEY }} >> .env.local
+
+      - name: Create .sentryclirc
+        working-directory: ./app
+        run: |
+          touch .sentryclirc
+          echo [auth] >> .sentryclirc
+          echo token=${{ secrets.SENTRY_AUTH_TOKEN }} >> .sentryclirc
+          echo [defaults] >> .sentryclirc
+          echo org=${{ vars.SENTRY_ORG }} >> .sentryclirc
+          echo project=app >> .sentryclirc
+
+      - name: Build image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: auditre-fargate-app
+          IMAGE_TAG: latest
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        working-directory: ./app
+        run: |
+          docker build --build-arg GITHUB_SHA=${{ github.sha }} --build-arg SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Push image to AWS
+        if: github.ref == 'refs/heads/main'
+        working-directory: ./app
+        run: |
+          docker push ${{ steps.build-image.outputs.image }}
+
+      - name: Upload _next/static to S3
+        if: github.ref == 'refs/heads/main'
+        working-directory: ./app
+        run: |
+          docker run -d --name nextjs-app-container ${{ steps.build-image.outputs.image }}
+          docker cp nextjs-app-container:/app/.next/static ./app_static_assets
+          docker stop nextjs-app-container
+          aws s3 sync ./app_static_assets s3://auditre-app-static-assets-dev/_next/static --cache-control "max-age=31536000,public,immutable"
+          aws s3 sync ./public/img s3://auditre-app-static-assets-dev/img --cache-control "max-age=31536000,public,immutable"
+
+      - name: Fill in the new image ID in the AWS ECS task definition
+        if: github.ref == 'refs/heads/main'
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: nodejs-app-container
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Upload DB migrations to S3
+        if: github.ref == 'refs/heads/main'
+        working-directory: ./app
+        run: |
+          aws s3 sync ./migrations s3://auditre-app-db-migrations-dev/migrations
+
+      - name: Run any db migrations
+        if: github.ref == 'refs/heads/main'
+        run: |
+          aws lambda invoke --function-name db-migrate output.json
+
+      - name: Deploy AWS ECS task definition
+        if: github.ref == 'refs/heads/main'
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: fargate-node-service-v2
+          cluster: fargate-node-cluster
+          # TODO: use AWS alerting rather than GitHub actions
+          # wait-for-service-stability: true
+
+      - name: Post to a Slack channel
+        if: github.ref == 'refs/heads/main'
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          # Slack channel id, channel name, or user id to post message.
+          # See also: https://api.slack.com/methods/chat.postMessage#channels
+          channel-id: 'deploys'
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
