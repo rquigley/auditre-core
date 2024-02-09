@@ -104,7 +104,12 @@ export function Navbar({
                   alt="AuditRe"
                   className="si size-5"
                 />
-                <div className="ml-2 text-sm text-gray-600 whitespace-nowrap">
+                <div
+                  className={clsx(
+                    orgName.length > 18 ? 'text-xs' : 'text-sm',
+                    'ml-2 text-gray-600 whitespace-nowrap',
+                  )}
+                >
                   {orgName}
                 </div>
               </Menu.Button>
@@ -116,16 +121,20 @@ export function Navbar({
             </Menu>
             <Menu as="div" className="relative">
               <Menu.Button className="p-3 hover:bg-gray-50">
-                {userImage && (
-                  <div className="size-5 rounded-full bg-gray-50 overflow-hidden">
+                <div className="size-5 rounded-full bg-gray-200 overflow-hidden flex justify-center items-center">
+                  {userImage ? (
                     <Image
                       width="36"
                       height="36"
                       src={userImage}
                       alt={userName || ''}
                     />
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-xs text-slate-800">
+                      {userName?.charAt(0)}
+                    </div>
+                  )}
+                </div>
                 <span className="sr-only">Your profile</span>
               </Menu.Button>
               <AccountMenuItems />
