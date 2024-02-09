@@ -1,10 +1,10 @@
-import { Duration, Stack, StackProps } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-import * as route53 from 'aws-cdk-lib/aws-route53';
-import { StringParameter } from 'aws-cdk-lib/aws-ssm';
-import { Identity, EmailIdentity } from 'aws-cdk-lib/aws-ses';
-import { Role, OrganizationPrincipal } from 'aws-cdk-lib/aws-iam';
 import { GithubActionsIdentityProvider } from 'aws-cdk-github-oidc';
+import { Duration, Stack, StackProps } from 'aws-cdk-lib';
+import { OrganizationPrincipal, Role } from 'aws-cdk-lib/aws-iam';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import { EmailIdentity, Identity } from 'aws-cdk-lib/aws-ses';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { Construct } from 'constructs';
 
 const domainName = 'auditre.co';
 const SSM_PARENT_ZONE_ID = 'auditre-parent-zone-id';
