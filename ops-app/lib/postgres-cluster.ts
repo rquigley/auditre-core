@@ -57,7 +57,7 @@ export class PostgresCluster extends Construct {
       deleteAutomatedBackups = false;
       backupRetention = cdk.Duration.days(365);
 
-      instanceType = InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO);
+      instanceType = InstanceType.of(InstanceClass.T4G, InstanceSize.SMALL);
       postgresVersion = rds.PostgresEngineVersion.VER_16_1;
     } else {
       multiAz = false;

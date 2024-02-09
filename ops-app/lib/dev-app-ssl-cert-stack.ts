@@ -1,10 +1,9 @@
 import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import { Construct } from 'constructs';
 
 const domainName = 'auditre.co';
 // This is generated via ops-certificate-stack
