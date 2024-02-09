@@ -141,6 +141,7 @@ export class OpsAppStack extends Stack {
     let autoDeleteObjects;
     let objectLockEnabled;
     let googleClientId;
+    let NEXT_PUBLIC_ENVIRONMENT;
     if (isProd) {
       appDomainName = 'app.auditre.co';
       removalPolicy = RemovalPolicy.RETAIN;
@@ -149,6 +150,7 @@ export class OpsAppStack extends Stack {
       objectLockEnabled = true;
       googleClientId =
         '274008686939-b2gql0d6mtbq8ma6g292hd27dpd36p3m.apps.googleusercontent.com';
+      NEXT_PUBLIC_ENVIRONMENT = 'production';
     } else {
       appDomainName = 'app.ci.auditre.co';
       removalPolicy = RemovalPolicy.DESTROY;
@@ -161,6 +163,7 @@ export class OpsAppStack extends Stack {
       objectLockEnabled = false;
       googleClientId =
         '274008686939-oejqk1po6q1qd8krlcqsgk3brih10qgm.apps.googleusercontent.com';
+      NEXT_PUBLIC_ENVIRONMENT = 'ci';
     }
     const s3Bucket = new Bucket(this, 's3', {
       bucketName: `auditre-app-org-files-${isProd ? 'prod' : 'dev'}`,
@@ -379,7 +382,7 @@ export class OpsAppStack extends Stack {
             NEXT_RUNTIME: 'nodejs',
             GOOGLE_CLIENT_ID: googleClientId,
             AWS_S3_BUCKET: s3Bucket.bucketName,
-            ENVIRONMENT: 'production',
+            NEXT_PUBLIC_ENVIRONMENT,
             NODE_ENV: 'production',
           },
           secrets: {
