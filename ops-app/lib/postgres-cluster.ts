@@ -43,7 +43,7 @@ export class PostgresCluster extends Construct {
     let removalPolicy;
     let deletionProtection;
     let deleteAutomatedBackups;
-    let backupRetention;
+    let snapshotBackupRetention;
 
     let instanceType;
     let postgresVersion;
@@ -55,7 +55,7 @@ export class PostgresCluster extends Construct {
       removalPolicy = cdk.RemovalPolicy.RETAIN;
       deletionProtection = true;
       deleteAutomatedBackups = false;
-      backupRetention = cdk.Duration.days(365);
+      snapshotBackupRetention = cdk.Duration.days(7);
 
       instanceType = InstanceType.of(InstanceClass.T4G, InstanceSize.SMALL);
       postgresVersion = rds.PostgresEngineVersion.VER_16_1;
@@ -66,7 +66,7 @@ export class PostgresCluster extends Construct {
       removalPolicy = cdk.RemovalPolicy.DESTROY;
       deletionProtection = false;
       deleteAutomatedBackups = true;
-      backupRetention = cdk.Duration.days(0);
+      snapshotBackupRetention = cdk.Duration.days(0);
 
       instanceType = InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO);
       postgresVersion = rds.PostgresEngineVersion.VER_16_1;
@@ -125,7 +125,7 @@ export class PostgresCluster extends Construct {
       instanceType,
       autoMinorVersionUpgrade: true,
       allowMajorVersionUpgrade,
-      backupRetention,
+      backupRetention: snapshotBackupRetention,
       deleteAutomatedBackups,
       removalPolicy,
       deletionProtection,
