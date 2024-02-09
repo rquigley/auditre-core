@@ -75,13 +75,13 @@ jobs:
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
       - name: Push image to AWS
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/prod'
         working-directory: ./app
         run: |
           docker push ${{ steps.build-image.outputs.image }}
 
       - name: Upload _next/static to S3
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/prod'
         working-directory: ./app
         run: |
           docker run -d --name nextjs-app-container ${{ steps.build-image.outputs.image }}
@@ -91,7 +91,7 @@ jobs:
           aws s3 sync ./public/img s3://auditre-app-static-assets-dev/img --cache-control "max-age=31536000,public,immutable"
 
       - name: Fill in the new image ID in the AWS ECS task definition
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/prod'
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
@@ -100,18 +100,18 @@ jobs:
           image: ${{ steps.build-image.outputs.image }}
 
       - name: Upload DB migrations to S3
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/prod'
         working-directory: ./app
         run: |
           aws s3 sync ./migrations s3://auditre-app-db-migrations-dev/migrations
 
       - name: Run any db migrations
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/prod'
         run: |
           aws lambda invoke --function-name db-migrate output.json
 
       - name: Deploy AWS ECS task definition
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/prod'
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
@@ -121,7 +121,7 @@ jobs:
           # wait-for-service-stability: true
 
       - name: Post to a Slack channel
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/prod'
         id: slack
         uses: slackapi/slack-github-action@v1.24.0
         with:
