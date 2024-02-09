@@ -87,8 +87,8 @@ jobs:
           docker run -d --name nextjs-app-container ${{ steps.build-image.outputs.image }}
           docker cp nextjs-app-container:/app/.next/static ./app_static_assets
           docker stop nextjs-app-container
-          aws s3 sync ./app_static_assets s3://auditre-app-static-assets-dev/_next/static --cache-control "max-age=31536000,public,immutable"
-          aws s3 sync ./public/img s3://auditre-app-static-assets-dev/img --cache-control "max-age=31536000,public,immutable"
+          aws s3 sync ./app_static_assets s3://auditre-app-static-assets-prod/_next/static --cache-control "max-age=31536000,public,immutable"
+          aws s3 sync ./public/img s3://auditre-app-static-assets-prod/img --cache-control "max-age=31536000,public,immutable"
 
       - name: Fill in the new image ID in the AWS ECS task definition
         if: github.ref == 'refs/heads/prod'
@@ -103,7 +103,7 @@ jobs:
         if: github.ref == 'refs/heads/prod'
         working-directory: ./app
         run: |
-          aws s3 sync ./migrations s3://auditre-app-db-migrations-dev/migrations
+          aws s3 sync ./migrations s3://auditre-app-db-migrations-prod/migrations
 
       - name: Run any db migrations
         if: github.ref == 'refs/heads/prod'
