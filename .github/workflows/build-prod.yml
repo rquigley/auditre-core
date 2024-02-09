@@ -51,6 +51,7 @@ jobs:
           echo AWS_PROFILE=${{ secrets.CI_AWS_PROFILE }} >> .env.local
           echo AWS_S3_BUCKET=${{ secrets.CI_AWS_S3_BUCKET }} >> .env.local
           echo OPENAI_API_KEY=${{ secrets.CI_OPENAI_API_KEY }} >> .env.local
+          echo NEXT_PUBLIC_ENVIRONMENT=production >> .env.local
 
       - name: Create .sentryclirc
         working-directory: ./app
