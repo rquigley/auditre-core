@@ -46,6 +46,9 @@ import { Construct } from 'constructs';
 
 import { PostgresCluster } from './postgres-cluster';
 
+// This is generated via ops-certificate-stack
+const AUDITRE_ZONE_ID = 'Z07568843L6OVLOAM2W4';
+
 export class OpsAppStack extends Stack {
   constructor(
     scope: Construct,
@@ -102,11 +105,17 @@ export class OpsAppStack extends Stack {
     });
     //policy.attachToUser(user);
 
-    const provider = new GithubActionsIdentityProvider(this, 'GithubProvider');
-    // const provider = GithubActionsIdentityProvider.fromAccount(
-    //   this,
-    //   'GithubProvider',
-    // );
+    let provider;
+    // Only one GithubActionsProvider is allowed per account. We had previously set it up
+    // for prod under the ops-certificate stack.
+    if (isProd) {
+      provider = GithubActionsIdentityProvider.fromAccount(
+        this,
+        'GithubProvider',
+      );
+    } else {
+      provider = new GithubActionsIdentityProvider(this, 'GithubProvider');
+    }
 
     const deployRole = new GithubActionsRole(this, 'AppDeployRole', {
       roleName: 'AppDeployRole',
@@ -473,9 +482,8 @@ export class OpsAppStack extends Stack {
 
     const cachePolicyNextStatic = new cloudfront.CachePolicy(
       this,
-      'CachePolicyNextStatic',
+      'AppCachePolicyNextStatic',
       {
-        cachePolicyName: 'next-static',
         defaultTtl: Duration.seconds(86400),
         maxTtl: Duration.seconds(31536000),
         minTtl: Duration.seconds(2),
@@ -501,9 +509,18 @@ export class OpsAppStack extends Stack {
       },
     );
 
-    const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
+    let domainNames;
+    let distributionId; // TODO switch to AppSiteDistribution when rebuilding ci
+    if (isProd) {
+      domainNames = [appDomainName];
+      distributionId = 'AppSiteDistribution';
+    } else {
+      domainNames = ['ci.auditre.co', appDomainName];
+      distributionId = 'SiteDistribution';
+    }
+    const distribution = new cloudfront.Distribution(this, distributionId, {
       certificate: certificate,
-      domainNames: ['ci.auditre.co', 'app.ci.auditre.co'],
+      domainNames,
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       // errorResponses: [
@@ -518,9 +535,9 @@ export class OpsAppStack extends Stack {
         origin: new cloudfrontOrigins.LoadBalancerV2Origin(loadbalancer, {
           // TODO: Switch back to HTTPS
           protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
-          customHeaders: {
-            'X-AR-CF-Header': 'CustomValue',
-          },
+          // customHeaders: {
+          //   'X-AR-CF-Header': 'CustomValue',
+          // },
         }),
         functionAssociations: [
           {
@@ -589,15 +606,20 @@ export class OpsAppStack extends Stack {
       value: distribution.distributionId,
     });
 
-    // const zone2 = route53.HostedZone.fromLookup(this, 'Zone', {
-    //   domainName: 'ci.auditre.co',
-    // });
-    const zone = HostedZone.fromHostedZoneAttributes(this, 'Zone', {
-      hostedZoneId: 'Z08761632QPQYDP4XYUV2',
-      zoneName: 'ci.auditre.co',
-    });
+    let zone;
+    if (isProd) {
+      zone = HostedZone.fromHostedZoneAttributes(this, 'AppDomainZone', {
+        hostedZoneId: AUDITRE_ZONE_ID,
+        zoneName: 'auditre.co',
+      });
+    } else {
+      zone = HostedZone.fromHostedZoneAttributes(this, 'Zone', {
+        hostedZoneId: 'Z08761632QPQYDP4XYUV2',
+        zoneName: 'ci.auditre.co',
+      });
+    }
     new ARecord(this, 'AppAliasRecord', {
-      recordName: 'app.ci.auditre.co',
+      recordName: appDomainName,
       target: RecordTarget.fromAlias(new CloudFrontTarget(distribution)),
       zone,
     });

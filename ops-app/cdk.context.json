@@ -7,5 +7,10 @@
   "hosted-zone:account=258343757818:domainName=ci.auditre.co:region=us-east-2": {
     "Id": "/hostedzone/Z01198831CBUJKOBAD5HO",
     "Name": "ci.auditre.co."
-  }
+  },
+  "availability-zones:account=857535158880:region=us-east-2": [
+    "us-east-2a",
+    "us-east-2b",
+    "us-east-2c"
+  ]
 }
