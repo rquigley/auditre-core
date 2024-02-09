@@ -1,18 +1,16 @@
-import * as cdk from 'aws-cdk-lib';
+import { Duration, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
-import * as acm from 'aws-cdk-lib/aws-certificatemanager';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
-import * as ses from 'aws-cdk-lib/aws-ses';
-import * as iam from 'aws-cdk-lib/aws-iam';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { Identity, EmailIdentity } from 'aws-cdk-lib/aws-ses';
+import { Role, OrganizationPrincipal } from 'aws-cdk-lib/aws-iam';
 import { GithubActionsIdentityProvider } from 'aws-cdk-github-oidc';
 
 const domainName = 'auditre.co';
 const SSM_PARENT_ZONE_ID = 'auditre-parent-zone-id';
 
-export class OpsCertificateStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+export class OpsCertificateStack extends Stack {
+  constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
     const parentZone = new route53.PublicHostedZone(this, 'AccountHostedZone', {
@@ -20,20 +18,48 @@ export class OpsCertificateStack extends cdk.Stack {
     });
 
     // Save for lookup by other stacks
-    new ssm.StringParameter(this, 'parent-zone-ssm-param', {
+    new StringParameter(this, 'parent-zone-ssm-param', {
       parameterName: SSM_PARENT_ZONE_ID,
       stringValue: parentZone.hostedZoneId,
     });
 
     // Allow usage by the dev account
-    const role = new iam.Role(this, 'RootZoneOrganizationRole', {
+    const role = new Role(this, 'RootZoneOrganizationRole', {
       roleName: 'HostedZoneDelegationRole',
-      assumedBy: new iam.OrganizationPrincipal('o-9u8fiprcz7'),
+      assumedBy: new OrganizationPrincipal('o-9u8fiprcz7'),
     });
     parentZone.grantDelegation(role);
 
-    new ses.EmailIdentity(this, 'DomainIdentity', {
-      identity: ses.Identity.publicHostedZone(parentZone),
+    const emailIdentity = new EmailIdentity(this, 'DomainIdentity', {
+      identity: Identity.publicHostedZone(parentZone),
+    });
+    // Once EmailIdentity supports region, switch to this:
+    // emailIdentity.dkimRecords.forEach((record, idx) => {
+    //   new route53.CnameRecord(this, `DomainIdentityDKIMCNAME${idx}`, {
+    //     recordName: record.name,
+    //     zone: parentZone,
+    //     domainName: record.value,
+    //   });
+    // });
+
+    // Manual DKIM verification for SES. These should be auto-created by the ses.EmailIdentity call
+    // above, but they are not.
+    [
+      'jjfnr7o45nl3bljbbn6umezmu3fhbtim',
+      '4dnbarixg7vw6llq6btgcraakgneuy3s',
+      'jfidid7anznvduwg7jrvam7bn2i6cox7',
+
+      // These are for the dev account
+      'wkrerklabvvdz7de6vngb7y6hca3ykil',
+      '4k55jqj7psxnsyrd5pfqfcluafepj3ej',
+      '2gggnwl2mvpt63je25qczww4nmawgrrl',
+    ].forEach((identifier, idx) => {
+      new route53.CnameRecord(this, `SESDKIMManualCNAME${idx}`, {
+        recordName: `${identifier}._domainkey.auditre.co`,
+        zone: parentZone,
+        domainName: `${identifier}.dkim.amazonses.com`,
+        comment: `SES manual DKIM verification. This shouldn't be necessary, but it is.`,
+      });
     });
 
     new route53.MxRecord(this, 'MainMxRecord', {
@@ -44,7 +70,7 @@ export class OpsCertificateStack extends cdk.Stack {
         },
       ],
       zone: parentZone,
-      ttl: cdk.Duration.minutes(5),
+      ttl: Duration.minutes(5),
     });
 
     new route53.CnameRecord(this, `CnameApiRecord`, {
