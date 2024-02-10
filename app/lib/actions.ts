@@ -78,14 +78,9 @@ export async function deletePostAuthUrl() {
 const newAuditSchema = z.object({
   name: z.string().min(3).max(72),
   year: z.string().min(1).max(4),
-  hasDemoData: z.coerce.boolean(),
 });
 
-export async function createAudit(rawData: {
-  name: string;
-  year: string;
-  hasDemoData: boolean;
-}) {
+export async function createAudit(rawData: { name: string; year: string }) {
   const { user } = await getCurrent();
   if (!user) {
     throw new UnauthorizedError();
@@ -110,17 +105,22 @@ export async function createAudit(rawData: {
     actorUserId: user.id,
   });
 
-  if (data.hasDemoData) {
-    await addDemoData(audit.id, user.id);
-  }
-
   revalidatePath('/');
   return audit;
 }
 
-const auditSchema = z.object({
-  name: z.string().min(3).max(72),
-});
+export async function addDemoDataToAudit(auditId: AuditId) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  if (process.env.NEXT_PUBLIC_ENVIRONMENT === 'production') {
+    throw new Error('Cannot add demo data in production');
+  }
+  await addDemoData(auditId, user.id);
+
+  revalidatePath('/');
+}
 
 export async function updateAudit(auditId: AuditId, rawData: { name: string }) {
   const { user } = await getCurrent();
@@ -131,6 +131,10 @@ export async function updateAudit(auditId: AuditId, rawData: { name: string }) {
   if (audit.orgId !== user.orgId) {
     throw new UnauthorizedError();
   }
+
+  const auditSchema = z.object({
+    name: z.string().min(3).max(72),
+  });
 
   const { name } = auditSchema.parse(rawData);
 

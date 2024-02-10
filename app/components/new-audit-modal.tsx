@@ -7,7 +7,7 @@ import { Fragment, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { BooleanField, Text, Year } from '@/components/form-fields';
+import { Text, Year } from '@/components/form-fields';
 import { createAudit } from '@/lib/actions';
 import { classNames } from '@/lib/util';
 
@@ -16,13 +16,12 @@ import { classNames } from '@/lib/util';
 const newAuditSchema = z.object({
   name: z.string().min(3).max(72),
   year: z.string().min(1),
-  hasDemoData: z.coerce.boolean(),
 });
 
 export default function NewAuditModal() {
   const searchParams = useSearchParams();
 
-  const { formState, register, handleSubmit, getValues, setValue } = useForm<
+  const { formState, register, handleSubmit } = useForm<
     z.infer<typeof newAuditSchema>
   >({
     resolver: zodResolver(newAuditSchema),
@@ -30,7 +29,6 @@ export default function NewAuditModal() {
     defaultValues: {
       name: '',
       year: '',
-      hasDemoData: false,
     },
   });
   const router = useRouter();
@@ -42,7 +40,6 @@ export default function NewAuditModal() {
     const audit = await createAudit({
       name: data.name,
       year: data.year,
-      hasDemoData: data.hasDemoData,
     });
     router.push(`/audit/${audit.id}/request/basic-info`);
   }
@@ -122,27 +119,6 @@ export default function NewAuditModal() {
                               input: 'year',
                               label: 'Year',
                               defaultValue: '',
-                            }}
-                          />
-                        </div>
-                        <div className="">
-                          <label
-                            htmlFor="hasDemoData"
-                            className="block text-sm font-medium leading-6 text-gray-900 text-left"
-                          >
-                            Add demo data
-                          </label>
-                          <BooleanField
-                            field="hasDemoData"
-                            register={register}
-                            formState={formState}
-                            getValues={getValues}
-                            // @ts-expect-error
-                            setValue={setValue}
-                            config={{
-                              input: 'boolean',
-                              label: 'Add demo data',
-                              defaultValue: false,
                             }}
                           />
                         </div>
