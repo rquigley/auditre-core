@@ -45,7 +45,10 @@ export default async function DocumentPage({
         <div className="text-xs h-48 overflow-y-scroll p-4 rounded-lg shadow-sm ring-1 ring-inset ring-gray-300">
           {document.extracted}
         </div>
-        <AI document={document} />
+
+        {process.env.NEXT_PUBLIC_ENVIRONMENT !== 'production' && (
+          <AI document={document} />
+        )}
 
         {/* <div className="lg:col-start-3">
             {/* <Actions document={document} /> */}

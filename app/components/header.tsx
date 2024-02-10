@@ -8,6 +8,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Fragment, useState } from 'react';
 
+import { addDemoDataToAudit } from '@/lib/actions';
+
 type Props = {
   title: string;
   subtitle?: string;
@@ -52,7 +54,7 @@ export function Header({ title, subtitle, breadcrumbs, settings }: Props) {
         {settings ? <Settings options={settings} /> : null}
       </div>
 
-      <Search />
+      {process.env.NEXT_PUBLIC_ENVIRONMENT !== 'production' && <Search />}
 
       <div className="self-end w-20">{/* Options here */}</div>
     </div>
@@ -164,6 +166,28 @@ export function AuditSettings({ auditId }: { auditId: string }) {
           )}
         </Menu.Item>
       </div>
+
+      {process.env.NEXT_PUBLIC_ENVIRONMENT !== 'production' && (
+        <div className="px-1 py-1">
+          <Menu.Item>
+            {({ active }) => (
+              <button
+                type="button"
+                onClick={async () => {
+                  await addDemoDataToAudit(auditId);
+                  router.refresh();
+                }}
+                className={clsx(
+                  active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                  'group flex w-full items-center rounded-md px-4 py-2 text-xs',
+                )}
+              >
+                Add demo data
+              </button>
+            )}
+          </Menu.Item>
+        </div>
+      )}
 
       <div className="px-1 py-1">
         <Menu.Item>

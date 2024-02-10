@@ -405,19 +405,21 @@ function Document({
         >
           Delete
         </button> */}
-        <button
-          type="button"
-          className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-          onClick={() => reprocessDocument(documentId)}
-        >
-          Reprocess
-        </button>
-        {/* <button
-          type="submit"
+        {process.env.NEXT_PUBLIC_ENVIRONMENT !== 'production' && (
+          <button
+            type="button"
+            className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            onClick={() => reprocessDocument(documentId)}
+          >
+            Reprocess
+          </button>
+        )}
+        <a
+          href={`/document/${documentId}/download`}
           className="ml-4 inline-flex justify-center rounded-md bg-slate-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-600"
         >
-          Save
-        </button> */}
+          Download
+        </a>
       </div>
     </div>
   );
