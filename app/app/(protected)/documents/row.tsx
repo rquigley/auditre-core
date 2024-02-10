@@ -1,18 +1,31 @@
 'use client';
 
-import Link from 'next/link';
+// import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 
 import Datetime from '@/components/datetime';
 
 import type { Document } from './page';
 
 export default function Row({ document }: { document: Document }) {
+  const router = useRouter();
+  const pathname = usePathname();
   return (
     <tr key={document.id} className="hover:bg-gray-100">
       <td className="py-5 pl-5 pr-3 text-sm">
-        <Link href={`/document/${document.id}`}>
+        {/* <Link href={`/document/${document.id}`}>
           <span className="text-gray-900">{document.name}</span>
-        </Link>
+        </Link> */}
+        {/* <Link href={`/document/${document.id}`}> */}
+        <span
+          onClick={() => {
+            router.replace(pathname + '?show-document-id=' + document.id);
+          }}
+          className="text-gray-900"
+        >
+          {document.name}
+        </span>
+        {/* </Link> */}
         <div>
           {/* <a
             href={`/document/${document.id}/download`}
