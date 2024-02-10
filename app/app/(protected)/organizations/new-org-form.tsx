@@ -27,7 +27,11 @@ function SubmitButton() {
   );
 }
 
-export default function NewOrgForm() {
+export default function NewOrgForm({
+  currentOrgName,
+}: {
+  currentOrgName: string;
+}) {
   const [state, formAction] = useFormState(createOrg, initialState);
 
   return (
@@ -40,7 +44,8 @@ export default function NewOrgForm() {
           Create new workspace
         </label>
 
-        <div className="mt-2">
+        <div className="mt-2 flex items-center">
+          <div className="text-sm mr-2">{currentOrgName} / </div>
           <input
             id="name"
             name="name"

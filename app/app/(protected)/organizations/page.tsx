@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { Content } from '@/components/content';
 import { Header } from '@/components/header';
+import { getById as getOrgById } from '@/controllers/org';
 import { getCurrent } from '@/controllers/session-user';
 import { getOrgsForUserId } from '@/controllers/user';
 import { groupOrgs } from '@/lib/org';
@@ -16,8 +17,9 @@ export default async function OrgSelect() {
   if (!user) {
     return authRedirect();
   }
-  let orgs = await getOrgsForUserId(user.id);
+  const orgs = await getOrgsForUserId(user.id);
   const groupedOrgs = groupOrgs(orgs);
+  const currentOrg = await getOrgById(user.orgId);
 
   return (
     <>
@@ -30,7 +32,9 @@ export default async function OrgSelect() {
           </div>
 
           <div className="mt-4">
-            <NewOrgForm />
+            {currentOrg.canHaveChildOrgs && (
+              <NewOrgForm currentOrgName={currentOrg.name} />
+            )}
           </div>
         </div>
       </Content>
