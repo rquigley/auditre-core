@@ -316,3 +316,12 @@ export function columnToLetter(n: number) {
   }
   return s.toUpperCase();
 }
+
+export function letterToColumn(letter: string) {
+  let column = 0;
+  const length = letter.length;
+  for (let i = 0; i < length; i++) {
+    column += (letter.charCodeAt(i) - 64) * Math.pow(26, length - i - 1);
+  }
+  return column - 1;
+}
