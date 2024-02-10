@@ -46,6 +46,9 @@ export const accountTypes = {
 } as const;
 
 export type AccountType = keyof typeof accountTypes;
+export function isAccountType(type: string): type is AccountType {
+  return Object.keys(accountTypes).includes(type);
+}
 
 export class AccountMap {
   private map: Map<AccountType, number>;
