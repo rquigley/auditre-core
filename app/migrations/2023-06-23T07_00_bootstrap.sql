@@ -259,7 +259,7 @@ CREATE TABLE "kv" (
 INSERT INTO auth.user (email) VALUES ('ryan@auditre.co'), ('jason@auditre.co');
 
 WITH org_rows AS (
-  INSERT INTO org (name) VALUES ('AuditRe, Inc.') RETURNING id
+  INSERT INTO org (name, can_have_child_orgs) VALUES ('AuditRe, Inc.', TRUE) RETURNING id
 )
 INSERT INTO auth.user_role (org_id, user_id, role)
 VALUES
@@ -268,7 +268,7 @@ VALUES
 
 -- Demo Account 2
 WITH org_rows AS (
-  INSERT INTO org (name) VALUES ('Acme Test Org') RETURNING id
+  INSERT INTO org (name, parent_org_id) VALUES ('Acme Test Org', (SELECT id FROM org where name = 'AuditRe, Inc.')) RETURNING id
 )
 INSERT INTO auth.invitation (org_id, email, expires_at)
 VALUES

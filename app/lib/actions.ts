@@ -39,7 +39,10 @@ import {
   getCurrent,
   UnauthorizedError,
 } from '@/controllers/session-user';
-import { addUserRole } from '@/controllers/user';
+import {
+  changeUserRole as _changeUserRole,
+  getOrgsForUserId,
+} from '@/controllers/user';
 import { getPresignedUrl } from '@/lib/aws';
 import { getRequestTypeForId } from '@/lib/request-types';
 
@@ -47,6 +50,7 @@ import type { AccountType } from '@/lib/finance';
 import type {
   AccountMappingId,
   AuditId,
+  AuthRole,
   DocumentId,
   OrgId,
   RequestDataId,
@@ -449,12 +453,6 @@ export async function createOrg(
       parentOrgId: user.orgId,
     });
 
-    await addUserRole({
-      userId: user.id,
-      orgId: res.id,
-      role: 'ADMIN',
-    });
-
     revalidatePath('/org-select');
     return { message: `Added ${data.name}` };
   } catch (error) {
@@ -470,4 +468,33 @@ export async function switchOrg(orgId: OrgId) {
   }
 
   await _switchOrg(user.id, orgId);
+}
+
+export async function changeUserRole({
+  userId,
+  role,
+}: {
+  userId: string;
+  role: AuthRole;
+}) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  if (!user.hasPerm('org:manage-users')) {
+    throw new UnauthorizedError();
+  }
+  const userToModOrgs = await getOrgsForUserId(userId);
+  if (!userToModOrgs.find((org) => org.id === user.orgId)) {
+    throw new UnauthorizedError();
+  }
+  if (role === 'SUPERUSER' && !user.hasPerm('org:manage-super-users')) {
+    throw new UnauthorizedError();
+  }
+  if (user.id === userId) {
+    throw new Error("Can't change your own role");
+  }
+
+  await _changeUserRole(userId, role);
+  revalidatePath('/');
 }

@@ -168,6 +168,8 @@ function OrgMenuItems({
   canManageOrgs: boolean;
 }) {
   const router = useRouter();
+
+  availableOrgs.sort((a, b) => a.name.localeCompare(b.name));
   return (
     <Transition
       as={Fragment}
