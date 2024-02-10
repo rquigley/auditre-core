@@ -77,7 +77,18 @@ export async function addUserRole({
     .execute();
 }
 
-export async function getById(id: UserId): Promise<User> {
+export async function changeUserRole(userId: UserId, role: AuthRole) {
+  await db
+    .updateTable('auth.userRole')
+    .set({
+      role,
+    })
+    .where('userId', '=', userId)
+    .execute();
+  // TODO: log this!
+}
+
+export async function getById(id: UserId) {
   return await db
     .selectFrom('auth.user')
     .where('id', '=', id)
@@ -86,13 +97,20 @@ export async function getById(id: UserId): Promise<User> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getAllByOrgId(orgId: OrgId): Promise<User[]> {
+export async function getAllByOrgId(orgId: OrgId) {
   return await db
     .selectFrom('auth.user as u')
     .innerJoin('auth.userRole as ur', 'ur.userId', 'u.id')
+    .select([
+      'u.id',
+      'u.name',
+      'u.email',
+      'u.image',
+      'u.emailVerified',
+      'ur.role',
+    ])
     .where('orgId', '=', orgId)
     .where('u.isDeleted', '=', false)
-    .selectAll()
     .execute();
 }
 
@@ -238,13 +256,48 @@ export async function getOrgIdsByUserId(userId: UserId) {
 }
 
 export async function getOrgsForUserId(userId: UserId) {
-  return await db
+  const memberOrgs = await db
     .selectFrom('auth.userRole as ur')
     .innerJoin('org', 'org.id', 'ur.orgId')
-    .select(['org.id', 'org.name', 'org.canHaveChildOrgs', 'org.parentOrgId'])
+    .select([
+      'org.id',
+      'org.name',
+      'org.canHaveChildOrgs',
+      'org.parentOrgId',
+      'ur.role',
+    ])
     .where('userId', '=', userId)
     .orderBy('org.id')
     .execute();
+  const parentalOrgIds = memberOrgs
+    .map((org) =>
+      ['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role) && org.canHaveChildOrgs
+        ? org.id
+        : null,
+    )
+    .filter(Boolean);
+
+  if (parentalOrgIds.length === 0) {
+    return memberOrgs;
+  }
+  const childOrgsRes = await db
+    .selectFrom('org')
+    .select(['id', 'name', 'parentOrgId'])
+    .where('parentOrgId', 'in', parentalOrgIds)
+    .execute();
+
+  const childOrgs = childOrgsRes.map((org) => ({
+    ...org,
+    role: memberOrgs.find((m) => m.id === org.parentOrgId)?.role as AuthRole,
+  }));
+  const childOrgIds = childOrgs.map((org) => org.id);
+
+  memberOrgs.map((org) => {
+    if (!childOrgIds.includes(org.id)) {
+      childOrgs.push(org);
+    }
+  });
+  return childOrgs;
 }
 
 export async function getOrgsAvailableforSwitching(userId: UserId) {

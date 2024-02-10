@@ -1,4 +1,4 @@
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 import {
   getByEmail as getInviteByEmail,
@@ -67,6 +67,8 @@ export function AuthAdapter(): Adapter {
         image: data.image,
         emailVerified: data.emailVerified,
       });
+
+      revalidatePath('/');
       return userToAdapterUser(user) as AdapterUser;
     },
 
@@ -118,6 +120,7 @@ export function AuthAdapter(): Adapter {
       await updateUser(user.id, {
         isDeleted: true,
       });
+      revalidatePath('/');
     },
 
     linkAccount: async (account) => {

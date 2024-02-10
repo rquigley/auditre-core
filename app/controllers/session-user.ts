@@ -5,14 +5,20 @@ import { cache } from 'react';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { getById, getOrgsAvailableforSwitching, getUserRole } from './user';
+import { getById, getOrgsForUserId } from './user';
 
 import type { AuthRole, OrgId, UserId } from '@/types';
 
 const permissions = {
-  SUPERUSER: ['ai:view', 'ai:create', 'documents:view'],
-  OWNER: [],
-  ADMIN: [],
+  SUPERUSER: [
+    'ai:view',
+    'ai:create',
+    'documents:view',
+    'org:manage-users',
+    'org:manage-super-users',
+  ],
+  OWNER: ['org:manage-users'],
+  ADMIN: ['org:manage-users'],
   USER: [],
 } as const;
 
@@ -29,7 +35,7 @@ export class User {
   image: string | null;
   orgId: OrgId;
   role: AuthRole;
-  orgs: Awaited<ReturnType<typeof getOrgsAvailableforSwitching>>;
+  orgs: Awaited<ReturnType<typeof getOrgsForUserId>>;
 
   constructor({
     id,
@@ -46,7 +52,7 @@ export class User {
     image: string | null;
     orgId: OrgId;
     role: AuthRole;
-    orgs: Awaited<ReturnType<typeof getOrgsAvailableforSwitching>>;
+    orgs: Awaited<ReturnType<typeof getOrgsForUserId>>;
   }) {
     this.id = id;
     this.name = name;
@@ -60,16 +66,26 @@ export class User {
   hasPerm(perm: Permission) {
     // Org agnostic perms
     if (perm === 'orgs:manage') {
-      return this.orgs.some((org) =>
-        ['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role),
-      );
+      return this.orgs.some((org) => ['SUPERUSER'].includes(org.role));
     }
-    // const org = this.orgs.find((org) => org.id === this.orgId);
-    throw new Error(`Unknown permission: ${perm}`);
+    const perms = permissions[this.role] as unknown as Permission[];
+    return perms.includes(perm);
   }
 
   get orgName() {
     return this.orgs.find((org) => org.id === this.orgId)?.name || '';
+  }
+}
+
+export function getAvailableRolesForRole(role: AuthRole): AuthRole[] {
+  if (role === 'SUPERUSER') {
+    return ['SUPERUSER', 'OWNER', 'ADMIN', 'USER'];
+  } else if (role === 'OWNER') {
+    return ['ADMIN', 'USER'];
+  } else if (role === 'ADMIN') {
+    return ['USER'];
+  } else {
+    return [];
   }
 }
 
@@ -91,9 +107,11 @@ export async function _getCurrent(): Promise<
   if (session) {
     const userId: UserId | undefined = session?.user?.id;
     if (userId) {
-      const userRes = await getByIdCached(userId);
-      // TODO make parallel
-      const orgs = await getOrgsAvailableforSwitching(userRes.id);
+      const [userRes, orgs] = await Promise.all([
+        getByIdCached(userId),
+        getOrgsForUserId(userId),
+      ]);
+
       const role = orgs.find((org) => org.id === session.currentOrgId)?.role;
 
       if (role) {
@@ -140,10 +158,12 @@ export class UnauthorizedError extends Error {
 }
 
 export async function switchOrg(userId: UserId, orgId: OrgId) {
-  const role = await getUserRole(userId, orgId);
-  if (!role) {
+  const availableOrgs = await getOrgsForUserId(userId);
+  const orgToSwitchTo = availableOrgs.find((org) => org.id === orgId);
+  if (!orgToSwitchTo) {
     throw new UnauthorizedError();
   }
+
   await db
     .updateTable('auth.session')
     .set({ currentOrgId: orgId })
