@@ -17,6 +17,7 @@ export async function deleteVerificationTokens(identifier: string) {
     .returningAll()
     .executeTakeFirst();
 }
+
 export async function getVerificationToken(identifier: string, token: string) {
   return await db
     .selectFrom('auth.verificationToken')
