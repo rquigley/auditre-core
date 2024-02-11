@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { Fragment } from 'react';
 
 import { getByIdForClientCached } from '@/controllers/audit';

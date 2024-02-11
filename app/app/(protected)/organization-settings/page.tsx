@@ -1,9 +1,7 @@
 import { ChevronRightIcon } from '@heroicons/react/20/solid';
 import { revalidatePath } from 'next/cache';
 import Image from 'next/image';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
 import { z } from 'zod';
 
 import { Content } from '@/components/content';

@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -10,13 +9,12 @@ import { delay } from '@/lib/util';
 import type { AuditId } from '@/types';
 
 export function GenerateDocButton({ auditId }: { auditId: AuditId }) {
-  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
   return (
     <PrimaryButton
       submitting={submitting}
-      onClick={async (ev) => {
+      onClick={async () => {
         setSubmitting(true);
         await delay(5000);
         toast.success('Report generated. Downloading');
@@ -29,14 +27,12 @@ export function GenerateDocButton({ auditId }: { auditId: AuditId }) {
 }
 
 export function GenerateExcelButton({ auditId }: { auditId: AuditId }) {
-  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
-  let filename;
   return (
     <PrimaryButton
       submitting={submitting}
-      onClick={async (ev) => {
+      onClick={async () => {
         setSubmitting(true);
         //await delay(5000);
         toast.success('Report generated. Downloading');
@@ -49,8 +45,6 @@ export function GenerateExcelButton({ auditId }: { auditId: AuditId }) {
 }
 
 async function forceDownload(url: string) {
-  let filename: string;
-
   const resp = await fetch(url);
   const disposition = resp.headers.get('content-disposition');
   if (!disposition) {
@@ -61,7 +55,7 @@ async function forceDownload(url: string) {
   if (!match) {
     throw new Error('No filename in content-disposition header');
   }
-  filename = match[1];
+  const filename = match[1];
 
   const blob = await resp.blob();
   const downloadUrl = window.URL.createObjectURL(blob);
