@@ -2,14 +2,13 @@ import { db } from '@/lib/db';
 
 import type {
   AuditId,
-  Comment,
   CommentId,
   CommentUpdate,
   DocumentId,
   NewComment,
 } from '@/types';
 
-export async function create(comment: NewComment): Promise<Comment> {
+export async function create(comment: NewComment) {
   return await db
     .insertInto('comment')
     .values({ ...comment })
@@ -17,7 +16,7 @@ export async function create(comment: NewComment): Promise<Comment> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getById(id: CommentId): Promise<Comment> {
+export async function getById(id: CommentId) {
   return await db
     .selectFrom('comment')
     .where('id', '=', id)
@@ -26,9 +25,7 @@ export async function getById(id: CommentId): Promise<Comment> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getAllByDocumentId(
-  documentId: DocumentId,
-): Promise<Comment[]> {
+export async function getAllByDocumentId(documentId: DocumentId) {
   return await db
     .selectFrom('comment')
     .where('documentId', '=', documentId)
@@ -37,18 +34,7 @@ export async function getAllByDocumentId(
     .execute();
 }
 
-type CommentWithUser = {
-  userId: string;
-  createdAt: Date;
-  comment: string;
-  name: string | null;
-  image: string | null;
-};
-
-export async function getAllForRequest(
-  auditId: AuditId,
-  requestType: string,
-): Promise<CommentWithUser[]> {
+export async function getAllForRequest(auditId: AuditId, requestType: string) {
   return await db
     .selectFrom('comment')
     .leftJoin('auth.user as u', 'comment.userId', 'u.id')

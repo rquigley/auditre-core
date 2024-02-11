@@ -11,6 +11,7 @@ export async function setKV({
   orgId: OrgId;
   auditId?: AuditId;
   key: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value: any;
 }): Promise<void> {
   const rawKey = `${orgId}:${auditId}:${key}`;
@@ -31,7 +32,7 @@ export async function getKV({
   auditId?: AuditId;
   key: string;
   sinceMs?: number;
-}): Promise<string | undefined> {
+}) {
   const rawKey = `${orgId}:${auditId}:${key}`;
 
   let query = db.selectFrom('kv').select('value').where('key', '=', rawKey);
@@ -58,8 +59,9 @@ export async function updateKV({
   orgId: OrgId;
   auditId?: AuditId;
   key: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updater: (prevKey: string | undefined) => any;
-}): Promise<void> {
+}) {
   const rawKey = `${orgId}:${auditId}:${key}`;
 
   await db.transaction().execute(async (trx) => {
@@ -87,7 +89,7 @@ export async function deleteKV({
   orgId: OrgId;
   auditId?: AuditId;
   key: string;
-}): Promise<void> {
+}) {
   const rawKey = `${orgId}:${auditId}:${key}`;
   await db.deleteFrom('kv').where('key', '=', rawKey).execute();
 }
