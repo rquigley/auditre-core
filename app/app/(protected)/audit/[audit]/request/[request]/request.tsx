@@ -78,11 +78,9 @@ function StatusBadge({ status }: { status: string }) {
 export default function Request({
   request,
   statusesP,
-  group,
 }: {
   request: ClientSafeRequest;
   statusesP: Promise<Record<string, { status: string }>>;
-  group: string;
 }) {
   const pathname = usePathname();
   const pathId = pathname.slice(pathname.lastIndexOf('/') + 1);

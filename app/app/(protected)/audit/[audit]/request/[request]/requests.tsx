@@ -31,12 +31,7 @@ export async function Requests({ auditId }: { auditId: AuditId }) {
               {group.name}
             </li>
             {group.rows.map((row) => (
-              <Request
-                request={row}
-                statusesP={statusesP}
-                key={row.id}
-                group={group.name}
-              />
+              <Request request={row} statusesP={statusesP} key={row.id} />
             ))}
             <li className="h-4"></li>
           </Fragment>
@@ -67,7 +62,6 @@ function sortRows<T extends Row>(
     groupMap[row.group].push(row);
   }
 
-  // Create SortedRowGroup based on groupOrder
   const sortedRows = groupOrder.map((groupName) => ({
     name: groupName,
     rows: groupMap[groupName] || [],
