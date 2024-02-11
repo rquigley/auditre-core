@@ -5,7 +5,6 @@ import { db, sql } from '@/lib/db';
 
 import type {
   AuthRole,
-  AuthUserRole,
   NewUser,
   OrgId,
   User,
@@ -114,7 +113,7 @@ export async function getAllByOrgId(orgId: OrgId) {
     .execute();
 }
 
-export async function getMultipleById(ids: UserId[]): Promise<User[]> {
+export async function getMultipleById(ids: UserId[]) {
   return await db
     .selectFrom('auth.user')
     .where('id', 'in', ids)

@@ -1,8 +1,8 @@
 import { db } from '@/lib/db';
 
-import type { NewSession, Session, SessionUpdate, UserId } from '@/types';
+import type { NewSession, SessionUpdate } from '@/types';
 
-export async function createSession(session: NewSession): Promise<Session> {
+export async function createSession(session: NewSession) {
   return await db
     .insertInto('auth.session')
     .values({ ...session })
@@ -10,9 +10,7 @@ export async function createSession(session: NewSession): Promise<Session> {
     .executeTakeFirstOrThrow();
 }
 
-export async function deleteSession(
-  sessionToken: string,
-): Promise<Session | undefined> {
+export async function deleteSession(sessionToken: string) {
   return await db
     .deleteFrom('auth.session')
     .where('sessionToken', '=', sessionToken)
@@ -20,30 +18,12 @@ export async function deleteSession(
     .executeTakeFirst();
 }
 
-export async function getById(id: number): Promise<Session> {
-  return await db
-    .selectFrom('auth.session')
-    .where('id', '=', id)
-    .selectAll()
-    .executeTakeFirstOrThrow();
-}
-
-export async function getBySessionToken(
-  sessionToken: string,
-): Promise<Session> {
+export async function getBySessionToken(sessionToken: string) {
   return await db
     .selectFrom('auth.session')
     .where('sessionToken', '=', sessionToken)
     .selectAll()
     .executeTakeFirstOrThrow();
-}
-
-export async function getAllByUserId(userId: UserId): Promise<Session[]> {
-  return await db
-    .selectFrom('auth.session')
-    .where('userId', '=', userId)
-    .selectAll()
-    .execute();
 }
 
 export async function updateSession(

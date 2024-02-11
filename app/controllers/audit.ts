@@ -23,7 +23,7 @@ import type {
   OrgId,
 } from '@/types';
 
-export async function create(audit: NewAudit): Promise<Audit> {
+export async function create(audit: NewAudit) {
   return await db
     .insertInto('audit')
     .values({ ...audit })
@@ -34,7 +34,7 @@ export async function create(audit: NewAudit): Promise<Audit> {
 export async function getById(
   id: OrgId,
   params?: { includeDeleted?: boolean },
-): Promise<Audit> {
+) {
   let query = db.selectFrom('audit').where('id', '=', id);
   if (!params?.includeDeleted) {
     query = query.where('isDeleted', '=', false);
@@ -83,9 +83,7 @@ export type AuditWithRequestCounts = Pick<
   numCompletedRequests: number;
   numRequests: number;
 };
-export async function getAllByOrgId(
-  orgId: OrgId,
-): Promise<AuditWithRequestCounts[]> {
+export async function getAllByOrgId(orgId: OrgId) {
   const audits = await db
     .selectFrom('audit')
     .select(['id', 'name', 'createdAt'])

@@ -1,4 +1,3 @@
-import dedent from 'dedent';
 import * as z from 'zod';
 
 import { call, DEFAULT_OPENAI_MODEL } from '@/lib/ai';
@@ -6,7 +5,6 @@ import { db, sql } from '@/lib/db';
 import { delay } from '@/lib/util';
 
 import type { OpenAIMessage } from '@/lib/ai';
-import type { AIQuestion } from '@/lib/document-ai-questions';
 import type {
   AiQuery,
   AiQueryId,
@@ -17,7 +15,7 @@ import type {
   OpenAIModel,
 } from '@/types';
 
-export async function createAiQuery(aiQuery: NewAiQuery): Promise<AiQuery> {
+export async function createAiQuery(aiQuery: NewAiQuery) {
   return db
     .insertInto('aiQuery')
     .values({ ...aiQuery })
@@ -33,7 +31,7 @@ export async function updateAiQuery(id: AiQueryId, updateWith: AiQueryUpdate) {
     .execute();
 }
 
-export async function getById(id: AiQueryId): Promise<AiQuery> {
+export async function getById(id: AiQueryId) {
   return await db
     .selectFrom('aiQuery')
     .where('id', '=', id)
@@ -45,7 +43,7 @@ export async function getById(id: AiQueryId): Promise<AiQuery> {
 export async function getByDocumentIdAndIdentifier(
   documentId: DocumentId,
   identifier: string,
-): Promise<AiQuery | undefined> {
+) {
   return await db
     .selectFrom('aiQuery')
     .where('documentId', '=', documentId)
@@ -60,7 +58,7 @@ export async function getByDocumentIdAndIdentifier(
 export async function pollGetByDocumentIdAndIdentifier(
   documentId: DocumentId,
   identifier: string,
-): Promise<Pick<AiQuery, 'result' | 'isValidated'> | undefined> {
+) {
   for (let i = 0; i < 60; i++) {
     const res = await db
       .selectFrom('aiQuery')
@@ -88,9 +86,7 @@ export async function pollGetByDocumentIdAndIdentifier(
   return undefined;
 }
 
-export async function getAllByDocumentId(
-  documentId: DocumentId,
-): Promise<AiQuery[]> {
+export async function getAllByDocumentId(documentId: DocumentId) {
   return await db
     .selectFrom('aiQuery')
     .where('documentId', '=', documentId)
@@ -159,7 +155,7 @@ export async function askQuestion({
   preProcess?: (content: string) => string;
   respondInJSON?: boolean;
   validate?: z.ZodTypeAny;
-}): Promise<AiQuery> {
+}) {
   if (!document.extracted) {
     throw new Error('Document not extracted yet');
   }

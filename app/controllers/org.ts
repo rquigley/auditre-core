@@ -1,8 +1,8 @@
 import { db } from '@/lib/db';
 
-import type { NewOrg, Org, OrgId, OrgUpdate } from '@/types';
+import type { NewOrg, OrgId, OrgUpdate } from '@/types';
 
-export async function create(org: NewOrg): Promise<Org> {
+export async function create(org: NewOrg) {
   return await db
     .insertInto('org')
     .values({ ...org })
@@ -10,7 +10,7 @@ export async function create(org: NewOrg): Promise<Org> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getById(id: OrgId): Promise<Org> {
+export async function getById(id: OrgId) {
   return await db
     .selectFrom('org')
     .where('id', '=', id)

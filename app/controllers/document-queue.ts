@@ -2,15 +2,12 @@ import { db } from '@/lib/db';
 
 import type {
   DocumentId,
-  DocumentQueue,
   DocumentQueueId,
   DocumentQueueUpdate,
   NewDocumentQueue,
 } from '@/types';
 
-export async function addJob(
-  documentQueue: NewDocumentQueue,
-): Promise<DocumentQueue> {
+export async function addJob(documentQueue: NewDocumentQueue) {
   return await db
     .insertInto('documentQueue')
     .values({ ...documentQueue })
@@ -18,7 +15,7 @@ export async function addJob(
     .executeTakeFirstOrThrow();
 }
 
-export async function getById(id: DocumentQueueId): Promise<DocumentQueue> {
+export async function getById(id: DocumentQueueId) {
   return await db
     .selectFrom('documentQueue')
     .where('id', '=', id)
@@ -26,9 +23,7 @@ export async function getById(id: DocumentQueueId): Promise<DocumentQueue> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getAllByDocumentId(
-  documentId: DocumentId,
-): Promise<DocumentQueue[]> {
+export async function getAllByDocumentId(documentId: DocumentId) {
   return await db
     .selectFrom('documentQueue')
     .where('documentId', '=', documentId)
