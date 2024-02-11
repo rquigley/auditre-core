@@ -31,7 +31,6 @@ import {
 } from 'aws-cdk-lib/aws-lambda';
 import { ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
 import {
   BlockPublicAccess,
   Bucket,
@@ -103,8 +102,6 @@ export class OpsAppStack extends Stack {
         }),
       ],
     });
-
-    //policy.attachToUser(user);
 
     let provider;
     // Only one GithubActionsProvider is allowed per account. We had previously set it up
@@ -222,7 +219,7 @@ export class OpsAppStack extends Stack {
         suffix,
       });
     });
-    ////
+
     const extractContentLambda = new Function(this, 'ExtractContentLambda', {
       description: 'S3 handler to extract text from XLXS, DOCX, DOC files',
       code: Code.fromAsset(
@@ -336,10 +333,6 @@ export class OpsAppStack extends Stack {
       },
     );
 
-    // const repo = new ecr.Repository(this, 'Repo', {
-    //   repositoryName: 'auditre-fargate-app',
-    // });
-
     const executionRole = new iam.Role(this, 'ExecutionRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
       managedPolicies: [
@@ -431,11 +424,7 @@ export class OpsAppStack extends Stack {
         taskSubnets: vpc.selectSubnets({
           subnetType: SubnetType.PRIVATE_WITH_EGRESS,
         }),
-        //securityGroups: [db.instance.connections.securityGroups[0]],
         loadBalancer: loadbalancer,
-        // TODO: Switch back to HTTPS
-        // protocol: ApplicationProtocol.HTTPS,
-        // certificate,
       },
     );
 
@@ -548,11 +537,7 @@ export class OpsAppStack extends Stack {
       // ],
       defaultBehavior: {
         origin: new cloudfrontOrigins.LoadBalancerV2Origin(loadbalancer, {
-          // TODO: Switch back to HTTPS
           protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
-          // customHeaders: {
-          //   'X-AR-CF-Header': 'CustomValue',
-          // },
         }),
         functionAssociations: [
           {
@@ -608,12 +593,6 @@ export class OpsAppStack extends Stack {
           viewerProtocolPolicy:
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
-        // '/api/*': {
-        //     allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-        //     cachePolicy: cloudfront.CachePolicy.fromCachePolicyId(this, 'ApiCachePolicy', '4135ea2d-6df8-44a3-9df3-4b5a84be39ad'),
-        //     compress: true,
-        //     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
-        // }
       },
     });
 
