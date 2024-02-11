@@ -24,8 +24,8 @@ import {
 } from '@/controllers/user-account';
 import {
   createVerificationToken,
-  deleteVerificationToken,
-  getByIdentifier as getVerificationTokenByIdentifier,
+  deleteVerificationTokens,
+  getVerificationToken,
 } from '@/controllers/verification-token';
 
 import type { OrgId, User } from '@/types';
@@ -224,10 +224,9 @@ export function AuthAdapter(): Adapter {
     },
 
     useVerificationToken: async ({ identifier, token }) => {
-      const verificationToken =
-        await getVerificationTokenByIdentifier(identifier);
-      if (verificationToken && verificationToken.token === token) {
-        await deleteVerificationToken(identifier);
+      const verificationToken = await getVerificationToken(identifier, token);
+      if (verificationToken) {
+        await deleteVerificationTokens(identifier);
       } else {
         return null;
       }
