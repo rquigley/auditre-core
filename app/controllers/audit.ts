@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { unstable_cache } from 'next/cache';
 
 import { getBalancesByAccountType } from '@/controllers/account-mapping';
@@ -9,7 +8,6 @@ import {
 import { db } from '@/lib/db';
 import { FormField, isFormFieldFile } from '@/lib/request-types';
 import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
-import { buildIncomeStatement } from './financial-statement/table';
 import {
   getDataForAuditId,
   getDataForRequestAttribute2,
@@ -120,8 +118,10 @@ export async function getAllByOrgId(orgId: OrgId) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-// export type AuditData = Record<string, any>;
-export type AuditData = Awaited<ReturnType<typeof getAuditData>>;
+export type AuditData = Record<string, any>;
+// export type AuditData = Awaited<ReturnType<typeof getAuditData>> & {
+//   [key: string]: any;
+// };
 
 /**
  *
@@ -131,7 +131,7 @@ export type AuditData = Awaited<ReturnType<typeof getAuditData>>;
  * - Excel export
  *
  */
-export async function getAuditData(auditId: AuditId) {
+export async function getAuditData(auditId: AuditId): Promise<AuditData> {
   const requestData = await getDataForAuditId(auditId);
   const documents = await getAllDocumentsByAuditId(auditId);
   // console.log(documents);
@@ -142,14 +142,12 @@ export async function getAuditData(auditId: AuditId) {
     aiData[document.id] = await getAiDataForDocumentId(document.id);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  type RequestFieldData = Record<string, any>;
-  // type RequestFieldData = Record<
-  //   string,
-  //   | FormField['defaultValue']
-  //   | Record<string, string>
-  //   | Record<string, string>[]
-  // >;
+  type RequestFieldData = Record<
+    string,
+    | FormField['defaultValue']
+    | Record<string, string>
+    | Record<string, string>[]
+  >;
   const requestDataObj: Record<string, RequestFieldData> = {};
   for (const [key, fields] of Object.entries(requestData)) {
     const fieldsData: RequestFieldData = {};
@@ -181,34 +179,23 @@ export async function getAuditData(auditId: AuditId) {
     requestDataObj[kebabToCamel(key)] = fieldsData;
   }
   const year = String(requestDataObj.auditInfo?.year) || '';
-  const prevYear = String(Number(year) - 1);
 
-  const fiscalYearEndNoYear = `${getMonthName(
-    requestDataObj.auditInfo.fiscalYearMonthEnd,
-  )} ${getLastDayOfMonth(
-    requestDataObj.auditInfo.fiscalYearMonthEnd,
-    requestDataObj.auditInfo.year,
-  )}`;
   const totals = await getBalancesByAccountType(auditId, year);
-  const totals2 = await getBalancesByAccountType(auditId, prevYear);
+
   return {
     auditId,
     totals,
-    totalsNew: {
-      [year]: totals,
-      [prevYear]: totals2,
-    },
-    incomeStatementTable: await buildIncomeStatement({
-      year,
-      prevYear,
-      fiscalYearEndNoYear,
-    }),
     year,
-    prevYear,
-    totals2,
-    fiscalYearEndNoYear,
+    fiscalYearEndNoYear: `${getMonthName(
+      // @ts-expect-error
+      requestDataObj.auditInfo.fiscalYearMonthEnd,
+    )} ${getLastDayOfMonth(
+      // @ts-expect-error
+      requestDataObj.auditInfo.fiscalYearMonthEnd,
+      requestDataObj.auditInfo.year,
+    )}`,
     fiscalYearEnd: `${requestDataObj.fiscalYearEndNoYear}, ${requestDataObj.year}`,
-    rt: requestDataObj,
+    ...requestDataObj,
   };
 }
 

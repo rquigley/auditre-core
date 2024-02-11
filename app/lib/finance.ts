@@ -1,3 +1,5 @@
+import { addFP } from './util';
+
 export const accountTypes = {
   ASSET_CASH_AND_CASH_EQUIVALENTS: 'Cash and cash equivalents',
   ASSET_INTANGIBLE_ASSETS: 'Intangible assets, net',
@@ -44,7 +46,6 @@ export const accountTypes = {
 } as const;
 
 export type AccountType = keyof typeof accountTypes;
-
 export function isAccountType(type: string): type is AccountType {
   return Object.keys(accountTypes).includes(type);
 }
@@ -175,14 +176,6 @@ export function accountTypeGroupToLabel(
   return groupLabels[type];
 }
 
-export function fIn(num: number) {
-  return Math.round(num * 100);
-}
-
-export function fOut(num: number) {
-  return num / 100;
-}
-
 export function getBalance({
   accountType,
   credit,
@@ -193,8 +186,8 @@ export function getBalance({
   debit: number;
 }) {
   if (accountType.startsWith('ASSET')) {
-    return debit - credit;
+    return addFP(-credit, debit);
   } else {
-    return credit - debit;
+    return addFP(credit, -debit);
   }
 }
