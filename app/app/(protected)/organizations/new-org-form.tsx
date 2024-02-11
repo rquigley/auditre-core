@@ -1,9 +1,9 @@
 'use client';
 
+import clsx from 'clsx';
 import { useFormState, useFormStatus } from 'react-dom';
 
 import { createOrg } from '@/lib/actions';
-import { classNames } from '@/lib/util';
 
 const initialState = {
   message: '',
@@ -15,7 +15,7 @@ function SubmitButton() {
     <button
       type="submit"
       aria-disabled={pending}
-      className={classNames(
+      className={clsx(
         pending
           ? 'bg-gray-400'
           : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
