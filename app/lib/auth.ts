@@ -1,10 +1,12 @@
 import NextAuth from 'next-auth';
+import EmailProvider from 'next-auth/providers/email';
 import GoogleProvider from 'next-auth/providers/google';
 
 import { getByEmail as getInviteByEmail } from '@/controllers/invitation';
 import { getByEmail as getUserByEmail, updateUser } from '@/controllers/user';
 //import GitHubProvider from 'next-auth/providers/github';
 import { AuthAdapter } from '@/lib/auth-adapter';
+import { sendVerificationRequest } from '@/lib/email';
 import { OrgId } from '@/types';
 
 import type {
@@ -18,20 +20,12 @@ export const {
   auth,
 } = NextAuth({
   providers: [
-    // GitHubProvider({
-    //   //allowDangerousEmailAccountLinking: true,
-    //   clientId: process.env.GITHUB_ID as string,
-    //   clientSecret: process.env.GITHUB_SECRET as string,
-    //   profile(profile) {
-    //     return {
-    //       id: profile.id.toString(),
-    //       name: profile.name || profile.login,
-    //       gh_username: profile.login,
-    //       email: profile.email,
-    //       image: profile.avatar_url,
-    //     };
-    //   },
-    // }),
+    EmailProvider({
+      name: 'email',
+      server: '',
+      from: 'AuditRe (eg: team@auditre.co)',
+      sendVerificationRequest,
+    }),
     GoogleProvider({
       allowDangerousEmailAccountLinking: true,
 
@@ -135,14 +129,36 @@ export const {
       if (newEmail) {
         const existingUser = await getUserByEmail(newEmail);
         if (existingUser) {
-          await updateUser(existingUser.id, {
-            name: profile?.name || !existingUser.name,
-            image: profile?.picture || !existingUser.image,
-            emailVerified:
-              !existingUser.emailVerified && profile?.email_verified
-                ? new Date()
-                : undefined,
-          });
+          const changes: {
+            name?: string;
+            image?: string;
+            emailVerified?: Date;
+          } = {};
+          if (profile) {
+            if (
+              profile.name &&
+              (!existingUser.name || existingUser.name !== profile.name)
+            ) {
+              changes.name = profile.name;
+            }
+            if (
+              typeof profile.picture === 'string' &&
+              profile.picture.startsWith('https://') &&
+              (!existingUser.image || existingUser.image !== profile.picture)
+            ) {
+              changes.image = profile.picture;
+            }
+            if (changes.name || changes.image) {
+              await updateUser(existingUser.id, changes);
+            }
+            //   name: profile?.name || !existingUser.name,
+            //   image: profile?.picture || !existingUser.image,
+            //   emailVerified:
+            //     !existingUser.emailVerified && profile?.email_verified
+            //       ? new Date()
+            //       : undefined,
+            // });
+          }
           return true;
         }
         if (await getInviteByEmail(newEmail)) {
