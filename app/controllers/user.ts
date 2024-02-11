@@ -235,26 +235,6 @@ export async function updateUser(id: UserId, updateWith: UserUpdate) {
     .execute();
 }
 
-export async function getUserRole(userId: UserId, orgId: OrgId) {
-  const res = await db
-    .selectFrom('auth.userRole')
-    .select('role')
-    .where('userId', '=', userId)
-    .where('orgId', '=', orgId)
-    .executeTakeFirst();
-  return res?.role;
-}
-
-export async function getOrgIdsByUserId(userId: UserId) {
-  return await db
-    .selectFrom('auth.userRole as ur')
-    .innerJoin('org', 'org.id', 'ur.orgId')
-    .select(['org.id', 'org.parentOrgId'])
-    .where('userId', '=', userId)
-    .orderBy('org.id')
-    .execute();
-}
-
 export async function getOrgsForUserId(userId: UserId) {
   const memberOrgs = await db
     .selectFrom('auth.userRole as ur')
@@ -280,32 +260,32 @@ export async function getOrgsForUserId(userId: UserId) {
   if (parentalOrgIds.length === 0) {
     return memberOrgs;
   }
-  const childOrgsRes = await db
+  const parentOrgsRes = await db
     .selectFrom('org')
     .select(['id', 'name', 'parentOrgId'])
     .where('parentOrgId', 'in', parentalOrgIds)
+    .orderBy('id')
     .execute();
 
-  const childOrgs = childOrgsRes.map((org) => ({
+  const parentOrgs = parentOrgsRes.map((org) => ({
     ...org,
     role: memberOrgs.find((m) => m.id === org.parentOrgId)?.role as AuthRole,
   }));
-  const childOrgIds = childOrgs.map((org) => org.id);
+  const childOrgIds = parentOrgs.map((org) => org.id);
 
   memberOrgs.map((org) => {
     if (!childOrgIds.includes(org.id)) {
-      childOrgs.push(org);
+      parentOrgs.push(org);
     }
   });
-  return childOrgs;
+
+  return parentOrgs.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-export async function getOrgsAvailableforSwitching(userId: UserId) {
-  return await db
-    .selectFrom('auth.userRole as ur')
-    .innerJoin('org', 'org.id', 'ur.orgId')
-    .select(['org.id', 'org.name', 'ur.role'])
-    .where('userId', '=', userId)
-    .orderBy('org.name')
-    .execute();
-}
+export const getOrgsForUserIdCached = unstable_cache(
+  async (id) => getOrgsForUserId(id),
+  ['orgs-for-user'],
+  {
+    revalidate: 60 * 5,
+  },
+);

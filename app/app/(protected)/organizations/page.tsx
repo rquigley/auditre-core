@@ -5,11 +5,11 @@ import { Content } from '@/components/content';
 import { Header } from '@/components/header';
 import { getById as getOrgById } from '@/controllers/org';
 import { getCurrent } from '@/controllers/session-user';
-import { getOrgsForUserId } from '@/controllers/user';
+import { getOrgsForUserIdCached } from '@/controllers/user';
 import { groupOrgs } from '@/lib/org';
 import NewOrgForm from './new-org-form';
 
-type Org = Awaited<ReturnType<typeof getOrgsForUserId>>[number];
+type Org = Awaited<ReturnType<typeof getOrgsForUserIdCached>>[number];
 type OrgWithChildren = Org & { children: OrgWithChildren[] };
 
 export default async function OrgSelect() {
@@ -17,7 +17,7 @@ export default async function OrgSelect() {
   if (!user) {
     return authRedirect();
   }
-  const orgs = await getOrgsForUserId(user.id);
+  const orgs = await getOrgsForUserIdCached(user.id);
   const groupedOrgs = groupOrgs(orgs);
   const currentOrg = await getOrgById(user.orgId);
 

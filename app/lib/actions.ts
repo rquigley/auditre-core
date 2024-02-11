@@ -41,7 +41,7 @@ import {
 } from '@/controllers/session-user';
 import {
   changeUserRole as _changeUserRole,
-  getOrgsForUserId,
+  getOrgsForUserIdCached,
 } from '@/controllers/user';
 import { getPresignedUrl } from '@/lib/aws';
 import { getRequestTypeForId } from '@/lib/request-types';
@@ -484,7 +484,7 @@ export async function changeUserRole({
   if (!user.hasPerm('org:manage-users')) {
     throw new UnauthorizedError();
   }
-  const userToModOrgs = await getOrgsForUserId(userId);
+  const userToModOrgs = await getOrgsForUserIdCached(userId);
   if (!userToModOrgs.find((org) => org.id === user.orgId)) {
     throw new UnauthorizedError();
   }
