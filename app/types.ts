@@ -128,7 +128,6 @@ export interface AuthVerificationTokenTable {
   token: string;
   expires: Date;
 }
-export type VerificationTokenUpdate = Updateable<AuthVerificationTokenTable>;
 export type NewVerificationToken = Insertable<AuthVerificationTokenTable>;
 export type VerificationToken = Selectable<AuthVerificationTokenTable>;
 
