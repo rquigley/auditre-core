@@ -21,10 +21,11 @@ import {
 } from 'docx';
 
 import { AuditData, getAuditData } from '@/controllers/audit';
+import { fOut } from '@/lib/finance';
 import { ppCurrency, ppNumber } from '@/lib/util';
 import {
   buildBalanceSheet,
-  buildStatementOfOperations,
+  buildIncomeStatement,
   filterHideIfZeroRows,
   tableMap,
 } from '../financial-statement/table';
@@ -165,7 +166,7 @@ export async function generate(auditId: AuditId) {
   });
   return {
     document,
-    documentName: `Financial Statement - ${data.basicInfo.businessName} - ${data.auditInfo.year}.docx`,
+    documentName: `Financial Statement - ${data.rt.basicInfo.businessName} - ${data.year}.docx`,
   };
 }
 
@@ -174,7 +175,7 @@ function titlePage(data: AuditData) {
     ...getPageProperties(),
     children: [
       new Paragraph({
-        text: data.basicInfo.businessName,
+        text: data.rt.basicInfo.businessName,
         heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
@@ -250,7 +251,7 @@ async function consolidatedStatementOfOperations(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
-      buildTable(await buildStatementOfOperations(data)),
+      buildTable(await buildIncomeStatement(data)),
     ],
   };
 }
@@ -350,12 +351,12 @@ function buildTableRow(row: ARRow) {
           typeof numConfig === 'object' ? numConfig.cents ?? false : false;
 
         if (numFmt === 'accounting' || numFmt === 'currency') {
-          value = ppCurrency(cell.value, {
+          value = ppCurrency(fOut(cell.value), {
             cents: showCents,
             hideCurrency: cell.style.hideCurrency,
           });
         } else if (numFmt === 'number') {
-          value = ppNumber(cell.value);
+          value = ppNumber(fOut(cell.value));
         } else {
           value = `${numFmt} NOT IMPLEMENTED`;
         }

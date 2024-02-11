@@ -1,12 +1,14 @@
-import { addFP } from './util';
-
 export class Table {
   rows: Row[] = [];
   _columns: Column[] = [];
   debug: boolean;
 
+  // hacking around limitations of hot-formula-parser
+  UNSAFE_outputRowOffset: number = 0;
+
   constructor(debug?: boolean) {
     this.debug = debug || false;
+    this.UNSAFE_outputRowOffset = 0;
   }
 
   private get lastRowNumber() {
@@ -75,23 +77,40 @@ export class Table {
     return this.getRowById(id).cells[column];
   }
 
-  getAddressRange(cell: Cell, rows: Row[], rowOffset: number = 0) {
+  getAddressRange(column: number, rows: Row[], rowOffset: number) {
+    const columnLetter = columnToLetter(column);
     let isContinuous = true;
-    for (let n = 0; n < rows.length; n++) {
+    for (let n = 0; n < rows.length - 1; n++) {
       if (rows[n].number !== rows[0].number + n) {
         isContinuous = false;
         break;
       }
     }
     if (isContinuous) {
-      const start = rows[0].number + rowOffset;
-      const end = rows[rows.length - 1].number + rowOffset;
-      return `${cell.columnLetter}${start}:${cell.columnLetter}${end}`;
+      const start = rows[0].number + 1 + rowOffset;
+      const end = rows[rows.length - 1].number + rowOffset + 1;
+      return `${columnLetter}${start}:${columnLetter}${end}`;
     } else {
       return rows
-        .map((row) => `${cell.columnLetter}${row.number + rowOffset}`)
+        .map((row) => `${columnLetter}${row.number + rowOffset}`)
         .join(',');
     }
+  }
+
+  offsetAddress(address: string, rowOffset: number, colOffset: number) {
+    const match = address.match(/^([A-Za-z]+)(\d+)$/);
+    if (!match) {
+      throw new Error(`Invalid address: ${address}`);
+    }
+    let col = match[1];
+    if (colOffset) {
+      col = columnToLetter(letterToColumn(col) + colOffset);
+    }
+    let row = parseInt(match[2], 10);
+    if (rowOffset) {
+      row += rowOffset;
+    }
+    return `${col}${row}`;
   }
 
   duplicateColumn(sourceCol: number, targetCol: number) {
@@ -112,6 +131,7 @@ export class Table {
     values: (typeof Cell.prototype._value)[],
     opts: {
       id?: string;
+      tbAccountTypeLookupRef?: string;
       tags?: string[];
       style?: Style;
       cellStyle?: Style[];
@@ -129,6 +149,9 @@ export class Table {
         throw new Error(`Duplicate row id: ${opts.id}`);
       }
       row.id = opts.id;
+    }
+    if (opts.tbAccountTypeLookupRef) {
+      row.tbAccountTypeLookupRef = opts.tbAccountTypeLookupRef;
     }
     if (opts.style) {
       row.style = opts.style;
@@ -152,23 +175,31 @@ export class Table {
     return this.rows.filter((row) => row.tags.includes(tag));
   }
 
-  addColumnCellsByTag(column: number, args: [string]) {
-    const [tag] = args;
-    const values = this.getRowsByTag(tag).map(
-      (row) => row.cells[column].value,
-    ) as number[];
+  // subtractCell(column: number, args: [string, string]) {
+  //   const [rowId1, rowId2] = args;
+  //   const value1 = Number(this.getCellByIdAndCol(rowId1, column).value);
+  //   const value2 = Number(this.getCellByIdAndCol(rowId2, column).value);
 
-    return addFP(...values);
-  }
+  //   return value1 - value2;
+  // }
 
-  multiplyCellTag(column: number, args: [string, number]) {
-    const [tag, multiplier] = args;
-    const values = this.getRowsByTag(tag).map(
-      (row) => row.cells[column].value,
-    ) as number[];
+  // addColumnCellsByTag(column: number, args: [string]) {
+  //   const [tag] = args;
+  //   const values = this.getRowsByTag(tag).map(
+  //     (row) => row.cells[column].value,
+  //   ) as number[];
 
-    return addFP(...values) * multiplier;
-  }
+  //   return values.reduce((acc, v) => acc + v, 0);
+  // }
+
+  // multiplyCellTag(column: number, args: [string, number]) {
+  //   const [tag, multiplier] = args;
+  //   const values = this.getRowsByTag(tag).map(
+  //     (row) => row.cells[column].value,
+  //   ) as number[];
+
+  //   return values.reduce((acc, v) => acc + v, 0) * multiplier;
+  // }
 }
 
 export class Row {
@@ -178,11 +209,13 @@ export class Row {
   cells: Cell[];
   tags: string[];
   id?: string;
+  tbAccountTypeLookupRef?: string;
 
   constructor(table: Table, number: number) {
     this.table = table;
     this.number = number;
     this.id = undefined;
+    this.tbAccountTypeLookupRef = undefined;
 
     this.cells = [];
     this.tags = [];
@@ -237,8 +270,9 @@ export class Cell {
   _value:
     | number
     | string
-    | { operation: 'addColumnCellsByTag'; args: [string] }
-    | { operation: 'multiplyCellTag'; args: [string, number] }
+    // | { operation: 'addColumnCellsByTag'; args: [string] }
+    // | { operation: 'multiplyCellTag'; args: [string, number] }
+    // | { operation: 'subtractCell'; args: [string, string] }
     | undefined;
   _style: Style = {};
 
@@ -284,13 +318,15 @@ export class Cell {
   }
 
   get value() {
-    if (typeof this._value === 'object' && this._value.operation) {
-      if (this._value.operation === 'addColumnCellsByTag') {
-        return this.table.addColumnCellsByTag(this.column, this._value.args);
-      } else if (this._value.operation === 'multiplyCellTag') {
-        return this.table.multiplyCellTag(this.column, this._value.args);
-      }
-    }
+    // if (typeof this._value === 'object' && this._value.operation) {
+    //   if (this._value.operation === 'addColumnCellsByTag') {
+    //     return this.table.addColumnCellsByTag(this.column, this._value.args);
+    //   } else if (this._value.operation === 'multiplyCellTag') {
+    //     return this.table.multiplyCellTag(this.column, this._value.args);
+    //   } else if (this._value.operation === 'subtractCell') {
+    //     return this.table.subtractCell(this.column, this._value.args);
+    //   }
+    // }
     return this._value;
   }
 }

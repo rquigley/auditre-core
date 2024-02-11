@@ -11,6 +11,8 @@ import { SortableHeader } from '@/components/table';
 import { overrideAccountMapping } from '@/lib/actions';
 import {
   AccountType,
+  fIn,
+  fOut,
   getBalance,
   getGroupLabel,
   groupLabels,
@@ -267,21 +269,21 @@ export function Table({ auditId }: { auditId: AuditId }) {
                 <td
                   className={`px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className} group-hover:font-bold`}
                 >
-                  {ppCurrency(row.balance1, {
+                  {ppCurrency(fOut(row.balance1), {
                     cents: true,
                   })}
                 </td>
                 <td
                   className={`px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className} group-hover:font-bold`}
                 >
-                  {ppCurrency(row.balance2, {
+                  {ppCurrency(fOut(row.balance2), {
                     cents: true,
                   })}
                 </td>
                 <td
                   className={`px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className} group-hover:font-bold`}
                 >
-                  {ppCurrency(row.balance3, {
+                  {ppCurrency(fOut(row.balance3), {
                     cents: true,
                   })}
                 </td>

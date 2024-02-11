@@ -40,11 +40,11 @@ export default async function AuditPage({
         <div className="w-full h-full">
           Data:
           <br />
-          {data
+          {/* {data
             ? Object.keys(data).map((key) => {
                 return <RequestType key={key} name={key} data={data[key]} />;
               })
-            : null}
+            : null} */}
         </div>
       </DataModal>
     </div>
