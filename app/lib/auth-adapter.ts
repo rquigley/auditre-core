@@ -1,8 +1,8 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 
 import {
-  getByEmail as getInviteByEmail,
-  update as updateInvite,
+  deleteInvitation,
+  getInvitationByEmail,
 } from '@/controllers/invitation';
 import {
   createSession,
@@ -54,13 +54,11 @@ function userToAdapterUser(
 export function AuthAdapter(): Adapter {
   return {
     createUser: async (data) => {
-      const invite = await getInviteByEmail(data.email);
+      const invite = await getInvitationByEmail(data.email);
       if (!invite) {
         throw new Error('No invite found for email');
       }
-      await updateInvite(invite.id, {
-        isUsed: true,
-      });
+      await deleteInvitation(invite.id);
       const user = await createUser(invite.orgId, {
         name: data.name,
         email: data.email,

@@ -15,14 +15,14 @@ export async function sendVerificationRequest(
   });
 }
 
-async function sendEmail({
+export async function sendEmail({
   to,
-  from,
+  from = 'noreply@auditre.co',
   subject,
   html,
 }: {
   to: string;
-  from: string;
+  from?: string;
   subject: string;
   html: string;
 }) {

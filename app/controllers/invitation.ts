@@ -1,14 +1,14 @@
 import { db } from '@/lib/db';
+import { sendEmail } from '@/lib/email';
 
 import type {
-  Invitation,
   InvitationId,
   InvitationUpdate,
   NewInvitation,
   OrgId,
 } from '@/types';
 
-export async function create(invitation: NewInvitation): Promise<Invitation> {
+export async function createInvitation(invitation: NewInvitation) {
   return await db
     .insertInto('auth.invitation')
     .values({ ...invitation })
@@ -16,9 +16,7 @@ export async function create(invitation: NewInvitation): Promise<Invitation> {
     .executeTakeFirstOrThrow();
 }
 
-export async function getById(
-  id: InvitationId,
-): Promise<Invitation | undefined> {
+export async function getInvitationById(id: InvitationId) {
   return await db
     .selectFrom('auth.invitation')
     .where('id', '=', id)
@@ -27,9 +25,7 @@ export async function getById(
     .executeTakeFirst();
 }
 
-export async function getByEmail(
-  email: string,
-): Promise<Invitation | undefined> {
+export async function getInvitationByEmail(email: string) {
   return await db
     .selectFrom('auth.invitation')
     .where('email', '=', email)
@@ -39,7 +35,7 @@ export async function getByEmail(
     .executeTakeFirst();
 }
 
-export async function getAllByOrgId(orgId: OrgId): Promise<Invitation[]> {
+export async function getInvitationsByOrgId(orgId: OrgId) {
   return await db
     .selectFrom('auth.invitation')
     .where('orgId', '=', orgId)
@@ -48,7 +44,10 @@ export async function getAllByOrgId(orgId: OrgId): Promise<Invitation[]> {
     .execute();
 }
 
-export async function update(id: InvitationId, updateWith: InvitationUpdate) {
+export async function updateInvitation(
+  id: InvitationId,
+  updateWith: InvitationUpdate,
+) {
   return await db
     .updateTable('auth.invitation')
     .set(updateWith)
@@ -58,4 +57,21 @@ export async function update(id: InvitationId, updateWith: InvitationUpdate) {
 
 export async function deleteInvitation(id: InvitationId) {
   return await db.deleteFrom('auth.invitation').where('id', '=', id).execute();
+}
+
+export async function sendInviteEmail(inviteId: InvitationId) {
+  const invite = await getInvitationById(inviteId);
+  if (!invite) {
+    throw new Error('Invitation not found');
+  }
+  await sendEmail({
+    to: invite.email,
+    subject: 'You have been invited to join an organization',
+    html: `
+    <p>You have been invited to join an organization.</p>
+    <p>
+      <a href="${process.env.NEXTAUTH_URL}/invite?id=${invite.id}&email=${encodeURIComponent(invite.email)}">Click here to accept the invitation</a>
+    </p>
+  `,
+  });
 }
