@@ -1,11 +1,8 @@
-import { UserCircleIcon } from '@heroicons/react/24/outline';
 import { notFound } from 'next/navigation';
 
-import { Content } from '@/components/content';
-import { Header } from '@/components/header';
 import { getById } from '@/controllers/org';
 import { getCurrent } from '@/controllers/session-user';
-import { Document, OrgId } from '@/types';
+import { OrgId } from '@/types';
 
 export default async function OrgPage({
   params: { orgId },
