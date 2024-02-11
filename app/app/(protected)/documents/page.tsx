@@ -58,6 +58,11 @@ export default async function DocumentsPage() {
               <Await promise={documents}>
                 {(rows) => (
                   <>
+                    {rows.length === 0 && (
+                      <div className="m-5 text-xs text-slate-700">
+                        No documents
+                      </div>
+                    )}
                     {rows.map((document) => (
                       <Row document={document} key={document.id} />
                     ))}
