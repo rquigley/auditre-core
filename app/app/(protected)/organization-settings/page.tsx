@@ -1,4 +1,5 @@
 import { ChevronRightIcon } from '@heroicons/react/20/solid';
+import clsx from 'clsx';
 import { revalidatePath } from 'next/cache';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
@@ -18,7 +19,6 @@ import {
   UnauthorizedError,
 } from '@/controllers/session-user';
 import { getAllByOrgId as getUsers } from '@/controllers/user';
-import { classNames } from '@/lib/util';
 import InviteSubmenu from './invite-submenu';
 import NewInviteForm from './new-invite-form';
 import { RoleSelector } from './role-selector';
@@ -206,7 +206,7 @@ function Invitations({ invitations }: { invitations: Invitation[] }) {
                   {user.email}
                 </p>
                 <p
-                  className={classNames(
+                  className={clsx(
                     isExpired ? 'text-red-700' : '',
                     'mt-1 flex text-xs leading-5 text-gray-500',
                   )}

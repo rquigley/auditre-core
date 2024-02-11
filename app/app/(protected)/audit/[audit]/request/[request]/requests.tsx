@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 
-import { getAllByAuditId, getRequestBySlug } from '@/controllers/request';
+import { getAllByAuditId } from '@/controllers/request';
 import { getStatusesForAuditId } from '@/controllers/request-data';
 import Request from './request';
 

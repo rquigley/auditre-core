@@ -139,11 +139,7 @@ function DocumentData({ documentId }: { documentId: string }) {
             {(data) => (
               <div>
                 {Object.keys(data).map((identifier) => (
-                  <DataRow
-                    key={identifier}
-                    identifier={identifier}
-                    data={data[identifier]}
-                  />
+                  <DataRow key={identifier} data={data[identifier]} />
                 ))}
               </div>
             )}
@@ -155,10 +151,8 @@ function DocumentData({ documentId }: { documentId: string }) {
 }
 
 function DataRow({
-  identifier,
   data,
 }: {
-  identifier: string;
   data: {
     value: string | undefined;
     label: string | undefined;
