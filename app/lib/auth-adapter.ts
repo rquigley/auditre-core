@@ -12,7 +12,7 @@ import {
 import {
   createUser,
   getBySessionTokenCached,
-  getOrgIdsByUserId,
+  getOrgsForUserIdCached,
   getByAccountProviderAndProviderId as getUserByAccountProviderAndProviderId,
   getByEmail as getUserByEmail,
   getById as getUserById,
@@ -178,18 +178,10 @@ export function AuthAdapter(): Adapter {
 
     createSession: async (data) => {
       const user = await getUserById(data.userId);
-      const availableOrgs = await getOrgIdsByUserId(data.userId);
+      const availableOrgs = await getOrgsForUserIdCached(data.userId);
       let currentOrgId;
-      if (availableOrgs.length === 1) {
+      if (availableOrgs.length > 0) {
         currentOrgId = availableOrgs[0].id;
-      } else if (availableOrgs.length > 1) {
-        // try to find the parent org. Not comprehensive, but should work for now.
-        currentOrgId = availableOrgs.find(
-          (org) => org.parentOrgId === null,
-        )?.id;
-        if (!currentOrgId) {
-          currentOrgId = availableOrgs[0].id;
-        }
       } else {
         throw new Error('No orgs found for user');
       }

@@ -5,7 +5,7 @@ import { cache } from 'react';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { getById, getOrgsForUserId } from './user';
+import { getById, getOrgsForUserIdCached } from './user';
 
 import type { AuthRole, OrgId, UserId } from '@/types';
 
@@ -35,7 +35,7 @@ export class User {
   image: string | null;
   orgId: OrgId;
   role: AuthRole;
-  orgs: Awaited<ReturnType<typeof getOrgsForUserId>>;
+  orgs: Awaited<ReturnType<typeof getOrgsForUserIdCached>>;
 
   constructor({
     id,
@@ -52,7 +52,7 @@ export class User {
     image: string | null;
     orgId: OrgId;
     role: AuthRole;
-    orgs: Awaited<ReturnType<typeof getOrgsForUserId>>;
+    orgs: Awaited<ReturnType<typeof getOrgsForUserIdCached>>;
   }) {
     this.id = id;
     this.name = name;
@@ -109,11 +109,10 @@ export async function _getCurrent(): Promise<
     if (userId) {
       const [userRes, orgs] = await Promise.all([
         getByIdCached(userId),
-        getOrgsForUserId(userId),
+        getOrgsForUserIdCached(userId),
       ]);
 
       const role = orgs.find((org) => org.id === session.currentOrgId)?.role;
-
       if (role) {
         const user = new User({
           id: userRes.id,
@@ -158,7 +157,7 @@ export class UnauthorizedError extends Error {
 }
 
 export async function switchOrg(userId: UserId, orgId: OrgId) {
-  const availableOrgs = await getOrgsForUserId(userId);
+  const availableOrgs = await getOrgsForUserIdCached(userId);
   const orgToSwitchTo = availableOrgs.find((org) => org.id === orgId);
   if (!orgToSwitchTo) {
     throw new UnauthorizedError();
