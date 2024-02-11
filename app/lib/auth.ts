@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import EmailProvider from 'next-auth/providers/email';
 import GoogleProvider from 'next-auth/providers/google';
 
-import { getByEmail as getInviteByEmail } from '@/controllers/invitation';
+import { getInvitationByEmail } from '@/controllers/invitation';
 import { getByEmail as getUserByEmail, updateUser } from '@/controllers/user';
 //import GitHubProvider from 'next-auth/providers/github';
 import { AuthAdapter } from '@/lib/auth-adapter';
@@ -161,7 +161,7 @@ export const {
           }
           return true;
         }
-        if (await getInviteByEmail(newEmail)) {
+        if (await getInvitationByEmail(newEmail)) {
           return true;
         }
       }
