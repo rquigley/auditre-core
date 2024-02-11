@@ -446,7 +446,7 @@ export async function createOrg(
       name: formData.get('name'),
     });
 
-    const res = await _createOrg({
+    await _createOrg({
       name: data.name,
       canHaveChildOrgs: false,
       parentOrgId: user.orgId,
