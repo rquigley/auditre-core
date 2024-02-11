@@ -1,25 +1,27 @@
 import dayjs from 'dayjs';
 import ExcelJS from 'exceljs';
+import { Parser } from 'hot-formula-parser';
 
 import {
   buildBalanceSheet,
   buildCashFlows,
-  buildStatementOfOperations,
+  buildIncomeStatement,
 } from '@/controllers/financial-statement/table';
 import {
   AccountType,
   AccountTypeGroup,
   accountTypeGroupToLabel,
   accountTypes,
+  fOut,
   groupAccountTypes,
+  isAccountType,
 } from '@/lib/finance';
-import { isKey } from '@/lib/util';
 import { AuditId } from '@/types';
 import { getAllAccountBalancesByAuditIdAndYear } from '../account-mapping';
 import { getAuditData } from '../audit';
 
 import type { AuditData } from '@/controllers/audit';
-import type { Cell as TableCell, Row as TableRow } from '@/lib/table';
+import type { Table, Cell as TableCell, Row as TableRow } from '@/lib/table';
 
 const numFmt = '_($* #,##0_);_($* (#,##0);_($* "-"??_);_(@_)';
 const numFmtWithCents = '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
@@ -43,7 +45,7 @@ export async function generate(auditId: AuditId) {
     'year2DocumentId',
     'year3DocumentId',
   ]) {
-    const dateStr = data.trialBalance[identifier].trialBalanceDate;
+    const dateStr = data.rt.trialBalance[identifier].trialBalanceDate;
     if (!dateStr) {
       continue;
     }
@@ -95,7 +97,7 @@ export async function generate(auditId: AuditId) {
 
   return {
     document: workbook,
-    documentName: `Financial Statement - ${data.basicInfo.businessName} - ${data.auditInfo.year}.xlsx`,
+    documentName: `Financial Statement - ${data.rt.basicInfo.businessName} - ${data.rt.auditInfo.year}.xlsx`,
   };
 }
 
@@ -114,10 +116,14 @@ async function addBalanceSheet({
 }) {
   const t = await buildBalanceSheet(data);
 
-  ws.addRow([data.basicInfo.businessName]);
+  const parser = getParser(t, data);
+
+  ws.addRow([data.rt.basicInfo.businessName]);
   ws.addRow(['Consolidated balances sheet']);
   ws.addRow([]);
   ws.addRow([]);
+
+  t.UNSAFE_outputRowOffset = 4;
 
   const widths: number[] = [];
   t.rows.forEach((row) => {
@@ -127,6 +133,7 @@ async function addBalanceSheet({
       tbWorksheet,
       tbWorksheet2,
       accountTypeToCellMap,
+      parser,
     });
     rowWidths.forEach((w, i) => {
       widths[i] = Math.max(widths[i] || 0, w);
@@ -156,12 +163,15 @@ async function addIncomeStatement({
   tbWorksheet: ExcelJS.Worksheet;
   tbWorksheet2: ExcelJS.Worksheet | undefined;
 }) {
-  const t = await buildStatementOfOperations(data);
+  const t = buildIncomeStatement(data);
+  const parser = getParser(t, data);
 
-  ws.addRow([data.basicInfo.businessName]);
+  ws.addRow([data.rt.basicInfo.businessName]);
   ws.addRow(['Consolidated statement of operations']);
   ws.addRow([]);
   ws.addRow([]);
+
+  t.UNSAFE_outputRowOffset = 4;
 
   const widths: number[] = [];
   t.rows.forEach((row) => {
@@ -171,6 +181,8 @@ async function addIncomeStatement({
       tbWorksheet,
       tbWorksheet2,
       accountTypeToCellMap,
+      parser,
+      debug: true,
     });
     rowWidths.forEach((w, i) => {
       widths[i] = Math.max(widths[i] || 0, w);
@@ -201,13 +213,15 @@ async function addCashFlow({
   tbWorksheet2: ExcelJS.Worksheet | undefined;
 }) {
   const t = await buildCashFlows(data);
+  const parser = getParser(t, data);
 
-  ws.addRow([data.basicInfo.businessName]);
+  ws.addRow([data.rt.basicInfo.businessName]);
   ws.addRow(['Consolidated statement of cash flows']);
   ws.addRow([]);
   ws.addRow([]);
 
   const widths: number[] = [];
+
   t.rows.forEach((row) => {
     const { widths: rowWidths } = addTableRow({
       ws,
@@ -215,6 +229,7 @@ async function addCashFlow({
       tbWorksheet,
       tbWorksheet2,
       accountTypeToCellMap,
+      parser,
     });
     rowWidths.forEach((w, i) => {
       widths[i] = Math.max(widths[i] || 0, w);
@@ -237,61 +252,105 @@ function addTableRow({
   tbWorksheet,
   tbWorksheet2,
   accountTypeToCellMap,
+  parser,
+  debug = false,
 }: {
   ws: ExcelJS.Worksheet;
   row: TableRow;
   tbWorksheet: ExcelJS.Worksheet;
   tbWorksheet2: ExcelJS.Worksheet | undefined;
   accountTypeToCellMap: Map<AccountType, string>;
+  parser: Parser;
+  debug?: boolean;
 }) {
   const values = row.cells.map((cell: TableCell) => {
-    const val = cell.rawValue();
-    if (typeof val === 'object') {
-      if (val.operation === 'addColumnCellsByTag') {
-        const tag = val.args[0];
-        const taggedRows = row.table.getRowsByTag(tag);
-        const curRow = (ws?.lastRow?.number || 0) + 1;
-        const rowOffset = curRow - row.number;
-        const range = cell.table.getAddressRange(cell, taggedRows, rowOffset);
+    let val = cell.rawValue();
 
-        return {
-          formula: `=SUM(${range})`,
-          result: 7,
-        };
-      } else if (val.operation === 'multiplyCellTag') {
-        const tag = val.args[0];
-        const multiplier = val.args[1];
-        const taggedRows = row.table.getRowsByTag(tag);
-        const curRow = (ws?.lastRow?.number || 0) + 1;
-        const rowOffset = curRow - row.number;
-        const range = cell.table.getAddressRange(cell, taggedRows, rowOffset);
-
-        return {
-          formula: `=SUM(${range}) * ${multiplier}`,
+    if (typeof val === 'string' && val.startsWith('=')) {
+      const parsed = parser.parse(val.substring(1));
+      if (parsed.error) {
+        console.log(`Error parsing ${val}: ${parsed.error}`);
+        val = `Error: ${parsed.error}`;
+      } else if (typeof parsed.result === 'boolean') {
+        val = parsed.result ? 'TRUE' : 'FALSE';
+        // } else if (parsed.result === null) {
+        //   val = '';
+      } else {
+        val = {
+          formula: `=${parsed.result}`,
           result: 7,
         };
       }
+      debug &&
+        console.log('->', {
+          val,
+          raw: cell.rawValue(),
+        });
     }
-    if (isAccountType(row.id) && cell.column === 1) {
-      return {
-        formula: `=SUM('${tbWorksheet.name}'!${accountTypeToCellMap.get(
-          row.id as AccountType,
-        )})`,
-        result: 7,
-      };
-    } else if (tbWorksheet2 && isAccountType(row.id) && cell.column === 2) {
-      return {
-        formula: `=SUM('${tbWorksheet2.name}'!${accountTypeToCellMap.get(
-          row.id as AccountType,
-        )})`,
-        result: 7,
-      };
-    }
+    // console.log(val, cell.rawValue());
+
+    // if (typeof val === 'object') {
+    //   if (val.operation === 'addColumnCellsByTag') {
+    //     const tag = val.args[0];
+    //     const taggedRows = row.table.getRowsByTag(tag);
+    //     const curRow = ws?.lastRow?.number || 0;
+    //     const rowOffset = curRow - row.number;
+    //     const range = cell.table.getAddressRange(cell, taggedRows, rowOffset);
+
+    //     return {
+    //       formula: `=SUM(${range})`,
+    //       result: 7,
+    //     };
+    //   } else
+    //   if (val.operation === 'multiplyCellTag') {
+    //     const tag = val.args[0];
+    //     const multiplier = val.args[1];
+    //     const taggedRows = row.table.getRowsByTag(tag);
+    //     const curRow = ws?.lastRow?.number || 0;
+    //     const rowOffset = curRow - row.number;
+    //     const range = cell.table.getAddressRange(cell, taggedRows, rowOffset);
+
+    //     return {
+    //       formula: `=SUM(${range}) * ${multiplier}`,
+    //       result: 7,
+    //     };
+    //   } else if (val.operation === 'subtractCell') {
+    //     const [id1, id2] = val.args;
+    //     const row1 = row.table.getRowById(id1);
+    //     const row2 = row.table.getRowById(id2);
+    //     const curRow = ws?.lastRow?.number || 0;
+    //     const rowOffset = curRow - row.number;
+
+    //     return {
+    //       formula: `=${cell.table.offsetAddress(row1.cells[cell.column].address, rowOffset, 0)} - ${cell.table.offsetAddress(row2.cells[cell.column].address, rowOffset, 0)}`,
+    //       result: 7,
+    //     };
+    //   }
+    // }
+    // if (isAccountType(row.tbAccountTypeLookupRef) && cell.column === 1) {
+    //   return {
+    //     formula: `=SUM('${tbWorksheet.name}'!${accountTypeToCellMap.get(
+    //       row.tbAccountTypeLookupRef as AccountType,
+    //     )})`,
+    //     result: 7,
+    //   };
+    // } else if (
+    //   tbWorksheet2 &&
+    //   isAccountType(row.tbAccountTypeLookupRef) &&
+    //   cell.column === 2
+    // ) {
+    //   return {
+    //     formula: `=SUM('${tbWorksheet2.name}'!${accountTypeToCellMap.get(
+    //       row.tbAccountTypeLookupRef as AccountType,
+    //     )})`,
+    //     result: 7,
+    //   };
+    // }
 
     if (cell.style.indent) {
-      return `${'    '.repeat(cell.style.indent)}${cell.value}`;
+      return `${'    '.repeat(cell.style.indent)}${val}`;
     }
-    return cell.value;
+    return val;
   });
 
   const r = ws.addRow(values);
@@ -331,14 +390,14 @@ function addTableRow({
     widths[cell.column] = String(cell.value).length;
   });
 
-  if (row.hasTag('hide-if-zero')) {
-    const hasNonZeroValues = row.cells.some(
-      (cell) => typeof cell.value === 'number' && cell.value !== 0,
-    );
-    if (!hasNonZeroValues) {
-      r.hidden = true;
-    }
-  }
+  // if (row.hasTag('hide-if-zero')) {
+  //   const hasNonZeroValues = row.cells.some(
+  //     (cell) => typeof cell.value === 'number' && cell.value !== 0,
+  //   );
+  //   if (!hasNonZeroValues) {
+  //     r.hidden = true;
+  //   }
+  // }
 
   return { widths };
 }
@@ -348,7 +407,7 @@ async function addTrialBalance(
   data: AuditData,
   date: dayjs.Dayjs,
 ) {
-  ws.addRow([data.basicInfo.businessName]);
+  ws.addRow([data.rt.basicInfo.businessName]);
 
   const year = date.format('YYYY');
 
@@ -435,7 +494,7 @@ async function addTrialBalance(
   for (const a of accounts) {
     ++curRowNumber;
     ws.getCell(`A${curRowNumber}`).value = a.accountName;
-    ws.getCell(`B${curRowNumber}`).value = a.balance;
+    ws.getCell(`B${curRowNumber}`).value = fOut(a.balance);
     ws.getCell(`C${curRowNumber}`).value = a.accountType;
 
     ws.getCell(`C${curRowNumber}`).dataValidation = {
@@ -519,12 +578,16 @@ async function addTrialBalance(
       widths[0] = Math.max(widths[0], types[accountType].length);
 
       accountTypeToCellMap.set(accountType as AccountType, `F${curRowNumber}`);
+
+      // console.log(`TOTAL_${accountType}`);
       ws.getCell(`F${curRowNumber}`).value = {
         formula: `SUMIFS(B${firstRowNumber}:B${
           totalRow.number - 1
         }, C${firstRowNumber}:C${totalRow.number - 1}, "${accountType}")`,
         result: 7,
       };
+      ws.getCell(`F${curRowNumber}`).name = `TB_${year}_TOTAL_${accountType}`;
+      // console.log('-->', ws.getCell(`F${curRowNumber}`).names);
     }
     ++curRowNumber;
 
@@ -567,6 +630,10 @@ async function addTrialBalance(
 
     ++curRowNumber;
   }
+  ws.getCell(`B2`).value = 12345;
+  ws.getCell(`B2`).name = `TB_${year}_TOTAL_HAHA`;
+  ws.getCell(`B3`).value = 12345;
+  ws.getCell(`B3`).name = `TOTAL_HAHA`;
 
   curRowNumber += 4;
   ws.getCell(`E${curRowNumber}`).value = 'Total assets';
@@ -673,9 +740,123 @@ function applyBGFormatting(
 //   };
 // }
 
-function isAccountType(v: string | undefined): v is AccountType {
-  if (v === undefined) {
-    return false;
+// function isAccountType(v: string | undefined): v is AccountType {
+//   if (v === undefined) {
+//     return false;
+//   }
+//   return isKey(accountTypes, v);
+// }
+
+function getParser(table: Table, data: AuditData) {
+  const parser = new Parser();
+
+  function parseCell(value: string | number) {
+    if (typeof value === 'string' && value.startsWith('=')) {
+      const parsed = parser.parse(value.substring(1));
+      if (parsed.error) {
+        throw new Error(parsed.error);
+      } else {
+        return parsed.result;
+      }
+    } else {
+      return value;
+    }
   }
-  return isKey(accountTypes, v);
+
+  parser.setFunction('TBLOOKUP', (params) => {
+    if (
+      !Array.isArray(params) ||
+      params.length !== 2 ||
+      typeof params[0] !== 'string' ||
+      typeof params[1] !== 'string'
+    ) {
+      console.log(`Invalid TBLOOKUP ${String(params)}`);
+      throw new Error('Invalid TBLOOKUP');
+    }
+
+    const [account, year] = params as [string, string];
+    return `TB_${year}_TOTAL_${account}`;
+    // return {
+    //   formula: `=TB_${year}_TOTAL_${account}`,
+    //   result: data.totalsNew[year].get(account as AccountType),
+    // };
+  });
+
+  parser.setFunction('GET_BY_ID', (params) => {
+    if (
+      !Array.isArray(params) ||
+      params.length !== 2 ||
+      typeof params[0] !== 'string' ||
+      typeof params[1] !== 'number'
+    ) {
+      console.log(`Invalid GET_BY_ID ${String(params)}`);
+      throw new Error('Invalid GET_BY_ID');
+    }
+
+    const [id, column] = params as [string, number];
+
+    const row = table.getRowById(id);
+    const cell = row.cells[column];
+    if (!cell) {
+      const msg = `GET_BY_ID: cell doesn't exist ${String(params)}`;
+      console.log(msg);
+      throw new Error(msg);
+    }
+    return parseCell(cell.value || '');
+  });
+
+  parser.setFunction('IS_NETLOSS', (params) => {
+    if (
+      !Array.isArray(params) ||
+      params.length !== 1 ||
+      typeof params[0] !== 'string'
+    ) {
+      console.log(`Invalid IS_NETLOSS ${String(params)}`);
+      throw new Error('Invalid IS_NETLOSS');
+    }
+
+    const [year] = params as [string];
+    const netLossRow = data.incomeStatementTable.getRowById('NET-LOSS');
+    let val;
+    if (year === data.year) {
+      val = netLossRow.cells[1].value;
+    } else if (year === data.prevYear) {
+      val = netLossRow.cells[2].value;
+    } else {
+      throw new Error(`IS_NETLOSS: Invalid year: ${year}`);
+    }
+    if (typeof val !== 'string') {
+      throw new Error(`IS_NETLOSS: Invalid value: ${val}`);
+    }
+    const parser2 = getParser(data.incomeStatementTable, data);
+    return parser2.parse(val.substring(1)).result;
+  });
+
+  parser.setFunction('SUMTAGCOL', (params) => {
+    if (
+      !Array.isArray(params) ||
+      params.length !== 2 ||
+      typeof params[0] !== 'string' ||
+      typeof params[1] !== 'number'
+    ) {
+      console.log(`Invalid SUMTAGCOL ${String(params)}`);
+      throw new Error('Invalid SUMTAGCOL');
+    }
+    const [tag, column] = params as [string, number];
+
+    const taggedRows = table.getRowsByTag(tag);
+
+    const range = table.getAddressRange(
+      column,
+      taggedRows,
+      table.UNSAFE_outputRowOffset,
+    );
+
+    return `SUM(${range})`;
+    // return {
+    //   formula: `=SUM(${range})`,
+    //   result: 7,
+    // };
+  });
+  return parser;
 }
