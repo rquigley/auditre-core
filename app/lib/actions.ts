@@ -53,7 +53,6 @@ import type {
   AuthRole,
   DocumentId,
   OrgId,
-  RequestDataId,
   S3File,
 } from '@/types';
 
