@@ -3,7 +3,6 @@ import clsx from 'clsx';
 import { revalidatePath } from 'next/cache';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
 import { z } from 'zod';
 
 import { Content } from '@/components/content';
