@@ -1,9 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
 
 import { getCurrent } from '@/controllers/session-user';
+import EmailLoginButton from './email-login-button';
 import LoginButton from './login-button';
 import Redirector from './redirector';
 
@@ -12,6 +12,8 @@ export default async function Login() {
   if (user) {
     redirect('/');
   }
+
+  const showEmailLogin = false;
 
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
@@ -27,21 +29,25 @@ export default async function Login() {
             />
           </Link>
           <h3 className="text-xl font-semibold">Sign In</h3>
-          <p className="text-sm text-gray-500">
+          {/* <p className="text-sm text-gray-500">
             Use your email and password to sign in
-          </p>
+          </p> */}
         </div>
-        {/* <LoginForm /> */}
-        <Suspense
-          fallback={
-            <div className="my-2 h-10 w-full rounded-md border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />
-          }
-        >
-          {/* <LoginButton service="github" /> */}
-          <LoginButton service="google" />
-          <Redirector hasUser={!!user} />
-        </Suspense>
+        {showEmailLogin ? (
+          <div className="px-2">
+            {/* <LoginButton service="github" /> */}
+
+            <EmailLoginButton />
+          </div>
+        ) : (
+          <div className="px-2">
+            {/* <LoginButton service="github" /> */}
+            <LoginButton service="google" />
+            <EmailLoginButton />
+          </div>
+        )}
       </div>
+      <Redirector hasUser={!!user} />
     </div>
   );
 }
