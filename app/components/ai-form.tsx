@@ -20,7 +20,6 @@ export default function AI({
   const {
     formState: { isDirty },
     register,
-    setValue,
     getValues,
     handleSubmit,
     reset,

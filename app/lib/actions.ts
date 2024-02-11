@@ -23,7 +23,7 @@ import {
 import { addDemoData } from '@/controllers/audit-demo';
 import {
   create as _createDocument,
-  deleteDocument as _deleteDocument,
+  // deleteDocument as _deleteDocument,
   getById as getDocumentById,
   process as processDocument,
   reAskQuestion,
