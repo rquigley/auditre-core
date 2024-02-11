@@ -103,6 +103,7 @@ export class OpsAppStack extends Stack {
         }),
       ],
     });
+
     //policy.attachToUser(user);
 
     let provider;
@@ -437,6 +438,17 @@ export class OpsAppStack extends Stack {
         // certificate,
       },
     );
+
+    const appPolicy = new iam.ManagedPolicy(this, 'AppPolicy', {
+      statements: [
+        new iam.PolicyStatement({
+          actions: ['ses:SendEmail'],
+
+          resources: ['*'],
+        }),
+      ],
+    });
+    appService.taskDefinition.taskRole.addManagedPolicy(appPolicy);
 
     s3Bucket.grantReadWrite(appService.taskDefinition.taskRole);
 
