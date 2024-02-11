@@ -1,3 +1,4 @@
+import { addFP } from '@/lib/util';
 import {
   getColumnMap,
   getById as getDocumentById,
@@ -57,12 +58,10 @@ export async function getCertificateTransactionDocumentData(auditId: AuditId) {
     const sharesIssued = sheet.rows.reduce((sum, row) => {
       return sum + Number(row[map.sharesIssued]);
     }, 0);
-    const carryingValue = sheet.rows.reduce((sum, row) => {
-      return sum + Number(row[map.carryingValue]);
-    }, 0);
-    const liquidationPreference = sheet.rows.reduce((sum, row) => {
-      return sum + Number(row[map.liquidationPreference]);
-    }, 0);
+    const carryingValue = addFP(...sheet.rows.map((r) => r[map.carryingValue]));
+    const liquidationPreference = addFP(
+      ...sheet.rows.map((r) => r[map.liquidationPreference]),
+    );
 
     return {
       name: sheet.sheetTitle,
@@ -104,9 +103,9 @@ export async function getSBCReportData(auditId: AuditId) {
   if (!optionValuesCol) {
     return null;
   }
-  const commonOutstanding = optionValuesSheet.rows.reduce((sum, row) => {
-    return sum + Number(row[optionValuesCol]);
-  }, 0);
+  const commonOutstanding = addFP(
+    ...optionValuesSheet.rows.map((row) => row[optionValuesCol]),
+  );
   return {
     commonOutstanding,
   };

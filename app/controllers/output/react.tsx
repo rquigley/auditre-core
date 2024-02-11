@@ -1,16 +1,14 @@
 import { XCircleIcon } from '@heroicons/react/20/solid';
 import clsx from 'clsx';
 import dedent from 'dedent';
-import { Parser } from 'hot-formula-parser';
 import { Inconsolata } from 'next/font/google';
 
 import {
   buildBalanceSheet,
   buildCashFlows,
-  buildIncomeStatement,
+  buildStatementOfOperations,
   tableMap,
 } from '@/controllers/financial-statement/table';
-import { AccountType, fOut } from '@/lib/finance';
 import { ppCurrency, ppNumber } from '@/lib/util';
 import { AuditId } from '@/types';
 import { getAuditData } from '../audit';
@@ -42,7 +40,7 @@ export async function AuditPreview({
   return (
     <div className="text-sm text-slate-800 max-w-3xl">
       <div className=" mb-4 border rounded-md p-4">
-        <h1 className="text-lg font-bold">{data.rt.basicInfo.businessName}</h1>
+        <h1 className="text-lg font-bold">{data.basicInfo.businessName}</h1>
         <div>Conslidated Financial Statements</div>
         <div>Year Ended {data.fiscalYearEnd}</div>
       </div>
@@ -84,21 +82,21 @@ export async function AuditPreview({
           </a>
         </h2>
 
-        {buildTable(await buildBalanceSheet(data), data)}
+        {buildTable(await buildBalanceSheet(data))}
       </div>
 
       <div
-        id="section-income-statement"
+        id="section-statement-of-operations"
         className="max-w-3xl mb-4 border rounded-md p-4"
       >
         <h2 className="text-lg font-bold">
-          <a href="#section-income-statement" className="group relative">
+          <a href="#section-statement-of-operations" className="group relative">
             2. Consolidated Statement of Operations
             <Paperclip />
           </a>
         </h2>
 
-        {buildTable(await buildIncomeStatement(data), data)}
+        {buildTable(await buildStatementOfOperations(data))}
       </div>
 
       <div id="section-sose" className="max-w-3xl mb-4 border rounded-md p-4">
@@ -122,7 +120,7 @@ export async function AuditPreview({
           </a>
         </h2>
 
-        {buildTable(await buildCashFlows(data), data)}
+        {buildTable(await buildCashFlows(data))}
       </div>
 
       <div id="section-org" className="max-w-3xl mb-4 border rounded-md p-4">
@@ -208,10 +206,7 @@ async function DataSection({
       if (mapKey in tableMap) {
         const tableBuildFn = tableMap[mapKey as keyof typeof tableMap];
         output.push(
-          <span key={mapKey}>
-            {' '}
-            {buildTable(await tableBuildFn(data), data)}
-          </span>,
+          <span key={mapKey}> {buildTable(await tableBuildFn(data))}</span>,
         );
       } else {
         throw new Error(`Unknown table: ${mapKey}`);
@@ -267,137 +262,23 @@ function Paperclip() {
   );
 }
 
-function getParser(table: Table, data: AuditData) {
-  const parser = new Parser();
-
-  function parseCell(value: string | number) {
-    if (typeof value === 'string' && value.startsWith('=')) {
-      const parsed = parser.parse(value.substring(1));
-      if (parsed.error) {
-        throw new Error(parsed.error);
-      } else {
-        return parsed.result;
-      }
-    } else {
-      return value;
-    }
-  }
-
-  parser.setFunction('TBLOOKUP', (params) => {
-    if (
-      !Array.isArray(params) ||
-      params.length !== 2 ||
-      typeof params[0] !== 'string' ||
-      typeof params[1] !== 'string'
-    ) {
-      console.log(`Invalid TBLOOKUP ${String(params)}`);
-      throw new Error('Invalid TBLOOKUP');
-    }
-
-    const [account, year] = params as [string, string];
-    return data.totalsNew[year].get(account as AccountType);
-  });
-
-  parser.setFunction('GET_BY_ID', (params) => {
-    if (
-      !Array.isArray(params) ||
-      params.length !== 2 ||
-      typeof params[0] !== 'string' ||
-      typeof params[1] !== 'number'
-    ) {
-      console.log(`Invalid GET_BY_ID ${String(params)}`);
-      throw new Error('Invalid GET_BY_ID');
-    }
-
-    const [id, column] = params as [string, number];
-
-    const row = table.getRowById(id);
-    const cell = row.cells[column];
-    if (!cell) {
-      const msg = `SUMTAGCOL: cell doesn't exist ${String(params)}`;
-      console.log(msg);
-      throw new Error(msg);
-    }
-    return parseCell(cell.value || '');
-  });
-
-  parser.setFunction('IS_NETLOSS', (params) => {
-    if (
-      !Array.isArray(params) ||
-      params.length !== 1 ||
-      typeof params[0] !== 'string'
-    ) {
-      console.log(`Invalid IS_NETLOSS ${String(params)}`);
-      throw new Error('Invalid IS_NETLOSS');
-    }
-
-    const [year] = params as [string];
-    const netLossRow = data.incomeStatementTable.getRowById('NET-LOSS');
-    let val;
-    if (year === data.year) {
-      val = netLossRow.cells[1].value;
-    } else if (year === data.prevYear) {
-      val = netLossRow.cells[2].value;
-    } else {
-      throw new Error(`IS_NETLOSS: Invalid year: ${year}`);
-    }
-    if (typeof val !== 'string') {
-      throw new Error(`IS_NETLOSS: Invalid value: ${val}`);
-    }
-    const parser2 = getParser(data.incomeStatementTable, data);
-    return parser2.parse(val.substring(1)).result;
-  });
-
-  parser.setFunction('SUMTAGCOL', (params) => {
-    if (
-      !Array.isArray(params) ||
-      params.length !== 2 ||
-      typeof params[0] !== 'string' ||
-      typeof params[1] !== 'number'
-    ) {
-      console.log(`Invalid SUMTAGCOL ${String(params)}`);
-      throw new Error('Invalid SUMTAGCOL');
-    }
-    const [tag, column] = params as [string, number];
-
-    return table.getRowsByTag(tag).reduce((acc, row) => {
-      const cell = row.cells[column];
-      if (!cell) {
-        const msg = `SUMTAGCOL: cell doesn't exist ${String(params)}`;
-        console.log(msg);
-        throw new Error(msg);
-      }
-      return acc + Number(parseCell(cell.value || ''));
-    }, 0);
-  });
-  return parser;
-}
-
-function buildTable(table: Table, data: AuditData): React.ReactNode {
-  const parser = getParser(table, data);
-
+function buildTable(table: Table): React.ReactNode {
   return (
     <table className="w-full mt-2" key="12345">
-      <tbody>
-        {table.rows.map((row: Row) => buildTableRow(row, data, parser))}
-      </tbody>
+      <tbody>{table.rows.map((row: Row) => buildTableRow(row))}</tbody>
     </table>
   );
 }
 
-function buildTableRow(
-  row: Row,
-  data: AuditData,
-  parser: Parser,
-): React.ReactNode {
-  // if (row.hasTag('hide-if-zero')) {
-  //   const hasNonZeroValues = row.cells.some(
-  //     (cell) => typeof cell.value === 'number' && cell.value !== 0,
-  //   );
-  //   if (!hasNonZeroValues) {
-  //     return null;
-  //   }
-  // }
+function buildTableRow(row: Row): React.ReactNode {
+  if (row.hasTag('hide-if-zero')) {
+    const hasNonZeroValues = row.cells.some(
+      (cell) => typeof cell.value === 'number' && cell.value !== 0,
+    );
+    if (!hasNonZeroValues) {
+      return null;
+    }
+  }
   return (
     <tr key={row.number} className={row.number % 2 === 0 ? 'bg-slate-100' : ''}>
       {row.cells.map((cell, idx) => {
@@ -418,16 +299,7 @@ function buildTableRow(
         });
 
         let value;
-
-        if (typeof cell.value === 'string' && cell.value.startsWith('=')) {
-          const parsed = parser.parse(cell.value.substring(1));
-          value = parsed.error ? `Error: ${parsed.error}` : parsed.result;
-        } else {
-          value = cell.value;
-        }
-
-        // At this point, all formulae have been evaluated
-        if (typeof value === 'number' && cell.style.numFmt) {
+        if (typeof cell.value === 'number' && cell.style.numFmt) {
           const numConfig = cell.style.numFmt;
           const numFmt =
             typeof numConfig === 'object' ? numConfig.type : numConfig;
@@ -438,10 +310,10 @@ function buildTableRow(
             value = (
               <div className={`flex justify-between ${financeFont.className}`}>
                 <div className="pl-5">
-                  {value !== 0 && !cell.style.hideCurrency ? '$' : ''}
+                  {cell.value !== 0 && !cell.style.hideCurrency ? '$' : ''}
                 </div>
                 <div>
-                  {ppCurrency(fOut(value), {
+                  {ppCurrency(cell.value, {
                     cents: showCents,
                     hideCurrency: true,
                   })}
@@ -451,7 +323,7 @@ function buildTableRow(
           } else if (numFmt === 'currency') {
             value = (
               <div className={financeFont.className}>
-                {ppCurrency(fOut(value), {
+                {ppCurrency(cell.value, {
                   cents: showCents,
                   hideCurrency: cell.style.hideCurrency,
                 })}
@@ -460,16 +332,14 @@ function buildTableRow(
           } else if (numFmt === 'number') {
             value = (
               <span className={`${financeFont.className}`}>
-                {ppNumber(value)}
+                {ppNumber(cell.value)}
               </span>
             );
           } else {
             value = `${numFmt} NOT IMPLEMENTED`;
           }
-        } else if (typeof value !== 'string') {
-          throw new Error(
-            `Invalid value type: ${value}, type: ${typeof value}`,
-          );
+        } else {
+          value = String(cell.value);
         }
         return (
           <td className={styles} key={idx}>
@@ -501,19 +371,19 @@ function TableOfContents({
         1. Consolidated Balance Sheet
       </a>
       <a
-        href="#section-income-statement"
+        href="#section-statement-of-operations"
         className="block text-slate-700 underline hover:no-underline"
       >
         2. Consolidated Statement of Operations
       </a>
       <a
-        href="#section-income-statement"
+        href="#section-statement-of-operations"
         className="block text-slate-700 underline hover:no-underline"
       >
         3. Conslidated Statement of Stockholders&apos; Equity (Deficit)
       </a>
       <a
-        href="#section-income-statement"
+        href="#section-statement-of-operations"
         className="block text-slate-700 underline hover:no-underline"
       >
         4. Conslidated Statement of Cash Flows

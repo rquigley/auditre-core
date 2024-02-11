@@ -7,6 +7,7 @@ import {
 } from '@/controllers/account-mapping';
 import { groupFixedAccountsByCategories } from '@/lib/finance';
 import { Row, Table } from '@/lib/table';
+import { addFP } from '@/lib/util';
 import {
   getCertificateTransactionDocumentData,
   getSBCReportData,
@@ -16,7 +17,7 @@ import type { AuditData } from '../audit';
 
 export const tableMap = {
   'balance-sheet': buildBalanceSheet,
-  'income-statement': buildIncomeStatement,
+  'statement-of-operations': buildStatementOfOperations,
   'property-and-equipment-lives': buildPropertyAndEquipmentLives,
   'property-and-equipment-net': buildPropertyAndEquipmentNet,
   'fvm-liabilities': buildFVMLiabilities,
@@ -40,7 +41,15 @@ export function filterHideIfZeroRows(rows: Row[]) {
   });
 }
 
-export function buildBalanceSheet(data: AuditData) {
+export async function buildBalanceSheet(data: AuditData) {
+  const totals = data.totals;
+
+  const date2Str = data.trialBalance.year2DocumentId.trialBalanceDate;
+  const date2 = dayjs(date2Str);
+  const year2 = date2.format('YYYY');
+
+  const totals2 = await getBalancesByAccountType(data.auditId, year2);
+  console.log(totals);
   const t = new Table();
   t.columns = [
     {},
@@ -48,7 +57,8 @@ export function buildBalanceSheet(data: AuditData) {
     { style: { numFmt: 'accounting', align: 'right' } },
   ];
 
-  t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, data.prevYear], {
+  t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, year2], {
+    id: 'date-row', // -- TODO, what is this???
     style: { bold: true, borderBottom: 'thin' },
   });
 
@@ -67,10 +77,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Cash',
-      `=TBLOOKUP('ASSET_CASH_AND_CASH_EQUIVALENTS', '${data.year}')`,
-      `=TBLOOKUP('ASSET_CASH_AND_CASH_EQUIVALENTS', '${data.prevYear}')`,
+      totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS'),
+      totals2.get('ASSET_CASH_AND_CASH_EQUIVALENTS'),
     ],
     {
+      id: 'ASSET_CASH_AND_CASH_EQUIVALENTS',
       tags: [
         'total-current-assets',
         'hide-if-zero',
@@ -83,10 +94,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Inventory',
-      `=TBLOOKUP('ASSET_INVENTORY', '${data.year}')`,
-      `=TBLOOKUP('ASSET_INVENTORY', '${data.prevYear}')`,
+      totals.get('ASSET_INVENTORY'),
+      totals2.get('ASSET_INVENTORY'),
     ],
     {
+      id: 'ASSET_INVENTORY',
       tags: [
         'total-current-assets',
         'hide-if-zero',
@@ -103,10 +115,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Prepaid expenses',
-      `=TBLOOKUP('ASSET_PREPAID_EXPENSES', '${data.year}')`,
-      `=TBLOOKUP('ASSET_PREPAID_EXPENSES', '${data.prevYear}')`,
+      totals.get('ASSET_PREPAID_EXPENSES'),
+      totals2.get('ASSET_PREPAID_EXPENSES'),
     ],
     {
+      id: 'ASSET_PREPAID_EXPENSES',
       tags: [
         'total-current-assets',
         'hide-if-zero',
@@ -123,10 +136,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Prepaid expenses and other current assets',
-      `=TBLOOKUP('ASSET_CURRENT_OTHER', '${data.year}')`,
-      `=TBLOOKUP('ASSET_CURRENT_OTHER', '${data.prevYear}')`,
+      totals.get('ASSET_CURRENT_OTHER'),
+      totals2.get('ASSET_CURRENT_OTHER'),
     ],
     {
+      id: 'ASSET_CURRENT_OTHER',
       tags: [
         'total-current-assets',
         'hide-if-zero',
@@ -143,8 +157,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Total current assets',
-      `=SUMTAGCOL('total-current-assets', 1)`,
-      `=SUMTAGCOL('total-current-assets', 2)`,
+      { operation: 'addColumnCellsByTag', args: ['total-current-assets'] },
+      { operation: 'addColumnCellsByTag', args: ['total-current-assets'] },
     ],
     {
       tags: ['total-asset'],
@@ -157,10 +171,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Property and equipment, net',
-      `=TBLOOKUP('ASSET_PROPERTY_AND_EQUIPMENT', '${data.year}')`,
-      `=TBLOOKUP('ASSET_PROPERTY_AND_EQUIPMENT', '${data.prevYear}')`,
+      totals.get('ASSET_PROPERTY_AND_EQUIPMENT'),
+      totals2.get('ASSET_PROPERTY_AND_EQUIPMENT'),
     ],
     {
+      id: 'ASSET_PROPERTY_AND_EQUIPMENT',
       tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
     },
@@ -169,11 +184,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Intangible assets, net',
-      `=TBLOOKUP('ASSET_INTANGIBLE_ASSETS', '${data.year}')`,
-      `=TBLOOKUP('ASSET_INTANGIBLE_ASSETS', '${data.prevYear}')`,
+      totals.get('ASSET_INTANGIBLE_ASSETS'),
+      totals2.get('ASSET_INTANGIBLE_ASSETS'),
     ],
     {
-      // tbAccountTypeLookupRef: 'ASSET_INTANGIBLE_ASSETS',
+      id: 'ASSET_INTANGIBLE_ASSETS',
       tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
     },
@@ -182,22 +197,20 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Operating lease right-of-use assets',
-      `=TBLOOKUP('ASSET_OPERATING_LEASE_RIGHT_OF_USE', '${data.year}')`,
-      `=TBLOOKUP('ASSET_OPERATING_LEASE_RIGHT_OF_USE', '${data.prevYear}')`,
+      totals.get('ASSET_OPERATING_LEASE_RIGHT_OF_USE'),
+      totals2.get('ASSET_OPERATING_LEASE_RIGHT_OF_USE'),
     ],
     {
+      id: 'ASSET_OPERATING_LEASE_RIGHT_OF_USE',
       tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
     },
   );
 
   t.addRow(
-    [
-      'Other assets',
-      `=TBLOOKUP('ASSET_OTHER', '${data.year}')`,
-      `=TBLOOKUP('ASSET_OTHER', '${data.prevYear}')`,
-    ],
+    ['Other assets', totals.get('ASSET_OTHER'), totals2.get('ASSET_OTHER')],
     {
+      id: 'ASSET_OTHER',
       tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [{}, { hideCurrency: true }, { hideCurrency: true }],
     },
@@ -206,11 +219,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Total assets',
-      `=SUMTAGCOL('total-asset', 1)`,
-      `=SUMTAGCOL('total-asset', 2)`,
+      { operation: 'addColumnCellsByTag', args: ['total-asset'] },
+      { operation: 'addColumnCellsByTag', args: ['total-asset'] },
     ],
     {
-      // tbAccountTypeLookupRef: 'total-assets',
+      id: 'total-assets',
       style: {
         borderTop: 'thin',
         borderBottom: 'double',
@@ -235,10 +248,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Accounts payable',
-      `=TBLOOKUP('LIABILITY_ACCOUNTS_PAYABLE', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_ACCOUNTS_PAYABLE', '${data.prevYear}')`,
+      totals.get('LIABILITY_ACCOUNTS_PAYABLE'),
+      totals2.get('LIABILITY_ACCOUNTS_PAYABLE'),
     ],
     {
+      id: 'LIABILITY_ACCOUNTS_PAYABLE',
       tags: [
         'total-current-liabilities',
         'hide-if-zero',
@@ -254,10 +268,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Accrued liabilities',
-      `=TBLOOKUP('LIABILITY_ACCRUED_LIABILITIES', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_ACCRUED_LIABILITIES', '${data.prevYear}')`,
+      totals.get('LIABILITY_ACCRUED_LIABILITIES'),
+      totals2.get('LIABILITY_ACCRUED_LIABILITIES'),
     ],
     {
+      id: 'LIABILITY_ACCRUED_LIABILITIES',
       tags: [
         'total-current-liabilities',
         'hide-if-zero',
@@ -273,10 +288,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Deferred revenue',
-      `=TBLOOKUP('LIABILITY_DEFERRED_REVENUE', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_DEFERRED_REVENUE', '${data.prevYear}')`,
+      totals.get('LIABILITY_DEFERRED_REVENUE'),
+      totals2.get('LIABILITY_DEFERRED_REVENUE'),
     ],
     {
+      id: 'LIABILITY_DEFERRED_REVENUE',
       tags: [
         'total-current-liabilities',
         'hide-if-zero',
@@ -292,10 +308,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Operating lease liabilities, current',
-      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT', '${data.prevYear}')`,
+      totals.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT'),
+      totals2.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT'),
     ],
     {
+      id: 'LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT',
       tags: [
         'total-current-liabilities',
         'hide-if-zero',
@@ -309,12 +326,9 @@ export function buildBalanceSheet(data: AuditData) {
     },
   );
   t.addRow(
-    [
-      'Other',
-      `=TBLOOKUP('LIABILITY_OTHER', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_OTHER', '${data.prevYear}')`,
-    ],
+    ['Other', totals.get('LIABILITY_OTHER'), totals2.get('LIABILITY_OTHER')],
     {
+      id: 'LIABILITY_OTHER',
       tags: [
         'total-current-liabilities',
         'hide-if-zero',
@@ -331,8 +345,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Total current liabilities',
-      `=SUMTAGCOL('total-current-liabilities', 1)`,
-      `=SUMTAGCOL('total-current-liabilities', 2)`,
+      { operation: 'addColumnCellsByTag', args: ['total-current-liabilities'] },
+      { operation: 'addColumnCellsByTag', args: ['total-current-liabilities'] },
     ],
     {
       tags: ['total-liabilities'],
@@ -346,10 +360,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Accrued interest',
-      `=TBLOOKUP('LIABILITY_ACCRUED_INTEREST', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_ACCRUED_INTEREST', '${data.prevYear}')`,
+      totals.get('LIABILITY_ACCRUED_INTEREST'),
+      totals2.get('LIABILITY_ACCRUED_INTEREST'),
     ],
     {
+      id: 'LIABILITY_ACCRUED_INTEREST',
       tags: [
         'total-liabilities',
         'hide-if-zero',
@@ -362,10 +377,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Convertible notes payable',
-      `=TBLOOKUP('LIABILITY_CONVERTIBLE_NOTES_PAYABLE', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_CONVERTIBLE_NOTES_PAYABLE', '${data.prevYear}')`,
+      totals.get('LIABILITY_CONVERTIBLE_NOTES_PAYABLE'),
+      totals2.get('LIABILITY_CONVERTIBLE_NOTES_PAYABLE'),
     ],
     {
+      id: 'LIABILITY_CONVERTIBLE_NOTES_PAYABLE',
       tags: [
         'total-liabilities',
         'hide-if-zero',
@@ -376,12 +392,9 @@ export function buildBalanceSheet(data: AuditData) {
   );
 
   t.addRow(
-    [
-      'Debt',
-      `=TBLOOKUP('LIABILITY_DEBT', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_DEBT', '${data.prevYear}')`,
-    ],
+    ['Debt', totals.get('LIABILITY_DEBT'), totals2.get('LIABILITY_DEBT')],
     {
+      id: 'LIABILITY_DEBT',
       tags: [
         'total-liabilities',
         'hide-if-zero',
@@ -394,10 +407,15 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Operating lease liabilities, net of current portion',
-      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION', '${data.prevYear}')`,
+      totals.get(
+        'LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION',
+      ),
+      totals2.get(
+        'LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION',
+      ),
     ],
     {
+      id: 'LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION',
       tags: [
         'total-liabilities',
         'hide-if-zero',
@@ -409,8 +427,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Total liabilities',
-      `=SUMTAGCOL('total-liabilities', 1)`,
-      `=SUMTAGCOL('total-liabilities', 2)`,
+      { operation: 'addColumnCellsByTag', args: ['total-liabilities'] },
+      { operation: 'addColumnCellsByTag', args: ['total-liabilities'] },
     ],
     {
       tags: ['total-liabilities-and-stockholders-deficit'],
@@ -431,10 +449,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Preferred stock',
-      `=TBLOOKUP('EQUITY_PREFERRED_STOCK', '${data.year}')`,
-      `=TBLOOKUP('EQUITY_PREFERRED_STOCK', '${data.prevYear}')`,
+      totals.get('EQUITY_PREFERRED_STOCK'),
+      totals2.get('EQUITY_PREFERRED_STOCK'),
     ],
     {
+      id: 'EQUITY_PREFERRED_STOCK',
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [
         { indent: 1 },
@@ -446,10 +465,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Common stock',
-      `=TBLOOKUP('EQUITY_COMMON_STOCK', '${data.year}')`,
-      `=TBLOOKUP('EQUITY_COMMON_STOCK', '${data.prevYear}')`,
+      totals.get('EQUITY_COMMON_STOCK'),
+      totals2.get('EQUITY_COMMON_STOCK'),
     ],
     {
+      id: 'EQUITY_COMMON_STOCK',
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [
         { indent: 1 },
@@ -461,10 +481,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Paid-in capital',
-      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', '${data.year}')`,
-      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', '${data.prevYear}')`,
+      totals.get('EQUITY_PAID_IN_CAPITAL'),
+      totals2.get('EQUITY_PAID_IN_CAPITAL'),
     ],
     {
+      id: 'EQUITY_PAID_IN_CAPITAL',
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [
         { indent: 1 },
@@ -473,15 +494,14 @@ export function buildBalanceSheet(data: AuditData) {
       ],
     },
   );
-
   t.addRow(
     [
       'Retained earnings',
-      `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', '${data.year}') + IS_NETLOSS('${data.year}')`,
-      `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', '${data.prevYear}') + IS_NETLOSS('${data.prevYear}')`,
+      totals.get('EQUITY_RETAINED_EARNINGS'),
+      totals2.get('EQUITY_RETAINED_EARNINGS'),
     ],
     {
-      // tbAccountTypeLookupRef: 'EQUITY_RETAINED_EARNINGS',
+      id: 'EQUITY_RETAINED_EARNINGS',
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [
         { indent: 1 },
@@ -493,11 +513,11 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Accumulated deficit',
-      `=TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', '${data.year}')`,
-      `=TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', '${data.prevYear}')`,
+      totals.get('EQUITY_ACCUMULATED_DEFICIT'),
+      totals2.get('EQUITY_ACCUMULATED_DEFICIT'),
     ],
     {
-      // tbAccountTypeLookupRef: 'EQUITY_ACCUMULATED_DEFICIT',
+      id: 'EQUITY_ACCUMULATED_DEFICIT',
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
       cellStyle: [
         { indent: 1 },
@@ -510,8 +530,14 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Total stockholders’ deficit',
-      `=SUMTAGCOL('total-equity', 1)`,
-      `=SUMTAGCOL('total-equity', 2)`,
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['total-equity'],
+      },
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['total-equity'],
+      },
     ],
     {
       tags: ['total-liabilities-and-stockholders-deficit'],
@@ -526,8 +552,14 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Total liabilities and stockholders’ deficit',
-      `=SUMTAGCOL('total-liabilities-and-stockholders-deficit', 1)`,
-      `=SUMTAGCOL('total-liabilities-and-stockholders-deficit', 2)`,
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['total-liabilities-and-stockholders-deficit'],
+      },
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['total-liabilities-and-stockholders-deficit'],
+      },
     ],
     {
       style: {
@@ -560,7 +592,7 @@ export function buildPropertyAndEquipmentLives(_data: AuditData) {
 }
 
 export async function buildPropertyAndEquipmentNet(data: AuditData) {
-  const assetCategoriesStr = data.rt.trialBalance.fixedAssetCategories;
+  const assetCategoriesStr = data.trialBalance.fixedAssetCategories;
   let assetCategories: string[];
   try {
     // @ts-expect-error
@@ -581,7 +613,7 @@ export async function buildPropertyAndEquipmentNet(data: AuditData) {
   const out = groupFixedAccountsByCategories(assets, assetCategories);
   const totalAccumulatedDepreciation = accounts
     .filter((a) => a.name.toLowerCase().includes('accumulated depreciation'))
-    .reduce((acc, a) => acc + a.balance, 0);
+    .reduce((acc, a) => addFP(acc, a.balance), 0);
 
   let totalPropertyAndEquipment = 0;
 
@@ -597,11 +629,11 @@ export async function buildPropertyAndEquipmentNet(data: AuditData) {
 
   let currShown = false;
   Object.keys(out).forEach((category, idx) => {
-    const value = out[category].reduce((acc, a) => acc + a.balance, 0);
+    const value = out[category].reduce((acc, a) => addFP(acc, a.balance), 0);
     if (value === 0) {
       return;
     }
-    totalPropertyAndEquipment = totalPropertyAndEquipment + value;
+    totalPropertyAndEquipment = addFP(totalPropertyAndEquipment, value);
     const row = t.addRow([category, value], {
       style: {
         borderBottom: idx === assetCategories.length - 1 ? 'thin' : undefined,
@@ -627,7 +659,7 @@ export async function buildPropertyAndEquipmentNet(data: AuditData) {
   t.addRow(
     [
       'Property and equipment, net',
-      totalPropertyAndEquipment + totalAccumulatedDepreciation,
+      addFP(totalPropertyAndEquipment, totalAccumulatedDepreciation),
     ],
     {
       style: {
@@ -682,11 +714,15 @@ export async function buildFVMLiabilities2(data: AuditData) {
   return t;
 }
 
-export function buildIncomeStatement(data: {
-  year: string;
-  prevYear: string;
-  fiscalYearEndNoYear: string;
-}) {
+export async function buildStatementOfOperations(data: AuditData) {
+  const totals = data.totals;
+
+  const date2Str = data.trialBalance.year2DocumentId.trialBalanceDate;
+  const date2 = dayjs(date2Str);
+  const year2 = date2.format('YYYY');
+
+  const totalsPrev = await getBalancesByAccountType(data.auditId, year2);
+
   const t = new Table();
   t.columns = [
     {},
@@ -694,43 +730,9 @@ export function buildIncomeStatement(data: {
     { style: { numFmt: 'accounting', align: 'right' } },
   ];
 
-  t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, data.prevYear], {
+  t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, year2], {
     style: { bold: true, borderBottom: 'thin' },
   });
-
-  t.addRow(
-    [
-      'Revenue',
-      `=-TBLOOKUP('INCOME_STATEMENT_REVENUE', '${data.year}')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_REVENUE', '${data.prevYear}')`,
-    ],
-    {
-      id: 'REVENUE',
-      // tags: ['hide-if-zero'],
-    },
-  );
-  t.addRow(
-    [
-      'Cost of revenue',
-      `=-TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', '${data.year}')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', '${data.prevYear}')`,
-    ],
-    {
-      id: 'COST-OF-REVENUE',
-      tags: ['hide-if-zero'],
-    },
-  );
-  t.addRow(
-    [
-      'Gross profit',
-      `=GET_BY_ID('REVENUE', 1) - GET_BY_ID('COST-OF-REVENUE', 1)`,
-      `=GET_BY_ID('REVENUE', 2) - GET_BY_ID('COST-OF-REVENUE', 2)`,
-    ],
-    {
-      tags: ['total-gross-profit', 'hide-if-zero'],
-    },
-  );
-
   t.addRow(['Operating expenses:', '', ''], {
     style: {
       padTop: true,
@@ -740,8 +742,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Research and development',
-      `=TBLOOKUP('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT', '${data.year}')`,
-      `=TBLOOKUP('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT', '${data.prevYear}')`,
+      totals.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT'),
+      totalsPrev.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT'),
     ],
     {
       tags: ['total-operating-expenses', 'hide-if-zero'],
@@ -752,8 +754,14 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'General and administrative',
-      `=-TBLOOKUP('INCOME_STATEMENT_G_AND_A', '${data.year}')-TBLOOKUP('INCOME_STATEMENT_SALES_AND_MARKETING', '${data.year}')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_G_AND_A', '${data.prevYear}')-TBLOOKUP('INCOME_STATEMENT_SALES_AND_MARKETING', '${data.prevYear}')`,
+      addFP(
+        totals.get('INCOME_STATEMENT_G_AND_A'),
+        totals.get('INCOME_STATEMENT_SALES_AND_MARKETING'),
+      ),
+      addFP(
+        totalsPrev.get('INCOME_STATEMENT_G_AND_A'),
+        totalsPrev.get('INCOME_STATEMENT_SALES_AND_MARKETING'),
+      ),
     ],
     {
       tags: ['total-operating-expenses', 'hide-if-zero'],
@@ -764,8 +772,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Total operating expenses',
-      `=SUMTAGCOL('total-operating-expenses', 1)`,
-      `=SUMTAGCOL('total-operating-expenses', 2)`,
+      { operation: 'addColumnCellsByTag', args: ['total-operating-expenses'] },
+      { operation: 'addColumnCellsByTag', args: ['total-operating-expenses'] },
     ],
     {
       tags: ['total-opex'],
@@ -777,8 +785,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Loss from operations',
-      `=SUMTAGCOL('total-opex', 1)`,
-      `=SUMTAGCOL('total-opex', 2)`,
+      { operation: 'multiplyCellTag', args: ['total-opex', -1] },
+      { operation: 'multiplyCellTag', args: ['total-opex', -1] },
     ],
     {
       tags: ['net-loss'],
@@ -793,8 +801,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Interest expense, net',
-      `=-TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', '${data.year}') - TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', '${data.year}')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', '${data.prevYear}') - TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', '${data.prevYear}')`,
+      totals.get('INCOME_STATEMENT_INTEREST_EXPENSE'),
+      totalsPrev.get('INCOME_STATEMENT_INTEREST_EXPENSE'),
     ],
     {
       tags: ['total-other-income-expense-net', 'hide-if-zero'],
@@ -804,8 +812,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Other income, net',
-      `=-TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', '${data.year}')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', '${data.prevYear}')`,
+      totals.get('INCOME_STATEMENT_OTHER_INCOME'),
+      totalsPrev.get('INCOME_STATEMENT_OTHER_INCOME'),
     ],
     {
       tags: ['total-other-income-expense-net', 'hide-if-zero'],
@@ -815,8 +823,14 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Total other income (expense), net',
-      `=SUMTAGCOL('total-other-income-expense-net', 1)`,
-      `=SUMTAGCOL('total-other-income-expense-net', 2)`,
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['total-other-income-expense-net'],
+      },
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['total-other-income-expense-net'],
+      },
     ],
     {
       tags: ['total-other-income-expense-net-total', 'net-loss'],
@@ -827,7 +841,17 @@ export function buildIncomeStatement(data: {
   );
 
   t.addRow(
-    ['Net loss', `=SUMTAGCOL('net-loss', 1)`, `=SUMTAGCOL('net-loss', 2)`],
+    [
+      'Net loss',
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['net-loss'],
+      },
+      {
+        operation: 'addColumnCellsByTag',
+        args: ['net-loss'],
+      },
+    ],
     {
       id: 'NET-LOSS',
       style: {
@@ -842,8 +866,8 @@ export function buildIncomeStatement(data: {
 
 export async function buildCashFlows(data: AuditData) {
   const year2 = String(Number(data.year) - 1);
-  // const totals = data.totals;
-  // const totalsPrev = await getBalancesByAccountType(data.auditId, year2);
+  const totals = data.totals;
+  const totalsPrev = await getBalancesByAccountType(data.auditId, year2);
 
   const t = new Table();
   t.columns = [
@@ -867,7 +891,7 @@ export async function buildCashFlows(data: AuditData) {
     },
   });
 
-  const incomeStatementTable = await buildIncomeStatement(data);
+  const incomeStatementTable = await buildStatementOfOperations(data);
   const netLossRow = incomeStatementTable.getRowById('NET-LOSS');
   t.addRow(
     ['Net income:', netLossRow.cells[1]?.value, netLossRow.cells[2]?.value],
@@ -959,11 +983,8 @@ export async function buildConvertiblePreferredStock(data: AuditData) {
       'Total',
       certTransactionReport.reduce((acc, v) => acc + v.sharesAuthorized, 0),
       certTransactionReport.reduce((acc, v) => acc + v.sharesIssued, 0),
-      certTransactionReport.reduce((acc, v) => acc + v.carryingValue, 0),
-      certTransactionReport.reduce(
-        (acc, v) => acc + v.liquidationPreference,
-        0,
-      ),
+      addFP(...certTransactionReport.map((r) => r.carryingValue)),
+      addFP(...certTransactionReport.map((r) => r.liquidationPreference)),
     ],
     {
       style: {
@@ -1041,8 +1062,8 @@ export async function buildCommonStockReservedForFutureIssuance(
   t.addRow(['Common stock options outstanding', numCommonOutstanding]);
   total += numCommonOutstanding;
 
-  const numAuthorizedShares = data.rt.equity.numAuthorizedShares
-    ? Number(data.rt.equity.numAuthorizedShares)
+  const numAuthorizedShares = data.equity.numAuthorizedShares
+    ? Number(data.equity.numAuthorizedShares)
     : 0;
   t.addRow([
     'Common stock options available for future grant',
