@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import { Toaster } from 'sonner';
 
 import { DocumentOverlay } from '@/components/document-overlay';
+import Intercom from '@/components/intercom';
 import { Navbar } from '@/components/navbar';
 import { PageSpinner } from '@/components/spinner';
 import { getCurrent } from '@/controllers/session-user';
@@ -44,6 +45,7 @@ export default async function RootLayout({
         </div>
         <Toaster richColors />
         <DocumentOverlay />
+        <Intercom name={user.name} email={user.email || ''} />
       </body>
     </html>
   );
