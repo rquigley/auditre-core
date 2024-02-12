@@ -22,7 +22,7 @@ export default function EmailLoginButton() {
 
   return (
     <a
-      href="/api/auth/signin"
+      href="/login?s=email-login"
       // disabled={loading}
       // onClick={() => {
       //   setLoading(true);
