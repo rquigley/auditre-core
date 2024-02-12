@@ -9,9 +9,10 @@ import { Content } from '@/components/content';
 import Datetime from '@/components/datetime';
 import { Header } from '@/components/header';
 import {
-  create as createInvitation,
+  createInvitation,
   deleteInvitation,
-  getAllByOrgId as getInvitations,
+  getInvitationsByOrgId,
+  sendInviteEmail,
 } from '@/controllers/invitation';
 import {
   getAvailableRolesForRole,
@@ -41,7 +42,7 @@ export default async function OrganizationSettingsPage() {
     return authRedirect();
   }
   const users = await getUsers(user.orgId);
-  const invitations = await getInvitations(user.orgId);
+  const invitations = await getInvitationsByOrgId(user.orgId);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function createInvite(prevState: any, formData: FormData) {
@@ -55,10 +56,11 @@ export default async function OrganizationSettingsPage() {
         email: formData.get('email'),
       });
 
-      await createInvitation({
+      const invite = await createInvitation({
         email: data.email,
         orgId: user.orgId,
       });
+      await sendInviteEmail(invite.id);
       revalidatePath('/organization-settings');
       return { message: `Invited ${data.email}` };
     } catch (error) {
