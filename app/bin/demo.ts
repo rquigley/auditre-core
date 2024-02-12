@@ -1,7 +1,7 @@
 import { program } from 'commander';
 
 import { create as createAudit } from '@/controllers/audit';
-import { create as createInvitation } from '@/controllers/invitation';
+import { createInvitation } from '@/controllers/invitation';
 import { create as createOrg } from '@/controllers/org';
 import { saveRequestData } from '@/controllers/request';
 import { db } from '@/lib/db';
@@ -11,7 +11,7 @@ import type { OrgId } from '@/types';
 async function setupAccount(): Promise<OrgId> {
   const org = await createOrg({ name: 'Test Org', canHaveChildOrgs: false });
 
-  for (let email of ['ryan@auditre.co', 'jason@auditre.co']) {
+  for (const email of ['ryan@auditre.co', 'jason@auditre.co']) {
     await createInvitation({
       orgId: org.id,
       email,
@@ -28,7 +28,7 @@ async function setupAudit(orgId: OrgId) {
     name: 'Initial Audit',
   });
 
-  let rdP = [
+  const rdP = [
     saveRequestData({
       auditId: audit.id,
       requestType: 'basic-info',
