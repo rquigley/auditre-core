@@ -2,6 +2,7 @@
 
 import { Dialog, Transition } from '@headlessui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import clsx from 'clsx';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Fragment, useRef } from 'react';
 import { useForm } from 'react-hook-form';
@@ -9,7 +10,6 @@ import { z } from 'zod';
 
 import { Text, Year } from '@/components/form-fields';
 import { createAudit } from '@/lib/actions';
-import { classNames } from '@/lib/util';
 
 // this duplicates the schema in actions, but Next prevents non-async actions
 // from export
@@ -129,7 +129,7 @@ export default function NewAuditModal() {
                     <button
                       type="submit"
                       disabled={!formState.isDirty || formState.isSubmitting}
-                      className={classNames(
+                      className={clsx(
                         !formState.isDirty || formState.isSubmitting
                           ? 'bg-gray-400'
                           : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',

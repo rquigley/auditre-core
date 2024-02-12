@@ -2,10 +2,9 @@
 
 import { Menu, Transition } from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
+import clsx from 'clsx';
 import { Fragment } from 'react';
 import { useFormState } from 'react-dom';
-
-import { classNames } from '@/lib/util';
 
 import type { Invitation } from '@/types';
 
@@ -40,7 +39,7 @@ export default function InviteSubmenu({
             {({ active }) => (
               <a
                 href="#"
-                className={classNames(
+                className={clsx(
                   active ? 'bg-gray-50' : '',
                   'block px-3 py-1 text-sm leading-6 text-gray-900',
                 )}
@@ -85,7 +84,7 @@ function DeleteForm({
     <form action={formAction}>
       <input type="hidden" name="inviteId" value={invitation.id} />
       <button
-        className={classNames(
+        className={clsx(
           active ? 'bg-gray-50' : '',
           'w-full text-left block px-3 py-1 text-sm leading-6 text-gray-900',
         )}

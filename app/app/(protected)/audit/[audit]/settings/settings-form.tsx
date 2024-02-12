@@ -10,8 +10,6 @@ import { Text } from '@/components/form-fields';
 import { updateAudit } from '@/lib/actions';
 import { delay } from '@/lib/util';
 
-import type { Audit } from '@/types';
-
 const auditSchema = z.object({
   name: z.string().min(3).max(72),
 });
@@ -40,7 +38,7 @@ export function SettingsForm({
     ]);
     toast.promise(p, {
       loading: 'Saving...',
-      success: async (data) => {
+      success: async () => {
         reset(undefined, { keepValues: true });
         return `Data saved`;
       },

@@ -1,11 +1,10 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import clsx from 'clsx';
 import { KeyboardEvent, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
-
-import { classNames } from '@/lib/util';
 
 const schema = z.object({
   query: z.string(),
@@ -20,7 +19,6 @@ export default function AI({
   const {
     formState: { isDirty },
     register,
-    setValue,
     getValues,
     handleSubmit,
     reset,
@@ -59,7 +57,7 @@ export default function AI({
         <textarea
           {...register('query')}
           rows={3}
-          className={classNames(
+          className={clsx(
             errors.query
               ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
               : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
@@ -96,7 +94,7 @@ export default function AI({
         <button
           type="submit"
           disabled={!isDirty}
-          className={classNames(
+          className={clsx(
             !isDirty
               ? 'bg-gray-400'
               : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',

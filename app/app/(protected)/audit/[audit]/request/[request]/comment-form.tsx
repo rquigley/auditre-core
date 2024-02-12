@@ -1,10 +1,11 @@
 'use client';
 
-import { classNames } from '@/lib/util';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { KeyboardEvent } from 'react';
+import clsx from 'clsx';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
+
+import type { KeyboardEvent } from 'react';
 
 const schema = z.object({
   comment: z.string().max(500),
@@ -15,7 +16,7 @@ export default function CommentForm({
   saveData: (data: z.infer<typeof schema>) => void;
 }) {
   const {
-    formState: { isDirty, dirtyFields },
+    formState: { isDirty },
     register,
     handleSubmit,
     reset,
@@ -50,7 +51,7 @@ export default function CommentForm({
         <textarea
           {...register('comment')}
           rows={2}
-          className={classNames(
+          className={clsx(
             errors.comment
               ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
               : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
@@ -68,7 +69,7 @@ export default function CommentForm({
         <button
           type="submit"
           disabled={!isDirty}
-          className={classNames(
+          className={clsx(
             !isDirty
               ? 'text-gray-300 ring-gray-100'
               : 'text-gray-900 hover:bg-gray-50 ring-gray-300',

@@ -1,15 +1,8 @@
 import { db } from '@/lib/db';
 
-import type {
-  NewUserAccount,
-  UserAccount,
-  UserAccountId,
-  UserAccountUpdate,
-} from '@/types';
+import type { NewUserAccount, UserAccountId, UserAccountUpdate } from '@/types';
 
-export async function createUserAccount(
-  user: NewUserAccount,
-): Promise<UserAccount> {
+export async function createUserAccount(user: NewUserAccount) {
   return await db
     .insertInto('auth.userAccount')
     .values(user)
@@ -20,7 +13,7 @@ export async function createUserAccount(
 export async function deleteUserAccount(
   provider: string,
   providerAccountId: string,
-): Promise<UserAccount | undefined> {
+) {
   return await db
     .deleteFrom('auth.userAccount')
     .where('provider', '=', provider)
@@ -28,7 +21,7 @@ export async function deleteUserAccount(
     .returningAll()
     .executeTakeFirst();
 }
-export async function getById(id: UserAccountId): Promise<UserAccount> {
+export async function getById(id: UserAccountId) {
   return await db
     .selectFrom('auth.userAccount')
     .where('id', '=', id)

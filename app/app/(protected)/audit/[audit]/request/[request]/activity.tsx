@@ -154,10 +154,10 @@ async function getFeed(auditId: AuditId, request: Request) {
   const rawChanges = await getChangesForRequestType(auditId, request);
   const rawComments = await getAllCommentsForRequest(auditId, request.id);
 
-  let ret: Change[] = [];
+  const ret: Change[] = [];
 
   for (let n = 0; n < rawChanges.length; n++) {
-    let change = rawChanges[n];
+    const change = rawChanges[n];
     let actor;
     if (change.actorUserId) {
       actor = {
@@ -177,7 +177,7 @@ async function getFeed(auditId: AuditId, request: Request) {
   }
 
   for (let n = 0; n < rawComments.length; n++) {
-    let comment = rawComments[n];
+    const comment = rawComments[n];
     ret.push({
       type: 'COMMENT',
       createdAt: comment.createdAt,

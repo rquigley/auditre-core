@@ -1,7 +1,6 @@
 import { CheckCircleIcon } from '@heroicons/react/20/solid';
+import clsx from 'clsx';
 import { useEffect, useState } from 'react';
-
-import { classNames } from '@/lib/util';
 
 export default function SaveNotice({ cb }: { cb: (visible: boolean) => void }) {
   const [hidden, setHidden] = useState(false);
@@ -16,7 +15,7 @@ export default function SaveNotice({ cb }: { cb: (visible: boolean) => void }) {
   return (
     <div>
       <div
-        className={classNames(
+        className={clsx(
           hidden ? 'opacity-0' : 'opacity-100',
           'inline-flex transition',
         )}

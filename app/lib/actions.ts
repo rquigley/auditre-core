@@ -23,7 +23,7 @@ import {
 import { addDemoData } from '@/controllers/audit-demo';
 import {
   create as _createDocument,
-  deleteDocument as _deleteDocument,
+  // deleteDocument as _deleteDocument,
   getById as getDocumentById,
   process as processDocument,
   reAskQuestion,
@@ -446,7 +446,7 @@ export async function createOrg(
       name: formData.get('name'),
     });
 
-    const res = await _createOrg({
+    await _createOrg({
       name: data.name,
       canHaveChildOrgs: false,
       parentOrgId: user.orgId,

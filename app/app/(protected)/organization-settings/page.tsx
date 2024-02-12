@@ -1,7 +1,7 @@
 import { ChevronRightIcon } from '@heroicons/react/20/solid';
+import clsx from 'clsx';
 import { revalidatePath } from 'next/cache';
 import Image from 'next/image';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { z } from 'zod';
@@ -10,9 +10,10 @@ import { Content } from '@/components/content';
 import Datetime from '@/components/datetime';
 import { Header } from '@/components/header';
 import {
-  create as createInvitation,
+  createInvitation,
   deleteInvitation,
-  getAllByOrgId as getInvitations,
+  getInvitationsByOrgId,
+  sendInviteEmail,
 } from '@/controllers/invitation';
 import {
   getAvailableRolesForRole,
@@ -20,7 +21,6 @@ import {
   UnauthorizedError,
 } from '@/controllers/session-user';
 import { getAllByOrgId as getUsers } from '@/controllers/user';
-import { classNames } from '@/lib/util';
 import InviteSubmenu from './invite-submenu';
 import NewInviteForm from './new-invite-form';
 import { RoleSelector } from './role-selector';
@@ -43,7 +43,7 @@ export default async function OrganizationSettingsPage() {
     return authRedirect();
   }
   const users = await getUsers(user.orgId);
-  const invitations = await getInvitations(user.orgId);
+  const invitations = await getInvitationsByOrgId(user.orgId);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function createInvite(prevState: any, formData: FormData) {
@@ -57,10 +57,11 @@ export default async function OrganizationSettingsPage() {
         email: formData.get('email'),
       });
 
-      await createInvitation({
+      const invite = await createInvitation({
         email: data.email,
         orgId: user.orgId,
       });
+      await sendInviteEmail(invite.id);
       revalidatePath('/organization-settings');
       return { message: `Invited ${data.email}` };
     } catch (error) {
@@ -208,7 +209,7 @@ function Invitations({ invitations }: { invitations: Invitation[] }) {
                   {user.email}
                 </p>
                 <p
-                  className={classNames(
+                  className={clsx(
                     isExpired ? 'text-red-700' : '',
                     'mt-1 flex text-xs leading-5 text-gray-500',
                   )}

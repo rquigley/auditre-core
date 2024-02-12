@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import Datetime from '@/components/datetime';
+// import Datetime from '@/components/datetime';
 
 import type { AuditWithRequestCounts } from '@/controllers/audit';
 
@@ -11,7 +11,7 @@ export default function Row({
 }: {
   audit: AuditWithRequestCounts & { firstRequestSlug: string };
 }) {
-  const pctComplete = (audit.numCompletedRequests / audit.numRequests) * 100;
+  // const pctComplete = (audit.numCompletedRequests / audit.numRequests) * 100;
   return (
     <Link
       href={`/audit/${audit.id}/request/${audit.firstRequestSlug}`}
