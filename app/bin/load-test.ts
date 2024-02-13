@@ -2,7 +2,7 @@ import { program } from 'commander';
 
 import { create as createAudit } from '@/controllers/audit';
 import { addDemoData } from '@/controllers/audit-demo';
-import { create as createOrg } from '@/controllers/org';
+import { createOrg } from '@/controllers/org';
 import { createUser } from '@/controllers/user';
 import { db } from '@/lib/db';
 
