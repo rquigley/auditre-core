@@ -25,7 +25,6 @@ export default async function OrgPage({
   if (!user.canAccessOrg(org.id)) {
     return notFound();
   }
-  console.log('HA', user.hasPerm('org:can-set-have-child-orgs'));
   return (
     <>
       <Header
@@ -41,7 +40,7 @@ export default async function OrgPage({
             canHaveChildOrgs: org.canHaveChildOrgs,
             isDeleted: org.isDeleted,
             url: org.url,
-            image: org.image,
+            // image: org.image,
           }}
           userCanSetChildOrgs={user.hasPerm('org:can-set-have-child-orgs')}
         />

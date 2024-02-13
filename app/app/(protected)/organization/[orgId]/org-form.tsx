@@ -12,9 +12,9 @@ import { OrgId } from '@/types';
 
 const schema = z.object({
   name: z.string().min(1),
-  canHaveChildOrgs: z.boolean().optional(),
+  canHaveChildOrgs: z.boolean(),
   url: zUrlOrEmptyString,
-  image: zUrlOrEmptyString,
+  // image: zUrlOrEmptyString,
   isDeleted: z.boolean(),
 });
 
@@ -23,9 +23,9 @@ export type Props = {
   data: {
     name: string;
     canHaveChildOrgs: boolean;
-    isDeleted: boolean;
     url: string;
-    image: string;
+    // image: string;
+    isDeleted: boolean;
   };
   userCanSetChildOrgs: boolean;
 };
@@ -61,7 +61,7 @@ export default function OrgForm({ id, data, userCanSetChildOrgs }: Props) {
           </div>
         </div>
 
-        {userCanSetChildOrgs && (
+        {userCanSetChildOrgs ? (
           <div className="mb3">
             <label
               htmlFor="name"
@@ -83,6 +83,8 @@ export default function OrgForm({ id, data, userCanSetChildOrgs }: Props) {
               label="Can have child orgs"
             />
           </div>
+        ) : (
+          <input type="hidden" {...register('canHaveChildOrgs')} />
         )}
 
         <div className="mb-3">
@@ -101,7 +103,7 @@ export default function OrgForm({ id, data, userCanSetChildOrgs }: Props) {
           </div>
         </div>
 
-        <div className="mb-3">
+        {/* <div className="mb-3">
           <label
             htmlFor="image"
             className="block text-sm font-medium leading-6 text-gray-900"
@@ -115,7 +117,7 @@ export default function OrgForm({ id, data, userCanSetChildOrgs }: Props) {
               errors={formState.errors['image']}
             />
           </div>
-        </div>
+        </div> */}
 
         <div className="mt-6 flex items-center justify-end gap-x-6">
           <button
