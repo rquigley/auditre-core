@@ -500,10 +500,10 @@ export async function updateOrg(
   orgId: OrgId,
   data: {
     name: string;
-    canHaveChildOrgs: boolean;
+    canHaveChildOrgs?: boolean;
     isDeleted: boolean;
     url: string;
-    image: string;
+    // image: string;
   },
 ) {
   const { user } = await getCurrent();
@@ -514,9 +514,11 @@ export async function updateOrg(
   if (!user.canAccessOrg(org.id)) {
     throw new UnauthorizedError();
   }
+  if (!user.hasPerm('org:can-set-have-child-orgs')) {
+    data.canHaveChildOrgs = undefined;
+  }
 
   const res = await _updateOrg(orgId, data);
-  console.log('updated org', res);
   revalidatePath('/');
   return res;
 }
