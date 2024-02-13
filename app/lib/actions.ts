@@ -29,7 +29,7 @@ import {
   reAskQuestion,
 } from '@/controllers/document';
 import { getKV } from '@/controllers/kv';
-import { create as _createOrg } from '@/controllers/org';
+import { createOrg as _createOrg } from '@/controllers/org';
 import {
   create as addRequestData,
   unlinkDocumentFromRequestData,
