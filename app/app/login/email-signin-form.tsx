@@ -47,7 +47,11 @@ export default function EmailSigninForm() {
             >
               Email
             </label>
-            <Text field="email" register={register} formState={formState} />
+            <Text
+              field="email"
+              register={register}
+              errors={formState.errors['email']}
+            />
           </div>
         </div>
         <div className="mt-2 mb-2 grid grid-flow-row-dense grid-cols-2 gap-3">

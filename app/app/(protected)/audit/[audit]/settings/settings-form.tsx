@@ -57,7 +57,11 @@ export function SettingsForm({
               >
                 Name
               </label>
-              <Text field="name" register={register} formState={formState} />
+              <Text
+                field="name"
+                register={register}
+                errors={formState.errors['name']}
+              />
             </div>
           </div>
         </div>

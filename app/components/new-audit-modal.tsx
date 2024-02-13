@@ -96,7 +96,7 @@ export default function NewAuditModal() {
                           <Text
                             field="name"
                             register={register}
-                            formState={formState}
+                            errors={formState.errors['name']}
                           />
                         </div>
                         <div className="align-left">
@@ -109,10 +109,8 @@ export default function NewAuditModal() {
                           <Year
                             field="year"
                             register={register}
-                            formState={formState}
-                            config={{
-                              label: 'Year',
-                            }}
+                            errors={formState.errors['year']}
+                            label="Year"
                           />
                         </div>
                       </div>
