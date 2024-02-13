@@ -37,7 +37,8 @@ export default async function RootLayout({
             userImage={user.image}
             orgId={user.orgId}
             availableOrgs={user.orgs}
-            canManageOrgs={user.hasPerm('org:can-add-child-orgs')}
+            canManageOrgSettings={user.hasPermForAnyOrg('org:manage-users')}
+            canManageOrgs={user.hasPermForAnyOrg('org:can-add-child-orgs')}
           />
           <div className="lg:pl-56 w-screen bg-white h-screen overflow-clip ">
             <Suspense fallback={<PageSpinner />}>{children}</Suspense>

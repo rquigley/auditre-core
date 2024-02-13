@@ -42,7 +42,10 @@ export default async function OrgPage({
             url: org.url,
             // image: org.image,
           }}
-          userCanSetChildOrgs={user.hasPerm('org:can-set-have-child-orgs')}
+          userCanSetChildOrgs={user.hasPermForOrg(
+            'org:can-set-have-child-orgs',
+            org.id,
+          )}
         />
 
         {org.canHaveChildOrgs && (

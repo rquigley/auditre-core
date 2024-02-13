@@ -251,23 +251,6 @@ export async function getOrgsForUserId(userId: UserId) {
     .orderBy('org.id')
     .execute();
 
-  // if there are two orgs with the same id, take the one with the higher role
-  // This prevents a child org user from adding a higher priviledged order
-  // and clobering their perms.
-  orgs = orgs.reduce(
-    (acc, org) => {
-      const existingOrg = acc.find((m) => m.id === org.id);
-      if (!existingOrg) {
-        return acc.concat(org);
-      }
-      if (['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role)) {
-        return acc.map((m) => (m.id === org.id ? org : m));
-      }
-      return acc;
-    },
-    [] as typeof orgs,
-  );
-
   let orgsToConsider = orgs;
   while (true) {
     const orgIdsWithChildren = orgsToConsider
@@ -297,6 +280,24 @@ export async function getOrgsForUserId(userId: UserId) {
     orgsToConsider = childOrgsWithRole;
     orgs = orgs.concat(childOrgsWithRole);
   }
+
+  // if there are two orgs with the same id, take the one with the higher role
+  // This prevents a child org user from adding a higher priviledged order
+  // and clobering their perms.
+  orgs = orgs.reduce(
+    (acc, org) => {
+      const existingOrg = acc.find((m) => m.id === org.id);
+      if (!existingOrg) {
+        return acc.concat(org);
+      }
+      if (['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role)) {
+        return acc.map((m) => (m.id === org.id ? org : m));
+      }
+      return acc;
+    },
+    [] as typeof orgs,
+  );
+
   return orgs.sort((a, b) => a.id.localeCompare(b.id));
 }
 
