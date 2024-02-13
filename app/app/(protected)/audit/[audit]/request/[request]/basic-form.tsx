@@ -11,7 +11,6 @@ import * as z from 'zod';
 import {
   BooleanField,
   Checkbox,
-  DateField,
   FileUpload,
   Month,
   Text,
@@ -166,22 +165,19 @@ export function BasicForm({
                       <BooleanField
                         field={field}
                         register={register}
-                        getValues={getValues}
-                        setValue={setValue}
+                        enabled={getValues(field)}
+                        setEnabled={(enabled) =>
+                          setValue(field, enabled, {
+                            shouldDirty: true,
+                            shouldTouch: true,
+                          })
+                        }
                         formState={formState}
-                        config={fieldConfig}
+                        label={fieldConfig.label || ''}
                       />
                     ) : fieldConfig.input === 'textarea' ? (
                       <Textarea
                         field={field}
-                        register={register}
-                        formState={formState}
-                      />
-                    ) : fieldConfig.input === 'date' ? (
-                      <DateField
-                        field={field}
-                        getValues={getValues}
-                        setValue={setValue}
                         register={register}
                         formState={formState}
                       />
