@@ -235,7 +235,7 @@ export async function updateUser(id: UserId, updateWith: UserUpdate) {
 }
 
 export async function getOrgsForUserId(userId: UserId) {
-  const memberOrgs = await db
+  let orgs = await db
     .selectFrom('auth.userRole as ur')
     .innerJoin('org', 'org.id', 'ur.orgId')
     .select([
@@ -248,37 +248,54 @@ export async function getOrgsForUserId(userId: UserId) {
     .where('userId', '=', userId)
     .orderBy('org.id')
     .execute();
-  const parentalOrgIds = memberOrgs
+
+  // if there are two orgs with the same id, take the one with the higher role
+  // This prevents a child org user from adding a higher priviledged order
+  // and clobering their perms.
+  orgs = orgs.reduce(
+    (acc, org) => {
+      const existingOrg = acc.find((m) => m.id === org.id);
+      if (!existingOrg) {
+        return acc.concat(org);
+      }
+      if (['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role)) {
+        return acc.map((m) => (m.id === org.id ? org : m));
+      }
+      return acc;
+    },
+    [] as typeof orgs,
+  );
+
+  let orgsToConsider = orgs;
+  while (true) {
+    const orgIdsWithChildren = orgsToConsider
     .map((org) =>
-      ['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role) && org.canHaveChildOrgs
+        org.canHaveChildOrgs &&
+        ['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role)
         ? org.id
         : null,
     )
     .filter(Boolean);
 
-  if (parentalOrgIds.length === 0) {
-    return memberOrgs;
+    if (orgIdsWithChildren.length === 0) {
+      break;
   }
-  const parentOrgsRes = await db
+    const childOrgs = await db
     .selectFrom('org')
     .select(['id', 'name', 'parentOrgId', 'canHaveChildOrgs'])
-    .where('parentOrgId', 'in', parentalOrgIds)
+      .where('parentOrgId', 'in', orgIdsWithChildren)
     .orderBy('id')
     .execute();
 
-  const parentOrgs = parentOrgsRes.map((org) => ({
+    const childOrgsWithRole = childOrgs.map((org) => ({
     ...org,
-    role: memberOrgs.find((m) => m.id === org.parentOrgId)?.role as AuthRole,
+      role: orgs.find((m) => m.id === org.parentOrgId)?.role as AuthRole,
   }));
-  const childOrgIds = parentOrgs.map((org) => org.id);
 
-  memberOrgs.map((org) => {
-    if (!childOrgIds.includes(org.id)) {
-      parentOrgs.push(org);
+    orgsToConsider = childOrgsWithRole;
+    orgs = orgs.concat(childOrgsWithRole);
     }
-  });
-
-  return parentOrgs.sort((a, b) => a.id.localeCompare(b.id));
+  return orgs.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export const getOrgsForUserIdCached = unstable_cache(
