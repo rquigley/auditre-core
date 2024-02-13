@@ -74,6 +74,25 @@ export class User {
     return perms.includes(perm);
   }
 
+  hasPermForOrg(perm: Permission, orgId: OrgId) {
+    if (this.hasPerm('orgs:manage')) {
+      return true;
+    }
+    const org = this.orgs.find((org) => org.id === orgId);
+    if (!org) {
+      return false;
+    }
+    const perms = permissions[org.role] as unknown as Permission[];
+    return perms.includes(perm);
+  }
+
+  hasPermForAnyOrg(perm: Permission) {
+    return this.orgs.some((org) => {
+      const perms = permissions[org.role] as unknown as Permission[];
+      return perms.includes(perm);
+    });
+  }
+
   canAccessOrg(orgId: OrgId) {
     return this.orgs.some((org) => org.id === orgId);
   }
