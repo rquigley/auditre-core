@@ -57,16 +57,7 @@ export function SettingsForm({
               >
                 Name
               </label>
-              <Text
-                field="name"
-                register={register}
-                formState={formState}
-                config={{
-                  input: 'text',
-                  label: 'Name',
-                  defaultValue: '',
-                }}
-              />
+              <Text field="name" register={register} formState={formState} />
             </div>
           </div>
         </div>

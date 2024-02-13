@@ -176,7 +176,6 @@ export function BasicForm({
                         field={field}
                         register={register}
                         formState={formState}
-                        config={fieldConfig}
                       />
                     ) : fieldConfig.input === 'date' ? (
                       <DateField
@@ -185,7 +184,6 @@ export function BasicForm({
                         setValue={setValue}
                         register={register}
                         formState={formState}
-                        config={fieldConfig}
                       />
                     ) : fieldConfig.input === 'year' ? (
                       <Year
@@ -206,7 +204,6 @@ export function BasicForm({
                         field={field}
                         register={register}
                         formState={formState}
-                        config={fieldConfig}
                       />
                     ) : null}
                   </div>
