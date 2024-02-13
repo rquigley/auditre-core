@@ -1,0 +1,2 @@
+ALTER TABLE org ADD COLUMN "image" text NOT NULL DEFAULT '',
+    ADD COLUMN "url" text NOT NULL DEFAULT '';

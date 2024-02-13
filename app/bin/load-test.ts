@@ -12,9 +12,11 @@ async function main() {
     const org = await createOrg({
       name: `test ${dn} org ${m}`,
       canHaveChildOrgs: false,
+      url: '',
+      image: '',
     });
     for (let n = 0; n < 5; n++) {
-      const user = await createUser(org.id, {
+      const user = await createUser([org.id], {
         email: `user${n}@test-${dn}-org${m}.debug`,
       });
       const audit = await createAudit({
