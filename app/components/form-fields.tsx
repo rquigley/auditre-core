@@ -22,28 +22,27 @@ import { FormFieldCheckbox, FormFieldFile } from '@/lib/request-types';
 import { delay, pWithResolvers, ucFirst } from '@/lib/util';
 
 import type { DocumentId, S3File } from '@/types';
-import type { UseFormGetValues, UseFormSetValue } from 'react-hook-form';
+import type {
+  UseFormGetValues,
+  UseFormRegister,
+  UseFormSetValue,
+} from 'react-hook-form';
 
 type FormFieldProps = {
   field: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  register: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  formState: any;
+  register: UseFormRegister<any>;
+  errors: { message?: string } | undefined;
 };
 
-export function Text({
-  field,
-  register,
-  formState: { errors },
-}: FormFieldProps) {
+export function Text({ field, register, errors }: FormFieldProps) {
   return (
     <>
       <input
         {...register(field)}
         autoComplete="off"
         className={clsx(
-          errors[field]
+          errors
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
           'block w-full rounded-md border-0 py-1.5 px-2.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6',
@@ -51,24 +50,20 @@ export function Text({
       />
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors[field]?.message}
+        {errors?.message}
       </p>
     </>
   );
 }
 
-export function Textarea({
-  field,
-  register,
-  formState: { errors },
-}: FormFieldProps) {
+export function Textarea({ field, register, errors }: FormFieldProps) {
   return (
     <>
       <textarea
         rows={4}
         {...register(field)}
         className={clsx(
-          errors[field]
+          errors
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
           'block w-full rounded-md border-0 py-1.5 px-2.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6',
@@ -76,7 +71,7 @@ export function Textarea({
       />
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors[field]?.message}
+        {errors?.message}
       </p>
     </>
   );
@@ -108,14 +103,14 @@ export function Textarea({
 //         {...register(field)}
 //         autoComplete="off"
 //         className={clsx(
-//           errors[field]
+//           errors
 //             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
 //             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
 //           'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
 //         )}
 //       /> */}
 //       <p className="mt-2 text-sm text-red-600" id="email-error">
-//         {errors[field]?.message}
+//         {errors?.message}
 //       </p>
 //     </>
 //   );
@@ -124,9 +119,9 @@ export function Textarea({
 export function Year({
   field,
   register,
-  formState: { errors },
-  config,
-}: FormFieldProps & { config: { label: string } }) {
+  errors,
+  label,
+}: FormFieldProps & { label: string }) {
   const nextYear = new Date().getFullYear() + 1;
   const years = Array.from({ length: 10 }, (_, i) => nextYear - i);
   return (
@@ -144,10 +139,10 @@ export function Year({
           </option>
         ))}
       </select>
-      <span className="sr-only">{config.label}</span>
+      <span className="sr-only">{label}</span>
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors[field]?.message}
+        {errors?.message}
       </p>
     </>
   );
@@ -156,7 +151,7 @@ export function Year({
 export function Month({
   field,
   register,
-  formState: { errors },
+  errors,
   config,
 }: FormFieldProps & { config: { label: string } }) {
   const months = [
@@ -191,7 +186,7 @@ export function Month({
       <span className="sr-only">{config.label}</span>
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors[field]?.message}
+        {errors?.message}
       </p>
     </>
   );
@@ -199,7 +194,7 @@ export function Month({
 export function Checkbox({
   field,
   register,
-  formState: { errors },
+  errors,
   config,
 }: FormFieldProps & { config: FormFieldCheckbox }) {
   const items = Object.keys(config.items).map((key) => ({
@@ -235,7 +230,7 @@ export function Checkbox({
       ))}
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors[field]?.message}
+        {errors?.message}
       </p>
     </>
   );
@@ -245,7 +240,7 @@ export function BooleanField({
   field,
   enabled,
   setEnabled,
-  formState: { errors },
+  errors,
   label,
 }: FormFieldProps & {
   enabled: boolean;
@@ -274,7 +269,7 @@ export function BooleanField({
       </Switch>
 
       <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors[field]?.message}
+        {errors?.message}
       </p>
     </>
   );
@@ -317,7 +312,7 @@ export function FileUpload({
   register,
   setValue,
   getValues,
-  formState: { isSubmitSuccessful },
+  isSubmitSuccessful,
   config,
   documents,
   resetField,
@@ -328,6 +323,7 @@ export function FileUpload({
   setValue: UseFormSetValue<any>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getValues: UseFormGetValues<any>;
+  isSubmitSuccessful: boolean;
   documents: { id: DocumentId; doc: JSX.Element; data: JSX.Element }[];
   resetField: (field: string) => void;
   setNumFilesUplading: (cb: (val: number) => number) => void;

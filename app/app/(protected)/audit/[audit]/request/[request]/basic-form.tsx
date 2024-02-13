@@ -146,7 +146,8 @@ export function BasicForm({
                       <FileUpload
                         field={field}
                         register={register}
-                        formState={formState}
+                        errors={formState.errors[field]}
+                        isSubmitSuccessful={formState.isSubmitSuccessful}
                         config={fieldConfig}
                         setValue={setValue}
                         getValues={getValues}
@@ -158,7 +159,7 @@ export function BasicForm({
                       <Checkbox
                         field={field}
                         register={register}
-                        formState={formState}
+                        errors={formState.errors[field]}
                         config={fieldConfig}
                       />
                     ) : fieldConfig.input === 'boolean' ? (
@@ -172,34 +173,34 @@ export function BasicForm({
                             shouldTouch: true,
                           })
                         }
-                        formState={formState}
+                        errors={formState.errors[field]}
                         label={fieldConfig.label || ''}
                       />
                     ) : fieldConfig.input === 'textarea' ? (
                       <Textarea
                         field={field}
                         register={register}
-                        formState={formState}
+                        errors={formState.errors[field]}
                       />
                     ) : fieldConfig.input === 'year' ? (
                       <Year
                         field={field}
                         register={register}
-                        formState={formState}
-                        config={fieldConfig}
+                        errors={formState.errors[field]}
+                        label={fieldConfig.label}
                       />
                     ) : fieldConfig.input === 'month' ? (
                       <Month
                         field={field}
                         register={register}
-                        formState={formState}
+                        errors={formState.errors[field]}
                         config={fieldConfig}
                       />
                     ) : fieldConfig.input === 'text' ? (
                       <Text
                         field={field}
                         register={register}
-                        formState={formState}
+                        errors={formState.errors[field]}
                       />
                     ) : null}
                   </div>
