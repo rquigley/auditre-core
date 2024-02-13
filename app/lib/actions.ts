@@ -4,7 +4,6 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { extname } from 'path';
-import * as Sentry from '@sentry/nextjs';
 import retry from 'async-retry';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -29,7 +28,11 @@ import {
   reAskQuestion,
 } from '@/controllers/document';
 import { getKV } from '@/controllers/kv';
-import { createOrg as _createOrg } from '@/controllers/org';
+import {
+  createOrg as _createOrg,
+  updateOrg as _updateOrg,
+  getOrgById,
+} from '@/controllers/org';
 import {
   create as addRequestData,
   unlinkDocumentFromRequestData,
@@ -427,37 +430,32 @@ export async function overrideAccountMapping({
 }
 
 export async function createOrg(
-  prevState: {
-    message: string;
+  parentOrgId: OrgId,
+  data: {
+    name: string;
   },
-  formData: FormData,
 ) {
   'use server';
-  try {
-    const { user } = await getCurrent();
-    if (!user) {
-      throw new UnauthorizedError();
-    }
 
-    const schema = z.object({
-      name: z.string().min(1).max(50),
-    });
-    const data = schema.parse({
-      name: formData.get('name'),
-    });
-
-    await _createOrg({
-      name: data.name,
-      canHaveChildOrgs: false,
-      parentOrgId: user.orgId,
-    });
-
-    revalidatePath('/org-select');
-    return { message: `Added ${data.name}` };
-  } catch (error) {
-    Sentry.captureException(error);
-    return { message: 'Failed to create invite' };
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
   }
+  const parentOrg = await getOrgById(parentOrgId);
+  const schema = z.object({
+    name: z.string().min(1).max(100),
+  });
+  const parsed = schema.parse(data);
+
+  await _createOrg({
+    name: parsed.name,
+    canHaveChildOrgs: false,
+    parentOrgId: parentOrg.id,
+    image: '',
+    url: '',
+  });
+
+  revalidateTag('orgs-for-user');
 }
 
 export async function switchOrg(orgId: OrgId) {
@@ -496,4 +494,29 @@ export async function changeUserRole({
 
   await _changeUserRole(userId, role);
   revalidatePath('/');
+}
+
+export async function updateOrg(
+  orgId: OrgId,
+  data: {
+    name: string;
+    canHaveChildOrgs: boolean;
+    isDeleted: boolean;
+    url: string;
+    image: string;
+  },
+) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const org = await getOrgById(orgId);
+  if (!user.canAccessOrg(org.id)) {
+    throw new UnauthorizedError();
+  }
+
+  const res = await _updateOrg(orgId, data);
+  console.log('updated org', res);
+  revalidatePath('/');
+  return res;
 }

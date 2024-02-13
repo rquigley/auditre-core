@@ -23,5 +23,44 @@ export async function updateOrg(id: OrgId, updateWith: OrgUpdate) {
     .updateTable('org')
     .set(updateWith)
     .where('id', '=', id)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+export async function getOrgsWithMeta(ids: OrgId[]) {
+  return await db
+    .selectFrom('org as o')
+    .leftJoin('auth.userRole as ur', 'o.id', 'ur.orgId')
+    .leftJoin('audit as a', 'o.id', 'a.orgId')
+    .select(({ fn }) => [
+      'o.id',
+      'o.name',
+      'o.canHaveChildOrgs',
+      fn.count<number>('a.orgId').as('auditCount'),
+      fn.count<number>('ur.orgId').as('userCount'),
+    ])
+    .where('o.id', 'in', ids)
+    .where('o.isDeleted', '=', false)
+    .groupBy('o.id')
+    .orderBy('name')
+    .execute();
+}
+
+export async function getChildOrgsWithMeta(id: OrgId) {
+  return await db
+    .selectFrom('org as o')
+    .leftJoin('auth.userRole as ur', 'o.id', 'ur.orgId')
+    .leftJoin('audit as a', 'o.id', 'a.orgId')
+    .select(({ fn }) => [
+      'o.id',
+      'o.name',
+      'o.canHaveChildOrgs',
+      fn.count<number>('a.orgId').as('auditCount'),
+      fn.count<number>('ur.orgId').as('userCount'),
+    ])
+    .where('o.parentOrgId', '=', id)
+    .where('o.isDeleted', '=', false)
+    .groupBy('o.id')
+    .orderBy('name')
     .execute();
 }
