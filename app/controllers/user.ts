@@ -261,7 +261,7 @@ export async function getOrgsForUserId(userId: UserId) {
   }
   const parentOrgsRes = await db
     .selectFrom('org')
-    .select(['id', 'name', 'parentOrgId'])
+    .select(['id', 'name', 'parentOrgId', 'canHaveChildOrgs'])
     .where('parentOrgId', 'in', parentalOrgIds)
     .orderBy('id')
     .execute();
