@@ -8,7 +8,6 @@ import { z } from 'zod';
 
 import { Text } from '@/components/form-fields';
 import { updateAudit } from '@/lib/actions';
-import { delay } from '@/lib/util';
 
 const auditSchema = z.object({
   name: z.string().min(3).max(72),
@@ -29,13 +28,11 @@ export function SettingsForm({
     },
   });
   async function onSubmit(data: z.infer<typeof auditSchema>) {
-    const p = Promise.all([
-      updateAudit(audit.id, {
-        name: data.name,
-        // year: data.year,
-      }),
-      delay(700),
-    ]);
+    const p = updateAudit(audit.id, {
+      name: data.name,
+      // year: data.year,
+    });
+
     toast.promise(p, {
       loading: 'Saving...',
       success: async () => {
@@ -60,12 +57,7 @@ export function SettingsForm({
               <Text
                 field="name"
                 register={register}
-                formState={formState}
-                config={{
-                  input: 'text',
-                  label: 'Name',
-                  defaultValue: '',
-                }}
+                errors={formState.errors['name']}
               />
             </div>
           </div>

@@ -31,11 +31,13 @@ export interface FormFieldDate extends _FormFieldBase {
 export interface FormFieldYear extends _FormFieldBase {
   input: 'year';
   defaultValue: string;
+  label: string;
 }
 
 export interface FormFieldMonth extends _FormFieldBase {
   input: 'month';
   defaultValue: string;
+  label: string;
 }
 
 export interface FormFieldCheckbox extends _FormFieldBase {

@@ -50,12 +50,7 @@ export default function EmailSigninForm() {
             <Text
               field="email"
               register={register}
-              formState={formState}
-              config={{
-                input: 'text',
-                label: 'Name',
-                defaultValue: '',
-              }}
+              errors={formState.errors['email']}
             />
           </div>
         </div>

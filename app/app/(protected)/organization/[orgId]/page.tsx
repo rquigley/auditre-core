@@ -1,8 +1,13 @@
 import { notFound } from 'next/navigation';
 
-import { getById } from '@/controllers/org';
+import ChildOrgs from '@/components/child-orgs';
+import { Content } from '@/components/content';
+import { Header } from '@/components/header';
+import { getChildOrgsWithMeta, getOrgById } from '@/controllers/org';
 import { getCurrent } from '@/controllers/session-user';
 import { OrgId } from '@/types';
+import NewOrgForm from './new-org-form';
+import OrgForm from './org-form';
 
 export default async function OrgPage({
   params: { orgId },
@@ -13,42 +18,41 @@ export default async function OrgPage({
   if (!user) {
     return authRedirect();
   }
-  // console.log(orgId);
-  const org = await getById(orgId);
 
-  if (org.id !== user.orgId) {
+  const org = await getOrgById(orgId);
+  const childOrgs = await getChildOrgsWithMeta(orgId);
+
+  if (!user.canAccessOrg(org.id)) {
     return notFound();
   }
+  return (
+    <>
+      <Header
+        title={org.name}
+        breadcrumbs={[{ name: 'Manage organizations', href: '/organizations' }]}
+        // settings={<AuditSettings auditId={auditId} />}
+      />
+      <Content pad={true}>
+        <OrgForm
+          id={org.id}
+          data={{
+            name: org.name,
+            canHaveChildOrgs: org.canHaveChildOrgs,
+            isDeleted: org.isDeleted,
+            url: org.url,
+            // image: org.image,
+          }}
+          userCanSetChildOrgs={user.hasPerm('org:can-set-have-child-orgs')}
+        />
 
-  console.log(org);
-  return null;
-  // return (
-  //   <>
-  //     <Header title={document.name} breadcrumbs={breadcrumbs} />
-  //     <Content pad={true}>
-  //       <div className="text-sm mb-4">
-  //         <div>Classified as: {document.classifiedType}</div>
-  //         {document.usage ? (
-  //           <ul className="text-sm">
-  //             <li>Extraction: {document.usage.extractMs / 1000} seconds</li>
-  //             <li>Classify: {document.usage.classifyMs / 1000} seconds</li>
-  //             <li>
-  //               Ask questions: {document.usage.askQuestionsMs / 1000} seconds
-  //             </li>
-  //             <li>Num questions: {document.usage.numQuestions}</li>
-  //           </ul>
-  //         ) : null}
-  //       </div>
-  //       <div className="text-med leading-6 text-gray-500">Raw Content</div>
-  //       <div className="text-xs h-48 overflow-y-scroll p-4 rounded-lg shadow-sm ring-1 ring-inset ring-gray-300">
-  //         {document.extracted}
-  //       </div>
-  //       <AI document={document} />
-
-  //       {/* <div className="lg:col-start-3">
-  //           {/* <Actions document={document} /> */}
-  //       {/* <Activity changes={await getChangesById(id)} user={user} /> */}
-  //     </Content>
-  //   </>
-  // );
+        {org.canHaveChildOrgs && (
+          <>
+            <h2 className="mb-2 text-sm text-slate-700">Child organizations</h2>
+            <ChildOrgs orgs={childOrgs} />
+            <NewOrgForm parentOrgId={orgId} />
+          </>
+        )}
+      </Content>
+    </>
+  );
 }

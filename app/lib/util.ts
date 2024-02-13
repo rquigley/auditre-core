@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export function generatePassword(
   length: number = 8,
   includeSymbols = true,
@@ -288,3 +290,21 @@ export function dateLiketoYear(dateLike: string | Date | undefined | null) {
     return '';
   }
 }
+
+export const zUrlOrEmptyString = z.string().refine(
+  (value) => {
+    if (value === '') {
+      return true;
+    }
+
+    try {
+      new URL(value);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  {
+    message: 'Must be an empty string or a valid URL',
+  },
+);

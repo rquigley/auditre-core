@@ -2,7 +2,7 @@ import { db } from '@/lib/db';
 
 import type { NewOrg, OrgId, OrgUpdate } from '@/types';
 
-export async function create(org: NewOrg) {
+export async function createOrg(org: NewOrg) {
   return await db
     .insertInto('org')
     .values({ ...org })
@@ -10,7 +10,7 @@ export async function create(org: NewOrg) {
     .executeTakeFirstOrThrow();
 }
 
-export async function getById(id: OrgId) {
+export async function getOrgById(id: OrgId) {
   return await db
     .selectFrom('org')
     .where('id', '=', id)
@@ -18,10 +18,49 @@ export async function getById(id: OrgId) {
     .executeTakeFirstOrThrow();
 }
 
-export async function update(id: OrgId, updateWith: OrgUpdate) {
+export async function updateOrg(id: OrgId, updateWith: OrgUpdate) {
   return await db
     .updateTable('org')
     .set(updateWith)
     .where('id', '=', id)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+export async function getOrgsWithMeta(ids: OrgId[]) {
+  return await db
+    .selectFrom('org as o')
+    .leftJoin('auth.userRole as ur', 'o.id', 'ur.orgId')
+    .leftJoin('audit as a', 'o.id', 'a.orgId')
+    .select(({ fn }) => [
+      'o.id',
+      'o.name',
+      'o.canHaveChildOrgs',
+      fn.count<number>('a.orgId').as('auditCount'),
+      fn.count<number>('ur.orgId').as('userCount'),
+    ])
+    .where('o.id', 'in', ids)
+    .where('o.isDeleted', '=', false)
+    .groupBy('o.id')
+    .orderBy('name')
+    .execute();
+}
+
+export async function getChildOrgsWithMeta(id: OrgId) {
+  return await db
+    .selectFrom('org as o')
+    .leftJoin('auth.userRole as ur', 'o.id', 'ur.orgId')
+    .leftJoin('audit as a', 'o.id', 'a.orgId')
+    .select(({ fn }) => [
+      'o.id',
+      'o.name',
+      'o.canHaveChildOrgs',
+      fn.count<number>('a.orgId').as('auditCount'),
+      fn.count<number>('ur.orgId').as('userCount'),
+    ])
+    .where('o.parentOrgId', '=', id)
+    .where('o.isDeleted', '=', false)
+    .groupBy('o.id')
+    .orderBy('name')
     .execute();
 }

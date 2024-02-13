@@ -31,6 +31,8 @@ export interface OrgTable {
   parentOrgId: OrgId | null;
   canHaveChildOrgs: boolean;
   name: string;
+  url: string;
+  image: string;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
 }

@@ -13,16 +13,15 @@ import type {
 } from '@/types';
 
 export async function createUser(
-  orgId: OrgId,
+  orgIds: OrgId[],
   user: NewUser,
 ): Promise<Pick<User, 'id' | 'name' | 'email' | 'image' | 'emailVerified'>> {
-  // Does any other user exist for this org? If not, make this user an admin.
-
-  const { count: userCount } = await db
+  const orgUserCounts = await db
     .selectFrom('auth.userRole')
-    .select(db.fn.countAll().as('count'))
-    .where('orgId', '=', orgId)
-    .executeTakeFirstOrThrow();
+    .select(({ fn }) => ['orgId', fn.count<number>('orgId').as('userCount')])
+    .where('orgId', 'in', orgIds)
+    .groupBy('orgId')
+    .execute();
 
   return await db.transaction().execute(async (trx) => {
     const userRes = await trx
@@ -36,16 +35,19 @@ export async function createUser(
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    await trx
-      .insertInto('auth.userRole')
-      .values({
-        userId: userRes.id,
-        orgId,
-        role: userCount === 0 ? 'OWNER' : 'USER',
-        //role: 'user', // Always start as 'user', then can be promoted to 'admin'
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+    for (const orgId of orgIds) {
+      const userExists = orgUserCounts.some((o) => o.orgId === orgId);
+
+      await trx
+        .insertInto('auth.userRole')
+        .values({
+          userId: userRes.id,
+          orgId,
+          // Does any other user exist for this org? If not, make this user an owner.
+          role: userExists ? 'USER' : 'OWNER',
+        })
+        .executeTakeFirstOrThrow();
+    }
 
     return {
       id: userRes.id,
@@ -235,7 +237,7 @@ export async function updateUser(id: UserId, updateWith: UserUpdate) {
 }
 
 export async function getOrgsForUserId(userId: UserId) {
-  const memberOrgs = await db
+  let orgs = await db
     .selectFrom('auth.userRole as ur')
     .innerJoin('org', 'org.id', 'ur.orgId')
     .select([
@@ -248,37 +250,54 @@ export async function getOrgsForUserId(userId: UserId) {
     .where('userId', '=', userId)
     .orderBy('org.id')
     .execute();
-  const parentalOrgIds = memberOrgs
-    .map((org) =>
-      ['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role) && org.canHaveChildOrgs
-        ? org.id
-        : null,
-    )
-    .filter(Boolean);
 
-  if (parentalOrgIds.length === 0) {
-    return memberOrgs;
-  }
-  const parentOrgsRes = await db
-    .selectFrom('org')
-    .select(['id', 'name', 'parentOrgId'])
-    .where('parentOrgId', 'in', parentalOrgIds)
-    .orderBy('id')
-    .execute();
+  // if there are two orgs with the same id, take the one with the higher role
+  // This prevents a child org user from adding a higher priviledged order
+  // and clobering their perms.
+  orgs = orgs.reduce(
+    (acc, org) => {
+      const existingOrg = acc.find((m) => m.id === org.id);
+      if (!existingOrg) {
+        return acc.concat(org);
+      }
+      if (['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role)) {
+        return acc.map((m) => (m.id === org.id ? org : m));
+      }
+      return acc;
+    },
+    [] as typeof orgs,
+  );
 
-  const parentOrgs = parentOrgsRes.map((org) => ({
-    ...org,
-    role: memberOrgs.find((m) => m.id === org.parentOrgId)?.role as AuthRole,
-  }));
-  const childOrgIds = parentOrgs.map((org) => org.id);
+  let orgsToConsider = orgs;
+  while (true) {
+    const orgIdsWithChildren = orgsToConsider
+      .map((org) =>
+        org.canHaveChildOrgs &&
+        ['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role)
+          ? org.id
+          : null,
+      )
+      .filter(Boolean);
 
-  memberOrgs.map((org) => {
-    if (!childOrgIds.includes(org.id)) {
-      parentOrgs.push(org);
+    if (orgIdsWithChildren.length === 0) {
+      break;
     }
-  });
+    const childOrgs = await db
+      .selectFrom('org')
+      .select(['id', 'name', 'parentOrgId', 'canHaveChildOrgs'])
+      .where('parentOrgId', 'in', orgIdsWithChildren)
+      .orderBy('id')
+      .execute();
 
-  return parentOrgs.sort((a, b) => a.id.localeCompare(b.id));
+    const childOrgsWithRole = childOrgs.map((org) => ({
+      ...org,
+      role: orgs.find((m) => m.id === org.parentOrgId)?.role as AuthRole,
+    }));
+
+    orgsToConsider = childOrgsWithRole;
+    orgs = orgs.concat(childOrgsWithRole);
+  }
+  return orgs.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export const getOrgsForUserIdCached = unstable_cache(
