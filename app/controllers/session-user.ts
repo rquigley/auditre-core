@@ -16,9 +16,11 @@ const permissions = {
     'documents:view',
     'org:manage-users',
     'org:manage-super-users',
+    'org:can-set-have-child-orgs',
+    'org:can-add-child-orgs',
   ],
-  OWNER: ['org:manage-users'],
-  ADMIN: ['org:manage-users'],
+  OWNER: ['org:manage-users', 'org:can-add-child-orgs'],
+  ADMIN: ['org:manage-users', 'org:can-add-child-orgs'],
   USER: [],
 } as const;
 
@@ -70,6 +72,10 @@ export class User {
     }
     const perms = permissions[this.role] as unknown as Permission[];
     return perms.includes(perm);
+  }
+
+  canAccessOrg(orgId: OrgId) {
+    return this.orgs.some((org) => org.id === orgId);
   }
 
   get orgName() {
