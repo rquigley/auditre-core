@@ -1,3 +1,5 @@
+import exp from 'constants';
+
 import { db } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 
@@ -25,14 +27,14 @@ export async function getInvitationById(id: InvitationId) {
     .executeTakeFirst();
 }
 
-export async function getInvitationByEmail(email: string) {
+export async function getInvitationsByEmail(email: string) {
   return await db
     .selectFrom('auth.invitation')
     .where('email', '=', email)
     .where('isUsed', '=', false)
     .where('expiresAt', '>', new Date())
-    .selectAll()
-    .executeTakeFirst();
+    .select(['id', 'orgId'])
+    .execute();
 }
 
 export async function getInvitationsByOrgId(orgId: OrgId) {
@@ -57,6 +59,13 @@ export async function updateInvitation(
 
 export async function deleteInvitation(id: InvitationId) {
   return await db.deleteFrom('auth.invitation').where('id', '=', id).execute();
+}
+
+export async function deleteInvitationsByEmail(email: string) {
+  return await db
+    .deleteFrom('auth.invitation')
+    .where('email', '=', email)
+    .execute();
 }
 
 export async function sendInviteEmail(inviteId: InvitationId) {
