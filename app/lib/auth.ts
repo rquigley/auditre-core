@@ -2,18 +2,14 @@ import NextAuth from 'next-auth';
 import EmailProvider from 'next-auth/providers/email';
 import GoogleProvider from 'next-auth/providers/google';
 
-import { getInvitationByEmail } from '@/controllers/invitation';
+import { getInvitationsByEmail } from '@/controllers/invitation';
 import { getByEmail as getUserByEmail, updateUser } from '@/controllers/user';
 //import GitHubProvider from 'next-auth/providers/github';
 import { AuthAdapter } from '@/lib/auth-adapter';
 import { sendVerificationRequest } from '@/lib/email';
 import { OrgId } from '@/types';
 
-import type {
-  AdapterAccount,
-  AdapterSession,
-  AdapterUser,
-} from '@auth/core/adapters';
+import type { AdapterUser } from '@auth/core/adapters';
 
 export const {
   handlers: { GET, POST },
@@ -161,7 +157,8 @@ export const {
           }
           return true;
         }
-        if (await getInvitationByEmail(newEmail)) {
+        const invites = await getInvitationsByEmail(newEmail);
+        if (invites.length > 0) {
           return true;
         }
       }

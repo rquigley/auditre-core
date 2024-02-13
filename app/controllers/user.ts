@@ -13,16 +13,15 @@ import type {
 } from '@/types';
 
 export async function createUser(
-  orgId: OrgId,
+  orgIds: OrgId[],
   user: NewUser,
 ): Promise<Pick<User, 'id' | 'name' | 'email' | 'image' | 'emailVerified'>> {
-  // Does any other user exist for this org? If not, make this user an admin.
-
-  const { count: userCount } = await db
+  const orgUserCounts = await db
     .selectFrom('auth.userRole')
-    .select(db.fn.countAll().as('count'))
-    .where('orgId', '=', orgId)
-    .executeTakeFirstOrThrow();
+    .select(({ fn }) => ['orgId', fn.count<number>('orgId').as('userCount')])
+    .where('orgId', 'in', orgIds)
+    .groupBy('orgId')
+    .execute();
 
   return await db.transaction().execute(async (trx) => {
     const userRes = await trx
@@ -36,16 +35,19 @@ export async function createUser(
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    await trx
-      .insertInto('auth.userRole')
-      .values({
-        userId: userRes.id,
-        orgId,
-        role: userCount === 0 ? 'OWNER' : 'USER',
-        //role: 'user', // Always start as 'user', then can be promoted to 'admin'
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+    for (const orgId of orgIds) {
+      const userExists = orgUserCounts.some((o) => o.orgId === orgId);
+
+      await trx
+        .insertInto('auth.userRole')
+        .values({
+          userId: userRes.id,
+          orgId,
+          // Does any other user exist for this org? If not, make this user an owner.
+          role: userExists ? 'USER' : 'OWNER',
+        })
+        .executeTakeFirstOrThrow();
+    }
 
     return {
       id: userRes.id,
@@ -269,32 +271,32 @@ export async function getOrgsForUserId(userId: UserId) {
   let orgsToConsider = orgs;
   while (true) {
     const orgIdsWithChildren = orgsToConsider
-    .map((org) =>
+      .map((org) =>
         org.canHaveChildOrgs &&
         ['SUPERUSER', 'OWNER', 'ADMIN'].includes(org.role)
-        ? org.id
-        : null,
-    )
-    .filter(Boolean);
+          ? org.id
+          : null,
+      )
+      .filter(Boolean);
 
     if (orgIdsWithChildren.length === 0) {
       break;
-  }
+    }
     const childOrgs = await db
-    .selectFrom('org')
-    .select(['id', 'name', 'parentOrgId', 'canHaveChildOrgs'])
+      .selectFrom('org')
+      .select(['id', 'name', 'parentOrgId', 'canHaveChildOrgs'])
       .where('parentOrgId', 'in', orgIdsWithChildren)
-    .orderBy('id')
-    .execute();
+      .orderBy('id')
+      .execute();
 
     const childOrgsWithRole = childOrgs.map((org) => ({
-    ...org,
+      ...org,
       role: orgs.find((m) => m.id === org.parentOrgId)?.role as AuthRole,
-  }));
+    }));
 
     orgsToConsider = childOrgsWithRole;
     orgs = orgs.concat(childOrgsWithRole);
-    }
+  }
   return orgs.sort((a, b) => a.id.localeCompare(b.id));
 }
 
