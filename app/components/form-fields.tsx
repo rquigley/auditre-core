@@ -9,7 +9,7 @@ import * as Sentry from '@sentry/nextjs';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 
-import Calendar from '@/components/calendar';
+// import Calendar from '@/components/calendar';
 import { Document } from '@/components/document';
 import { Spinner } from '@/components/spinner';
 import {
@@ -22,6 +22,7 @@ import { FormFieldCheckbox, FormFieldFile } from '@/lib/request-types';
 import { delay, pWithResolvers, ucFirst } from '@/lib/util';
 
 import type { DocumentId, S3File } from '@/types';
+import type { UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 
 type FormFieldProps = {
   field: string;
@@ -81,44 +82,44 @@ export function Textarea({
   );
 }
 
-export function DateField({
-  field,
-  register,
-  getValues,
-  setValue,
-  formState: { errors },
-}: FormFieldProps & {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getValues: (key: string) => any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setValue: (key: string, val: any, opts: any) => void;
-}) {
-  const [currentDate, setCurrentDate] = useState(getValues(field));
-  return (
-    <>
-      <Calendar
-        value={currentDate}
-        onChange={(val) => {
-          setCurrentDate(val);
-          setValue(field, val, { shouldDirty: true, shouldTouch: true });
-        }}
-      />
-      {/* <input
-        {...register(field)}
-        autoComplete="off"
-        className={clsx(
-          errors[field]
-            ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
-            : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
-          'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
-        )}
-      /> */}
-      <p className="mt-2 text-sm text-red-600" id="email-error">
-        {errors[field]?.message}
-      </p>
-    </>
-  );
-}
+// export function DateField({
+//   field,
+//   register,
+//   getValues,
+//   setValue,
+//   formState: { errors },
+// }: FormFieldProps & {
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   getValues: UseFormGetValues<any>;
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   setValue: UseFormSetValue<any>;
+// }) {
+//   const [currentDate, setCurrentDate] = useState(getValues(field));
+//   return (
+//     <>
+//       <Calendar
+//         value={currentDate}
+//         onChange={(val) => {
+//           setCurrentDate(val);
+//           setValue(field, val, { shouldDirty: true, shouldTouch: true });
+//         }}
+//       />
+//       {/* <input
+//         {...register(field)}
+//         autoComplete="off"
+//         className={clsx(
+//           errors[field]
+//             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
+//             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
+//           'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
+//         )}
+//       /> */}
+//       <p className="mt-2 text-sm text-red-600" id="email-error">
+//         {errors[field]?.message}
+//       </p>
+//     </>
+//   );
+// }
 
 export function Year({
   field,
@@ -242,34 +243,27 @@ export function Checkbox({
 
 export function BooleanField({
   field,
-  getValues,
-  setValue,
+  enabled,
+  setEnabled,
   formState: { errors },
-  config,
+  label,
 }: FormFieldProps & {
-  config: { label?: string };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getValues: (field: string) => any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setValue: (key: string, val: any, opts?: any) => void;
+  enabled: boolean;
+  setEnabled: (enabled: boolean) => void;
+  label: string;
 }) {
-  const [enabled, setEnabled] = useState(getValues(field));
-
   return (
     <>
       <Switch
         checked={enabled}
         name={field}
-        onChange={(val) => {
-          setValue(field, val, { shouldDirty: true, shouldTouch: true });
-          setEnabled(val);
-        }}
+        onChange={setEnabled}
         className={clsx(
           enabled ? 'bg-sky-700' : 'bg-gray-200',
           'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-700 focus:ring-offset-2',
         )}
       >
-        <span className="sr-only">{config.label}</span>
+        <span className="sr-only">{label}</span>
         <span
           aria-hidden="true"
           className={clsx(
@@ -331,9 +325,9 @@ export function FileUpload({
 }: FormFieldProps & {
   config: FormFieldFile;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setValue: (key: string, val: any, opts: any) => void;
+  setValue: UseFormSetValue<any>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getValues: (key?: string) => any;
+  getValues: UseFormGetValues<any>;
   documents: { id: DocumentId; doc: JSX.Element; data: JSX.Element }[];
   resetField: (field: string) => void;
   setNumFilesUplading: (cb: (val: number) => number) => void;
