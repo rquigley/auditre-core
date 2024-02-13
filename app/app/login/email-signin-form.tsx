@@ -47,16 +47,7 @@ export default function EmailSigninForm() {
             >
               Email
             </label>
-            <Text
-              field="email"
-              register={register}
-              formState={formState}
-              config={{
-                input: 'text',
-                label: 'Name',
-                defaultValue: '',
-              }}
-            />
+            <Text field="email" register={register} formState={formState} />
           </div>
         </div>
         <div className="mt-2 mb-2 grid grid-flow-row-dense grid-cols-2 gap-3">

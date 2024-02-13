@@ -97,11 +97,6 @@ export default function NewAuditModal() {
                             field="name"
                             register={register}
                             formState={formState}
-                            config={{
-                              input: 'text',
-                              label: 'Name',
-                              defaultValue: '',
-                            }}
                           />
                         </div>
                         <div className="align-left">
@@ -116,9 +111,7 @@ export default function NewAuditModal() {
                             register={register}
                             formState={formState}
                             config={{
-                              input: 'year',
                               label: 'Year',
-                              defaultValue: '',
                             }}
                           />
                         </div>

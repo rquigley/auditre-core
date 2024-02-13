@@ -18,15 +18,7 @@ import {
   getPresignedUploadUrl,
 } from '@/lib/actions';
 import { fetchWithProgress } from '@/lib/fetch-with-progress';
-import {
-  FormFieldBoolean,
-  FormFieldCheckbox,
-  FormFieldDate,
-  FormFieldFile,
-  FormFieldMonth,
-  FormFieldText,
-  FormFieldYear,
-} from '@/lib/request-types';
+import { FormFieldCheckbox, FormFieldFile } from '@/lib/request-types';
 import { delay, pWithResolvers, ucFirst } from '@/lib/util';
 
 import type { DocumentId, S3File } from '@/types';
@@ -43,8 +35,7 @@ export function Text({
   field,
   register,
   formState: { errors },
-  config,
-}: FormFieldProps & { config: FormFieldText }) {
+}: FormFieldProps) {
   return (
     <>
       <input
@@ -69,8 +60,7 @@ export function Textarea({
   field,
   register,
   formState: { errors },
-  config,
-}: FormFieldProps & { config: FormFieldText }) {
+}: FormFieldProps) {
   return (
     <>
       <textarea
@@ -97,9 +87,7 @@ export function DateField({
   getValues,
   setValue,
   formState: { errors },
-  config,
 }: FormFieldProps & {
-  config: FormFieldDate;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getValues: (key: string) => any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,7 +125,7 @@ export function Year({
   register,
   formState: { errors },
   config,
-}: FormFieldProps & { config: FormFieldYear }) {
+}: FormFieldProps & { config: { label: string } }) {
   const nextYear = new Date().getFullYear() + 1;
   const years = Array.from({ length: 10 }, (_, i) => nextYear - i);
   return (
@@ -169,7 +157,7 @@ export function Month({
   register,
   formState: { errors },
   config,
-}: FormFieldProps & { config: FormFieldMonth }) {
+}: FormFieldProps & { config: { label: string } }) {
   const months = [
     'January',
     'February',
@@ -259,13 +247,14 @@ export function BooleanField({
   formState: { errors },
   config,
 }: FormFieldProps & {
-  config: FormFieldBoolean;
+  config: { label?: string };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getValues: (field: string) => any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setValue: (key: string, val: any, opts?: any) => void;
 }) {
   const [enabled, setEnabled] = useState(getValues(field));
+
   return (
     <>
       <Switch
