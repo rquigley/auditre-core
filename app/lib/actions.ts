@@ -514,11 +514,16 @@ export async function updateOrg(
   if (!user.canAccessOrg(org.id)) {
     throw new UnauthorizedError();
   }
-  if (!user.hasPerm('org:can-set-have-child-orgs')) {
-    data.canHaveChildOrgs = undefined;
-  }
 
-  const res = await _updateOrg(orgId, data);
+  const res = await _updateOrg(org.id, {
+    name: data.name,
+    canHaveChildOrgs: user.hasPermForOrg('org:can-set-have-child-orgs', org.id)
+      ? data.canHaveChildOrgs
+      : undefined,
+    isDeleted: data.isDeleted,
+    url: data.url,
+    // image: data.image,
+  });
   revalidatePath('/');
   return res;
 }

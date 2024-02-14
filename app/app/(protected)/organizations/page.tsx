@@ -12,7 +12,6 @@ export default async function OrgSelect() {
   }
   const orgs = await getOrgsForUserIdCached(user.id);
   const orgsWithMeta = await getOrgsWithMeta(orgs.map((org) => org.id));
-
   return (
     <>
       <Header title="Manage organizations" />

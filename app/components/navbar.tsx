@@ -20,6 +20,7 @@ type Props = {
     id: OrgId;
     name: string;
   }[];
+  canManageOrgSettings: boolean;
   canManageOrgs: boolean;
 };
 export function Navbar({
@@ -28,6 +29,7 @@ export function Navbar({
   orgName,
   orgId,
   availableOrgs,
+  canManageOrgSettings,
   canManageOrgs,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -117,6 +119,7 @@ export function Navbar({
                 availableOrgs={availableOrgs}
                 activeOrgId={orgId}
                 canManageOrgs={canManageOrgs}
+                canManageOrgSettings={canManageOrgSettings}
               />
             </Menu>
             <Menu as="div" className="relative">
@@ -162,10 +165,12 @@ function OrgMenuItems({
   availableOrgs,
   activeOrgId,
   canManageOrgs,
+  canManageOrgSettings,
 }: {
   availableOrgs: Props['availableOrgs'];
   activeOrgId: OrgId;
   canManageOrgs: boolean;
+  canManageOrgSettings: boolean;
 }) {
   const router = useRouter();
 
@@ -219,22 +224,24 @@ function OrgMenuItems({
             </Menu.Item>
           ))}
         </div>
-        <div className="px-1 py-1">
-          <Menu.Item>
-            {({ active }) => (
-              <Link
-                href="/organization-settings"
-                className={clsx(
-                  active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block px-4 py-2 text-xs rounded-md',
-                )}
-              >
-                Organization settings
-              </Link>
-            )}
-          </Menu.Item>
-        </div>
-        {canManageOrgs ? (
+        {canManageOrgSettings && (
+          <div className="px-1 py-1">
+            <Menu.Item>
+              {({ active }) => (
+                <Link
+                  href="/organization-settings"
+                  className={clsx(
+                    active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                    'block px-4 py-2 text-xs rounded-md',
+                  )}
+                >
+                  Organization settings
+                </Link>
+              )}
+            </Menu.Item>
+          </div>
+        )}
+        {canManageOrgs && (
           <div className="px-1 py-1">
             <Menu.Item>
               {({ active }) => (
@@ -250,7 +257,7 @@ function OrgMenuItems({
               )}
             </Menu.Item>
           </div>
-        ) : null}
+        )}
       </Menu.Items>
     </Transition>
   );
