@@ -76,7 +76,7 @@ export interface AuthUserRoleTable {
   orgId: OrgId;
   // roleId: number;
   role: AuthRole;
-  createdAt: ColumnType<Date, string | undefined, never>;
+  // createdAt: ColumnType<Date, string | undefined, never>;
 }
 
 export type NewAuthUserRole = Insertable<AuthUserRoleTable>;
