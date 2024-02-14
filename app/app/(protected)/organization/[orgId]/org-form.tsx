@@ -39,7 +39,6 @@ export default function OrgForm({ id, data, userCanSetChildOrgs }: Props) {
 
   async function onSubmit(data: z.infer<typeof schema>) {
     const newData = await updateOrg(id, data);
-    console.log(newData);
     reset(newData);
   }
 
