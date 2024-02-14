@@ -23,6 +23,7 @@ export interface PostgresClusterProps {
   dbUsername: string;
   isProd: boolean;
   migrationBucket: Bucket;
+  includeDBBastion: boolean;
 }
 
 export class PostgresCluster extends Construct {
@@ -213,6 +214,45 @@ export class PostgresCluster extends Construct {
     this.instance.grantConnect(migrationLambda);
     props.migrationBucket.grantRead(migrationLambda);
 
+    if (props.includeDBBastion) {
+      const bastionSecurityGroup = new ec2.SecurityGroup(
+        this,
+        'BastionSecurityGroup',
+        {
+          vpc: props.vpc,
+          allowAllOutbound: true,
+        },
+      );
+      const bastionHostLinux = new ec2.BastionHostLinux(
+        this,
+        'BastionHostLinux',
+        {
+          machineImage: new ec2.AmazonLinuxImage({
+            // generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
+            // userData: ec2.UserData.forLinux({// }),
+          }),
+          vpc: props.vpc,
+          securityGroup: bastionSecurityGroup,
+          subnetSelection: {
+            subnetType: ec2.SubnetType.PUBLIC,
+          },
+        },
+      );
+
+      // The recommended way to connect to this bastion host is to use session manager
+      // and not use SSH, that is why there is also no ingress rule for port 22 by default
+      // Using the keyName prop of an instance means that there is ONE key to connect which
+      // normally is not what you want as you want to have personalized keys for people
+      // connecting to this box.
+      new cdk.CfnOutput(this, 'BastionHostLinuxInstanceId', {
+        value: `Bastion DB instance connect via:
+aws ssm start-session --target ${bastionHostLinux.instanceId} --profile auditre-dev
+psql -h ${this.instance.instanceEndpoint.hostname} -U your-username -d ${this.dbName}
+
+`,
+      });
+      this.instance.grantConnect(bastionHostLinux);
+    }
     //
     // ONLY FOR STAGING
     //
