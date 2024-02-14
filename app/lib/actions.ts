@@ -514,7 +514,7 @@ export async function updateOrg(
   if (!user.canAccessOrg(org.id)) {
     throw new UnauthorizedError();
   }
-  if (!user.hasPerm('org:can-set-have-child-orgs')) {
+  if (!user.hasPermForOrg('org:can-set-have-child-orgs', org.id)) {
     data.canHaveChildOrgs = undefined;
   }
 
