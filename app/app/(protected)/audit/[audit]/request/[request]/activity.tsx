@@ -51,7 +51,7 @@ export default async function Activity({
   }
 
   return (
-    <>
+    <div className=" max-w-xl">
       <ul role="list" className="mt-6 space-y-6">
         {feed.map((item, idx) => (
           <li key={idx} className="relative flex gap-x-4">
@@ -137,7 +137,7 @@ export default async function Activity({
         )}
         <CommentForm saveData={saveData} />
       </div>
-    </>
+    </div>
   );
 }
 
