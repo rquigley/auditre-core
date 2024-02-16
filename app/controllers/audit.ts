@@ -6,8 +6,13 @@ import {
   getAllByAuditId as getAllDocumentsByAuditId,
 } from '@/controllers/document';
 import { db } from '@/lib/db';
-import { FormField, isFormFieldFile } from '@/lib/request-types';
+import { getParser } from '@/lib/formula-parser';
+import { isFormFieldFile } from '@/lib/request-types';
 import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
+import {
+  buildBalanceSheet,
+  buildIncomeStatement,
+} from './financial-statement/table';
 import {
   getDataForAuditId,
   getDataForRequestAttribute2,
@@ -35,11 +40,14 @@ export async function getById(
   id: OrgId,
   params?: { includeDeleted?: boolean },
 ) {
-  let query = db.selectFrom('audit').where('id', '=', id);
-  if (!params?.includeDeleted) {
-    query = query.where('isDeleted', '=', false);
-  }
-  return await query.selectAll().executeTakeFirstOrThrow();
+  return await db
+    .selectFrom('audit')
+    .where('id', '=', id)
+    .$if(Boolean(params?.includeDeleted), (q) =>
+      q.where('isDeleted', '=', false),
+    )
+    .selectAll()
+    .executeTakeFirstOrThrow();
 }
 
 // TODO: let's figure out a better pattern for where this lives.
@@ -118,10 +126,8 @@ export async function getAllByOrgId(orgId: OrgId) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type AuditData = Record<string, any>;
-// export type AuditData = Awaited<ReturnType<typeof getAuditData>> & {
-//   [key: string]: any;
-// };
+// export type AuditData = Record<string, any>;
+export type AuditData = Awaited<ReturnType<typeof getAuditData>>;
 
 /**
  *
@@ -131,7 +137,7 @@ export type AuditData = Record<string, any>;
  * - Excel export
  *
  */
-export async function getAuditData(auditId: AuditId): Promise<AuditData> {
+export async function getAuditData(auditId: AuditId) {
   const requestData = await getDataForAuditId(auditId);
   const documents = await getAllDocumentsByAuditId(auditId);
   // console.log(documents);
@@ -142,12 +148,14 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
     aiData[document.id] = await getAiDataForDocumentId(document.id);
   }
 
-  type RequestFieldData = Record<
-    string,
-    | FormField['defaultValue']
-    | Record<string, string>
-    | Record<string, string>[]
-  >;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type RequestFieldData = Record<string, any>;
+  // type RequestFieldData = Record<
+  //   string,
+  //   | FormField['defaultValue']
+  //   | Record<string, string>
+  //   | Record<string, string>[]
+  // >;
   const requestDataObj: Record<string, RequestFieldData> = {};
   for (const [key, fields] of Object.entries(requestData)) {
     const fieldsData: RequestFieldData = {};
@@ -179,24 +187,69 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
     requestDataObj[kebabToCamel(key)] = fieldsData;
   }
   const year = String(requestDataObj.auditInfo?.year) || '';
+  const prevYear = String(Number(year) - 1);
 
+  const fiscalYearEndNoYear = `${getMonthName(
+    requestDataObj.auditInfo.fiscalYearMonthEnd,
+  )} ${getLastDayOfMonth(
+    requestDataObj.auditInfo.fiscalYearMonthEnd,
+    requestDataObj.auditInfo.year,
+  )}`;
   const totals = await getBalancesByAccountType(auditId, year);
-
+  const totals2 = await getBalancesByAccountType(auditId, prevYear);
   return {
     auditId,
     totals,
+    totalsNew: {
+      [year]: totals,
+      [prevYear]: totals2,
+    },
+    incomeStatementTable: buildIncomeStatement({
+      year,
+      prevYear,
+      fiscalYearEndNoYear,
+    }),
     year,
-    fiscalYearEndNoYear: `${getMonthName(
-      // @ts-expect-error
-      requestDataObj.auditInfo.fiscalYearMonthEnd,
-    )} ${getLastDayOfMonth(
-      // @ts-expect-error
-      requestDataObj.auditInfo.fiscalYearMonthEnd,
-      requestDataObj.auditInfo.year,
-    )}`,
-    fiscalYearEnd: `${requestDataObj.fiscalYearEndNoYear}, ${requestDataObj.year}`,
-    ...requestDataObj,
+    prevYear,
+    totals2,
+    fiscalYearEndNoYear,
+    fiscalYearEnd: `${fiscalYearEndNoYear}, ${year}`,
+    rt: requestDataObj,
   };
+}
+
+export function getWarningsForAudit(data: AuditData) {
+  const warnings: {
+    previewSection: string;
+    previewUrl: string;
+    message: string;
+  }[] = [];
+  const bs = buildBalanceSheet(data);
+  const parser = getParser(bs, data);
+  for (const year of [data.year, data.prevYear]) {
+    if (!year) {
+      continue;
+    }
+    const idx = year === data.year ? 1 : 2;
+
+    if (
+      parser.parse(String(bs.getValue('TOTAL-ASSETS', idx)).substring(1))
+        ?.result !==
+      parser.parse(
+        String(
+          bs.getValue('TOTAL-LIABILITIES-AND-STOCKHOLDERS-DEFICIT', idx),
+        ).substring(1),
+      )?.result
+    ) {
+      warnings.push({
+        previewSection: 'Consolidated balance sheet',
+        previewUrl: '#section-balance-sheet',
+        message: `Total assets don't equal total liabilities and stockholders' deficit for ${year}`,
+      });
+    }
+  }
+
+  return warnings;
 }
 
 export async function update(id: AuditId, updateWith: AuditUpdate) {

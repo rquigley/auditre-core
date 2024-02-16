@@ -307,6 +307,7 @@ export class OpsAppStack extends Stack {
       dbUsername: 'arroot',
       isProd,
       migrationBucket: dbMigrationsBucket,
+      includeDBBastion: false,
     });
     db.instance.connections.allowDefaultPortFrom(cluster);
     new CfnOutput(this, 'dbEndpoint', {

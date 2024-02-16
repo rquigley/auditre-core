@@ -251,6 +251,8 @@ export async function getOrgsForUserId(userId: UserId) {
     .orderBy('org.id')
     .execute();
 
+  orgs = dedupeOrgsByPriv(orgs);
+
   let orgsToConsider = orgs;
   while (true) {
     const orgIdsWithChildren = orgsToConsider
@@ -281,6 +283,10 @@ export async function getOrgsForUserId(userId: UserId) {
     orgs = orgs.concat(childOrgsWithRole);
   }
 
+  return dedupeOrgsByPriv(orgs).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function dedupeOrgsByPriv<T extends { id: string; role: string }[]>(orgs: T) {
   // if there are two orgs with the same id, take the one with the higher role
   // This prevents a child org user from adding a higher priviledged order
   // and clobering their perms.
@@ -293,10 +299,7 @@ export async function getOrgsForUserId(userId: UserId) {
       orgMap.set(org.id, org);
     }
   }
-
-  return Array.from(orgMap, ([_, org]) => org).sort((a, b) =>
-    a.id.localeCompare(b.id),
-  );
+  return Array.from(orgMap, ([_, org]) => org);
 }
 
 export const getOrgsForUserIdCached = unstable_cache(

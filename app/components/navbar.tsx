@@ -52,7 +52,9 @@ export function Navbar({
       altRoots: ['/document'],
     },
   ];
-
+  if (orgName.length > 19) {
+    orgName = orgName.slice(0, 18).trim() + '...';
+  }
   return (
     <>
       {/* Menu button */}
@@ -198,10 +200,10 @@ function OrgMenuItems({
                   }}
                   className={clsx(
                     active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                    'group flex justify-between w-full items-center rounded-md px-4 py-2 text-xs',
+                    'flex justify-between w-full items-center rounded-md px-4 py-2 text-xs',
                   )}
                 >
-                  <span className="inline-block">{org.name}</span>
+                  <span className="inline-block text-left">{org.name}</span>
 
                   {org.id === activeOrgId && (
                     <svg

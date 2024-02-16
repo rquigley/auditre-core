@@ -1,25 +1,27 @@
 import dayjs from 'dayjs';
 import ExcelJS from 'exceljs';
+import { Parser } from 'hot-formula-parser';
 
 import {
   buildBalanceSheet,
   buildCashFlows,
-  buildStatementOfOperations,
+  buildIncomeStatement,
 } from '@/controllers/financial-statement/table';
 import {
   AccountType,
   AccountTypeGroup,
   accountTypeGroupToLabel,
   accountTypes,
+  fOut,
   groupAccountTypes,
+  isAccountType,
 } from '@/lib/finance';
-import { isKey } from '@/lib/util';
 import { AuditId } from '@/types';
 import { getAllAccountBalancesByAuditIdAndYear } from '../account-mapping';
 import { getAuditData } from '../audit';
 
 import type { AuditData } from '@/controllers/audit';
-import type { Cell as TableCell, Row as TableRow } from '@/lib/table';
+import type { Table, Cell as TableCell, Row as TableRow } from '@/lib/table';
 
 const numFmt = '_($* #,##0_);_($* (#,##0);_($* "-"??_);_(@_)';
 const numFmtWithCents = '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
@@ -37,13 +39,12 @@ export async function generate(auditId: AuditId) {
   const tbNames = new Set();
   let tbWorksheet1: ExcelJS.Worksheet | undefined;
   let tbWorksheet2: ExcelJS.Worksheet | undefined;
-  let accountTypeToCellMap: Map<AccountType, string> | undefined;
   for (const identifier of [
     'year1DocumentId',
     'year2DocumentId',
     'year3DocumentId',
   ]) {
-    const dateStr = data.trialBalance[identifier].trialBalanceDate;
+    const dateStr = data.rt.trialBalance[identifier].trialBalanceDate;
     if (!dateStr) {
       continue;
     }
@@ -59,74 +60,58 @@ export async function generate(auditId: AuditId) {
 
     const tbWorksheet = workbook.addWorksheet(wsName);
 
-    const atMap = await addTrialBalance(tbWorksheet, data, date);
+    await addTrialBalance(tbWorksheet, data, date);
     if (identifier === 'year1DocumentId') {
       tbWorksheet1 = tbWorksheet;
-      accountTypeToCellMap = atMap;
     } else if (identifier === 'year2DocumentId') {
       tbWorksheet2 = tbWorksheet;
     }
   }
 
-  if (tbWorksheet1 && accountTypeToCellMap) {
-    await addBalanceSheet({
+  if (tbWorksheet1 && tbWorksheet2) {
+    addBalanceSheet({
       ws: bsWorksheet,
       data,
-      accountTypeToCellMap,
-      tbWorksheet: tbWorksheet1,
-      tbWorksheet2,
     });
 
-    await addIncomeStatement({
+    addIncomeStatement({
       ws: isWorksheet,
       data,
-      accountTypeToCellMap,
-      tbWorksheet: tbWorksheet1,
-      tbWorksheet2,
     });
-    await addCashFlow({
-      ws: cfWorksheet,
-      data,
-      accountTypeToCellMap,
-      tbWorksheet: tbWorksheet1,
-      tbWorksheet2,
-    });
+    // await addCashFlow({
+    //   ws: cfWorksheet,
+    //   data,
+    // });
   }
 
   return {
     document: workbook,
-    documentName: `Financial Statement - ${data.basicInfo.businessName} - ${data.auditInfo.year}.xlsx`,
+    documentName: `Financial Statement - ${data.rt.basicInfo.businessName} - ${data.rt.auditInfo.year}.xlsx`,
   };
 }
 
-async function addBalanceSheet({
+function addBalanceSheet({
   ws,
   data,
-  accountTypeToCellMap,
-  tbWorksheet,
-  tbWorksheet2,
 }: {
   ws: ExcelJS.Worksheet;
   data: AuditData;
-  accountTypeToCellMap: Map<AccountType, string>;
-  tbWorksheet: ExcelJS.Worksheet;
-  tbWorksheet2: ExcelJS.Worksheet | undefined;
 }) {
-  const t = await buildBalanceSheet(data);
+  const t = buildBalanceSheet(data);
 
-  ws.addRow([data.basicInfo.businessName]);
+  ws.addRow([data.rt.basicInfo.businessName]);
   ws.addRow(['Consolidated balances sheet']);
   ws.addRow([]);
   ws.addRow([]);
+
+  t.UNSAFE_outputRowOffset = 4;
 
   const widths: number[] = [];
   t.rows.forEach((row) => {
     const { widths: rowWidths } = addTableRow({
       ws,
       row,
-      tbWorksheet,
-      tbWorksheet2,
-      accountTypeToCellMap,
+      table: t,
     });
     rowWidths.forEach((w, i) => {
       widths[i] = Math.max(widths[i] || 0, w);
@@ -143,34 +128,28 @@ async function addBalanceSheet({
   ws.getColumn(3).width = 17;
 }
 
-async function addIncomeStatement({
+function addIncomeStatement({
   ws,
   data,
-  accountTypeToCellMap,
-  tbWorksheet,
-  tbWorksheet2,
 }: {
   ws: ExcelJS.Worksheet;
   data: AuditData;
-  accountTypeToCellMap: Map<AccountType, string>;
-  tbWorksheet: ExcelJS.Worksheet;
-  tbWorksheet2: ExcelJS.Worksheet | undefined;
 }) {
-  const t = await buildStatementOfOperations(data);
+  const t = buildIncomeStatement(data);
 
-  ws.addRow([data.basicInfo.businessName]);
+  ws.addRow([data.rt.basicInfo.businessName]);
   ws.addRow(['Consolidated statement of operations']);
   ws.addRow([]);
   ws.addRow([]);
+
+  t.UNSAFE_outputRowOffset = 4;
 
   const widths: number[] = [];
   t.rows.forEach((row) => {
     const { widths: rowWidths } = addTableRow({
       ws,
       row,
-      tbWorksheet,
-      tbWorksheet2,
-      accountTypeToCellMap,
+      table: t,
     });
     rowWidths.forEach((w, i) => {
       widths[i] = Math.max(widths[i] || 0, w);
@@ -190,31 +169,24 @@ async function addIncomeStatement({
 async function addCashFlow({
   ws,
   data,
-  accountTypeToCellMap,
-  tbWorksheet,
-  tbWorksheet2,
 }: {
   ws: ExcelJS.Worksheet;
   data: AuditData;
-  accountTypeToCellMap: Map<AccountType, string>;
-  tbWorksheet: ExcelJS.Worksheet;
-  tbWorksheet2: ExcelJS.Worksheet | undefined;
 }) {
   const t = await buildCashFlows(data);
 
-  ws.addRow([data.basicInfo.businessName]);
+  ws.addRow([data.rt.basicInfo.businessName]);
   ws.addRow(['Consolidated statement of cash flows']);
   ws.addRow([]);
   ws.addRow([]);
 
   const widths: number[] = [];
+
   t.rows.forEach((row) => {
     const { widths: rowWidths } = addTableRow({
       ws,
       row,
-      tbWorksheet,
-      tbWorksheet2,
-      accountTypeToCellMap,
+      table: t,
     });
     rowWidths.forEach((w, i) => {
       widths[i] = Math.max(widths[i] || 0, w);
@@ -231,67 +203,89 @@ async function addCashFlow({
   ws.getColumn(3).width = 17;
 }
 
+function parseFormula(value: string, table: Table) {
+  value = replaceTBLOOKUP(value);
+  value = replaceGET_BY_ID(value, table);
+  value = replaceSUMTAGCOL(value, table);
+  value = replaceIS_NETLOSS(value);
+  return value;
+}
+
+function replaceTBLOOKUP(inputString: string): string {
+  const regex = /TBLOOKUP\('([^,]+)',\s*'([^)]+)'\)/g;
+
+  return inputString.replace(regex, (match, accountType, year) => {
+    if (!isAccountType(accountType)) {
+      throw new Error(`Invalid account type: ${accountType}`);
+    }
+    return `TB_${year.trim()}_TOTAL_${accountType.trim()}`;
+  });
+}
+
+function replaceGET_BY_ID(inputString: string, table: Table): string {
+  const regex = /GET_BY_ID\('([^,]+)',\s*([0-9]+)\)/g;
+
+  return inputString.replace(regex, (match, id, column) => {
+    const row = table.getRowById(id);
+    const cell = row.cells[column];
+    if (!cell) {
+      throw new Error(`GET_BY_ID: cell doesn't exist ${id}, ${column}`);
+    }
+
+    return `${cell.address}`;
+  });
+}
+
+function replaceSUMTAGCOL(inputString: string, table: Table): string {
+  const regex = /SUMTAGCOL\('([^,]+)',\s*([0-9]+)\)/g;
+
+  return inputString.replace(regex, (match, tag, column) => {
+    const taggedRows = table.getRowsByTag(tag);
+    if (taggedRows.length === 0) {
+      throw new Error(`SUMTAGCOL: No rows with tag ${tag}`);
+    }
+    const range = table.getAddressRange(
+      Number(column),
+      taggedRows,
+      table.UNSAFE_outputRowOffset,
+    );
+    return `SUM(${range})`;
+  });
+}
+
+function replaceIS_NETLOSS(inputString: string): string {
+  const regex = /IS_NETLOSS\('([^,]+)'\)/g;
+
+  return inputString.replace(regex, (match, year) => {
+    return `IS_NET_LOSS_${year}`;
+  });
+}
+
 function addTableRow({
   ws,
   row,
-  tbWorksheet,
-  tbWorksheet2,
-  accountTypeToCellMap,
+  table,
+  debug = false,
 }: {
   ws: ExcelJS.Worksheet;
   row: TableRow;
-  tbWorksheet: ExcelJS.Worksheet;
-  tbWorksheet2: ExcelJS.Worksheet | undefined;
-  accountTypeToCellMap: Map<AccountType, string>;
+  table: Table;
+  debug?: boolean;
 }) {
   const values = row.cells.map((cell: TableCell) => {
     const val = cell.rawValue();
-    if (typeof val === 'object') {
-      if (val.operation === 'addColumnCellsByTag') {
-        const tag = val.args[0];
-        const taggedRows = row.table.getRowsByTag(tag);
-        const curRow = (ws?.lastRow?.number || 0) + 1;
-        const rowOffset = curRow - row.number;
-        const range = cell.table.getAddressRange(cell, taggedRows, rowOffset);
 
-        return {
-          formula: `=SUM(${range})`,
-          result: 7,
-        };
-      } else if (val.operation === 'multiplyCellTag') {
-        const tag = val.args[0];
-        const multiplier = val.args[1];
-        const taggedRows = row.table.getRowsByTag(tag);
-        const curRow = (ws?.lastRow?.number || 0) + 1;
-        const rowOffset = curRow - row.number;
-        const range = cell.table.getAddressRange(cell, taggedRows, rowOffset);
-
-        return {
-          formula: `=SUM(${range}) * ${multiplier}`,
-          result: 7,
-        };
-      }
-    }
-    if (isAccountType(row.id) && cell.column === 1) {
+    if (typeof val === 'string' && val.startsWith('=')) {
       return {
-        formula: `=SUM('${tbWorksheet.name}'!${accountTypeToCellMap.get(
-          row.id as AccountType,
-        )})`,
-        result: 7,
-      };
-    } else if (tbWorksheet2 && isAccountType(row.id) && cell.column === 2) {
-      return {
-        formula: `=SUM('${tbWorksheet2.name}'!${accountTypeToCellMap.get(
-          row.id as AccountType,
-        )})`,
+        formula: parseFormula(val, table),
         result: 7,
       };
     }
 
     if (cell.style.indent) {
-      return `${'    '.repeat(cell.style.indent)}${cell.value}`;
+      return `${'    '.repeat(cell.style.indent)}${val}`;
     }
-    return cell.value;
+    return val;
   });
 
   const r = ws.addRow(values);
@@ -327,18 +321,21 @@ function addTableRow({
     ) {
       xCell.numFmt = numFmt;
     }
+    if (cell.name) {
+      xCell.name = cell.name;
+    }
 
     widths[cell.column] = String(cell.value).length;
   });
 
-  if (row.hasTag('hide-if-zero')) {
-    const hasNonZeroValues = row.cells.some(
-      (cell) => typeof cell.value === 'number' && cell.value !== 0,
-    );
-    if (!hasNonZeroValues) {
-      r.hidden = true;
-    }
-  }
+  // if (row.hasTag('hide-if-zero')) {
+  //   const hasNonZeroValues = row.cells.some(
+  //     (cell) => typeof cell.value === 'number' && cell.value !== 0,
+  //   );
+  //   if (!hasNonZeroValues) {
+  //     r.hidden = true;
+  //   }
+  // }
 
   return { widths };
 }
@@ -348,7 +345,7 @@ async function addTrialBalance(
   data: AuditData,
   date: dayjs.Dayjs,
 ) {
-  ws.addRow([data.basicInfo.businessName]);
+  ws.addRow([data.rt.basicInfo.businessName]);
 
   const year = date.format('YYYY');
 
@@ -435,7 +432,7 @@ async function addTrialBalance(
   for (const a of accounts) {
     ++curRowNumber;
     ws.getCell(`A${curRowNumber}`).value = a.accountName;
-    ws.getCell(`B${curRowNumber}`).value = a.balance;
+    ws.getCell(`B${curRowNumber}`).value = fOut(a.balance);
     ws.getCell(`C${curRowNumber}`).value = a.accountType;
 
     ws.getCell(`C${curRowNumber}`).dataValidation = {
@@ -489,7 +486,6 @@ async function addTrialBalance(
 
   curRowNumber = header.number;
   const groups = groupAccountTypes(accountTypes);
-  const accountTypeToCellMap = new Map<AccountType, string>();
   widths = [10, 20];
   const rowNumbers = {
     retainedEarnings: 0,
@@ -518,13 +514,13 @@ async function addTrialBalance(
       ws.getCell(`E${curRowNumber}`).value = types[accountType];
       widths[0] = Math.max(widths[0], types[accountType].length);
 
-      accountTypeToCellMap.set(accountType as AccountType, `F${curRowNumber}`);
       ws.getCell(`F${curRowNumber}`).value = {
         formula: `SUMIFS(B${firstRowNumber}:B${
           totalRow.number - 1
         }, C${firstRowNumber}:C${totalRow.number - 1}, "${accountType}")`,
         result: 7,
       };
+      ws.getCell(`F${curRowNumber}`).name = `TB_${year}_TOTAL_${accountType}`;
     }
     ++curRowNumber;
 
@@ -607,8 +603,6 @@ async function addTrialBalance(
 
   ws.getColumn('totals').width = widths[0] + 2;
   ws.getColumn('totals_balance').width = widths[1];
-
-  return accountTypeToCellMap;
 }
 
 const accountTypeFgBgColors = {
@@ -650,32 +644,4 @@ function applyBGFormatting(
       ],
     });
   }
-}
-
-// function getAccountTypeStyle(accountType: AccountType) {
-//   const key = accountType.slice(
-//     0,
-//     accountType.indexOf('_'),
-//   ) as keyof typeof accountTypeBG;
-//   const bgColor = accountTypeBG[key];
-//   return {
-//     fill: {
-//       type: 'pattern',
-//       pattern: 'solid',
-//       bgColor: { argb: bgColor },
-//     },
-//     font:
-//       accountType === 'UNKNOWN'
-//         ? {
-//             color: { argb: 'FFffffff' },
-//           }
-//         : undefined,
-//   };
-// }
-
-function isAccountType(v: string | undefined): v is AccountType {
-  if (v === undefined) {
-    return false;
-  }
-  return isKey(accountTypes, v);
 }
