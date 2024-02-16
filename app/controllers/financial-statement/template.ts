@@ -1,7 +1,8 @@
 import dayjs from 'dayjs';
 import dedent from 'dedent';
 
-import { addFP, isSameYear, ppCurrency, ppNumber } from '@/lib/util';
+import { fOut } from '@/lib/finance';
+import { isSameYear, ppCurrency, ppNumber } from '@/lib/util';
 import { getAccountByFuzzyMatch } from '../account-mapping';
 import { getAuthorizedSharesTotal } from '../equity';
 
@@ -81,11 +82,11 @@ export const getOrganizationSections = () => [
     header: 'Description of Business',
     body: (data) => `
       [${
-        data.basicInfo.businessName
+        data.rt.basicInfo.businessName
       }]. (the “Company”) was incorporated in the State of [${
-        data.articlesOfIncorporation.incorporationJurisdiction
-      }] on [${toDate(data.articlesOfIncorporation.incorporationDate)}]. [${
-        data.basicInfo.description
+        data.rt.articlesOfIncorporation.incorporationJurisdiction
+      }] on [${toDate(data.rt.articlesOfIncorporation.incorporationDate)}]. [${
+        data.rt.basicInfo.description
       }].
     `,
   }),
@@ -94,27 +95,26 @@ export const getOrganizationSections = () => [
     header: 'Going Concern and Liquidity',
     body: async (data) => {
       // TODO: brittle, doesn't account for different categories?
-      const totalCurrentLiabilities = addFP(
-        data.totals.get('LIABILITY_ACCRUED_LIABILITIES'),
-        data.totals.get('LIABILITY_ACCOUNTS_PAYABLE'),
-        data.totals.get('LIABILITY_DEFERRED_REVENUE'),
-        data.totals.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT'),
-        data.totals.get('LIABILITY_OTHER'),
-      );
+      const totalCurrentLiabilities =
+        data.totals.get('LIABILITY_ACCRUED_LIABILITIES') +
+        data.totals.get('LIABILITY_ACCOUNTS_PAYABLE') +
+        data.totals.get('LIABILITY_DEFERRED_REVENUE') +
+        data.totals.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT') +
+        data.totals.get('LIABILITY_OTHER');
 
       let recentFinancingEvents = '';
-      if (isSameYear(data.year, data.financingDocuments.efDateOfDocument)) {
+      if (isSameYear(data.year, data.rt.financingDocuments.efDateOfDocument)) {
         recentFinancingEvents =
-          data.financingDocuments.equityFinancingQuickSummary;
+          data.rt.financingDocuments.equityFinancingQuickSummary;
       }
 
       return `
       The Company has incurred recurring losses and negative cash flows from operating activities since inception. As of [${
         data.fiscalYearEnd
       }], the Company had cash of [${ppCurrency(
-        data.totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS'),
+        fOut(data.totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS')),
       )}] and an accumulated deficit of [${ppCurrency(
-        totalCurrentLiabilities,
+        fOut(totalCurrentLiabilities),
       )}]. Based on the Company’s forecasts, the Company’s current resources and cash balance are sufficient to enable the Company to continue as a going concern for 12 months from the date these consolidated financial statements are available to be issued. [TODO]
 
       The ability to continue as a going concern is dependent upon the Company obtaining necessary financing to meet its obligations and repay its liabilities arising from normal business operations when they come due. The Company may raise additional capital through the issuance of equity securities, debt financings or other sources in order to further implement its business plan. However, if such financing is not available when needed and at adequate levels, the Company will need to reevaluate its operating plan and may be required to delay the development of its products.
@@ -181,7 +181,7 @@ export const getPolicySections = () => [
       }], ${
         data.totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS') > 0
           ? `there were cash equivalents totaling [${ppCurrency(
-              data.totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS') || 0,
+              fOut(data.totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS') || 0),
             )}].`
           : `there were no cash equivalents.`
       }
@@ -189,7 +189,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Property and Equipment',
-    isShowing: (data) => data.trialBalance.hasfixedAssets === 'yes',
+    isShowing: (data) => data.rt.trialBalance.hasfixedAssets === 'yes',
     body: (data) => `
       Property and equipment are stated at cost, net of depreciation. Depreciation is computed using the straight-line method over the estimated useful lives of the assets. Leasehold improvements are amortized on a straight-line basis over the lesser of the estimated useful life of the asset or the remaining term of the related lease. Maintenance and repairs are charged to expense as incurred, and improvements and betterments are capitalized.
 
@@ -202,7 +202,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Intangible Assets',
-    isShowing: (data) => data.trialBalance.hasIntangibleAssets === 'yes',
+    isShowing: (data) => data.rt.trialBalance.hasIntangibleAssets === 'yes',
     body: (data) => `
       Intangible assets consist of patents and are stated at cost, net of amortization. Amortization is computed using the straight-line method over an estimated useful life of approximately five to seventeen years.
     `,
@@ -210,15 +210,15 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Leases',
     isShowing: (data) =>
-      data.leases.hasLeases && data.leases.didPerformASC842Analysis,
+      data.rt.leases.hasLeases && data.rt.leases.didPerformASC842Analysis,
     body: (data) => `
-      ${data.leases.asc842MemoSummary || '[ASC 842 memo summary missing]'}
+      ${data.rt.leases.asc842MemoSummary || '[ASC 842 memo summary missing]'}
     `,
   }),
   generateSection({
     header: 'Impairment of Long-Lived Assets',
     isShowing: (data) =>
-      data.leases.hasLeases && data.leases.didPerformASC842Analysis,
+      data.rt.leases.hasLeases && data.rt.leases.didPerformASC842Analysis,
     body: (data) => `
       The Company periodically evaluates the recoverability of its long-lived assets that include property and equipment, intangible assets and ROU assets for impairment whenever events or changes in circumstances indicate that the carrying amount of an asset may not be recoverable. Recoverability is measured by comparison of the carrying amount to the future net cash flows, which the assets are expected to generate. If such assets are considered to be impaired, the impairment to be recognized is measured by the amount by which the carrying amount of the assets exceeds the projected discounted future net cash flows arising from the asset. No impairment loss was recognized for the year ended [${data.fiscalYearEnd}].
     `,
@@ -239,7 +239,7 @@ export const getPolicySections = () => [
       data.totals.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') > 0,
     body: (data) => `
       Costs associated with research and development activities are expensed as incurred and include, but are not limited to, personnel-related expenses including stock-based compensation expense, materials, laboratory supplies, consulting costs, and allocated overhead including rent and utilities. Total research and development costs amounted to [${ppCurrency(
-        data.totals.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') || 0,
+        fOut(data.totals.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') || 0),
       )}] for the year ended [${
         data.fiscalYearEnd
       }] and are included in general and administrative expenses in the consolidated statement of operations.
@@ -251,7 +251,7 @@ export const getPolicySections = () => [
       data.totals.get('INCOME_STATEMENT_SALES_AND_MARKETING') > 0,
     body: (data) => `
       Costs associated with advertising and marketing activities are expensed as incurred. Total advertising and marketing costs amounted to [${ppCurrency(
-        data.totals.get('INCOME_STATEMENT_SALES_AND_MARKETING') || 0,
+        fOut(data.totals.get('INCOME_STATEMENT_SALES_AND_MARKETING') || 0),
       )}] for the year ended [${
         data.fiscalYearEnd
       }] and are included in general and administrative expenses in the consolidated statement of operations.
@@ -259,7 +259,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Stock-Based Compensation',
-    isShowing: (data) => data.equity.hasEmployeeStockPlan === 'yes',
+    isShowing: (data) => data.rt.equity.hasEmployeeStockPlan === 'yes',
     body: (data) => `
       The Company estimates the fair value of stock based payment awards on the date of grant using the Black Scholes Merton option pricing model. The model requires management to make a number of assumptions, including the fair value of the Company's common stock, expected volatility, expected life, risk free interest rate and expected dividends. The value of awards that are ultimately expected to vest is recognized ratably over the requisite service periods in the Company's consolidated statement of operations. Forfeitures are accounted for as they occur.
     `,
@@ -282,18 +282,18 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Recently Adopted Accounting Pronouncements',
-    isShowing: (data) => data.leases.didPerformASC842Analysis,
+    isShowing: (data) => data.rt.leases.didPerformASC842Analysis,
     body: (data) => `
-      In February 2016, the FASB issued ASU No. 2016-02, Leases (Topic 842), (“ASC 842”). The amendments in this update increase transparency and comparability among organizations by recognizing lease assets and lease liabilities on the balance sheet and disclosing key information about leasing arrangements. The amendments in this update are effective for private entities for fiscal years beginning after [${data.leases.yearOfASC842Analysis}].
+      In February 2016, the FASB issued ASU No. 2016-02, Leases (Topic 842), (“ASC 842”). The amendments in this update increase transparency and comparability among organizations by recognizing lease assets and lease liabilities on the balance sheet and disclosing key information about leasing arrangements. The amendments in this update are effective for private entities for fiscal years beginning after [${data.rt.leases.yearOfASC842Analysis}].
 
-      The Company adopted ASC 842 using the cumulative effect adjustment approach as of [${data.leases.yearOfASC842Analysis}]. The Company elected the package of practical expedients permitted under the transition guidance within ASC 842, which allowed the Company to carry forward the historical lease classification, retain the initial direct costs for any leases that existed prior to the adoption of the standard and not reassess whether any contracts entered into prior to the adoption are leases. The Company did not elect the hindsight practical expedient to reassess the lease term for leases within the Company's lease population.
+      The Company adopted ASC 842 using the cumulative effect adjustment approach as of [${data.rt.leases.yearOfASC842Analysis}]. The Company elected the package of practical expedients permitted under the transition guidance within ASC 842, which allowed the Company to carry forward the historical lease classification, retain the initial direct costs for any leases that existed prior to the adoption of the standard and not reassess whether any contracts entered into prior to the adoption are leases. The Company did not elect the hindsight practical expedient to reassess the lease term for leases within the Company's lease population.
 
       Upon adoption, the Company recognized operating lease right-of-use assets of [insert right of use from trial balance] and operating lease liabilities of [insert lease liabilities from trial balance] . In addition, the Company reclassified deferred rent of [number]. There was no cumulative-effect adjustment to the opening balance of retained earnings from the adoption of ASC 842. The additional disclosures required by the new standard have been included in Note 2, “Summary of  Significant Accounting Policies” and Note 5, “Leases.”
     `,
   }),
   generateSection({
     header: 'Fair Value Measurements',
-    isShowing: (data) => data.leases.didPerformASC842Analysis,
+    isShowing: (data) => data.rt.leases.didPerformASC842Analysis,
     body: (data) => `
       The following tables summarize the Company’s financial liabilities measured at fair value on a recurring basis by level within the fair value hierarchy as of [${data.fiscalYearEnd}]:
 
@@ -309,7 +309,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Property and equipment, net',
-    isShowing: (data) => data.trialBalance.hasfixedAssets,
+    isShowing: (data) => data.rt.trialBalance.hasfixedAssets,
     body: (data) => `
       Property and equipment, net, consist of the following:
       [TABLE:property-and-equipment-net]
@@ -318,7 +318,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Intangible assets, net',
-    isShowing: (data) => data.trialBalance.hasIntangibleAssets,
+    isShowing: (data) => data.rt.trialBalance.hasIntangibleAssets,
     body: (data) => `
       [TABLE] https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=586543814&range=A4
 
@@ -327,7 +327,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Leases',
-    isShowing: (data) => data.leases.didPerformASC842Analysis,
+    isShowing: (data) => data.rt.leases.didPerformASC842Analysis,
     body: (data) => `
       [TABLE] https://docs.google.com/spreadsheets/d/1JHaqpnQTd_t8ZUVzKm-M4kwUd31uNYbXgiTKtOs96ww/edit#gid=406550412&range=A2
     `,
@@ -335,7 +335,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Convertible Note Payable',
-    isShowing: (data) => data.trialBalance.hasConvertibleNote === 'yes',
+    isShowing: (data) => data.rt.trialBalance.hasConvertibleNote === 'yes',
     body: (data) => `
       [if there answered there's a field called "convertible note" on the trial balance"] Note - this will also prompt the user to upload the equity/debt deal
 
@@ -361,7 +361,7 @@ export const getPolicySections = () => [
       );
       let preferredStr = '';
 
-      if (data.equity.hasPreferredStock === 'yes') {
+      if (data.rt.equity.hasPreferredStock === 'yes') {
         preferredStr = dedent`
           Convertible Preferred Stock
 
@@ -370,7 +370,7 @@ export const getPolicySections = () => [
           }], the Company was authorized to issue [${ppNumber(
             authorizedSharesTotal.nonCommon,
           )}] shares of [$${
-            data.articlesOfIncorporation.parValuePerShare
+            data.rt.articlesOfIncorporation.parValuePerShare
           }] par value convertible preferred stock.
 
           As of [${
@@ -381,7 +381,7 @@ export const getPolicySections = () => [
 
           The significant rights and preferences of the Company’s convertible preferred stock are as follows:
 
-          ${data.financingDocuments.equityFinancingSummary || ''}
+          ${data.rt.financingDocuments.equityFinancingSummary || ''}
 
           The following table summarizes the number of shares of common stock into which each share of convertible preferred stock can be converted as of [${
             data.fiscalYearEnd
@@ -397,7 +397,7 @@ export const getPolicySections = () => [
         }], the Company was authorized to issue [${ppNumber(
           authorizedSharesTotal.common,
         )}] shares of [$${
-          data.articlesOfIncorporation.parValuePerShare
+          data.rt.articlesOfIncorporation.parValuePerShare
         }] par value common stock.
 
         Common stockholders are entitled to dividends as and when declared, subject to the rights of holders of all classes of stock outstanding having priority rights as to dividends. There have been no dividends declared to date. The holder of each share of common stock is entitled to one vote.
@@ -522,9 +522,9 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Commitments and Contingencies',
     body: (data) => {
-      if (data.outstandingLegalMatters.hasLegalMatters) {
+      if (data.rt.outstandingLegalMatters.hasLegalMatters) {
         return `Legal Matters
-          From time to time, the Company may become involved in various litigation and administrative proceedings relating to claims arising from its operations in the normal course of business. Currently management [${data.outstandingLegalMatters.legalMatters}]`;
+          From time to time, the Company may become involved in various litigation and administrative proceedings relating to claims arising from its operations in the normal course of business. Currently management [${data.rt.outstandingLegalMatters.legalMatters}]`;
       } else {
         return `Legal Matters
           From time to time, the Company may become involved in various litigation and administrative proceedings relating to claims arising from its operations in the normal course of business. Management is not currently aware of any matters that may have a material adverse impact on the Company’s business, financial position, results of operations or cash flows.`;
@@ -535,8 +535,8 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Related Party Transactions',
     body: (data) => {
-      if (data.relatedPartyTransactions.hasRelatedPartyTransactions) {
-        return `The company [${data.relatedPartyTransactions.relatedPartyTransactions}].`;
+      if (data.rt.relatedPartyTransactions.hasRelatedPartyTransactions) {
+        return `The company [${data.rt.relatedPartyTransactions.relatedPartyTransactions}].`;
       } else {
         return `The company has no related party transactions, druing the year ending [${data.fiscalYearEnd}]`;
       }
@@ -545,7 +545,7 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Employee Benefit Plan',
-    isShowing: (data) => data.employee401k.has401K,
+    isShowing: (data) => data.rt.employee401k.has401K,
     body: async (data) => {
       const res = await getAccountByFuzzyMatch(
         data.auditId,
@@ -555,14 +555,14 @@ export const getPolicySections = () => [
       );
       let amt = '-';
       if (res) {
-        amt = ppCurrency(res.balance);
+        amt = ppCurrency(fOut(res.balance));
       }
       return `
         The Company maintains a 401(k) plan that covers substantially all of its employees.
 
         ${
-          data.employee401k.doesMatch
-            ? `The Company matches employee contributions up to [${data.employee401k.pctMatch}%]. For the year ended [${data.fiscalYearEnd}], the Company incurred total expense of [${amt}] for matching contributions.`
+          data.rt.employee401k.doesMatch
+            ? `The Company matches employee contributions up to [${data.rt.employee401k.pctMatch}%]. For the year ended [${data.fiscalYearEnd}], the Company incurred total expense of [${amt}] for matching contributions.`
             : ''
         }
       `;
@@ -572,7 +572,7 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Subsequent Events',
     body: (data) => {
-      if (data.materialChangesPostAudit.hasPostAuditChanges) {
+      if (data.rt.materialChangesPostAudit.hasPostAuditChanges) {
         return `The Company has completed an evaluation of all subsequent events through [published date of financial statements. Month, Day, Year (i.e. [${data.fiscalYearEnd}])], the date on which the consolidated financial statements were issued. During which time, the company has [insert users's reponse from questionarie].`;
       } else {
         return `The Company has completed an evaluation of all subsequent events through [published date of financial statements. Month, Day, Year (i.e. [${data.fiscalYearEnd}])], the date on which the consolidated financial statements were issued, during which time nothing has occurred outside the normal course of business operations that would require disclosure other than the events disclosed below.`;

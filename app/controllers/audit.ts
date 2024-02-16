@@ -6,8 +6,9 @@ import {
   getAllByAuditId as getAllDocumentsByAuditId,
 } from '@/controllers/document';
 import { db } from '@/lib/db';
-import { FormField, isFormFieldFile } from '@/lib/request-types';
+import { isFormFieldFile } from '@/lib/request-types';
 import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
+import { buildIncomeStatement } from './financial-statement/table';
 import {
   getDataForAuditId,
   getDataForRequestAttribute2,
@@ -121,10 +122,8 @@ export async function getAllByOrgId(orgId: OrgId) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type AuditData = Record<string, any>;
-// export type AuditData = Awaited<ReturnType<typeof getAuditData>> & {
-//   [key: string]: any;
-// };
+// export type AuditData = Record<string, any>;
+export type AuditData = Awaited<ReturnType<typeof getAuditData>>;
 
 /**
  *
@@ -134,7 +133,7 @@ export type AuditData = Record<string, any>;
  * - Excel export
  *
  */
-export async function getAuditData(auditId: AuditId): Promise<AuditData> {
+export async function getAuditData(auditId: AuditId) {
   const requestData = await getDataForAuditId(auditId);
   const documents = await getAllDocumentsByAuditId(auditId);
   // console.log(documents);
@@ -145,12 +144,14 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
     aiData[document.id] = await getAiDataForDocumentId(document.id);
   }
 
-  type RequestFieldData = Record<
-    string,
-    | FormField['defaultValue']
-    | Record<string, string>
-    | Record<string, string>[]
-  >;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type RequestFieldData = Record<string, any>;
+  // type RequestFieldData = Record<
+  //   string,
+  //   | FormField['defaultValue']
+  //   | Record<string, string>
+  //   | Record<string, string>[]
+  // >;
   const requestDataObj: Record<string, RequestFieldData> = {};
   for (const [key, fields] of Object.entries(requestData)) {
     const fieldsData: RequestFieldData = {};
@@ -182,23 +183,34 @@ export async function getAuditData(auditId: AuditId): Promise<AuditData> {
     requestDataObj[kebabToCamel(key)] = fieldsData;
   }
   const year = String(requestDataObj.auditInfo?.year) || '';
+  const prevYear = String(Number(year) - 1);
 
+  const fiscalYearEndNoYear = `${getMonthName(
+    requestDataObj.auditInfo.fiscalYearMonthEnd,
+  )} ${getLastDayOfMonth(
+    requestDataObj.auditInfo.fiscalYearMonthEnd,
+    requestDataObj.auditInfo.year,
+  )}`;
   const totals = await getBalancesByAccountType(auditId, year);
-
+  const totals2 = await getBalancesByAccountType(auditId, prevYear);
   return {
     auditId,
     totals,
+    totalsNew: {
+      [year]: totals,
+      [prevYear]: totals2,
+    },
+    incomeStatementTable: await buildIncomeStatement({
+      year,
+      prevYear,
+      fiscalYearEndNoYear,
+    }),
     year,
-    fiscalYearEndNoYear: `${getMonthName(
-      // @ts-expect-error
-      requestDataObj.auditInfo.fiscalYearMonthEnd,
-    )} ${getLastDayOfMonth(
-      // @ts-expect-error
-      requestDataObj.auditInfo.fiscalYearMonthEnd,
-      requestDataObj.auditInfo.year,
-    )}`,
-    fiscalYearEnd: `${requestDataObj.fiscalYearEndNoYear}, ${requestDataObj.year}`,
-    ...requestDataObj,
+    prevYear,
+    totals2,
+    fiscalYearEndNoYear,
+    fiscalYearEnd: `${fiscalYearEndNoYear}, ${year}`,
+    rt: requestDataObj,
   };
 }
 

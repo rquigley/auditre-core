@@ -20,7 +20,12 @@ import {
   documentAiQuestions,
   isAIQuestionJSON,
 } from '@/lib/document-ai-questions';
-import { AccountMap, accountTypes, getBalance } from '@/lib/finance';
+import {
+  AccountMap,
+  accountTypes,
+  getBalance,
+  includeNetIncomeInRetainedEarnings,
+} from '@/lib/finance';
 import { bucket, dateLiketoYear } from '@/lib/util';
 import { getByIdForClientCached } from './audit';
 import { deleteKV, getKV, setKV, updateKV } from './kv';
@@ -54,8 +59,8 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
           .select([
             'accountMappingId',
             'year',
-            'debit',
-            'credit',
+            sql<number>`ROUND(debit * 100)`.as('debit'),
+            sql<number>`ROUND(credit * 100)`.as('credit'),
             // account_mapping_id should be camelCase
             sql`ROW_NUMBER() OVER (PARTITION BY account_mapping_id ORDER BY year DESC)`.as(
               'row_number',
@@ -149,8 +154,8 @@ export async function getAllAccountBalancesByAuditIdAndYear(
         .as('accountType'),
       'am.sortIdx',
       'am.classificationScore',
-      'debit',
-      'credit',
+      sql<number>`ROUND(debit * 100)`.as('debit'),
+      sql<number>`ROUND(credit * 100)`.as('credit'),
     ])
     .where('am.auditId', '=', auditId)
     .where('year', '=', year)
@@ -183,15 +188,15 @@ export async function getBalancesByAccountType(
           sql<'UNKNOWN'>`'UNKNOWN'`,
         )
         .as('accountTypeMerged'),
-      db.fn.sum<number>('credit').as('credit'),
-      db.fn.sum<number>('debit').as('debit'),
+      sql<number>`SUM(ROUND(debit * 100))`.as('debit'),
+      sql<number>`SUM(ROUND(credit * 100))`.as('credit'),
     ])
     .where('isDeleted', '=', false)
     .where('auditId', '=', auditId)
     .where('year', '=', year)
     .groupBy('accountTypeMerged')
     .execute();
-  const rows = originalRows.map((r) => ({
+  let rows = originalRows.map((r) => ({
     accountType: r.accountTypeMerged,
 
     balance: getBalance({
@@ -200,6 +205,9 @@ export async function getBalancesByAccountType(
       debit: r.debit,
     }),
   }));
+
+  rows = includeNetIncomeInRetainedEarnings(rows);
+
   return new AccountMap(Object.keys(accountTypes) as AccountType[], rows);
 }
 
@@ -224,8 +232,8 @@ export async function getAccountByFuzzyMatch(
       eb
         .fn<number>('similarity', ['accountName', eb.val(searchString)])
         .as('score'),
-      'credit',
-      'debit',
+      sql<number>`ROUND(debit * 100)`.as('debit'),
+      sql<number>`ROUND(credit * 100)`.as('credit'),
     ])
     .where('auditId', '=', auditId)
     .where('isDeleted', '=', false)
@@ -964,7 +972,11 @@ export async function getAccountsForCategory(
   const rows = await db
     .selectFrom('accountBalance')
     .innerJoin('accountMapping', 'accountMappingId', 'accountMapping.id')
-    .select(['accountName', 'credit', 'debit'])
+    .select([
+      'accountName',
+      sql<number>`ROUND(debit * 100)`.as('debit'),
+      sql<number>`ROUND(credit * 100)`.as('credit'),
+    ])
     .where('isDeleted', '=', false)
     .where('auditId', '=', auditId)
     .where('accountType', '=', accountType)
