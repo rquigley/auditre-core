@@ -35,11 +35,14 @@ export async function getById(
   id: OrgId,
   params?: { includeDeleted?: boolean },
 ) {
-  let query = db.selectFrom('audit').where('id', '=', id);
-  if (!params?.includeDeleted) {
-    query = query.where('isDeleted', '=', false);
-  }
-  return await query.selectAll().executeTakeFirstOrThrow();
+  return await db
+    .selectFrom('audit')
+    .where('id', '=', id)
+    .$if(Boolean(params?.includeDeleted), (q) =>
+      q.where('isDeleted', '=', false),
+    )
+    .selectAll()
+    .executeTakeFirstOrThrow();
 }
 
 // TODO: let's figure out a better pattern for where this lives.
