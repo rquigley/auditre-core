@@ -69,12 +69,12 @@ export async function generate(auditId: AuditId) {
   }
 
   if (tbWorksheet1 && tbWorksheet2) {
-    await addBalanceSheet({
+    addBalanceSheet({
       ws: bsWorksheet,
       data,
     });
 
-    await addIncomeStatement({
+    addIncomeStatement({
       ws: isWorksheet,
       data,
     });
@@ -90,14 +90,14 @@ export async function generate(auditId: AuditId) {
   };
 }
 
-async function addBalanceSheet({
+function addBalanceSheet({
   ws,
   data,
 }: {
   ws: ExcelJS.Worksheet;
   data: AuditData;
 }) {
-  const t = await buildBalanceSheet(data);
+  const t = buildBalanceSheet(data);
 
   ws.addRow([data.rt.basicInfo.businessName]);
   ws.addRow(['Consolidated balances sheet']);
@@ -128,7 +128,7 @@ async function addBalanceSheet({
   ws.getColumn(3).width = 17;
 }
 
-async function addIncomeStatement({
+function addIncomeStatement({
   ws,
   data,
 }: {
