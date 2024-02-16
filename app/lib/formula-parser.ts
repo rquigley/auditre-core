@@ -51,7 +51,7 @@ export function getParser(table: Table, data: AuditData) {
     const row = table.getRowById(id);
     const cell = row.cells[column];
     if (!cell) {
-      const msg = `SUMTAGCOL: cell doesn't exist ${String(params)}`;
+      const msg = `GET_BY_ID: cell doesn't exist ${String(params)}`;
       console.log(msg);
       throw new Error(msg);
     }
