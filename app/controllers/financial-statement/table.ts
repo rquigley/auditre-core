@@ -194,6 +194,7 @@ export function buildBalanceSheet(data: AuditData) {
       `=SUMTAGCOL('total-asset', 2)`,
     ],
     {
+      id: 'TOTAL-ASSETS',
       style: {
         borderTop: 'thin',
         borderBottom: 'double',
@@ -511,6 +512,7 @@ export function buildBalanceSheet(data: AuditData) {
       `=SUMTAGCOL('total-liabilities-and-stockholders-deficit', 2)`,
     ],
     {
+      id: 'TOTAL-LIABILITIES-AND-STOCKHOLDERS-DEFICIT',
       style: {
         bold: true,
         padTop: true,
@@ -853,7 +855,7 @@ export async function buildCashFlows(data: AuditData) {
     },
   });
 
-  const incomeStatementTable = await buildIncomeStatement(data);
+  const incomeStatementTable = buildIncomeStatement(data);
   const netLossRow = incomeStatementTable.getRowById('NET-LOSS');
   t.addRow(
     ['Net income:', netLossRow.cells[1]?.value, netLossRow.cells[2]?.value],

@@ -13,7 +13,7 @@ import { fOut } from '@/lib/finance';
 import { getParser } from '@/lib/formula-parser';
 import { ppCurrency, ppNumber } from '@/lib/util';
 import { AuditId } from '@/types';
-import { getAuditData } from '../audit';
+import { getAuditData, getWarningsForAudit } from '../audit';
 import {
   getOrganizationSections,
   getPolicySections,
@@ -40,6 +40,8 @@ export async function AuditPreview({
   const policySettings = getPolicySections();
 
   const data = await getAuditData(auditId);
+  const warnings = getWarningsForAudit(data);
+
   return (
     <div className="text-sm text-slate-800 max-w-3xl">
       <div className=" mb-4 border rounded-md p-4">
@@ -48,20 +50,7 @@ export async function AuditPreview({
         <div>Year Ended {data.fiscalYearEnd}</div>
       </div>
 
-      <Warning
-        messages={[
-          <span key="1">
-            <a
-              href="#section-balance-sheet"
-              className="underline hover:no-underline"
-            >
-              Consolidated Balance Sheet
-            </a>
-            : Total assets don&apos;t equal total liabilities and
-            stockholders&apos; deficit
-          </span>,
-        ]}
-      />
+      {warnings.length > 0 && <Warning warnings={warnings} />}
 
       <div className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">Contents</h2>
@@ -487,7 +476,15 @@ function ToCLink({
   );
 }
 
-function Warning({ messages }: { messages: React.ReactNode[] }) {
+function Warning({
+  warnings,
+}: {
+  warnings: {
+    previewSection: string;
+    previewUrl: string;
+    message: string;
+  }[];
+}) {
   return (
     <div className="rounded-md bg-red-50 p-4 my-4">
       <div className="flex">
@@ -500,8 +497,18 @@ function Warning({ messages }: { messages: React.ReactNode[] }) {
           </h3>
           <div className="mt-2 text-sm text-red-700">
             <ul role="list" className="list-disc space-y-1 pl-5">
-              {messages.map((msg, idx) => (
-                <li key={idx}>{msg}</li>
+              {warnings.map((warning, idx) => (
+                <li key={idx}>
+                  <span>
+                    <a
+                      href={warning.previewUrl}
+                      className="underline hover:no-underline"
+                    >
+                      {warning.previewSection}
+                    </a>
+                    : {warning.message}
+                  </span>
+                </li>
               ))}
             </ul>
           </div>
