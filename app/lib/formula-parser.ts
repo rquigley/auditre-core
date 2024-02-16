@@ -96,7 +96,6 @@ export function getParser(table: Table, data: AuditData) {
       throw new Error('Invalid SUMTAGCOL');
     }
     const [tag, column] = params as [string, number];
-
     return table.getRowsByTag(tag).reduce((acc, row) => {
       const cell = row.cells[column];
       if (!cell) {
@@ -107,5 +106,6 @@ export function getParser(table: Table, data: AuditData) {
       return acc + Number(parseCell(cell.value || ''));
     }, 0);
   });
+
   return parser;
 }
