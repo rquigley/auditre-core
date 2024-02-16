@@ -21,11 +21,12 @@ import {
 } from 'docx';
 
 import { AuditData, getAuditData } from '@/controllers/audit';
+import { fOut } from '@/lib/finance';
+import { getParser } from '@/lib/formula-parser';
 import { ppCurrency, ppNumber } from '@/lib/util';
 import {
   buildBalanceSheet,
-  buildStatementOfOperations,
-  filterHideIfZeroRows,
+  buildIncomeStatement,
   tableMap,
 } from '../financial-statement/table';
 import {
@@ -37,6 +38,7 @@ import {
 import type { Template } from '../financial-statement/template';
 import type { Row as ARRow, Table as ARTable } from '@/lib/table';
 import type { AuditId } from '@/types';
+import type { Parser } from 'hot-formula-parser';
 
 export async function generate(auditId: AuditId) {
   const data = await getAuditData(auditId);
@@ -165,7 +167,7 @@ export async function generate(auditId: AuditId) {
   });
   return {
     document,
-    documentName: `Financial Statement - ${data.basicInfo.businessName} - ${data.auditInfo.year}.docx`,
+    documentName: `Financial Statement - ${data.rt.basicInfo.businessName} - ${data.year}.docx`,
   };
 }
 
@@ -174,7 +176,7 @@ function titlePage(data: AuditData) {
     ...getPageProperties(),
     children: [
       new Paragraph({
-        text: data.basicInfo.businessName,
+        text: data.rt.basicInfo.businessName,
         heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
@@ -235,7 +237,7 @@ async function consolidatedFinancialStatements(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
-      buildTable(await buildBalanceSheet(data)),
+      buildTable(buildBalanceSheet(data), data),
     ],
   };
 }
@@ -250,7 +252,7 @@ async function consolidatedStatementOfOperations(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
-      buildTable(await buildStatementOfOperations(data)),
+      buildTable(buildIncomeStatement(data), data),
     ],
   };
 }
@@ -285,7 +287,9 @@ async function notes(data: AuditData) {
   };
 }
 
-function buildTable(table: ARTable) {
+function buildTable(table: ARTable, data: AuditData) {
+  const parser = getParser(table, data);
+
   const t = new Table({
     borders: {
       top: { style: BorderStyle.NONE },
@@ -297,16 +301,16 @@ function buildTable(table: ARTable) {
       size: 100,
       type: WidthType.PERCENTAGE,
     },
-    rows: filterHideIfZeroRows(table.rows).map((row: ARRow) =>
-      buildTableRow(row),
-    ),
+    rows: table.rows.map((row) => buildTableRow(row, parser)).filter(Boolean),
   });
 
   return t;
 }
 
-function buildTableRow(row: ARRow) {
-  return new TableRow({
+function buildTableRow(row: ARRow, parser: Parser) {
+  let hideRow = row.hasTag('hide-if-zero');
+
+  const ret = new TableRow({
     children: row.cells.map((cell) => {
       const borders = {
         top: {
@@ -342,7 +346,22 @@ function buildTableRow(row: ARRow) {
       };
       let value;
 
-      if (typeof cell.value === 'number' && cell.style.numFmt) {
+      if (typeof cell.value === 'string' && cell.value.startsWith('=')) {
+        const parsed = parser.parse(cell.value.substring(1));
+        if (parsed.error) {
+          value = `Error: ${parsed.error}`;
+          hideRow = false;
+        } else {
+          value = parsed.result;
+          if (value !== 0) {
+            hideRow = false;
+          }
+        }
+      } else {
+        value = cell.value;
+      }
+
+      if (typeof value === 'number' && cell.style.numFmt) {
         const numConfig = cell.style.numFmt;
         const numFmt =
           typeof numConfig === 'object' ? numConfig.type : numConfig;
@@ -350,18 +369,19 @@ function buildTableRow(row: ARRow) {
           typeof numConfig === 'object' ? numConfig.cents ?? false : false;
 
         if (numFmt === 'accounting' || numFmt === 'currency') {
-          value = ppCurrency(cell.value, {
+          value = ppCurrency(fOut(value), {
             cents: showCents,
             hideCurrency: cell.style.hideCurrency,
           });
         } else if (numFmt === 'number') {
-          value = ppNumber(cell.value);
+          value = ppNumber(value);
         } else {
           value = `${numFmt} NOT IMPLEMENTED`;
         }
-      } else {
-        value = cell.value;
+      } else if (typeof value !== 'string') {
+        throw new Error(`Invalid value type: ${value}, type: ${typeof value}`);
       }
+
       return new TableCell({
         children: [
           new Paragraph({
@@ -387,6 +407,8 @@ function buildTableRow(row: ARRow) {
       ? { value: convertInchesToTwip(0.3), rule: HeightRule.EXACT }
       : undefined,
   });
+
+  return hideRow ? null : ret;
 }
 
 function getPageProperties() {
@@ -469,7 +491,7 @@ async function templateToParagraph(
         throw new Error(`Unknown table: ${mapKey}`);
       }
       const tableBuildFn = tableMap[mapKey as keyof typeof tableMap];
-      ret.push(buildTable(await tableBuildFn(template.data)));
+      ret.push(buildTable(await tableBuildFn(template.data), template.data));
     } else {
       ret.push(new Paragraph({ children: formatBodyText(p) }));
     }

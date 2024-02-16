@@ -1,4 +1,4 @@
-import { addFP } from './util';
+import { deepCopy } from './util';
 
 export const accountTypes = {
   ASSET_CASH_AND_CASH_EQUIVALENTS: 'Cash and cash equivalents',
@@ -46,6 +46,7 @@ export const accountTypes = {
 } as const;
 
 export type AccountType = keyof typeof accountTypes;
+
 export function isAccountType(type: string): type is AccountType {
   return Object.keys(accountTypes).includes(type);
 }
@@ -176,6 +177,14 @@ export function accountTypeGroupToLabel(
   return groupLabels[type];
 }
 
+export function fIn(num: number) {
+  return Math.round(num * 100);
+}
+
+export function fOut(num: number) {
+  return num / 100;
+}
+
 export function getBalance({
   accountType,
   credit,
@@ -186,8 +195,25 @@ export function getBalance({
   debit: number;
 }) {
   if (accountType.startsWith('ASSET')) {
-    return addFP(-credit, debit);
+    return debit - credit;
   } else {
-    return addFP(credit, -debit);
+    return credit - debit;
   }
+}
+
+export function includeNetIncomeInRetainedEarnings(
+  rows: { accountType: AccountType; balance: number }[],
+) {
+  const equityRetainedEarningsRow = rows.find(
+    (r) => r.accountType === 'EQUITY_RETAINED_EARNINGS',
+  );
+  if (equityRetainedEarningsRow) {
+    const rowsOut = deepCopy(rows);
+
+    const netIncome = rowsOut
+      .filter((r) => r.accountType.startsWith('INCOME_STATEMENT_'))
+      .reduce((acc, row) => acc + row.balance, 0);
+    equityRetainedEarningsRow.balance += netIncome;
+  }
+  return rows;
 }

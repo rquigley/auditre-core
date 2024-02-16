@@ -6,9 +6,11 @@ import { Inconsolata } from 'next/font/google';
 import {
   buildBalanceSheet,
   buildCashFlows,
-  buildStatementOfOperations,
+  buildIncomeStatement,
   tableMap,
 } from '@/controllers/financial-statement/table';
+import { fOut } from '@/lib/finance';
+import { getParser } from '@/lib/formula-parser';
 import { ppCurrency, ppNumber } from '@/lib/util';
 import { AuditId } from '@/types';
 import { getAuditData } from '../audit';
@@ -20,6 +22,7 @@ import {
 import type { AuditData } from '@/controllers/audit';
 import type { Section } from '@/controllers/financial-statement/template';
 import type { Row, Table } from '@/lib/table';
+import type { Parser } from 'hot-formula-parser';
 
 const financeFont = Inconsolata({
   subsets: ['latin'],
@@ -40,7 +43,7 @@ export async function AuditPreview({
   return (
     <div className="text-sm text-slate-800 max-w-3xl">
       <div className=" mb-4 border rounded-md p-4">
-        <h1 className="text-lg font-bold">{data.basicInfo.businessName}</h1>
+        <h1 className="text-lg font-bold">{data.rt.basicInfo.businessName}</h1>
         <div>Conslidated Financial Statements</div>
         <div>Year Ended {data.fiscalYearEnd}</div>
       </div>
@@ -82,21 +85,21 @@ export async function AuditPreview({
           </a>
         </h2>
 
-        {buildTable(await buildBalanceSheet(data))}
+        {buildTable(buildBalanceSheet(data), data)}
       </div>
 
       <div
-        id="section-statement-of-operations"
+        id="section-income-statement"
         className="max-w-3xl mb-4 border rounded-md p-4"
       >
         <h2 className="text-lg font-bold">
-          <a href="#section-statement-of-operations" className="group relative">
+          <a href="#section-income-statement" className="group relative">
             2. Consolidated Statement of Operations
             <Paperclip />
           </a>
         </h2>
 
-        {buildTable(await buildStatementOfOperations(data))}
+        {buildTable(buildIncomeStatement(data), data)}
       </div>
 
       <div id="section-sose" className="max-w-3xl mb-4 border rounded-md p-4">
@@ -120,7 +123,7 @@ export async function AuditPreview({
           </a>
         </h2>
 
-        {buildTable(await buildCashFlows(data))}
+        {buildTable(await buildCashFlows(data), data)}
       </div>
 
       <div id="section-org" className="max-w-3xl mb-4 border rounded-md p-4">
@@ -206,7 +209,10 @@ async function DataSection({
       if (mapKey in tableMap) {
         const tableBuildFn = tableMap[mapKey as keyof typeof tableMap];
         output.push(
-          <span key={mapKey}> {buildTable(await tableBuildFn(data))}</span>,
+          <span key={mapKey}>
+            {' '}
+            {buildTable(await tableBuildFn(data), data)}
+          </span>,
         );
       } else {
         throw new Error(`Unknown table: ${mapKey}`);
@@ -262,26 +268,91 @@ function Paperclip() {
   );
 }
 
-function buildTable(table: Table): React.ReactNode {
+function buildTable(table: Table, data: AuditData): React.ReactNode {
+  const parser = getParser(table, data);
+
   return (
     <table className="w-full mt-2" key="12345">
-      <tbody>{table.rows.map((row: Row) => buildTableRow(row))}</tbody>
+      <tbody>
+        {table.rows.map((row: Row) => buildTableRow(row, data, parser))}
+      </tbody>
     </table>
   );
 }
 
-function buildTableRow(row: Row): React.ReactNode {
-  if (row.hasTag('hide-if-zero')) {
-    const hasNonZeroValues = row.cells.some(
-      (cell) => typeof cell.value === 'number' && cell.value !== 0,
-    );
-    if (!hasNonZeroValues) {
-      return null;
-    }
-  }
-  return (
-    <tr key={row.number} className={row.number % 2 === 0 ? 'bg-slate-100' : ''}>
+function buildTableRow(
+  row: Row,
+  data: AuditData,
+  parser: Parser,
+): React.ReactNode {
+  // If tagged for hiding, allow any non-zero cell (including formulae) to show the row.
+  let hideRow = row.hasTag('hide-if-zero');
+
+  const ret = (
+    <tr key={row.rowNum} className={row.rowNum % 2 === 0 ? 'bg-slate-100' : ''}>
       {row.cells.map((cell, idx) => {
+        let value;
+        if (typeof cell.value === 'string' && cell.value.startsWith('=')) {
+          const parsed = parser.parse(cell.value.substring(1));
+          if (parsed.error) {
+            value = `Error: ${parsed.error}`;
+            hideRow = false;
+          } else {
+            value = parsed.result;
+            if (value !== 0) {
+              hideRow = false;
+            }
+          }
+        } else {
+          value = cell.value;
+        }
+
+        // At this point, all formulae have been evaluated
+        if (typeof value === 'number' && cell.style.numFmt) {
+          const numConfig = cell.style.numFmt;
+          const numFmt =
+            typeof numConfig === 'object' ? numConfig.type : numConfig;
+          const showCents =
+            typeof numConfig === 'object' ? numConfig.cents ?? false : false;
+
+          if (numFmt === 'accounting') {
+            value = (
+              <div className={`flex justify-between ${financeFont.className}`}>
+                <div className="pl-5">
+                  {value !== 0 && !cell.style.hideCurrency ? '$' : ''}
+                </div>
+                <div>
+                  {ppCurrency(fOut(value), {
+                    cents: showCents,
+                    hideCurrency: true,
+                  })}
+                </div>
+              </div>
+            );
+          } else if (numFmt === 'currency') {
+            value = (
+              <div className={financeFont.className}>
+                {ppCurrency(fOut(value), {
+                  cents: showCents,
+                  hideCurrency: cell.style.hideCurrency,
+                })}
+              </div>
+            );
+          } else if (numFmt === 'number') {
+            value = (
+              <span className={`${financeFont.className}`}>
+                {ppNumber(value)}
+              </span>
+            );
+          } else {
+            value = `${numFmt} NOT IMPLEMENTED`;
+          }
+        } else if (typeof value !== 'string') {
+          throw new Error(
+            `Invalid value type: ${value}, type: ${typeof value}`,
+          );
+        }
+
         const styles = clsx({
           'font-bold': cell.style.bold,
           'border-b border-b-slate-600': cell.style.borderBottom === 'thin',
@@ -298,49 +369,6 @@ function buildTableRow(row: Row): React.ReactNode {
           'text-right': cell.style.align === 'right',
         });
 
-        let value;
-        if (typeof cell.value === 'number' && cell.style.numFmt) {
-          const numConfig = cell.style.numFmt;
-          const numFmt =
-            typeof numConfig === 'object' ? numConfig.type : numConfig;
-          const showCents =
-            typeof numConfig === 'object' ? numConfig.cents ?? false : false;
-
-          if (numFmt === 'accounting') {
-            value = (
-              <div className={`flex justify-between ${financeFont.className}`}>
-                <div className="pl-5">
-                  {cell.value !== 0 && !cell.style.hideCurrency ? '$' : ''}
-                </div>
-                <div>
-                  {ppCurrency(cell.value, {
-                    cents: showCents,
-                    hideCurrency: true,
-                  })}
-                </div>
-              </div>
-            );
-          } else if (numFmt === 'currency') {
-            value = (
-              <div className={financeFont.className}>
-                {ppCurrency(cell.value, {
-                  cents: showCents,
-                  hideCurrency: cell.style.hideCurrency,
-                })}
-              </div>
-            );
-          } else if (numFmt === 'number') {
-            value = (
-              <span className={`${financeFont.className}`}>
-                {ppNumber(cell.value)}
-              </span>
-            );
-          } else {
-            value = `${numFmt} NOT IMPLEMENTED`;
-          }
-        } else {
-          value = String(cell.value);
-        }
         return (
           <td className={styles} key={idx}>
             {value}
@@ -349,6 +377,8 @@ function buildTableRow(row: Row): React.ReactNode {
       })}
     </tr>
   );
+
+  return hideRow ? null : ret;
 }
 
 function TableOfContents({
@@ -371,19 +401,19 @@ function TableOfContents({
         1. Consolidated Balance Sheet
       </a>
       <a
-        href="#section-statement-of-operations"
+        href="#section-income-statement"
         className="block text-slate-700 underline hover:no-underline"
       >
         2. Consolidated Statement of Operations
       </a>
       <a
-        href="#section-statement-of-operations"
+        href="#section-income-statement"
         className="block text-slate-700 underline hover:no-underline"
       >
         3. Conslidated Statement of Stockholders&apos; Equity (Deficit)
       </a>
       <a
-        href="#section-statement-of-operations"
+        href="#section-income-statement"
         className="block text-slate-700 underline hover:no-underline"
       >
         4. Conslidated Statement of Cash Flows
