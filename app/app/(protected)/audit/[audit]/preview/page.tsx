@@ -1,10 +1,8 @@
-import clsx from 'clsx';
 import { notFound } from 'next/navigation';
 
-import { getAuditData, getByIdForClientCached } from '@/controllers/audit';
+import { getByIdForClientCached } from '@/controllers/audit';
 import { AuditPreview } from '@/controllers/output/react';
 import { getCurrent } from '@/controllers/session-user';
-import DataModal from './data-modal';
 import { ShowChangesToggle } from './show-changes-toggle';
 import { ViewDataButton } from './view-data-button';
 
@@ -24,7 +22,6 @@ export default async function AuditPage({
     return notFound();
   }
 
-  const data = await getAuditData(auditId);
   const highlightData = searchParams['show-changes'] === '1';
 
   return (
@@ -35,68 +32,6 @@ export default async function AuditPage({
       </div>
 
       <AuditPreview auditId={auditId} highlightData={highlightData} />
-
-      <DataModal>
-        <div className="w-full h-full">
-          Data:
-          <br />
-          {/* {data
-            ? Object.keys(data).map((key) => {
-                return <RequestType key={key} name={key} data={data[key]} />;
-              })
-            : null} */}
-        </div>
-      </DataModal>
     </div>
-  );
-}
-
-function RequestType({
-  name,
-  data,
-}: {
-  name: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: Record<string, any>;
-}) {
-  return (
-    <div className="my-4">
-      <div className="font-semibold text-sm">{name}</div>
-      {/* shortcuts added by us */}
-      {typeof data === 'string' ? (
-        <div>{data}</div>
-      ) : (
-        <ul>
-          {Object.keys(data).map((requestId) => (
-            <RowValOutput
-              key={requestId}
-              name={requestId}
-              val={data[requestId]}
-            />
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function RowValOutput({ name, val }: { name: string; val: unknown }) {
-  let out = '';
-  let isMissing = false;
-  if (val === null) {
-    out = 'null';
-    isMissing = true;
-  } else if (typeof val == 'object') {
-    out = JSON.stringify(val);
-  } else if (val === '' || val === undefined) {
-    isMissing = true;
-  } else {
-    out = val.toString();
-  }
-
-  return (
-    <li className={clsx(isMissing ? 'text-red-600' : '')}>
-      {name}: {isMissing ? 'MISSING' : out}
-    </li>
   );
 }
