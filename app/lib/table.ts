@@ -79,6 +79,10 @@ export class Table {
     return this.getRowById(id).cells[column];
   }
 
+  getValue(rowId: string, column: number) {
+    return this.getCellByIdAndCol(rowId, column)?.value || '';
+  }
+
   getAddressRange(colNum: number, rows: Row[], rowOffset: number) {
     const isContinuous =
       rows.every((row, i) => row.rowNum === rows[0].rowNum + i) &&

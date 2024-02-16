@@ -6,9 +6,13 @@ import {
   getAllByAuditId as getAllDocumentsByAuditId,
 } from '@/controllers/document';
 import { db } from '@/lib/db';
+import { getParser } from '@/lib/formula-parser';
 import { isFormFieldFile } from '@/lib/request-types';
 import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
-import { buildIncomeStatement } from './financial-statement/table';
+import {
+  buildBalanceSheet,
+  buildIncomeStatement,
+} from './financial-statement/table';
 import {
   getDataForAuditId,
   getDataForRequestAttribute2,
@@ -200,7 +204,7 @@ export async function getAuditData(auditId: AuditId) {
       [year]: totals,
       [prevYear]: totals2,
     },
-    incomeStatementTable: await buildIncomeStatement({
+    incomeStatementTable: buildIncomeStatement({
       year,
       prevYear,
       fiscalYearEndNoYear,
@@ -212,6 +216,40 @@ export async function getAuditData(auditId: AuditId) {
     fiscalYearEnd: `${fiscalYearEndNoYear}, ${year}`,
     rt: requestDataObj,
   };
+}
+
+export function getWarningsForAudit(data: AuditData) {
+  const warnings: {
+    previewSection: string;
+    previewUrl: string;
+    message: string;
+  }[] = [];
+  const bs = buildBalanceSheet(data);
+  const parser = getParser(bs, data);
+  for (const year of [data.year, data.prevYear]) {
+    if (!year) {
+      continue;
+    }
+    const idx = year === data.year ? 1 : 2;
+
+    if (
+      parser.parse(String(bs.getValue('TOTAL-ASSETS', idx)).substring(1))
+        ?.result !==
+      parser.parse(
+        String(
+          bs.getValue('TOTAL-LIABILITIES-AND-STOCKHOLDERS-DEFICIT', idx),
+        ).substring(1),
+      )?.result
+    ) {
+      warnings.push({
+        previewSection: 'Consolidated balance sheet',
+        previewUrl: '#section-balance-sheet',
+        message: `Total assets don't equal total liabilities and stockholders' deficit for ${year}`,
+      });
+    }
+  }
+
+  return warnings;
 }
 
 export async function update(id: AuditId, updateWith: AuditUpdate) {
