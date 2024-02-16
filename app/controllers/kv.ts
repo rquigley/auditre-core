@@ -35,17 +35,18 @@ export async function getKV({
 }) {
   const rawKey = `${orgId}:${auditId}:${key}`;
 
-  let query = db.selectFrom('kv').select('value').where('key', '=', rawKey);
-
-  if (sinceMs) {
-    const intervalStr = sql.lit(`${sinceMs} milliseconds`);
-    query = query.where(
-      'modifiedAt',
-      '>',
-      sql<Date>`now() - interval ${intervalStr}`,
-    );
-  }
-  const res = await query.executeTakeFirst();
+  const res = await db
+    .selectFrom('kv')
+    .select('value')
+    .$if(Boolean(sinceMs), (q) =>
+      q.where(
+        'modifiedAt',
+        '>',
+        sql<Date>`now() - interval ${sql.lit(`${sinceMs} milliseconds`)}`,
+      ),
+    )
+    .where('key', '=', rawKey)
+    .executeTakeFirst();
 
   return res?.value;
 }
