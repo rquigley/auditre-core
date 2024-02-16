@@ -26,7 +26,7 @@ export const tableMap = {
 } as const;
 
 export function buildBalanceSheet(data: AuditData) {
-  const t = new Table();
+  const t = new Table('balance-sheet');
   t.columns = [
     {},
     { style: { numFmt: 'accounting', align: 'right' } },
@@ -523,7 +523,7 @@ export function buildBalanceSheet(data: AuditData) {
 }
 
 export function buildPropertyAndEquipmentLives(_data: AuditData) {
-  const t = new Table();
+  const t = new Table('property-and-equipment-lives');
   t.columns = [{}, { style: { align: 'right' } }];
 
   t.addRow(['Asset', 'Useful life (years)'], {
@@ -566,7 +566,7 @@ export async function buildPropertyAndEquipmentNet(data: AuditData) {
 
   let totalPropertyAndEquipment = 0;
 
-  const t = new Table();
+  const t = new Table('property-and-equipment-net');
   t.columns = [{}, { style: { numFmt: 'accounting', align: 'right' } }];
 
   t.addRow([data.fiscalYearEndNoYear, data.year], {
@@ -622,7 +622,7 @@ export async function buildPropertyAndEquipmentNet(data: AuditData) {
 }
 
 export async function buildFVMLiabilities(_data: AuditData) {
-  const t = new Table();
+  const t = new Table('fvm-liabilities');
   t.columns = [
     {},
     { style: { numFmt: 'currency' } },
@@ -642,7 +642,7 @@ export async function buildFVMLiabilities(_data: AuditData) {
 }
 
 export async function buildFVMLiabilities2(data: AuditData) {
-  const t = new Table();
+  const t = new Table('fvm-liabilities2');
   t.columns = [
     {},
     { style: { numFmt: 'currency' } },
@@ -668,7 +668,7 @@ export function buildIncomeStatement(data: {
   prevYear: string;
   fiscalYearEndNoYear: string;
 }) {
-  const t = new Table();
+  const t = new Table('income-statement');
   t.columns = [
     {},
     { style: { numFmt: 'accounting', align: 'right' } },
@@ -831,7 +831,7 @@ export async function buildCashFlows(data: AuditData) {
   // const totals = data.totals;
   // const totalsPrev = await getBalancesByAccountType(data.auditId, year2);
 
-  const t = new Table();
+  const t = new Table('cash-flows');
   t.columns = [
     {},
     { style: { numFmt: 'accounting', align: 'right' } },
@@ -907,7 +907,7 @@ export async function buildConvertiblePreferredStock(data: AuditData) {
   const certTransactionReport = await getCertificateTransactionDocumentData(
     data.auditId,
   );
-  const t = new Table();
+  const t = new Table('convertible-preferred-stock');
   t.columns = [
     {},
     { style: { numFmt: 'number' } },
@@ -966,7 +966,7 @@ export async function buildConvertibleToCommon(data: AuditData) {
   const certTransactionReport = await getCertificateTransactionDocumentData(
     data.auditId,
   );
-  const t = new Table();
+  const t = new Table('convertible-preferred-to-common');
   t.columns = [
     {},
     { style: { numFmt: 'accounting' } },
@@ -1006,7 +1006,7 @@ export async function buildCommonStockReservedForFutureIssuance(
     data.auditId,
   );
   const sbcReport = await getSBCReportData(data.auditId);
-  const t = new Table();
+  const t = new Table('common-stock-reserved-for-future-issuance');
   t.columns = [{}, { style: { numFmt: 'number', align: 'right' } }];
   t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.fiscalYearEndNoYear], {
     style: {
@@ -1048,7 +1048,7 @@ export async function buildCommonStockReservedForFutureIssuance(
 }
 
 export async function buildIncomeTaxes(data: AuditData) {
-  const t = new Table();
+  const t = new Table('income-taxes');
   t.columns = [
     {},
     { style: { numFmt: 'currency' } },

@@ -2,11 +2,13 @@ export class Table {
   rows: Row[] = [];
   _columns: Column[] = [];
   debug: boolean;
+  name: string;
 
   // hacking around limitations of hot-formula-parser
   UNSAFE_outputRowOffset: number = 0;
 
-  constructor(debug?: boolean) {
+  constructor(name: string, debug?: boolean) {
+    this.name = name;
     this.debug = debug || false;
     this.UNSAFE_outputRowOffset = 0;
   }
