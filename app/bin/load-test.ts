@@ -1,5 +1,3 @@
-import { program } from 'commander';
-
 import { create as createAudit } from '@/controllers/audit';
 import { addDemoData } from '@/controllers/audit-demo';
 import { createOrg } from '@/controllers/org';
@@ -29,10 +27,5 @@ async function main() {
   }
   await db.destroy();
 }
-
-program
-  .description('Create a demo org, user, and account.')
-  .option('-n, --name <name>', "Set the organization's name")
-  .parse();
 
 main();
