@@ -96,11 +96,11 @@ export const getOrganizationSections = () => [
     body: async (data) => {
       // TODO: brittle, doesn't account for different categories?
       const totalCurrentLiabilities =
-        data.totals.get('LIABILITY_ACCRUED_LIABILITIES') +
-        data.totals.get('LIABILITY_ACCOUNTS_PAYABLE') +
-        data.totals.get('LIABILITY_DEFERRED_REVENUE') +
-        data.totals.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT') +
-        data.totals.get('LIABILITY_OTHER');
+        data.totals.CY.get('LIABILITY_ACCRUED_LIABILITIES') +
+        data.totals.CY.get('LIABILITY_ACCOUNTS_PAYABLE') +
+        data.totals.CY.get('LIABILITY_DEFERRED_REVENUE') +
+        data.totals.CY.get('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT') +
+        data.totals.CY.get('LIABILITY_OTHER');
 
       let recentFinancingEvents = '';
       if (isSameYear(data.year, data.rt.financingDocuments.efDateOfDocument)) {
@@ -112,7 +112,7 @@ export const getOrganizationSections = () => [
       The Company has incurred recurring losses and negative cash flows from operating activities since inception. As of [${
         data.fiscalYearEnd
       }], the Company had cash of [${ppCurrency(
-        fOut(data.totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS')),
+        fOut(data.totals.CY.get('ASSET_CASH_AND_CASH_EQUIVALENTS')),
       )}] and an accumulated deficit of [${ppCurrency(
         fOut(totalCurrentLiabilities),
       )}]. Based on the Company’s forecasts, the Company’s current resources and cash balance are sufficient to enable the Company to continue as a going concern for 12 months from the date these consolidated financial statements are available to be issued. [TODO]
@@ -179,9 +179,9 @@ export const getPolicySections = () => [
       The Company considers highly liquid investments purchased with a remaining maturity date upon acquisition of three months or less to be cash equivalents and are stated at cost, which approximates fair value. As of [${
         data.fiscalYearEnd
       }], ${
-        data.totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS') > 0
+        data.totals.CY.get('ASSET_CASH_AND_CASH_EQUIVALENTS') > 0
           ? `there were cash equivalents totaling [${ppCurrency(
-              fOut(data.totals.get('ASSET_CASH_AND_CASH_EQUIVALENTS') || 0),
+              fOut(data.totals.CY.get('ASSET_CASH_AND_CASH_EQUIVALENTS') || 0),
             )}].`
           : `there were no cash equivalents.`
       }
@@ -226,7 +226,7 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Derivative Liability',
     isShowing: (data) =>
-      data.totals.get('LIABILITY_CONVERTIBLE_NOTES_PAYABLE') > 0,
+      data.totals.CY.get('LIABILITY_CONVERTIBLE_NOTES_PAYABLE') > 0,
     body: (data) => `
       The Company accounts for certain redemption features that are associated with the terms of certain convertible notes, as a liability at fair value and adjusts the instruments to their fair value at each reporting period.
 
@@ -236,10 +236,12 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Research and Development',
     isShowing: (data) =>
-      data.totals.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') > 0,
+      data.totals.CY.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') > 0,
     body: (data) => `
       Costs associated with research and development activities are expensed as incurred and include, but are not limited to, personnel-related expenses including stock-based compensation expense, materials, laboratory supplies, consulting costs, and allocated overhead including rent and utilities. Total research and development costs amounted to [${ppCurrency(
-        fOut(data.totals.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') || 0),
+        fOut(
+          data.totals.CY.get('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT') || 0,
+        ),
       )}] for the year ended [${
         data.fiscalYearEnd
       }] and are included in general and administrative expenses in the consolidated statement of operations.
@@ -248,10 +250,10 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Advertising and Marketing Costs',
     isShowing: (data) =>
-      data.totals.get('INCOME_STATEMENT_SALES_AND_MARKETING') > 0,
+      data.totals.CY.get('INCOME_STATEMENT_SALES_AND_MARKETING') > 0,
     body: (data) => `
       Costs associated with advertising and marketing activities are expensed as incurred. Total advertising and marketing costs amounted to [${ppCurrency(
-        fOut(data.totals.get('INCOME_STATEMENT_SALES_AND_MARKETING') || 0),
+        fOut(data.totals.CY.get('INCOME_STATEMENT_SALES_AND_MARKETING') || 0),
       )}] for the year ended [${
         data.fiscalYearEnd
       }] and are included in general and administrative expenses in the consolidated statement of operations.
@@ -487,7 +489,9 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Income Taxes',
     body: async (data) => {
-      const accumulatedDeficit = data.totals.get('EQUITY_ACCUMULATED_DEFICIT');
+      const accumulatedDeficit = data.totals.CY.get(
+        'EQUITY_ACCUMULATED_DEFICIT',
+      );
 
       let accumulatedDeficitStr = '';
       if (accumulatedDeficit < 0) {
