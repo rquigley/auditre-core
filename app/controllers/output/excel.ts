@@ -77,10 +77,10 @@ export async function generate(auditId: AuditId) {
       ws: isWorksheet,
       data,
     });
-    // await addCashFlow({
-    //   ws: cfWorksheet,
-    //   data,
-    // });
+    await addCashFlow({
+      ws: cfWorksheet,
+      data,
+    });
   }
 
   return {
@@ -184,6 +184,8 @@ async function addCashFlow({
   ws.addRow(['Consolidated statement of cash flows']);
   ws.addRow([]);
   ws.addRow([]);
+
+  t.UNSAFE_outputRowOffset = 4;
 
   const widths: number[] = [];
 
@@ -672,6 +674,8 @@ function applyBGFormatting(
 }
 
 function fadeZeroRows(ws: Worksheet, t: Table) {
+  // I'm not sure why the offset is required for the formulae, but it is.
+  // Not worth digging into now, but we should figure it out at some point.
   const offset = t.UNSAFE_outputRowOffset + 1;
 
   ws.addConditionalFormatting({
