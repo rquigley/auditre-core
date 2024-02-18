@@ -31,8 +31,12 @@ export function getParser(table: Table, data: AuditData) {
       throw new Error('Invalid TBLOOKUP');
     }
 
-    const [account, year] = params as [string, string];
-    return data.totalsNew[year].get(account as AccountType);
+    const [account, yearType] = params as [string, string];
+    if (!isYearType(yearType)) {
+      throw new Error(`TBLOOKUP: Invalid yearType: ${yearType}`);
+    }
+
+    return data.totals[yearType].get(account as AccountType);
   });
 
   parser.setFunction('GET_BY_ID', (params) => {
@@ -68,21 +72,41 @@ export function getParser(table: Table, data: AuditData) {
       throw new Error('Invalid IS_NETLOSS');
     }
 
-    const [year] = params as [string];
+    const [yearType] = params as [string];
     const netLossRow = data.incomeStatementTable.getRowById('NET-LOSS');
     let val;
-    if (year === data.year) {
+    if (yearType === 'CY') {
       val = netLossRow.cells[1].value;
-    } else if (year === data.prevYear) {
+    } else if (yearType === 'PY') {
       val = netLossRow.cells[2].value;
+    } else if (yearType === 'PY2') {
+      throw new Error(`IS_NETLOSS: No IS for PY2`);
     } else {
-      throw new Error(`IS_NETLOSS: Invalid year: ${year}`);
+      throw new Error(`IS_NETLOSS: Invalid year: ${yearType}`);
     }
     if (typeof val !== 'string') {
       throw new Error(`IS_NETLOSS: Invalid value: ${val}`);
     }
     const parser2 = getParser(data.incomeStatementTable, data);
     return parser2.parse(val.substring(1)).result;
+  });
+
+  parser.setFunction('TB_NETLOSS', (params) => {
+    if (
+      !Array.isArray(params) ||
+      params.length !== 1 ||
+      typeof params[0] !== 'string'
+    ) {
+      console.log(`Invalid TB_NETLOSS ${String(params)}`);
+      throw new Error('Invalid TB_NETLOSS');
+    }
+
+    const [yearType] = params as [string];
+    if (!isYearType(yearType)) {
+      throw new Error(`TB_NETLOSS: Invalid yearType: ${yearType}`);
+    }
+
+    return data.totals[yearType].getTotalForGroup('INCOME_STATEMENT');
   });
 
   parser.setFunction('SUMTAGCOL', (params) => {
@@ -108,4 +132,21 @@ export function getParser(table: Table, data: AuditData) {
   });
 
   return parser;
+}
+
+export function isYearType(yearType: string): yearType is 'CY' | 'PY' | 'PY2' {
+  return yearType === 'CY' || yearType === 'PY' || yearType === 'PY2';
+}
+
+export function yearTypeToYear(yearType: string, data: AuditData) {
+  switch (yearType) {
+    case 'CY':
+      return data.year;
+    case 'PY':
+      return data.prevYear;
+    case 'PY2':
+      return data.prevYear2;
+    default:
+      throw new Error(`Invalid yearType: ${yearType}`);
+  }
 }

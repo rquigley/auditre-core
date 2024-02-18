@@ -52,8 +52,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Cash',
-      `=TBLOOKUP('ASSET_CASH_AND_CASH_EQUIVALENTS', '${data.year}')`,
-      `=TBLOOKUP('ASSET_CASH_AND_CASH_EQUIVALENTS', '${data.prevYear}')`,
+      `=TBLOOKUP('ASSET_CASH_AND_CASH_EQUIVALENTS', 'CY')`,
+      `=TBLOOKUP('ASSET_CASH_AND_CASH_EQUIVALENTS', 'PY')`,
     ],
     {
       tags: [
@@ -68,8 +68,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Inventory',
-      `=TBLOOKUP('ASSET_INVENTORY', '${data.year}')`,
-      `=TBLOOKUP('ASSET_INVENTORY', '${data.prevYear}')`,
+      `=TBLOOKUP('ASSET_INVENTORY', 'CY')`,
+      `=TBLOOKUP('ASSET_INVENTORY', 'PY')`,
     ],
     {
       tags: [
@@ -88,8 +88,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Prepaid expenses',
-      `=TBLOOKUP('ASSET_PREPAID_EXPENSES', '${data.year}')`,
-      `=TBLOOKUP('ASSET_PREPAID_EXPENSES', '${data.prevYear}')`,
+      `=TBLOOKUP('ASSET_PREPAID_EXPENSES', 'CY')`,
+      `=TBLOOKUP('ASSET_PREPAID_EXPENSES', 'PY')`,
     ],
     {
       tags: [
@@ -108,8 +108,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Prepaid expenses and other current assets',
-      `=TBLOOKUP('ASSET_CURRENT_OTHER', '${data.year}')`,
-      `=TBLOOKUP('ASSET_CURRENT_OTHER', '${data.prevYear}')`,
+      `=TBLOOKUP('ASSET_CURRENT_OTHER', 'CY')`,
+      `=TBLOOKUP('ASSET_CURRENT_OTHER', 'PY')`,
     ],
     {
       tags: [
@@ -142,8 +142,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Property and equipment, net',
-      `=TBLOOKUP('ASSET_PROPERTY_AND_EQUIPMENT', '${data.year}')`,
-      `=TBLOOKUP('ASSET_PROPERTY_AND_EQUIPMENT', '${data.prevYear}')`,
+      `=TBLOOKUP('ASSET_PROPERTY_AND_EQUIPMENT', 'CY')`,
+      `=TBLOOKUP('ASSET_PROPERTY_AND_EQUIPMENT', 'PY')`,
     ],
     {
       tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
@@ -154,8 +154,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Intangible assets, net',
-      `=TBLOOKUP('ASSET_INTANGIBLE_ASSETS', '${data.year}')`,
-      `=TBLOOKUP('ASSET_INTANGIBLE_ASSETS', '${data.prevYear}')`,
+      `=TBLOOKUP('ASSET_INTANGIBLE_ASSETS', 'CY')`,
+      `=TBLOOKUP('ASSET_INTANGIBLE_ASSETS', 'PY')`,
     ],
     {
       tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
@@ -166,8 +166,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Operating lease right-of-use assets',
-      `=TBLOOKUP('ASSET_OPERATING_LEASE_RIGHT_OF_USE', '${data.year}')`,
-      `=TBLOOKUP('ASSET_OPERATING_LEASE_RIGHT_OF_USE', '${data.prevYear}')`,
+      `=TBLOOKUP('ASSET_OPERATING_LEASE_RIGHT_OF_USE', 'CY')`,
+      `=TBLOOKUP('ASSET_OPERATING_LEASE_RIGHT_OF_USE', 'PY')`,
     ],
     {
       tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
@@ -178,8 +178,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Other assets',
-      `=TBLOOKUP('ASSET_OTHER', '${data.year}')`,
-      `=TBLOOKUP('ASSET_OTHER', '${data.prevYear}')`,
+      `=TBLOOKUP('ASSET_OTHER', 'CY')`,
+      `=TBLOOKUP('ASSET_OTHER', 'PY')`,
     ],
     {
       tags: ['total-asset', 'hide-if-zero', 'hide-if-less-than-5-percent'],
@@ -219,8 +219,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Accounts payable',
-      `=TBLOOKUP('LIABILITY_ACCOUNTS_PAYABLE', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_ACCOUNTS_PAYABLE', '${data.prevYear}')`,
+      `=TBLOOKUP('LIABILITY_ACCOUNTS_PAYABLE', 'CY')`,
+      `=TBLOOKUP('LIABILITY_ACCOUNTS_PAYABLE', 'PY')`,
     ],
     {
       tags: [
@@ -238,8 +238,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Accrued liabilities',
-      `=TBLOOKUP('LIABILITY_ACCRUED_LIABILITIES', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_ACCRUED_LIABILITIES', '${data.prevYear}')`,
+      `=TBLOOKUP('LIABILITY_ACCRUED_LIABILITIES', 'CY')`,
+      `=TBLOOKUP('LIABILITY_ACCRUED_LIABILITIES', 'PY')`,
     ],
     {
       tags: [
@@ -257,8 +257,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Deferred revenue',
-      `=TBLOOKUP('LIABILITY_DEFERRED_REVENUE', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_DEFERRED_REVENUE', '${data.prevYear}')`,
+      `=TBLOOKUP('LIABILITY_DEFERRED_REVENUE', 'CY')`,
+      `=TBLOOKUP('LIABILITY_DEFERRED_REVENUE', 'PY')`,
     ],
     {
       tags: [
@@ -276,8 +276,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Operating lease liabilities, current',
-      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT', '${data.prevYear}')`,
+      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT', 'CY')`,
+      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT', 'PY')`,
     ],
     {
       tags: [
@@ -295,8 +295,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Other',
-      `=TBLOOKUP('LIABILITY_OTHER', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_OTHER', '${data.prevYear}')`,
+      `=TBLOOKUP('LIABILITY_OTHER', 'CY')`,
+      `=TBLOOKUP('LIABILITY_OTHER', 'PY')`,
     ],
     {
       tags: [
@@ -330,8 +330,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Accrued interest',
-      `=TBLOOKUP('LIABILITY_ACCRUED_INTEREST', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_ACCRUED_INTEREST', '${data.prevYear}')`,
+      `=TBLOOKUP('LIABILITY_ACCRUED_INTEREST', 'CY')`,
+      `=TBLOOKUP('LIABILITY_ACCRUED_INTEREST', 'PY')`,
     ],
     {
       tags: [
@@ -346,8 +346,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Convertible notes payable',
-      `=TBLOOKUP('LIABILITY_CONVERTIBLE_NOTES_PAYABLE', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_CONVERTIBLE_NOTES_PAYABLE', '${data.prevYear}')`,
+      `=TBLOOKUP('LIABILITY_CONVERTIBLE_NOTES_PAYABLE', 'CY')`,
+      `=TBLOOKUP('LIABILITY_CONVERTIBLE_NOTES_PAYABLE', 'PY')`,
     ],
     {
       tags: [
@@ -362,8 +362,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Debt',
-      `=TBLOOKUP('LIABILITY_DEBT', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_DEBT', '${data.prevYear}')`,
+      `=TBLOOKUP('LIABILITY_DEBT', 'CY')`,
+      `=TBLOOKUP('LIABILITY_DEBT', 'PY')`,
     ],
     {
       tags: [
@@ -378,8 +378,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Operating lease liabilities, net of current portion',
-      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION', '${data.year}')`,
-      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION', '${data.prevYear}')`,
+      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION', 'CY')`,
+      `=TBLOOKUP('LIABILITY_OPERATING_LEASE_LIABILITIES_NET_OF_CURRENT_PORTION', 'PY')`,
     ],
     {
       tags: [
@@ -415,8 +415,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Preferred stock',
-      `=TBLOOKUP('EQUITY_PREFERRED_STOCK', '${data.year}')`,
-      `=TBLOOKUP('EQUITY_PREFERRED_STOCK', '${data.prevYear}')`,
+      `=TBLOOKUP('EQUITY_PREFERRED_STOCK', 'CY')`,
+      `=TBLOOKUP('EQUITY_PREFERRED_STOCK', 'PY')`,
     ],
     {
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
@@ -430,8 +430,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Common stock',
-      `=TBLOOKUP('EQUITY_COMMON_STOCK', '${data.year}')`,
-      `=TBLOOKUP('EQUITY_COMMON_STOCK', '${data.prevYear}')`,
+      `=TBLOOKUP('EQUITY_COMMON_STOCK', 'CY')`,
+      `=TBLOOKUP('EQUITY_COMMON_STOCK', 'PY')`,
     ],
     {
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
@@ -445,8 +445,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Paid-in capital',
-      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', '${data.year}')`,
-      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', '${data.prevYear}')`,
+      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'CY')`,
+      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'PY')`,
     ],
     {
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
@@ -461,8 +461,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Retained earnings',
-      `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', '${data.year}')`,
-      `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', '${data.prevYear}')`,
+      `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'CY')`,
+      `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'PY')`,
     ],
     {
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
@@ -476,8 +476,8 @@ export function buildBalanceSheet(data: AuditData) {
   t.addRow(
     [
       'Accumulated deficit',
-      `=TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', '${data.year}')`,
-      `=TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', '${data.prevYear}')`,
+      `=TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'CY')`,
+      `=TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'PY')`,
     ],
     {
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
@@ -684,8 +684,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Revenue',
-      `=-TBLOOKUP('INCOME_STATEMENT_REVENUE', '${data.year}')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_REVENUE', '${data.prevYear}')`,
+      `=-TBLOOKUP('INCOME_STATEMENT_REVENUE', 'CY')`,
+      `=-TBLOOKUP('INCOME_STATEMENT_REVENUE', 'PY')`,
     ],
     {
       id: 'REVENUE',
@@ -695,8 +695,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Cost of revenue',
-      `=-TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', '${data.year}')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', '${data.prevYear}')`,
+      `=-TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', 'CY')`,
+      `=-TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', 'PY')`,
     ],
     {
       id: 'COST-OF-REVENUE',
@@ -723,8 +723,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Research and development',
-      `=TBLOOKUP('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT', '${data.year}')`,
-      `=TBLOOKUP('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT', '${data.prevYear}')`,
+      `=TBLOOKUP('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT', 'CY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT', 'PY')`,
     ],
     {
       tags: ['total-operating-expenses', 'hide-if-zero'],
@@ -735,8 +735,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'General and administrative',
-      `=TBLOOKUP('INCOME_STATEMENT_G_AND_A', '${data.year}') + TBLOOKUP('INCOME_STATEMENT_SALES_AND_MARKETING', '${data.year}')`,
-      `=TBLOOKUP('INCOME_STATEMENT_G_AND_A', '${data.prevYear}') + TBLOOKUP('INCOME_STATEMENT_SALES_AND_MARKETING', '${data.prevYear}')`,
+      `=TBLOOKUP('INCOME_STATEMENT_G_AND_A', 'CY') + TBLOOKUP('INCOME_STATEMENT_SALES_AND_MARKETING', 'CY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_G_AND_A', 'PY') + TBLOOKUP('INCOME_STATEMENT_SALES_AND_MARKETING', 'PY')`,
     ],
     {
       tags: ['total-operating-expenses', 'hide-if-zero'],
@@ -776,8 +776,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Interest expense, net',
-      `=-(TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', '${data.year}') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', '${data.year}'))`,
-      `=-(TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', '${data.prevYear}') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', '${data.prevYear}'))`,
+      `=-(TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', 'CY') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', 'CY'))`,
+      `=-(TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', 'PY') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', 'PY'))`,
     ],
     {
       tags: ['total-other-income-expense-net', 'hide-if-zero'],
@@ -787,8 +787,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Other income, net',
-      `=-TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', '${data.year}')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', '${data.prevYear}')`,
+      `=-TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', 'CY')`,
+      `=-TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', 'PY')`,
     ],
     {
       tags: ['total-other-income-expense-net', 'hide-if-zero'],
@@ -886,7 +886,7 @@ export async function buildCashFlows(data: AuditData) {
   );
   const stockCompPrev = await getAccountByFuzzyMatch(
     data.auditId,
-    year2,
+    data.prevYear,
     'INCOME_STATEMENT',
     'stock based compensation',
   );

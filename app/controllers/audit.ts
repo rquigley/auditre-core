@@ -188,6 +188,7 @@ export async function getAuditData(auditId: AuditId) {
   }
   const year = String(requestDataObj.auditInfo?.year) || '';
   const prevYear = String(Number(year) - 1);
+  const prevYear2 = String(Number(year) - 2);
 
   const fiscalYearEndNoYear = `${getMonthName(
     requestDataObj.auditInfo.fiscalYearMonthEnd,
@@ -195,14 +196,18 @@ export async function getAuditData(auditId: AuditId) {
     requestDataObj.auditInfo.fiscalYearMonthEnd,
     requestDataObj.auditInfo.year,
   )}`;
-  const totals = await getBalancesByAccountType(auditId, year);
-  const totals2 = await getBalancesByAccountType(auditId, prevYear);
+  const [totals, totals2, totals3] = await Promise.all([
+    getBalancesByAccountType(auditId, year),
+    getBalancesByAccountType(auditId, prevYear),
+    getBalancesByAccountType(auditId, prevYear2),
+  ]);
+
   return {
     auditId,
-    totals,
-    totalsNew: {
-      [year]: totals,
-      [prevYear]: totals2,
+    totals: {
+      CY: totals,
+      PY: totals2,
+      PY2: totals3,
     },
     incomeStatementTable: buildIncomeStatement({
       year,
@@ -211,7 +216,7 @@ export async function getAuditData(auditId: AuditId) {
     }),
     year,
     prevYear,
-    totals2,
+    prevYear2,
     fiscalYearEndNoYear,
     fiscalYearEnd: `${fiscalYearEndNoYear}, ${year}`,
     rt: requestDataObj,
