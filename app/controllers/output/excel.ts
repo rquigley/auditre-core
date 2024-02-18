@@ -118,6 +118,8 @@ function addBalanceSheet({
     });
   });
 
+  fadeZeroRows(ws, t);
+
   // TODO: I think this is setting the widths based on the char length of the formula,
   // not the numbers themselves. Fake it for now.
   // widths.forEach((w, i) => {
@@ -157,6 +159,8 @@ function addIncomeStatement({
     });
   });
 
+  fadeZeroRows(ws, t);
+
   // TODO: I think this is setting the widths based on the char length of the formula,
   // not the numbers themselves. Fake it for now.
   // widths.forEach((w, i) => {
@@ -194,6 +198,8 @@ async function addCashFlow({
       widths[i] = Math.max(widths[i] || 0, w);
     });
   });
+
+  fadeZeroRows(ws, t);
 
   // TODO: I think this is setting the widths based on the char length of the formula,
   // not the numbers themselves. Fake it for now.
@@ -663,4 +669,22 @@ function applyBGFormatting(
       ],
     });
   }
+}
+
+function fadeZeroRows(ws: Worksheet, t: Table) {
+  const offset = t.UNSAFE_outputRowOffset + 1;
+
+  ws.addConditionalFormatting({
+    ref: `A${offset}:C${t.UNSAFE_outputRowOffset + t.lastRowNumber + 1}`,
+    rules: [
+      {
+        priority: 1,
+        type: 'expression',
+        formulae: [`=AND($B${offset}=0, $C${offset}=0)`],
+        style: {
+          font: { color: { argb: 'FFBFBFBF' } },
+        },
+      },
+    ],
+  });
 }
