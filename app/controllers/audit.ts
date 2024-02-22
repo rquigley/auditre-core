@@ -1,6 +1,9 @@
 import { unstable_cache } from 'next/cache';
 
-import { getBalancesByAccountType } from '@/controllers/account-mapping';
+import {
+  getBalancesByAccountType,
+  getCashflowSupportData,
+} from '@/controllers/account-mapping';
 import {
   getAiDataForDocumentId,
   getAllByAuditId as getAllDocumentsByAuditId,
@@ -138,14 +141,18 @@ export type AuditData = Awaited<ReturnType<typeof getAuditData>>;
  *
  */
 export async function getAuditData(auditId: AuditId) {
-  const requestData = await getDataForAuditId(auditId);
-  const documents = await getAllDocumentsByAuditId(auditId);
-  // console.log(documents);
+  const [requestData, documents] = await Promise.all([
+    getDataForAuditId(auditId),
+    getAllDocumentsByAuditId(auditId),
+  ]);
 
   const aiData: Record<string, Record<string, string>> = {};
   for (const document of documents) {
     // TODO: slow
-    aiData[document.id] = await getAiDataForDocumentId(document.id);
+    aiData[document.id] = await getAiDataForDocumentId(
+      document.id,
+      document.classifiedType,
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -196,18 +203,30 @@ export async function getAuditData(auditId: AuditId) {
     requestDataObj.auditInfo.fiscalYearMonthEnd,
     requestDataObj.auditInfo.year,
   )}`;
-  const [totals, totals2, totals3] = await Promise.all([
+
+  const tbSupport = await Promise.all([
     getBalancesByAccountType(auditId, year),
     getBalancesByAccountType(auditId, prevYear),
     getBalancesByAccountType(auditId, prevYear2),
   ]);
 
+  const cashFlowSupport = await Promise.all([
+    getCashflowSupportData(auditId, year),
+    getCashflowSupportData(auditId, prevYear),
+    getCashflowSupportData(auditId, prevYear2),
+  ]);
+
   return {
     auditId,
     totals: {
-      CY: totals,
-      PY: totals2,
-      PY2: totals3,
+      CY: tbSupport[0],
+      PY: tbSupport[1],
+      PY2: tbSupport[2],
+    },
+    cashFlow: {
+      CY: cashFlowSupport[0],
+      PY: cashFlowSupport[1],
+      PY2: cashFlowSupport[2],
     },
     incomeStatementTable: buildIncomeStatement({
       year,

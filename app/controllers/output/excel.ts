@@ -14,7 +14,12 @@ import {
   groupAccountTypes,
   isAccountType,
 } from '@/lib/finance';
-import { yearTypeToYear } from '@/lib/formula-parser';
+import {
+  getPrevType,
+  isCFType,
+  isYearType,
+  yearTypeToYear,
+} from '@/lib/formula-parser';
 import { AuditId } from '@/types';
 import { getAllAccountBalancesByAuditIdAndYear } from '../account-mapping';
 import { getAuditData } from '../audit';
@@ -219,11 +224,12 @@ function parseFormula(value: string, table: Table, data: AuditData) {
   value = replaceSUMTAGCOL(value, table);
   value = replaceIS_NETLOSS(value, data);
   value = replaceTB_NETLOSS(value, data);
+  value = replaceCF(value, data);
   return value;
 }
 
 function replaceTBLOOKUP(inputString: string, data: AuditData): string {
-  const regex = /TBLOOKUP\('([^']+)',\s*'([^)]+)'\)/g;
+  const regex = /TBLOOKUP\('([^']+)',\s*'([^']+)'\)/g;
 
   return inputString.replace(regex, (match, accountType, yearType) => {
     if (!isAccountType(accountType)) {
@@ -282,6 +288,24 @@ function replaceTB_NETLOSS(inputString: string, data: AuditData) {
     const year = yearTypeToYear(yearType, data);
 
     return `TB_${year}_TOTAL_INCOME_STATEMENT`;
+  });
+}
+
+function replaceCF(inputString: string, data: AuditData) {
+  const regex = /CF\('([^']+)',\s*'([^']+)'\)/g;
+
+  return inputString.replace(regex, (match, cfType, yearType) => {
+    if (!isYearType(yearType)) {
+      throw new Error(`CF: Invalid yearType: ${yearType}`);
+    }
+    const prevType = getPrevType(yearType);
+    if (!isCFType(cfType)) {
+      throw new Error(`CF: Invalid cfType: ${cfType}`);
+    }
+    return String(
+      data.cashFlow[yearType][cfType].balance -
+        data.cashFlow[prevType][cfType].balance,
+    );
   });
 }
 
