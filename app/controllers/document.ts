@@ -105,12 +105,13 @@ export async function getAllByAuditId(auditId: AuditId) {
       'd.createdAt',
       'd.name',
       'd.key',
+      'd.classifiedType',
       'rd.requestType',
       'rd.requestId',
     ])
     .distinctOn(['rd.auditId', 'rd.requestType', 'rd.requestId'])
     .where('rd.auditId', '=', auditId)
-    .orderBy(['auditId', 'requestType', 'requestId', 'createdAt desc'])
+    .orderBy(['auditId', 'requestType', 'requestId', 'rd.createdAt desc'])
     .execute();
 }
 
@@ -406,9 +407,10 @@ export async function getAiDataWithLabels(
   return res;
 }
 
-export async function getAiDataForDocumentId(documentId: DocumentId) {
-  const { classifiedType } = await getDocumentById(documentId);
-
+export async function getAiDataForDocumentId(
+  documentId: DocumentId,
+  classifiedType: DocumentClassificationType,
+) {
   const answeredQuestions = (
     await getAllMostRecentByDocumentId(documentId)
   ).filter((row) => row.status === 'COMPLETE' && row.isValidated);

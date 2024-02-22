@@ -131,11 +131,57 @@ export function getParser(table: Table, data: AuditData) {
     }, 0);
   });
 
+  parser.setFunction('CF', (params) => {
+    if (
+      !Array.isArray(params) ||
+      params.length !== 2 ||
+      typeof params[0] !== 'string' ||
+      typeof params[1] !== 'string'
+    ) {
+      console.log(`Invalid CF ${String(params)}`);
+      throw new Error('Invalid CF');
+    }
+
+    const [cfType, yearType] = params as [string, string];
+    if (!isYearType(yearType)) {
+      throw new Error(`CF: Invalid yearType: ${yearType}`);
+    }
+    const prevType = getPrevType(yearType);
+    if (!isCFType(cfType)) {
+      throw new Error(`CF: Invalid cfType: ${cfType}`);
+    }
+    return (
+      data.cashFlow[yearType][cfType].balance -
+      data.cashFlow[prevType][cfType].balance
+    );
+  });
+
   return parser;
 }
 
-export function isYearType(yearType: string): yearType is 'CY' | 'PY' | 'PY2' {
+type YearType = 'CY' | 'PY' | 'PY2';
+export function isYearType(yearType: string): yearType is YearType {
   return yearType === 'CY' || yearType === 'PY' || yearType === 'PY2';
+}
+
+export function isCFType(
+  cfType: string,
+): cfType is 'stockBasedComp' | 'depreciation' | 'TODO' {
+  return (
+    cfType === 'stockBasedComp' ||
+    cfType === 'depreciation' ||
+    cfType === 'TODO'
+  );
+}
+
+export function getPrevType(yearType: YearType) {
+  if (yearType === 'CY') {
+    return 'PY';
+  } else if (yearType === 'PY') {
+    return 'PY2';
+  } else {
+    throw new Error('Cannot determine prev type from PY2');
+  }
 }
 
 export function yearTypeToYear(yearType: string, data: AuditData) {
