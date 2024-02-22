@@ -1,6 +1,5 @@
 import dayjs from 'dayjs';
-import ExcelJS from 'exceljs';
-import { Parser } from 'hot-formula-parser';
+import ExcelJS, { Worksheet } from 'exceljs';
 
 import {
   buildBalanceSheet,
@@ -8,7 +7,6 @@ import {
   buildIncomeStatement,
 } from '@/controllers/financial-statement/table';
 import {
-  AccountType,
   AccountTypeGroup,
   accountTypeGroupToLabel,
   accountTypes,
@@ -16,6 +14,12 @@ import {
   groupAccountTypes,
   isAccountType,
 } from '@/lib/finance';
+import {
+  getPrevType,
+  isCFType,
+  isYearType,
+  yearTypeToYear,
+} from '@/lib/formula-parser';
 import { AuditId } from '@/types';
 import { getAllAccountBalancesByAuditIdAndYear } from '../account-mapping';
 import { getAuditData } from '../audit';
@@ -78,10 +82,10 @@ export async function generate(auditId: AuditId) {
       ws: isWorksheet,
       data,
     });
-    // await addCashFlow({
-    //   ws: cfWorksheet,
-    //   data,
-    // });
+    await addCashFlow({
+      ws: cfWorksheet,
+      data,
+    });
   }
 
   return {
@@ -112,11 +116,14 @@ function addBalanceSheet({
       ws,
       row,
       table: t,
+      data,
     });
     rowWidths.forEach((w, i) => {
       widths[i] = Math.max(widths[i] || 0, w);
     });
   });
+
+  fadeZeroRows(ws, t);
 
   // TODO: I think this is setting the widths based on the char length of the formula,
   // not the numbers themselves. Fake it for now.
@@ -150,11 +157,14 @@ function addIncomeStatement({
       ws,
       row,
       table: t,
+      data,
     });
     rowWidths.forEach((w, i) => {
       widths[i] = Math.max(widths[i] || 0, w);
     });
   });
+
+  fadeZeroRows(ws, t);
 
   // TODO: I think this is setting the widths based on the char length of the formula,
   // not the numbers themselves. Fake it for now.
@@ -180,6 +190,8 @@ async function addCashFlow({
   ws.addRow([]);
   ws.addRow([]);
 
+  t.UNSAFE_outputRowOffset = 4;
+
   const widths: number[] = [];
 
   t.rows.forEach((row) => {
@@ -187,11 +199,14 @@ async function addCashFlow({
       ws,
       row,
       table: t,
+      data,
     });
     rowWidths.forEach((w, i) => {
       widths[i] = Math.max(widths[i] || 0, w);
     });
   });
+
+  fadeZeroRows(ws, t);
 
   // TODO: I think this is setting the widths based on the char length of the formula,
   // not the numbers themselves. Fake it for now.
@@ -203,27 +218,30 @@ async function addCashFlow({
   ws.getColumn(3).width = 17;
 }
 
-function parseFormula(value: string, table: Table) {
-  value = replaceTBLOOKUP(value);
+function parseFormula(value: string, table: Table, data: AuditData) {
+  value = replaceTBLOOKUP(value, data);
   value = replaceGET_BY_ID(value, table);
   value = replaceSUMTAGCOL(value, table);
-  value = replaceIS_NETLOSS(value);
+  value = replaceIS_NETLOSS(value, data);
+  value = replaceTB_NETLOSS(value, data);
+  value = replaceCF(value, data);
   return value;
 }
 
-function replaceTBLOOKUP(inputString: string): string {
-  const regex = /TBLOOKUP\('([^,]+)',\s*'([^)]+)'\)/g;
+function replaceTBLOOKUP(inputString: string, data: AuditData): string {
+  const regex = /TBLOOKUP\('([^']+)',\s*'([^']+)'\)/g;
 
-  return inputString.replace(regex, (match, accountType, year) => {
+  return inputString.replace(regex, (match, accountType, yearType) => {
     if (!isAccountType(accountType)) {
       throw new Error(`Invalid account type: ${accountType}`);
     }
-    return `TB_${year.trim()}_TOTAL_${accountType.trim()}`;
+    const year = yearTypeToYear(yearType, data);
+    return `TB_${year}_TOTAL_${accountType.trim()}`;
   });
 }
 
 function replaceGET_BY_ID(inputString: string, table: Table): string {
-  const regex = /GET_BY_ID\('([^,]+)',\s*([0-9]+)\)/g;
+  const regex = /GET_BY_ID\('([^']+)',\s*([0-9]+)\)/g;
 
   return inputString.replace(regex, (match, id, column) => {
     const row = table.getRowById(id);
@@ -237,7 +255,7 @@ function replaceGET_BY_ID(inputString: string, table: Table): string {
 }
 
 function replaceSUMTAGCOL(inputString: string, table: Table): string {
-  const regex = /SUMTAGCOL\('([^,]+)',\s*([0-9]+)\)/g;
+  const regex = /SUMTAGCOL\('([^']+)',\s*([0-9]+)\)/g;
 
   return inputString.replace(regex, (match, tag, column) => {
     const taggedRows = table.getRowsByTag(tag);
@@ -253,11 +271,41 @@ function replaceSUMTAGCOL(inputString: string, table: Table): string {
   });
 }
 
-function replaceIS_NETLOSS(inputString: string): string {
-  const regex = /IS_NETLOSS\('([^,]+)'\)/g;
+function replaceIS_NETLOSS(inputString: string, data: AuditData) {
+  const regex = /IS_NETLOSS\('([^']+)'\)/g;
 
-  return inputString.replace(regex, (match, year) => {
+  return inputString.replace(regex, (match, yearType) => {
+    const year = yearTypeToYear(yearType, data);
+
     return `IS_NET_LOSS_${year}`;
+  });
+}
+
+function replaceTB_NETLOSS(inputString: string, data: AuditData) {
+  const regex = /TB_NETLOSS\('([^']+)'\)/g;
+
+  return inputString.replace(regex, (match, yearType) => {
+    const year = yearTypeToYear(yearType, data);
+
+    return `TB_${year}_TOTAL_INCOME_STATEMENT`;
+  });
+}
+
+function replaceCF(inputString: string, data: AuditData) {
+  const regex = /CF\('([^']+)',\s*'([^']+)'\)/g;
+
+  return inputString.replace(regex, (match, cfType, yearType) => {
+    if (!isYearType(yearType)) {
+      throw new Error(`CF: Invalid yearType: ${yearType}`);
+    }
+    const prevType = getPrevType(yearType);
+    if (!isCFType(cfType)) {
+      throw new Error(`CF: Invalid cfType: ${cfType}`);
+    }
+    return String(
+      data.cashFlow[yearType][cfType].balance -
+        data.cashFlow[prevType][cfType].balance,
+    );
   });
 }
 
@@ -265,11 +313,13 @@ function addTableRow({
   ws,
   row,
   table,
+  data,
   debug = false,
 }: {
   ws: ExcelJS.Worksheet;
   row: TableRow;
   table: Table;
+  data: AuditData;
   debug?: boolean;
 }) {
   const values = row.cells.map((cell: TableCell) => {
@@ -277,7 +327,7 @@ function addTableRow({
 
     if (typeof val === 'string' && val.startsWith('=')) {
       return {
-        formula: parseFormula(val, table),
+        formula: parseFormula(val, table, data),
         result: 7,
       };
     }
@@ -560,6 +610,7 @@ async function addTrialBalance(
       formula: `SUM(F${firstCellToTotal}:F${curRowNumber - 1})`,
       result: 7,
     };
+    ws.getCell(`F${curRowNumber}`).name = `TB_${year}_TOTAL_${group}`;
 
     ++curRowNumber;
   }
@@ -644,4 +695,24 @@ function applyBGFormatting(
       ],
     });
   }
+}
+
+function fadeZeroRows(ws: Worksheet, t: Table) {
+  // I'm not sure why the offset is required for the formulae, but it is.
+  // Not worth digging into now, but we should figure it out at some point.
+  const offset = t.UNSAFE_outputRowOffset + 1;
+
+  ws.addConditionalFormatting({
+    ref: `A${offset}:C${t.UNSAFE_outputRowOffset + t.lastRowNumber + 1}`,
+    rules: [
+      {
+        priority: 1,
+        type: 'expression',
+        formulae: [`=AND($B${offset}=0, $C${offset}=0)`],
+        style: {
+          font: { color: { argb: 'FFBFBFBF' } },
+        },
+      },
+    ],
+  });
 }

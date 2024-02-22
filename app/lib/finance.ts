@@ -91,6 +91,18 @@ export class AccountMap {
     return this.map.get(key) || 0;
   }
 
+  getTotalForGroup(group: AccountTypeGroup) {
+    let total = 0;
+
+    for (const [accountType, value] of this.map.entries()) {
+      if (accountType.startsWith(group)) {
+        total += value;
+      }
+    }
+
+    return total;
+  }
+
   get size(): number {
     return this.map.size;
   }

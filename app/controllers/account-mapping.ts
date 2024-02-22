@@ -245,7 +245,7 @@ export async function getAccountByFuzzyMatch(
       (eb) =>
         eb.fn<number>('similarity', ['accountName', eb.val(searchString)]),
       '>',
-      0.09,
+      0.2,
     )
 
     .orderBy('score', 'desc')
@@ -263,6 +263,61 @@ export async function getAccountByFuzzyMatch(
       credit: row.credit,
       debit: row.debit,
     }),
+  };
+}
+
+export async function getAccountsByFuzzyMatch(
+  auditId: AuditId,
+  year: string,
+  accountTypeGroup: AccountTypeGroup,
+  searchString: string,
+) {
+  const row = await db
+    .selectFrom('accountMapping as am')
+    .innerJoin('accountBalance', 'accountMappingId', 'am.id')
+    .select((eb) => [
+      'accountName',
+      eb.fn
+        .coalesce(
+          'accountTypeOverride',
+          'accountType',
+          sql<'UNKNOWN'>`'UNKNOWN'`,
+        )
+        .as('accountType'),
+      eb
+        .fn<number>('similarity', ['accountName', eb.val(searchString)])
+        .as('score'),
+      sql<number>`ROUND(debit * 100)`.as('debit'),
+      sql<number>`ROUND(credit * 100)`.as('credit'),
+    ])
+    .where('auditId', '=', auditId)
+    .where('isDeleted', '=', false)
+    .where('year', '=', year)
+    .where((eb) =>
+      eb.fn('starts_with', ['accountType', eb.val(accountTypeGroup)]),
+    )
+    .where(
+      (eb) =>
+        eb.fn<number>('similarity', ['accountName', eb.val(searchString)]),
+      '>',
+      0.2,
+    )
+
+    .orderBy('score', 'desc')
+    .execute();
+
+  const accounts = row.map((r) => ({
+    ...r,
+    balance: getBalance({
+      accountType: r.accountType,
+      credit: r.credit,
+      debit: r.debit,
+    }),
+  }));
+
+  return {
+    accounts,
+    balance: accounts.reduce((sum, r) => sum + r.balance, 0),
   };
 }
 
@@ -989,6 +1044,37 @@ export async function getAccountsForCategory(
       debit: r.debit,
     }),
   }));
+}
+
+export async function getCashflowSupportData(auditId: AuditId, year: string) {
+  const stockComp = await getAccountByFuzzyMatch(
+    auditId,
+    year,
+    'INCOME_STATEMENT',
+    'stock based compensation',
+  );
+
+  const depreciation = await getAccountsByFuzzyMatch(
+    auditId,
+    year,
+    'INCOME_STATEMENT',
+    'depreciation',
+  );
+
+  return {
+    stockBasedComp: {
+      accounts: [stockComp],
+      balance: stockComp?.balance || 0,
+    },
+    depreciation: {
+      accounts: depreciation.accounts,
+      balance: depreciation.balance,
+    },
+    TODO: {
+      accounts: [],
+      balance: 0,
+    },
+  };
 }
 
 async function getColIdxs(document: Document) {

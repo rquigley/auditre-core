@@ -13,7 +13,7 @@ export class Table {
     this.UNSAFE_outputRowOffset = 0;
   }
 
-  private get lastRowNumber() {
+  get lastRowNumber() {
     let n = this.rows.length;
     while (n > 0 && this.rows[n - 1] === undefined) {
       n--;

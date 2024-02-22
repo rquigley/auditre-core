@@ -174,27 +174,24 @@ export function CalendarGrid({ state, offset = {} }) {
         </tr>
       </thead>
       <tbody>
-        {
-          // @ts-expect-error
-          [...new Array(weeksInMonth).keys()].map((weekIndex) => (
-            <tr key={weekIndex}>
-              {state.getDatesInWeek(weekIndex, startDate).map(
-                // @ts-expect-error
-                (date, i) =>
-                  date ? (
-                    <CalendarCell
-                      key={i}
-                      state={state}
-                      date={date}
-                      currentMonth={startDate}
-                    />
-                  ) : (
-                    <td key={i} />
-                  ),
-              )}
-            </tr>
-          ))
-        }
+        {[...new Array(weeksInMonth).keys()].map((weekIndex) => (
+          <tr key={weekIndex}>
+            {state.getDatesInWeek(weekIndex, startDate).map(
+              // @ts-expect-error
+              (date, i) =>
+                date ? (
+                  <CalendarCell
+                    key={i}
+                    state={state}
+                    date={date}
+                    currentMonth={startDate}
+                  />
+                ) : (
+                  <td key={i} />
+                ),
+            )}
+          </tr>
+        ))}
       </tbody>
     </table>
   );

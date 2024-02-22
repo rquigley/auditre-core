@@ -1,6 +1,9 @@
 import { unstable_cache } from 'next/cache';
 
-import { getBalancesByAccountType } from '@/controllers/account-mapping';
+import {
+  getBalancesByAccountType,
+  getCashflowSupportData,
+} from '@/controllers/account-mapping';
 import {
   getAiDataForDocumentId,
   getAllByAuditId as getAllDocumentsByAuditId,
@@ -138,14 +141,18 @@ export type AuditData = Awaited<ReturnType<typeof getAuditData>>;
  *
  */
 export async function getAuditData(auditId: AuditId) {
-  const requestData = await getDataForAuditId(auditId);
-  const documents = await getAllDocumentsByAuditId(auditId);
-  // console.log(documents);
+  const [requestData, documents] = await Promise.all([
+    getDataForAuditId(auditId),
+    getAllDocumentsByAuditId(auditId),
+  ]);
 
   const aiData: Record<string, Record<string, string>> = {};
   for (const document of documents) {
     // TODO: slow
-    aiData[document.id] = await getAiDataForDocumentId(document.id);
+    aiData[document.id] = await getAiDataForDocumentId(
+      document.id,
+      document.classifiedType,
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -188,6 +195,7 @@ export async function getAuditData(auditId: AuditId) {
   }
   const year = String(requestDataObj.auditInfo?.year) || '';
   const prevYear = String(Number(year) - 1);
+  const prevYear2 = String(Number(year) - 2);
 
   const fiscalYearEndNoYear = `${getMonthName(
     requestDataObj.auditInfo.fiscalYearMonthEnd,
@@ -195,14 +203,30 @@ export async function getAuditData(auditId: AuditId) {
     requestDataObj.auditInfo.fiscalYearMonthEnd,
     requestDataObj.auditInfo.year,
   )}`;
-  const totals = await getBalancesByAccountType(auditId, year);
-  const totals2 = await getBalancesByAccountType(auditId, prevYear);
+
+  const tbSupport = await Promise.all([
+    getBalancesByAccountType(auditId, year),
+    getBalancesByAccountType(auditId, prevYear),
+    getBalancesByAccountType(auditId, prevYear2),
+  ]);
+
+  const cashFlowSupport = await Promise.all([
+    getCashflowSupportData(auditId, year),
+    getCashflowSupportData(auditId, prevYear),
+    getCashflowSupportData(auditId, prevYear2),
+  ]);
+
   return {
     auditId,
-    totals,
-    totalsNew: {
-      [year]: totals,
-      [prevYear]: totals2,
+    totals: {
+      CY: tbSupport[0],
+      PY: tbSupport[1],
+      PY2: tbSupport[2],
+    },
+    cashFlow: {
+      CY: cashFlowSupport[0],
+      PY: cashFlowSupport[1],
+      PY2: cashFlowSupport[2],
     },
     incomeStatementTable: buildIncomeStatement({
       year,
@@ -211,7 +235,7 @@ export async function getAuditData(auditId: AuditId) {
     }),
     year,
     prevYear,
-    totals2,
+    prevYear2,
     fiscalYearEndNoYear,
     fiscalYearEnd: `${fiscalYearEndNoYear}, ${year}`,
     rt: requestDataObj,
