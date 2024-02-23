@@ -46,8 +46,8 @@ export async function AuditPreview({
     <div className="text-sm text-slate-800 max-w-3xl">
       <div className=" mb-4 border rounded-md p-4">
         <h1 className="text-lg font-bold">{data.rt.basicInfo.businessName}</h1>
-        <div>Conslidated Financial Statements</div>
-        <div>Year Ended {data.fiscalYearEnd}</div>
+        <div>Conslidated financial statements</div>
+        <div>Year ended {data.fiscalYearEnd}</div>
       </div>
 
       {warnings.length > 0 && <Warning warnings={warnings} />}
@@ -69,7 +69,7 @@ export async function AuditPreview({
       >
         <h2 className="text-lg font-bold">
           <a href="#section-balance-sheet" className="group relative">
-            1. Consolidated Balance Sheet
+            1. Consolidated balance sheet
             <Paperclip />
           </a>
         </h2>
@@ -83,7 +83,7 @@ export async function AuditPreview({
       >
         <h2 className="text-lg font-bold">
           <a href="#section-income-statement" className="group relative">
-            2. Consolidated Statement of Operations
+            2. Consolidated statement of operations
             <Paperclip />
           </a>
         </h2>
@@ -94,7 +94,7 @@ export async function AuditPreview({
       <div id="section-sose" className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
           <a href="#section-sose" className="group relative">
-            3. Conslidated Statement of Stockholders&apos; Equity (Deficit)
+            3. Conslidated statement of stockholders&apos; equity (deficit)
             <Paperclip />
           </a>
         </h2>
@@ -107,7 +107,7 @@ export async function AuditPreview({
       <div id="section-socf" className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
           <a href="#section-socf" className="group relative">
-            4. Conslidated Statement of Cash Flows
+            4. Conslidated statement of cash flows
             <Paperclip />
           </a>
         </h2>
@@ -136,7 +136,7 @@ export async function AuditPreview({
       <div id="section-policy" className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
           <a href="#section-policy" className="group relative">
-            6. Summary of Significant Accounting Policies
+            6. Summary of significant accounting policies
             <Paperclip />
           </a>
         </h2>
@@ -394,25 +394,25 @@ function TableOfContents({
         href="#section-balance-sheet"
         className="block text-slate-700 underline hover:no-underline"
       >
-        1. Consolidated Balance Sheet
+        1. Consolidated balance sheet
       </a>
       <a
         href="#section-income-statement"
         className="block text-slate-700 underline hover:no-underline"
       >
-        2. Consolidated Statement of Operations
+        2. Consolidated statement of operations
       </a>
       <a
         href="#section-income-statement"
         className="block text-slate-700 underline hover:no-underline"
       >
-        3. Conslidated Statement of Stockholders&apos; Equity (Deficit)
+        3. Conslidated statement of stockholders&apos; equity (deficit)
       </a>
       <a
         href="#section-income-statement"
         className="block text-slate-700 underline hover:no-underline"
       >
-        4. Conslidated Statement of Cash Flows
+        4. Conslidated statement of cash flows
       </a>
       <a
         href="#section-org"
@@ -433,7 +433,7 @@ function TableOfContents({
         href="#2. section-policy"
         className="block text-slate-700 underline hover:no-underline"
       >
-        6. Summary of Significant Accounting Policies
+        6. Summary of significant accounting policies
       </a>
       {policySettings.map((section, idx) => (
         <ToCLink
