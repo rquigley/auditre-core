@@ -112,7 +112,7 @@ export async function AuditPreview({
           </a>
         </h2>
 
-        {buildTable(await buildCashFlows(data), data)}
+        {buildTable(buildCashFlows(data), data)}
       </div>
 
       <div id="section-org" className="max-w-3xl mb-4 border rounded-md p-4">
