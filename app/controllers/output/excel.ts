@@ -54,7 +54,7 @@ export async function generate(auditId: AuditId) {
     }
     const date = dayjs(dateStr);
     const year = date.format('YYYY');
-    let wsName = `Trial Balance - ${year}`;
+    let wsName = `Trial balance - ${year}`;
     if (tbNames.has(wsName)) {
       // prevent worksheet name conflicts which throw
       wsName = `${wsName} (${identifier.substring(4, 1)})`;
@@ -90,7 +90,7 @@ export async function generate(auditId: AuditId) {
 
   return {
     document: workbook,
-    documentName: `Financial Statement - ${data.rt.basicInfo.businessName} - ${data.rt.auditInfo.year}.xlsx`,
+    documentName: `Financial statement - ${data.rt.basicInfo.businessName} - ${data.rt.auditInfo.year}.xlsx`,
   };
 }
 
@@ -390,7 +390,7 @@ async function addTrialBalance(
 
   const year = date.format('YYYY');
 
-  ws.addRow([`Trial Balance`]);
+  ws.addRow([`Trial balance`]);
   ws.addRow([`As of ${date.format('MMMM D, YYYY')}`]);
   ws.addRow([]);
   ws.addRow([]);
@@ -427,13 +427,13 @@ async function addTrialBalance(
   const header = ws.addRow([
     'Account',
     'Balance',
-    'BS Mapping',
+    'BS mapping',
     '',
     'Totals',
     '',
     '',
-    'Account Types',
-    'Num Accounts',
+    'Account types',
+    'Num accounts',
   ]);
   ws.getCell(`B${header.number}`).alignment = { horizontal: 'right' };
   header.font = { bold: true };

@@ -79,7 +79,7 @@ export async function sectionsToBody<T>(
 
 export const getOrganizationSections = () => [
   generateSection({
-    header: 'Description of Business',
+    header: 'Description of business',
     body: (data) => `
       [${
         data.rt.basicInfo.businessName
@@ -92,7 +92,7 @@ export const getOrganizationSections = () => [
   }),
 
   generateSection({
-    header: 'Going Concern and Liquidity',
+    header: 'Going concern and liquidity',
     body: async (data) => {
       // TODO: brittle, doesn't account for different categories?
       const totalCurrentLiabilities =
@@ -127,26 +127,26 @@ export const getOrganizationSections = () => [
 
 export const getPolicySections = () => [
   generateSection({
-    header: 'Basis of Presentation',
+    header: 'Basis of presentation',
     body: (data) => `
       The accompanying consolidated financial statements, which include the accounts of the Company and its wholly owned subsidiaries, have been prepared in conformity with accounting principles generally accepted in the United States of America (“US GAAP”). All significant intercompany transactions and balances have been eliminated in consolidation.
     `,
   }),
 
   generateSection({
-    header: 'Foreign Currencies',
+    header: 'Foreign currencies',
     body: (data) => `
       Gains and losses resulting from foreign currency transactions are included in other income, net within the consolidated statement of operations. For the year ended [${data.fiscalYearEnd}], the impact from foreign currency transactions was immaterial.
     `,
   }),
   generateSection({
-    header: 'Use of Estimates',
+    header: 'Use of estimates',
     body: (data) => `
       The preparation of consolidated financial statements in conformity with US GAAP requires the Company to make estimates, judgments, and assumptions that affect the reported amounts of assets, liabilities, expenses, and the amounts disclosed in the related notes to the consolidated financial statements. Significant estimates and assumptions used in these consolidated financial statements include, but are not limited to, useful lives and recoverability of long-lived assets, the fair value of the Company's common stock, the fair value of derivative liability, stock-based compensation and the accounting for income taxes and related valuation allowances. The Company evaluates its estimates and assumptions on an ongoing basis using historical experience and other factors and adjusts those estimates and assumptions when facts and circumstances dictate. Actual results could materially differ from those estimates.
     `,
   }),
   generateSection({
-    header: 'Concentration of Credit Risk and Other Risks and Uncertainties',
+    header: 'Concentration of credit risk and other risks and uncertainties',
     body: (data) => `
       Financial instruments that potentially subject the Company to credit risk consist principally of cash held by financial institutions. Substantially all of the Company's cash is held at one financial institution that management believes is of high credit quality. Such deposits may, at times, exceed federally insured limits [TODO].
 
@@ -154,7 +154,7 @@ export const getPolicySections = () => [
     `,
   }),
   generateSection({
-    header: 'Fair Value Measurements',
+    header: 'Fair value measurements',
     body: (data) => `
       The carrying value of the Company's cash, prepaid expenses and other current assets, accounts payable and accrued liabilities approximate fair value due to the short-term nature of these items.
 
@@ -188,7 +188,7 @@ export const getPolicySections = () => [
     `,
   }),
   generateSection({
-    header: 'Property and Equipment',
+    header: 'Property and equipment',
     isShowing: (data) => data.rt.trialBalance.hasfixedAssets === 'yes',
     body: (data) => `
       Property and equipment are stated at cost, net of depreciation. Depreciation is computed using the straight-line method over the estimated useful lives of the assets. Leasehold improvements are amortized on a straight-line basis over the lesser of the estimated useful life of the asset or the remaining term of the related lease. Maintenance and repairs are charged to expense as incurred, and improvements and betterments are capitalized.
@@ -201,7 +201,7 @@ export const getPolicySections = () => [
     `,
   }),
   generateSection({
-    header: 'Intangible Assets',
+    header: 'Intangible assets',
     isShowing: (data) => data.rt.trialBalance.hasIntangibleAssets === 'yes',
     body: (data) => `
       Intangible assets consist of patents and are stated at cost, net of amortization. Amortization is computed using the straight-line method over an estimated useful life of approximately five to seventeen years.
@@ -216,7 +216,7 @@ export const getPolicySections = () => [
     `,
   }),
   generateSection({
-    header: 'Impairment of Long-Lived Assets',
+    header: 'Impairment of long-lived assets',
     isShowing: (data) =>
       data.rt.leases.hasLeases && data.rt.leases.didPerformASC842Analysis,
     body: (data) => `
@@ -224,7 +224,7 @@ export const getPolicySections = () => [
     `,
   }),
   generateSection({
-    header: 'Derivative Liability',
+    header: 'Derivative liability',
     isShowing: (data) =>
       data.totals.CY.get('LIABILITY_CONVERTIBLE_NOTES_PAYABLE') > 0,
     body: (data) => `
@@ -248,7 +248,7 @@ export const getPolicySections = () => [
     `,
   }),
   generateSection({
-    header: 'Advertising and Marketing Costs',
+    header: 'Advertising and marketing costs',
     isShowing: (data) =>
       data.totals.CY.get('INCOME_STATEMENT_SALES_AND_MARKETING') > 0,
     body: (data) => `
@@ -260,14 +260,14 @@ export const getPolicySections = () => [
     `,
   }),
   generateSection({
-    header: 'Stock-Based Compensation',
+    header: 'Stock-based compensation',
     isShowing: (data) => data.rt.equity.hasEmployeeStockPlan === 'yes',
     body: (data) => `
       The Company estimates the fair value of stock based payment awards on the date of grant using the Black Scholes Merton option pricing model. The model requires management to make a number of assumptions, including the fair value of the Company's common stock, expected volatility, expected life, risk free interest rate and expected dividends. The value of awards that are ultimately expected to vest is recognized ratably over the requisite service periods in the Company's consolidated statement of operations. Forfeitures are accounted for as they occur.
     `,
   }),
   generateSection({
-    header: 'Income Taxes',
+    header: 'Income taxes',
     body: (data) => `
       The Company accounts for income taxes using the liability method whereby deferred tax asset and liability account balances are determined based on differences between the financial reporting and tax basis of assets and liabilities and are measured using the enacted tax rates and laws that will be in effect when the differences are expected to reverse. The Company provides a valuation allowance, if necessary, to reduce deferred tax assets to their estimated realizable value.
 
@@ -277,13 +277,13 @@ export const getPolicySections = () => [
     `,
   }),
   generateSection({
-    header: 'Recent Accounting Pronouncements',
+    header: 'Recent accounting pronouncements',
     body: (data) => `
       From time to time, new accounting pronouncements, or Accounting Standard Updates (“ASU”) are issued by the Financial Accounting Standards Board (“FASB”), or other standard setting bodies and adopted by the Company as of the specified effective date. Unless otherwise discussed, the impact of recently issued standards that are not yet effective will not have a material impact on the Company's financial position or results of operations upon adoption.
     `,
   }),
   generateSection({
-    header: 'Recently Adopted Accounting Pronouncements',
+    header: 'Recently adopted accounting pronouncements',
     isShowing: (data) => data.rt.leases.didPerformASC842Analysis,
     body: (data) => `
       In February 2016, the FASB issued ASU No. 2016-02, Leases (Topic 842), (“ASC 842”). The amendments in this update increase transparency and comparability among organizations by recognizing lease assets and lease liabilities on the balance sheet and disclosing key information about leasing arrangements. The amendments in this update are effective for private entities for fiscal years beginning after [${data.rt.leases.yearOfASC842Analysis}].
@@ -294,7 +294,7 @@ export const getPolicySections = () => [
     `,
   }),
   generateSection({
-    header: 'Fair Value Measurements',
+    header: 'Fair value measurements',
     isShowing: (data) => data.rt.leases.didPerformASC842Analysis,
     body: (data) => `
       The following tables summarize the Company’s financial liabilities measured at fair value on a recurring basis by level within the fair value hierarchy as of [${data.fiscalYearEnd}]:
@@ -336,7 +336,7 @@ export const getPolicySections = () => [
     pageBreakBefore: true,
   }),
   generateSection({
-    header: 'Convertible Note Payable',
+    header: 'Convertible note payable',
     isShowing: (data) => data.rt.trialBalance.hasConvertibleNote === 'yes',
     body: (data) => `
       [if there answered there's a field called "convertible note" on the trial balance"] Note - this will also prompt the user to upload the equity/debt deal
@@ -356,7 +356,7 @@ export const getPolicySections = () => [
     pageBreakBefore: true,
   }),
   generateSection({
-    header: `Stockholder's Equity (Deficit)`,
+    header: `Stockholder's equity (deficit)`,
     body: async (data) => {
       const authorizedSharesTotal = await getAuthorizedSharesTotal(
         data.auditId,
@@ -365,7 +365,7 @@ export const getPolicySections = () => [
 
       if (data.rt.equity.hasPreferredStock === 'yes') {
         preferredStr = dedent`
-          Convertible Preferred Stock
+          Convertible preferred stock
 
           As of [${
             data.fiscalYearEnd
@@ -393,7 +393,7 @@ export const getPolicySections = () => [
       }
 
       const commonStr = dedent`
-        Common Stock
+        Common stock
         As of [${
           data.fiscalYearEnd
         }], the Company was authorized to issue [${ppNumber(
@@ -416,11 +416,11 @@ export const getPolicySections = () => [
     pageBreakBefore: true,
   }),
   generateSection({
-    header: 'Equity Incentive Plan',
+    header: 'Equity incentive plan',
     body: (data) => `
       On [insert adoption date from ESOP document "January 15, 20XX"], the Company adopted the [insert title from ESOP document] (“Equity Incentive Plan”) to permit the grant of share-based awards, such as stock grants and incentive and non-statutory stock options to employees, directors and consultants. As of [${data.fiscalYearEnd}], a total of [insert stock subject to this plan] shares of the Company’s common stock were reserved for issuance under the Equity Incentive Plan, of which [insert number from Carta] were available for grant.
 
-      Restricted Stock Awards
+      Restricted stock awards
       "Restricted stock awards (“RSAs”) granted to date total [insert Variable 6 from Certificate Transaction Report] shares and were granted to the Company’s founders in [insert Variable 7 from SBC Report Template], and 25% of the shares vested immediately upon the grant date with the remaining shares subject ot a four-year vesting period.
 
       The Company had the following activity for RSAs for the year ended [${data.fiscalYearEnd}]:"
@@ -436,7 +436,7 @@ export const getPolicySections = () => [
       As of [insert Variable 5 from SBC Report Template], there was [insert Variable 3 from SBC Report Template] of unrecognized costs related to unvested granted RSAs. That cost is expected to be recognized over a weighted average period of [insert Variable 4 from SBC Report Template] years.
 
 
-      Stock Options
+      Stock options
       A summary of stock option activity for the year ended [${data.fiscalYearEnd}] is as follows:
 
       Outstanding as of [insert fiscal year end, Month, Day, Year (i.e. January 1, 2023)]
@@ -487,7 +487,7 @@ export const getPolicySections = () => [
     pageBreakBefore: true,
   }),
   generateSection({
-    header: 'Income Taxes',
+    header: 'Income taxes',
     body: async (data) => {
       const accumulatedDeficit = data.totals.CY.get(
         'EQUITY_ACCUMULATED_DEFICIT',
@@ -524,7 +524,7 @@ export const getPolicySections = () => [
     pageBreakBefore: true,
   }),
   generateSection({
-    header: 'Commitments and Contingencies',
+    header: 'Commitments and contingencies',
     body: (data) => {
       if (data.rt.outstandingLegalMatters.hasLegalMatters) {
         return `Legal Matters
@@ -537,7 +537,7 @@ export const getPolicySections = () => [
     pageBreakBefore: true,
   }),
   generateSection({
-    header: 'Related Party Transactions',
+    header: 'Related party transactions',
     body: (data) => {
       if (data.rt.relatedPartyTransactions.hasRelatedPartyTransactions) {
         return `The company [${data.rt.relatedPartyTransactions.relatedPartyTransactions}].`;
@@ -548,7 +548,7 @@ export const getPolicySections = () => [
     pageBreakBefore: true,
   }),
   generateSection({
-    header: 'Employee Benefit Plan',
+    header: 'Employee benefit plan',
     isShowing: (data) => data.rt.employee401k.has401K,
     body: async (data) => {
       const res = await getAccountByFuzzyMatch(
@@ -574,7 +574,7 @@ export const getPolicySections = () => [
     pageBreakBefore: true,
   }),
   generateSection({
-    header: 'Subsequent Events',
+    header: 'Subsequent events',
     body: (data) => {
       if (data.rt.materialChangesPostAudit.hasPostAuditChanges) {
         return `The Company has completed an evaluation of all subsequent events through [published date of financial statements. Month, Day, Year (i.e. [${data.fiscalYearEnd}])], the date on which the consolidated financial statements were issued. During which time, the company has [insert users's reponse from questionarie].`;
