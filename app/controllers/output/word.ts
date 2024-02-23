@@ -311,7 +311,7 @@ function buildTableRow(row: ARRow, parser: Parser) {
   let hideRow = row.hasTag('hide-if-zero');
 
   const ret = new TableRow({
-    children: row.cells.map((cell) => {
+    children: row.cells.map((cell, idx) => {
       const borders = {
         top: {
           style:
@@ -387,7 +387,7 @@ function buildTableRow(row: ARRow, parser: Parser) {
           new Paragraph({
             children: [
               new TextRun({
-                text: `${cell.style.indent ? '   '.repeat(cell.style.indent) : ''}${value}`,
+                text: `${cell.style.indent && idx === 0 ? '   '.repeat(cell.style.indent) : ''}${value}`,
                 bold: cell.style.bold,
               }),
             ],

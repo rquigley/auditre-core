@@ -342,6 +342,16 @@ function buildTableRow(
           );
         }
 
+        // Indentation only applies to the first cell in a row
+        const indentStyles =
+          idx === 0
+            ? {
+                'pl-4': cell.style.indent === 1,
+                'pl-8': cell.style.indent === 2,
+                'pl-12': cell.style.indent === 3,
+                'pl-16': cell.style.indent === 4,
+              }
+            : {};
         const styles = clsx({
           'font-bold': cell.style.bold,
           'border-b border-b-slate-600': cell.style.borderBottom === 'thin',
@@ -350,10 +360,7 @@ function buildTableRow(
           'border-t border-t-slate-600': cell.style.borderTop === 'thin',
           'border-t border-double border-t-slate-600':
             cell.style.borderTop === 'double',
-          'pl-4': cell.style.indent === 1,
-          'pl-8': cell.style.indent === 2,
-          'pl-12': cell.style.indent === 3,
-          'pl-16': cell.style.indent === 4,
+          ...indentStyles,
           'pt-2': cell.style.padTop,
           'text-right': cell.style.align === 'right',
         });
