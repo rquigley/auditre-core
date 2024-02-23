@@ -180,11 +180,11 @@ function titlePage(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
-        text: 'Conslidated Financial Statements',
+        text: 'Conslidated financial statements',
         //heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
-        text: `Year Ended ${data.fiscalYearEnd}`,
+        text: `Year ended ${data.fiscalYearEnd}`,
         //heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
@@ -218,7 +218,7 @@ function independentAuditorsReport(data: AuditData) {
 
     children: [
       new Paragraph({
-        text: "Independent Auditor's Report",
+        text: "Independent auditor's report",
         heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({ children: [t1] }),
@@ -233,7 +233,7 @@ async function consolidatedFinancialStatements(data: AuditData) {
 
     children: [
       new Paragraph({
-        text: 'Consolidated Balance Sheet',
+        text: 'Consolidated balance sheet',
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
@@ -248,7 +248,7 @@ async function consolidatedStatementOfOperations(data: AuditData) {
 
     children: [
       new Paragraph({
-        text: 'Consolidated Statement of Operations',
+        text: 'Consolidated statement of operations',
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
@@ -278,7 +278,7 @@ async function notes(data: AuditData) {
         text: '',
       }),
       new Paragraph({
-        text: '2. Summary of Significant Accounting Policies',
+        text: '2. Summary of significant accounting policies',
         heading: HeadingLevel.HEADING_1,
       }),
 
