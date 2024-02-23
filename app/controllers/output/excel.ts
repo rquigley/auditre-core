@@ -322,7 +322,7 @@ function addTableRow({
   data: AuditData;
   debug?: boolean;
 }) {
-  const values = row.cells.map((cell: TableCell) => {
+  const values = row.cells.map((cell, idx) => {
     const val = cell.rawValue();
 
     if (typeof val === 'string' && val.startsWith('=')) {
@@ -332,7 +332,7 @@ function addTableRow({
       };
     }
 
-    if (cell.style.indent) {
+    if (idx === 0 && cell.style.indent) {
       return `${'    '.repeat(cell.style.indent)}${val}`;
     }
     return val;
@@ -341,8 +341,8 @@ function addTableRow({
   const r = ws.addRow(values);
 
   const widths: number[] = [];
-  row.cells.forEach((cell: TableCell, i: number) => {
-    const xCell = r.getCell(i + 1);
+  row.cells.forEach((cell, idx) => {
+    const xCell = r.getCell(idx + 1);
 
     if (cell.style.bold) {
       xCell.font = { bold: true };
