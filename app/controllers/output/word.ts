@@ -438,7 +438,7 @@ function getPageProperties() {
   };
 }
 
-function formatBodyText(text: string) {
+function formatBodyText(text: string, highlightChanges = false) {
   const textRuns = [];
   let buffer = '';
   let insideBracket = false;
@@ -448,11 +448,15 @@ function formatBodyText(text: string) {
       if (buffer.length > 0) {
         textRuns.push(new TextRun(buffer));
       }
-      buffer = char;
+      buffer = highlightChanges ? char : '';
       insideBracket = true;
     } else if (char === ']') {
-      buffer += char;
-      textRuns.push(new TextRun({ text: buffer, highlight: 'yellow' }));
+      if (highlightChanges) {
+        buffer += char;
+        textRuns.push(new TextRun({ text: buffer, highlight: 'yellow' }));
+      } else {
+        textRuns.push(new TextRun({ text: buffer }));
+      }
       buffer = '';
       insideBracket = false;
     } else {
@@ -464,7 +468,6 @@ function formatBodyText(text: string) {
     }
   }
 
-  // Add any remaining text outside the brackets
   if (buffer.length > 0) {
     textRuns.push(new TextRun(buffer));
   }
