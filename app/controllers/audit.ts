@@ -9,11 +9,18 @@ import {
   getAllByAuditId as getAllDocumentsByAuditId,
 } from '@/controllers/document';
 import { db } from '@/lib/db';
+import { fOut } from '@/lib/finance';
 import { getParser } from '@/lib/formula-parser';
 import { isFormFieldFile } from '@/lib/request-types';
-import { getLastDayOfMonth, getMonthName, kebabToCamel } from '@/lib/util';
+import {
+  getLastDayOfMonth,
+  getMonthName,
+  kebabToCamel,
+  ppCurrency,
+} from '@/lib/util';
 import {
   buildBalanceSheet,
+  buildCashFlows,
   buildIncomeStatement,
 } from './financial-statement/table';
 import {
@@ -233,6 +240,9 @@ export async function getAuditData(auditId: AuditId) {
       prevYear,
       fiscalYearEndNoYear,
     }),
+    CY: year,
+    PY: prevYear,
+    PY2: prevYear2,
     year,
     prevYear,
     prevYear2,
@@ -249,26 +259,54 @@ export function getWarningsForAudit(data: AuditData) {
     message: string;
   }[] = [];
   const bs = buildBalanceSheet(data);
-  const parser = getParser(bs, data);
-  for (const year of [data.year, data.prevYear]) {
+  const bsParser = getParser(bs, data);
+  const cf = buildCashFlows(data);
+  const cfParser = getParser(cf, data);
+
+  for (const yearType of ['CY', 'PY']) {
+    const year = data[yearType as 'CY' | 'PY'];
     if (!year) {
       continue;
     }
-    const idx = year === data.year ? 1 : 2;
+    const colNum = year === data.CY ? 1 : 2;
 
     if (
-      parser.parse(String(bs.getValue('TOTAL-ASSETS', idx)).substring(1))
+      bsParser.parse(String(bs.getValue('TOTAL-ASSETS', colNum)).substring(1))
         ?.result !==
-      parser.parse(
+      bsParser.parse(
         String(
-          bs.getValue('TOTAL-LIABILITIES-AND-STOCKHOLDERS-DEFICIT', idx),
+          bs.getValue('TOTAL-LIABILITIES-AND-STOCKHOLDERS-DEFICIT', colNum),
         ).substring(1),
       )?.result
     ) {
       warnings.push({
         previewSection: 'Consolidated balance sheet',
         previewUrl: '#section-balance-sheet',
-        message: `Total assets don't equal total liabilities and stockholders' deficit for ${year}`,
+        message: `Total assets don't equal total liabilities and stockholders' deficit for ${year}.`,
+      });
+    }
+
+    const cashEnd = Number(
+      cfParser.parse(
+        String(cf.getValue('CASH-END-OF-PERIOD', colNum)).substring(1),
+      )?.result,
+    );
+    const cashPlusStart =
+      Number(
+        cfParser.parse(
+          String(cf.getValue('CASH-BEGINNING-OF-PERIOD', colNum)).substring(1),
+        )?.result,
+      ) +
+      Number(
+        cfParser.parse(
+          String(cf.getValue('CASH-BEGINNING-OF-PERIOD', colNum)).substring(1),
+        )?.result,
+      );
+    if (cashEnd !== cashPlusStart) {
+      warnings.push({
+        previewSection: 'Consolidated statement of cash flows',
+        previewUrl: '#section-socf',
+        message: `Cash at the end of ${year} (${ppCurrency(fOut(cashEnd))}) doesn't equal cash at the beginning of the year plus the net increase in cash (${ppCurrency(fOut(cashPlusStart))}).`,
       });
     }
   }

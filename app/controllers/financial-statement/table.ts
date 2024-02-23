@@ -709,7 +709,7 @@ export function buildIncomeStatement(data: {
   return t;
 }
 
-export async function buildCashFlows(data: AuditData) {
+export function buildCashFlows(data: AuditData) {
   const t = new Table('cash-flows');
   t.columns = [
     {},
@@ -948,6 +948,7 @@ export async function buildCashFlows(data: AuditData) {
       `=SUMTAGCOL('net-cash', 2)`,
     ],
     {
+      id: 'NET-INCREASE-IN-CASH',
       style: {
         bold: true,
         padTop: true,
@@ -965,6 +966,7 @@ export async function buildCashFlows(data: AuditData) {
       `=TBLOOKUP('ASSET_CASH_AND_CASH_EQUIVALENTS', 'PY2')`,
     ],
     {
+      id: 'CASH-BEGINNING-OF-PERIOD',
       tags: [],
     },
   );
@@ -976,6 +978,7 @@ export async function buildCashFlows(data: AuditData) {
       `=TBLOOKUP('ASSET_CASH_AND_CASH_EQUIVALENTS', 'PY')`,
     ],
     {
+      id: 'CASH-END-OF-PERIOD',
       style: {
         borderTop: 'thin',
         borderBottom: 'double',
