@@ -14,7 +14,8 @@ export const accountTypes = {
   LIABILITY_ACCRUED_INTEREST: 'Accrued interest',
   LIABILITY_ACCRUED_LIABILITIES: 'Accrued liabilities',
   LIABILITY_CONVERTIBLE_NOTES_PAYABLE: 'Convertible notes payable',
-  LIABILITY_DEBT: 'Long-term debt',
+  LIABILITY_DEBT_LONG: 'Long-term debt',
+  LIABILITY_DEBT_SHORT: 'Short-term debt',
   LIABILITY_DEFERRED_REVENUE: 'Deferred revenue',
   LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT:
     'Operating lease liabilities, current',
