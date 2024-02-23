@@ -306,26 +306,26 @@ function buildTableRow(
 
           if (numFmt === 'accounting') {
             value = (
-              <div className={`flex justify-between ${financeFont.className}`}>
-                <div className="pl-5">
+              <span className={`flex justify-between ${financeFont.className}`}>
+                <span className="pl-5">
                   {value !== 0 && !cell.style.hideCurrency ? '$' : ''}
-                </div>
-                <div>
+                </span>
+                <span>
                   {ppCurrency(fOut(value), {
                     cents: showCents,
                     hideCurrency: true,
                   })}
-                </div>
-              </div>
+                </span>
+              </span>
             );
           } else if (numFmt === 'currency') {
             value = (
-              <div className={financeFont.className}>
+              <span className={financeFont.className}>
                 {ppCurrency(fOut(value), {
                   cents: showCents,
                   hideCurrency: cell.style.hideCurrency,
                 })}
-              </div>
+              </span>
             );
           } else if (numFmt === 'number') {
             value = (
