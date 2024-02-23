@@ -160,8 +160,8 @@ export async function generate(auditId: AuditId) {
       titlePage(data),
       tableOfContents(),
       independentAuditorsReport(data),
-      await consolidatedFinancialStatements(data),
-      await consolidatedStatementOfOperations(data),
+      await balanceSheet(data),
+      await incomeStatement(data),
       await notes(data),
     ],
   });
@@ -227,7 +227,7 @@ function independentAuditorsReport(data: AuditData) {
   };
 }
 
-async function consolidatedFinancialStatements(data: AuditData) {
+async function balanceSheet(data: AuditData) {
   return {
     ...getPageProperties(),
 
@@ -242,7 +242,7 @@ async function consolidatedFinancialStatements(data: AuditData) {
   };
 }
 
-async function consolidatedStatementOfOperations(data: AuditData) {
+async function incomeStatement(data: AuditData) {
   return {
     ...getPageProperties(),
 
