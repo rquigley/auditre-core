@@ -378,15 +378,6 @@ function addTableRow({
     widths[cell.column] = String(cell.value).length;
   });
 
-  // if (row.hasTag('hide-if-zero')) {
-  //   const hasNonZeroValues = row.cells.some(
-  //     (cell) => typeof cell.value === 'number' && cell.value !== 0,
-  //   );
-  //   if (!hasNonZeroValues) {
-  //     r.hidden = true;
-  //   }
-  // }
-
   return { widths };
 }
 
