@@ -10,16 +10,24 @@ type UserType = {
 
 const APP_ID = 'ralcjpft';
 
-export function useIntercom(user: UserType) {
+export function useIntercom(user: UserType | null, hidden: boolean = false) {
   useEffect(() => {
-    window.intercomSettings = {
-      api_base: 'https://api-iam.intercom.io',
-      app_id: APP_ID,
-      name: user.name,
-      //   user_id: user.id,
-      email: user.email,
-      //   created_at: user.createdAt,
-    };
+    if (!user) {
+      window.intercomSettings = {
+        ...window.intercomSettings,
+        api_base: 'https://api-iam.intercom.io',
+        app_id: APP_ID,
+        hide_default_launcher: hidden,
+      };
+    } else {
+      window.intercomSettings = {
+        api_base: 'https://api-iam.intercom.io',
+        app_id: APP_ID,
+        name: user.name,
+        email: user.email,
+        hide_default_launcher: hidden,
+      };
+    }
 
     // Inject Intercom script
     // Copy/paste from https://app.intercom.com/a/apps/ralcjpft/settings/installation?installationType=web
@@ -58,5 +66,5 @@ export function useIntercom(user: UserType) {
         }
       }
     })();
-  }, [user]); // Re-run the effect if the user object changes
+  }, [user, hidden]); // Re-run the effect if the user object changes
 }
