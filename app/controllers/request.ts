@@ -121,23 +121,15 @@ export async function saveRequestData({
   }
 }
 
-function getDocumentIdMods(
-  oldDocumentIds: string[],
-  newDocumentIds: string[],
-): { toDelete: string[]; toAdd: string[] } {
+function getDocumentIdMods(oldDocumentIds: string[], newDocumentIds: string[]) {
   const toDelete = oldDocumentIds.filter((id) => !newDocumentIds.includes(id));
   const toAdd = newDocumentIds.filter((id) => !oldDocumentIds.includes(id));
   return { toDelete, toAdd };
 }
 
-export type Request = Pick<
-  RequestType,
-  'id' | 'name' | 'group' | 'description' | 'form'
->;
-export async function getRequestBySlug(
-  auditId: AuditId,
-  slug: string,
-): Promise<Request | false> {
+export type Request = ReturnType<typeof getRequestBySlug>;
+
+export function getRequestBySlug(slug: string) {
   const rt = getRequestTypeForId(slug);
 
   return {

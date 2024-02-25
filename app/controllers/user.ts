@@ -12,10 +12,7 @@ import type {
   UserUpdate,
 } from '@/types';
 
-export async function createUser(
-  orgIds: OrgId[],
-  user: NewUser,
-): Promise<Pick<User, 'id' | 'name' | 'email' | 'image' | 'emailVerified'>> {
+export async function createUser(orgIds: OrgId[], user: NewUser) {
   const orgUserCounts = await db
     .selectFrom('auth.userRole')
     .select(({ fn }) => ['orgId', fn.count<number>('orgId').as('userCount')])
@@ -130,10 +127,7 @@ export const userLoader = new DataLoader((userIds) =>
 type QueryOpts = {
   comment?: string;
 };
-export async function getByEmail(
-  email: string,
-  queryOpts?: QueryOpts,
-): Promise<User | undefined> {
+export async function getByEmail(email: string, queryOpts?: QueryOpts) {
   let commentStr = sql.raw('');
   if (queryOpts?.comment) {
     commentStr = sql.raw('-- ' + queryOpts.comment);
@@ -150,7 +144,7 @@ export async function getByEmail(
 export async function getByAccountProviderAndProviderId(
   provider: string,
   providerAccountId: string,
-): Promise<User | undefined> {
+) {
   return await db
     .selectFrom('auth.user as u')
     .innerJoin('auth.userAccount as ua', 'ua.userId', 'u.id')

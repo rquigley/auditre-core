@@ -42,6 +42,6 @@ export async function update(
     .execute();
 }
 
-export async function completeJob(id: DocumentQueueId): Promise<void> {
+export async function completeJob(id: DocumentQueueId) {
   await db.deleteFrom('documentQueue').where('id', '=', id).execute();
 }
