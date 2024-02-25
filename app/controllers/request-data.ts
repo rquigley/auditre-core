@@ -6,11 +6,7 @@ import {
   getStatusForRequestType,
 } from '@/lib/request-types';
 
-import type {
-  FormField,
-  RequestType,
-  RequestTypeStatus,
-} from '@/lib/request-types';
+import type { FormField, RequestType } from '@/lib/request-types';
 import type {
   AuditId,
   DocumentId,
@@ -20,9 +16,7 @@ import type {
   UserId,
 } from '@/types';
 
-export async function create(
-  requestData: NewRequestData,
-): Promise<RequestData> {
+export async function create(requestData: NewRequestData) {
   return await db
     .insertInto('requestData')
     .values({ ...requestData })
@@ -141,23 +135,20 @@ export function normalizeRequestData(
 export async function getStatusesForAuditId(auditId: AuditId) {
   const data = await getDataForAuditId(auditId);
 
-  const statuses: Record<string, RequestTypeStatus> = {};
+  const statuses: Record<
+    string,
+    ReturnType<typeof getStatusForRequestType>
+  > = {};
   for (const rt of Object.keys(data)) {
     statuses[rt] = getStatusForRequestType(rt, data[rt]);
   }
   return statuses;
 }
 
-type Change = {
-  createdAt: Date;
-  actorUserId: UserId | null;
-  name: string | null;
-  image?: string | null;
-};
 export async function getChangesForRequestType(
   auditId: AuditId,
   rt: Pick<RequestType, 'id' | 'form'>,
-): Promise<Array<Change>> {
+) {
   const rows = await db
     .selectFrom('requestData')
     .leftJoin('auth.user as u', 'requestData.actorUserId', 'u.id')

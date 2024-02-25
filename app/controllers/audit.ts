@@ -153,7 +153,10 @@ export async function getAuditData(auditId: AuditId) {
     getAllDocumentsByAuditId(auditId),
   ]);
 
-  const aiData: Record<string, Record<string, string>> = {};
+  const aiData: Record<
+    string,
+    Awaited<ReturnType<typeof getAiDataForDocumentId>>
+  > = {};
   for (const document of documents) {
     // TODO: slow
     aiData[document.id] = await getAiDataForDocumentId(
