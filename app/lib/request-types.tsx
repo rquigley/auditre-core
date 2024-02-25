@@ -166,9 +166,7 @@ export function getAllDefaultValues() {
   return ret;
 }
 
-export function getDefaultValues(
-  rt: Pick<RequestType, 'form'>,
-): Record<string, FormField['defaultValue']> {
+export function getDefaultValues(rt: Pick<RequestType, 'form'>) {
   const ret: Record<string, FormField['defaultValue']> = {};
   for (const field of Object.keys(rt.form)) {
     ret[field] = rt.form[field].defaultValue;
@@ -176,7 +174,7 @@ export function getDefaultValues(
   return ret;
 }
 
-export function getRequestTypeForId(id: string): RequestType {
+export function getRequestTypeForId(id: string) {
   const rt = requestTypes.find((rt) => rt.id === id);
   if (!rt) {
     throw new Error(`Invalid request type: ${id}`);
@@ -184,18 +182,10 @@ export function getRequestTypeForId(id: string): RequestType {
   return rt;
 }
 
-type RequestStatus = 'todo' | 'started' | 'complete' | 'overdue';
-
-export type RequestTypeStatus = {
-  status: RequestStatus;
-  totalTasks: number;
-  completedTasks: number;
-};
 export function getStatusForRequestType(
   rt: string,
   requestData: { data: Record<string, unknown>; uninitializedFields: string[] },
-): RequestTypeStatus {
-  let status: RequestStatus;
+) {
   const validationSchema = getValidationSchemaForId(rt, requestData.data);
   const parsedRes = validationSchema.safeParse(requestData.data);
 
@@ -232,7 +222,7 @@ export function getStatusForRequestType(
       completedTasks -= 1;
     }
   }
-
+  let status: 'todo' | 'started' | 'complete';
   if (completedTasks === totalTasks) {
     status = 'complete';
   } else if (completedTasks > 0) {
@@ -343,27 +333,13 @@ interface RequestTypeConfig {
 interface RequestTypeFormConfig {
   [field: string]: Partial<FormField>;
 }
-export interface RequestType {
-  id: string;
-  name: string;
-  group: RequestGroup;
-  description: string;
-  form: Record<string, FormField>;
-  completeOnSet: boolean;
 
-  // used within an individual request to validate each field
-  // TODO: We can likely combine this with validationSchema
-  schema: ZodTypeAny;
+export type RequestType = ReturnType<typeof generateRequestType>;
 
-  // Schema for completeness of the request.
-  // This schema isn't built until runtime because fields can be disabled
-  // based on the overall state of the form.
-  validationSchema: Record<string, ZodTypeAny>;
-}
 function generateRequestType(
   config: RequestTypeConfig,
   formConfig: RequestTypeFormConfig,
-): RequestType {
+) {
   const form: Record<string, FormField> = {};
   const schemas: Record<string, ZodTypeAny> = {};
   const validationSchema: Record<string, ZodTypeAny> = {};
@@ -387,7 +363,14 @@ function generateRequestType(
     description: config.description || '',
     form,
     completeOnSet: true,
+
+    // used within an individual request to validate each field
+    // TODO: We can likely combine this with validationSchema
     schema: z.object(schemas),
+
+    // Schema for completeness of the request.
+    // This schema isn't built until runtime because fields can be disabled
+    // based on the overall state of the form.
     validationSchema,
   } as const;
 }
