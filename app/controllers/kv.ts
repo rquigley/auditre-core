@@ -13,7 +13,7 @@ export async function setKV({
   key: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value: any;
-}): Promise<void> {
+}) {
   const rawKey = `${orgId}:${auditId}:${key}`;
   await db
     .insertInto('kv')

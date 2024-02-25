@@ -47,11 +47,7 @@ export async function call({
   stopSequences?: string[];
   respondInJSON?: boolean;
   retryNum?: number;
-}): Promise<{
-  message: unknown;
-  model: OpenAIModel;
-  usage: AiQueryUsage;
-}> {
+}) {
   const apiKey = openaiConfig.parse(process.env.OPENAI_API_KEY);
   const openai = new OpenAI({
     apiKey,
