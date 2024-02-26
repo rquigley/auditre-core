@@ -142,6 +142,44 @@ export class OpsMarketingStack extends Stack {
         enableAcceptEncodingGzip: true,
       },
     );
+
+    const urlRewriteFunction = new cloudfront.Function(
+      this,
+      'HTMLUrlRewriteFunction',
+      {
+        code: cloudfront.FunctionCode.fromInline(`
+          function handler(event) {
+            var request = event.request;
+            var uri = request.uri;
+
+            if (uri.includes('.')) {
+              return request;
+            }
+
+            if (uri.endsWith('/') && uri.length > 1) {
+              var response = {
+                statusCode: 301,
+                statusDescription: 'Moved Permanently',
+                headers: {
+                  'location': {
+                    value: uri.slice(0, -1)
+                  }
+                }
+              };
+              return response;
+            }
+
+            if (uri === '' || uri === '/') {
+              request.uri = '/index.html';
+            } else {
+              request.uri = uri + '.html';
+            }
+
+            return request;
+          }
+      `),
+      },
+    );
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       certificate: certificate,
       defaultRootObject: 'index.html',
@@ -163,6 +201,12 @@ export class OpsMarketingStack extends Stack {
         compress: true,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        functionAssociations: [
+          {
+            function: urlRewriteFunction,
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+          },
+        ],
       },
       additionalBehaviors: {
         '/_next/static/*': {
