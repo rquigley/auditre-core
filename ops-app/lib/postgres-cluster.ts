@@ -223,13 +223,17 @@ export class PostgresCluster extends Construct {
           allowAllOutbound: true,
         },
       );
+
+      const userData = ec2.UserData.forLinux();
+      userData.addCommands('sudo yum install -y postgresql15');
+
       const bastionHostLinux = new ec2.BastionHostLinux(
         this,
         'BastionHostLinux',
         {
           machineImage: new ec2.AmazonLinuxImage({
-            // generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
-            // userData: ec2.UserData.forLinux({// }),
+            generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
+            userData: userData,
           }),
           vpc: props.vpc,
           securityGroup: bastionSecurityGroup,
@@ -246,8 +250,8 @@ export class PostgresCluster extends Construct {
       // connecting to this box.
       new cdk.CfnOutput(this, 'BastionHostLinuxInstanceId', {
         value: `Bastion DB instance connect via:
-aws ssm start-session --target ${bastionHostLinux.instanceId} --profile auditre-dev
-psql -h ${this.instance.instanceEndpoint.hostname} -U your-username -d ${this.dbName}
+aws ssm start-session --target ${bastionHostLinux.instanceId} --profile ${props.isProd ? 'auditre-prod' : 'auditre-dev'}
+psql -h ${this.instance.instanceEndpoint.hostname} -U ${this.dbUsername} -d ${this.dbName}
 
 `,
       });
