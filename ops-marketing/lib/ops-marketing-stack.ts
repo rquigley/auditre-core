@@ -61,8 +61,8 @@ export class OpsMarketingStack extends Stack {
 
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: RemovalPolicy.DESTROY, // NOT recommended for production code
-      autoDeleteObjects: true, // NOT recommended for production code
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
     });
 
     new s3.Bucket(this, 'Chah2tai-www', {
@@ -188,11 +188,21 @@ export class OpsMarketingStack extends Stack {
       errorResponses: [
         {
           httpStatus: 403,
-          responseHttpStatus: 403,
+          // TODO: Something is wrong in our configuration in that any page not found is returning a 403.
+          // However, given that this is a static site and I don't have time to dig in, I'm just going to
+          // redirect to the 404 page for now. This is not ideal, but it's better than a 403.
+          responseHttpStatus: 404,
+          responsePagePath: '/error.html',
+          ttl: Duration.minutes(30),
+        },
+        {
+          httpStatus: 404,
+          responseHttpStatus: 404,
           responsePagePath: '/error.html',
           ttl: Duration.minutes(30),
         },
       ],
+
       defaultBehavior: {
         origin: new cloudfrontOrigins.S3Origin(siteBucket, {
           originAccessIdentity: cloudfrontOAI,
