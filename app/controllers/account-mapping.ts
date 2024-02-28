@@ -173,10 +173,7 @@ export async function getAllAccountBalancesByAuditIdAndYear(
   }));
 }
 
-export async function getBalancesByAccountType(
-  auditId: AuditId,
-  year: string,
-): Promise<AccountMap> {
+export async function getBalancesByAccountType(auditId: AuditId, year: string) {
   const originalRows = await db
     .selectFrom('accountMapping')
     .innerJoin('accountBalance', 'accountMappingId', 'accountMapping.id')
@@ -346,7 +343,7 @@ type AccountMappingToClassifyRow = {
 export async function classifyTrialBalanceTypes(
   orgId: OrgId,
   auditId: AuditId,
-): Promise<void> {
+) {
   try {
     const rows = await db
       .selectFrom('accountMapping')
@@ -512,10 +509,7 @@ export async function getStatus(auditId: AuditId) {
 
 async function autoClassifyTrialBalanceRows(
   rows: AccountMappingToClassifyRow[],
-): Promise<{
-  numClassified: number;
-  remainingRows: AccountMappingToClassifyRow[];
-}> {
+) {
   const toUpdate = [];
   let accountType: AccountType;
   const remainingRows = [];
@@ -598,7 +592,7 @@ export async function aiClassifyTrialBalanceRows({
   rows: AccountMappingToClassifyRow[];
   quickPass: boolean;
   includeReasoning: boolean;
-}): Promise<{ numClassified: number; timeMs: number }> {
+}) {
   const rowMap = new Map(rows.map((r, idx) => [idx, r.id]));
   const toAiRows = rows.map((r, idx) => {
     const name = cleanRowForAI(r);

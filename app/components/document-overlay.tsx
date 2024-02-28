@@ -18,6 +18,7 @@ import useSWR from 'swr';
 import { FiletypeIcon } from '@/components/filetype-icon';
 import { MiniSpinner, PageSpinner } from '@/components/spinner';
 import { reprocessDocument, reprocessDocumentQuery } from '@/lib/actions';
+import { useIntercom } from '@/lib/hooks/use-intercom';
 import Datetime from './datetime';
 
 import type { DocumentDetails } from '@/app/(protected)/document/[document]/detail/route';
@@ -68,6 +69,8 @@ export function DocumentOverlay() {
 
   const currentDocumentId = searchParams.get('show-document-id');
   const onClose = () => router.push(pathname);
+
+  useIntercom(null, !!currentDocumentId);
 
   return (
     <Transition.Root show={!!currentDocumentId} as={Fragment}>

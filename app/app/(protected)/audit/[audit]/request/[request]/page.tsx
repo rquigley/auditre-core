@@ -20,7 +20,7 @@ export default async function RequestPage({
     return authRedirect();
   }
   const auditP = getAuditById(auditId);
-  const requestP = getRequestBySlug(auditId, requestSlug);
+  const requestP = getRequestBySlug(requestSlug);
   const [audit, request] = await Promise.all([auditP, requestP]);
 
   if (!request || !audit || audit.orgId !== user.orgId) {

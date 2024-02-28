@@ -106,7 +106,7 @@ export function Navbar({
                   height="30"
                   src="/img/auditre_mark.svg"
                   alt="AuditRe"
-                  className="si size-5"
+                  className="size-5"
                 />
                 <div
                   className={clsx(

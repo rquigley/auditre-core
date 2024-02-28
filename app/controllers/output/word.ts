@@ -160,8 +160,8 @@ export async function generate(auditId: AuditId) {
       titlePage(data),
       tableOfContents(),
       independentAuditorsReport(data),
-      await consolidatedFinancialStatements(data),
-      await consolidatedStatementOfOperations(data),
+      await balanceSheet(data),
+      await incomeStatement(data),
       await notes(data),
     ],
   });
@@ -180,11 +180,11 @@ function titlePage(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
-        text: 'Conslidated Financial Statements',
+        text: 'Conslidated financial statements',
         //heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
-        text: `Year Ended ${data.fiscalYearEnd}`,
+        text: `Year ended ${data.fiscalYearEnd}`,
         //heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
@@ -218,7 +218,7 @@ function independentAuditorsReport(data: AuditData) {
 
     children: [
       new Paragraph({
-        text: "Independent Auditor's Report",
+        text: "Independent auditor's report",
         heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({ children: [t1] }),
@@ -227,13 +227,13 @@ function independentAuditorsReport(data: AuditData) {
   };
 }
 
-async function consolidatedFinancialStatements(data: AuditData) {
+async function balanceSheet(data: AuditData) {
   return {
     ...getPageProperties(),
 
     children: [
       new Paragraph({
-        text: 'Consolidated Balance Sheet',
+        text: 'Consolidated balance sheet',
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
@@ -242,13 +242,13 @@ async function consolidatedFinancialStatements(data: AuditData) {
   };
 }
 
-async function consolidatedStatementOfOperations(data: AuditData) {
+async function incomeStatement(data: AuditData) {
   return {
     ...getPageProperties(),
 
     children: [
       new Paragraph({
-        text: 'Consolidated Statement of Operations',
+        text: 'Consolidated statement of operations',
         heading: HeadingLevel.HEADING_1,
         pageBreakBefore: true,
       }),
@@ -278,7 +278,7 @@ async function notes(data: AuditData) {
         text: '',
       }),
       new Paragraph({
-        text: '2. Summary of Significant Accounting Policies',
+        text: '2. Summary of significant accounting policies',
         heading: HeadingLevel.HEADING_1,
       }),
 
@@ -311,7 +311,7 @@ function buildTableRow(row: ARRow, parser: Parser) {
   let hideRow = row.hasTag('hide-if-zero');
 
   const ret = new TableRow({
-    children: row.cells.map((cell) => {
+    children: row.cells.map((cell, idx) => {
       const borders = {
         top: {
           style:
@@ -387,7 +387,7 @@ function buildTableRow(row: ARRow, parser: Parser) {
           new Paragraph({
             children: [
               new TextRun({
-                text: `${cell.style.indent ? '   '.repeat(cell.style.indent) : ''}${value}`,
+                text: `${cell.style.indent && idx === 0 ? '   '.repeat(cell.style.indent) : ''}${value}`,
                 bold: cell.style.bold,
               }),
             ],
@@ -438,7 +438,7 @@ function getPageProperties() {
   };
 }
 
-function formatBodyText(text: string) {
+function formatBodyText(text: string, highlightChanges = false) {
   const textRuns = [];
   let buffer = '';
   let insideBracket = false;
@@ -448,11 +448,15 @@ function formatBodyText(text: string) {
       if (buffer.length > 0) {
         textRuns.push(new TextRun(buffer));
       }
-      buffer = char;
+      buffer = highlightChanges ? char : '';
       insideBracket = true;
     } else if (char === ']') {
-      buffer += char;
-      textRuns.push(new TextRun({ text: buffer, highlight: 'yellow' }));
+      if (highlightChanges) {
+        buffer += char;
+        textRuns.push(new TextRun({ text: buffer, highlight: 'yellow' }));
+      } else {
+        textRuns.push(new TextRun({ text: buffer }));
+      }
       buffer = '';
       insideBracket = false;
     } else {
@@ -464,7 +468,6 @@ function formatBodyText(text: string) {
     }
   }
 
-  // Add any remaining text outside the brackets
   if (buffer.length > 0) {
     textRuns.push(new TextRun(buffer));
   }

@@ -47,6 +47,7 @@ const otherAssetTypes = [
 const liabilityTypes = [
   { key: 'LIABILITY_ACCOUNTS_PAYABLE', label: 'Accounts payable' },
   { key: 'LIABILITY_ACCRUED_LIABILITIES', label: 'Accrued liabilities' },
+  { key: 'LIABILITY_DEBT_SHORT', label: 'Short term debt' },
   { key: 'LIABILITY_DEFERRED_REVENUE', label: 'Deferred revenue' },
   {
     key: 'LIABILITY_OPERATING_LEASE_LIABILITIES_CURRENT',
@@ -241,9 +242,9 @@ export function buildBalanceSheet(data: AuditData) {
 
   t.addRow(
     [
-      'Debt',
-      `=TBLOOKUP('LIABILITY_DEBT', 'CY')`,
-      `=TBLOOKUP('LIABILITY_DEBT', 'PY')`,
+      'Long term debt',
+      `=TBLOOKUP('LIABILITY_DEBT_LONG', 'CY')`,
+      `=TBLOOKUP('LIABILITY_DEBT_LONG', 'PY')`,
     ],
     {
       tags: [
@@ -708,7 +709,7 @@ export function buildIncomeStatement(data: {
   return t;
 }
 
-export async function buildCashFlows(data: AuditData) {
+export function buildCashFlows(data: AuditData) {
   const t = new Table('cash-flows');
   t.columns = [
     {},
@@ -780,64 +781,32 @@ export async function buildCashFlows(data: AuditData) {
       cellStyle: [{ indent: 3 }],
     },
   );
-  t.addRow(
-    [
-      'Remeasurement of derivative liability',
-      `=CF('TODO','CY')`,
-      `=CF('TODO','PY')`,
-    ],
-    {
-      tags: ['net-cash-op-activity'],
-      cellStyle: [{ indent: 3 }],
-    },
-  );
-  t.addRow(
-    [
-      'Interest accrued on convertible notes',
-      `=CF('TODO','CY')`,
-      `=CF('TODO','PY')`,
-    ],
-    {
-      tags: ['net-cash-op-activity'],
-      cellStyle: [{ indent: 3 }],
-    },
-  );
-  t.addRow(
-    [
-      'Amortization of discount on convertible notes',
-      `=CF('TODO','CY')`,
-      `=CF('TODO','PY')`,
-    ],
-    {
-      tags: ['net-cash-op-activity'],
-      cellStyle: [{ indent: 3 }],
-    },
-  );
-  t.addRow(['Noncash lease expense', `=CF('TODO','CY')`, `=CF('TODO','PY')`], {
-    tags: ['net-cash-op-activity'],
-    cellStyle: [{ indent: 3 }],
-  });
 
   t.addRow(['Changes in assets and liabilities:', '', ''], {
     tags: [],
     cellStyle: [{ indent: 3 }],
   });
 
-  [...nonCashCurrentAssetTypes, ...otherAssetTypes, ...liabilityTypes].forEach(
-    (assetType) => {
-      t.addRow(
-        [
-          assetType.label,
-          `=TBLOOKUP('${assetType.key}', 'CY') - TBLOOKUP('${assetType.key}', 'PY')`,
-          `=TBLOOKUP('${assetType.key}', 'PY') - TBLOOKUP('${assetType.key}', 'PY2')`,
-        ],
-        {
-          tags: ['net-cash-op-activity', 'hide-if-zero'],
-          cellStyle: [{ indent: 4 }],
-        },
-      );
-    },
+  const liabilityTypesWithoutShortTermDebt = liabilityTypes.filter(
+    (liabilityType) => liabilityType.key !== 'LIABILITY_DEBT_SHORT',
   );
+  [
+    ...nonCashCurrentAssetTypes,
+    ...otherAssetTypes,
+    ...liabilityTypesWithoutShortTermDebt,
+  ].forEach((assetType) => {
+    t.addRow(
+      [
+        assetType.label,
+        `=TBLOOKUP('${assetType.key}', 'CY') - TBLOOKUP('${assetType.key}', 'PY')`,
+        `=TBLOOKUP('${assetType.key}', 'PY') - TBLOOKUP('${assetType.key}', 'PY2')`,
+      ],
+      {
+        tags: ['net-cash-op-activity', 'hide-if-zero'],
+        cellStyle: [{ indent: 4 }],
+      },
+    );
+  });
 
   t.addRow(
     [
@@ -863,12 +832,19 @@ export async function buildCashFlows(data: AuditData) {
     tags: [],
   });
 
-  t.addRow(['Acquisition of property and equipment', 999900, 999900], {
-    tags: ['net-cash-investing-activity'],
-    style: {
-      indent: 1,
+  t.addRow(
+    [
+      'Acquisition of property and equipment',
+      `=TBLOOKUP('ASSET_PROPERTY_AND_EQUIPMENT', 'CY') - TBLOOKUP('ASSET_PROPERTY_AND_EQUIPMENT', 'PY')`,
+      `=TBLOOKUP('ASSET_PROPERTY_AND_EQUIPMENT', 'PY') - TBLOOKUP('ASSET_PROPERTY_AND_EQUIPMENT', 'PY2')`,
+    ],
+    {
+      tags: ['net-cash-investing-activity'],
+      style: {
+        indent: 1,
+      },
     },
-  });
+  );
 
   t.addRow(
     [
@@ -895,9 +871,11 @@ export async function buildCashFlows(data: AuditData) {
 
   t.addRow(
     [
-      'Proceeds from issuance of convertible notes, net of issuance costs',
-      999900,
-      999900,
+      'Proceeds from debt',
+      `=(TBLOOKUP('LIABILITY_DEBT_SHORT', 'CY') + TBLOOKUP('LIABILITY_DEBT_LONG', 'CY') + TBLOOKUP('LIABILITY_CONVERTIBLE_NOTES_PAYABLE', 'CY'))
+        - (TBLOOKUP('LIABILITY_DEBT_SHORT', 'PY') + TBLOOKUP('LIABILITY_DEBT_LONG', 'PY') + TBLOOKUP('LIABILITY_CONVERTIBLE_NOTES_PAYABLE', 'PY'))`,
+      `=(TBLOOKUP('LIABILITY_DEBT_SHORT', 'PY') + TBLOOKUP('LIABILITY_DEBT_LONG', 'PY') + TBLOOKUP('LIABILITY_CONVERTIBLE_NOTES_PAYABLE', 'PY'))
+        - (TBLOOKUP('LIABILITY_DEBT_SHORT', 'PY2') + TBLOOKUP('LIABILITY_DEBT_LONG', 'PY2') + TBLOOKUP('LIABILITY_CONVERTIBLE_NOTES_PAYABLE', 'PY2'))`,
     ],
     {
       tags: ['net-cash-financing-activity'],
@@ -906,12 +884,46 @@ export async function buildCashFlows(data: AuditData) {
       },
     },
   );
-  t.addRow(['Proceeds from exercise of stock options', 999900, 999900], {
-    tags: ['net-cash-financing-activity'],
-    style: {
-      indent: 1,
+
+  t.addRow(
+    [
+      'Proceeds from issuance of equity',
+      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'CY') - TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'PY')`,
+      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'CY') - TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'PY')`,
+    ],
+    {
+      tags: ['net-cash-financing-activity'],
+      style: {
+        indent: 1,
+      },
     },
-  });
+  );
+  t.addRow(
+    [
+      'Proceeds from exercise of stock options',
+      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'CY') - TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'PY')`,
+      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'CY') - TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'PY')`,
+    ],
+    {
+      tags: ['net-cash-financing-activity'],
+      style: {
+        indent: 1,
+      },
+    },
+  );
+  t.addRow(
+    [
+      'Additional paid in capital',
+      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'CY') - TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'PY')`,
+      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'PY') - TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'PY2')`,
+    ],
+    {
+      tags: ['net-cash-financing-activity'],
+      style: {
+        indent: 1,
+      },
+    },
+  );
   t.addRow(
     [
       'Net cash provided by (used in) financing activities',
@@ -936,6 +948,7 @@ export async function buildCashFlows(data: AuditData) {
       `=SUMTAGCOL('net-cash', 2)`,
     ],
     {
+      id: 'NET-INCREASE-IN-CASH',
       style: {
         bold: true,
         padTop: true,
@@ -953,6 +966,7 @@ export async function buildCashFlows(data: AuditData) {
       `=TBLOOKUP('ASSET_CASH_AND_CASH_EQUIVALENTS', 'PY2')`,
     ],
     {
+      id: 'CASH-BEGINNING-OF-PERIOD',
       tags: [],
     },
   );
@@ -964,60 +978,12 @@ export async function buildCashFlows(data: AuditData) {
       `=TBLOOKUP('ASSET_CASH_AND_CASH_EQUIVALENTS', 'PY')`,
     ],
     {
+      id: 'CASH-END-OF-PERIOD',
       style: {
         borderTop: 'thin',
         borderBottom: 'double',
       },
       tags: [],
-    },
-  );
-
-  t.addRow(
-    [
-      'Supplemental disclosures of noncash financing and investing activities:',
-      '',
-      '',
-    ],
-    {
-      style: {
-        bold: true,
-      },
-    },
-  );
-  t.addRow(
-    [
-      'Purchase of property and equipment included in accounts payable and accrued liabilities',
-      999900,
-      999900,
-    ],
-    {
-      style: {
-        indent: 1,
-      },
-    },
-  );
-  t.addRow(
-    [
-      'Right-of-use assets obtained in exchange for new operating lease liabilities',
-      999900,
-      999900,
-    ],
-    {
-      style: {
-        indent: 1,
-      },
-    },
-  );
-  t.addRow(
-    [
-      'Discount on convertible notes payable from derivative liability',
-      999900,
-      999900,
-    ],
-    {
-      style: {
-        indent: 1,
-      },
     },
   );
 

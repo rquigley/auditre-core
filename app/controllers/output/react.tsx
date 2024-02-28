@@ -46,8 +46,8 @@ export async function AuditPreview({
     <div className="text-sm text-slate-800 max-w-3xl">
       <div className=" mb-4 border rounded-md p-4">
         <h1 className="text-lg font-bold">{data.rt.basicInfo.businessName}</h1>
-        <div>Conslidated Financial Statements</div>
-        <div>Year Ended {data.fiscalYearEnd}</div>
+        <div>Conslidated financial statements</div>
+        <div>Year ended {data.fiscalYearEnd}</div>
       </div>
 
       {warnings.length > 0 && <Warning warnings={warnings} />}
@@ -69,7 +69,7 @@ export async function AuditPreview({
       >
         <h2 className="text-lg font-bold">
           <a href="#section-balance-sheet" className="group relative">
-            1. Consolidated Balance Sheet
+            1. Consolidated balance sheet
             <Paperclip />
           </a>
         </h2>
@@ -83,7 +83,7 @@ export async function AuditPreview({
       >
         <h2 className="text-lg font-bold">
           <a href="#section-income-statement" className="group relative">
-            2. Consolidated Statement of Operations
+            2. Consolidated statement of operations
             <Paperclip />
           </a>
         </h2>
@@ -94,7 +94,7 @@ export async function AuditPreview({
       <div id="section-sose" className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
           <a href="#section-sose" className="group relative">
-            3. Conslidated Statement of Stockholders&apos; Equity (Deficit)
+            3. Conslidated statement of stockholders&apos; equity (deficit)
             <Paperclip />
           </a>
         </h2>
@@ -107,12 +107,12 @@ export async function AuditPreview({
       <div id="section-socf" className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
           <a href="#section-socf" className="group relative">
-            4. Conslidated Statement of Cash Flows
+            4. Conslidated statement of cash flows
             <Paperclip />
           </a>
         </h2>
 
-        {buildTable(await buildCashFlows(data), data)}
+        {buildTable(buildCashFlows(data), data)}
       </div>
 
       <div id="section-org" className="max-w-3xl mb-4 border rounded-md p-4">
@@ -136,7 +136,7 @@ export async function AuditPreview({
       <div id="section-policy" className="max-w-3xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
           <a href="#section-policy" className="group relative">
-            6. Summary of Significant Accounting Policies
+            6. Summary of significant accounting policies
             <Paperclip />
           </a>
         </h2>
@@ -306,26 +306,26 @@ function buildTableRow(
 
           if (numFmt === 'accounting') {
             value = (
-              <div className={`flex justify-between ${financeFont.className}`}>
-                <div className="pl-5">
+              <span className={`flex justify-between ${financeFont.className}`}>
+                <span className="pl-5">
                   {value !== 0 && !cell.style.hideCurrency ? '$' : ''}
-                </div>
-                <div>
+                </span>
+                <span>
                   {ppCurrency(fOut(value), {
                     cents: showCents,
                     hideCurrency: true,
                   })}
-                </div>
-              </div>
+                </span>
+              </span>
             );
           } else if (numFmt === 'currency') {
             value = (
-              <div className={financeFont.className}>
+              <span className={financeFont.className}>
                 {ppCurrency(fOut(value), {
                   cents: showCents,
                   hideCurrency: cell.style.hideCurrency,
                 })}
-              </div>
+              </span>
             );
           } else if (numFmt === 'number') {
             value = (
@@ -342,6 +342,16 @@ function buildTableRow(
           );
         }
 
+        // Indentation only applies to the first cell in a row
+        const indentStyles =
+          idx === 0
+            ? {
+                'pl-4': cell.style.indent === 1,
+                'pl-8': cell.style.indent === 2,
+                'pl-12': cell.style.indent === 3,
+                'pl-16': cell.style.indent === 4,
+              }
+            : {};
         const styles = clsx({
           'font-bold': cell.style.bold,
           'border-b border-b-slate-600': cell.style.borderBottom === 'thin',
@@ -350,10 +360,7 @@ function buildTableRow(
           'border-t border-t-slate-600': cell.style.borderTop === 'thin',
           'border-t border-double border-t-slate-600':
             cell.style.borderTop === 'double',
-          'pl-4': cell.style.indent === 1,
-          'pl-8': cell.style.indent === 2,
-          'pl-12': cell.style.indent === 3,
-          'pl-16': cell.style.indent === 4,
+          ...indentStyles,
           'pt-2': cell.style.padTop,
           'text-right': cell.style.align === 'right',
         });
@@ -387,25 +394,25 @@ function TableOfContents({
         href="#section-balance-sheet"
         className="block text-slate-700 underline hover:no-underline"
       >
-        1. Consolidated Balance Sheet
+        1. Consolidated balance sheet
       </a>
       <a
         href="#section-income-statement"
         className="block text-slate-700 underline hover:no-underline"
       >
-        2. Consolidated Statement of Operations
+        2. Consolidated statement of operations
       </a>
       <a
         href="#section-income-statement"
         className="block text-slate-700 underline hover:no-underline"
       >
-        3. Conslidated Statement of Stockholders&apos; Equity (Deficit)
+        3. Conslidated statement of stockholders&apos; equity (deficit)
       </a>
       <a
         href="#section-income-statement"
         className="block text-slate-700 underline hover:no-underline"
       >
-        4. Conslidated Statement of Cash Flows
+        4. Conslidated statement of cash flows
       </a>
       <a
         href="#section-org"
@@ -426,7 +433,7 @@ function TableOfContents({
         href="#2. section-policy"
         className="block text-slate-700 underline hover:no-underline"
       >
-        6. Summary of Significant Accounting Policies
+        6. Summary of significant accounting policies
       </a>
       {policySettings.map((section, idx) => (
         <ToCLink

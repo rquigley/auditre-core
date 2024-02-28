@@ -144,7 +144,7 @@ export async function didExtractAndUpdateContent(document: Document) {
   }
 }
 
-export async function process(id: DocumentId): Promise<void> {
+export async function process(id: DocumentId) {
   try {
     const t0 = Date.now();
     let t1 = Date.now(); // for task-dependent timing
@@ -225,9 +225,7 @@ export async function process(id: DocumentId): Promise<void> {
 // See PAGE_DELIMITER in core/ops-app/packages/extract-content-lambda/lambda_function.py
 export const PAGE_DELIMITER = '-'.repeat(30) + '@@' + '-'.repeat(30);
 
-export async function classifyDocument(
-  document: Document,
-): Promise<DocumentClassificationType> {
+export async function classifyDocument(document: Document) {
   if (!document.extracted) {
     throw new Error('Document has no extracted content');
   }
@@ -383,9 +381,7 @@ type FormattedQueryDataWithLabels = Record<
     status: string | undefined;
   }
 >;
-export async function getAiDataWithLabels(
-  documentId: DocumentId,
-): Promise<FormattedQueryDataWithLabels> {
+export async function getAiDataWithLabels(documentId: DocumentId) {
   const { classifiedType } = await getDocumentById(documentId);
   const answeredQuestions = await getAllMostRecentByDocumentId(documentId);
   const defaultQuestions = { ...documentAiQuestions[classifiedType] };

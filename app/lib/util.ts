@@ -30,15 +30,12 @@ export function deepCopy<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj)) as T;
 }
 
-export function head(str: string, numLines: number): string {
+export function head(str: string, numLines: number) {
   const lines = str.split('\n');
   return lines.slice(0, numLines).join('\n');
 }
 
-export function extractLinesContaining(
-  str: string,
-  phrases: string[],
-): string[] {
+export function extractLinesContaining(str: string, phrases: string[]) {
   const lines = str.split('\n');
   return lines.filter((line) => {
     for (const phrase of phrases) {

@@ -54,7 +54,7 @@ export async function generate(auditId: AuditId) {
     }
     const date = dayjs(dateStr);
     const year = date.format('YYYY');
-    let wsName = `Trial Balance - ${year}`;
+    let wsName = `Trial balance - ${year}`;
     if (tbNames.has(wsName)) {
       // prevent worksheet name conflicts which throw
       wsName = `${wsName} (${identifier.substring(4, 1)})`;
@@ -90,7 +90,7 @@ export async function generate(auditId: AuditId) {
 
   return {
     document: workbook,
-    documentName: `Financial Statement - ${data.rt.basicInfo.businessName} - ${data.rt.auditInfo.year}.xlsx`,
+    documentName: `Financial statement - ${data.rt.basicInfo.businessName} - ${data.rt.auditInfo.year}.xlsx`,
   };
 }
 
@@ -322,7 +322,7 @@ function addTableRow({
   data: AuditData;
   debug?: boolean;
 }) {
-  const values = row.cells.map((cell: TableCell) => {
+  const values = row.cells.map((cell, idx) => {
     const val = cell.rawValue();
 
     if (typeof val === 'string' && val.startsWith('=')) {
@@ -332,7 +332,7 @@ function addTableRow({
       };
     }
 
-    if (cell.style.indent) {
+    if (idx === 0 && cell.style.indent) {
       return `${'    '.repeat(cell.style.indent)}${val}`;
     }
     return val;
@@ -341,8 +341,8 @@ function addTableRow({
   const r = ws.addRow(values);
 
   const widths: number[] = [];
-  row.cells.forEach((cell: TableCell, i: number) => {
-    const xCell = r.getCell(i + 1);
+  row.cells.forEach((cell, idx) => {
+    const xCell = r.getCell(idx + 1);
 
     if (cell.style.bold) {
       xCell.font = { bold: true };
@@ -378,15 +378,6 @@ function addTableRow({
     widths[cell.column] = String(cell.value).length;
   });
 
-  // if (row.hasTag('hide-if-zero')) {
-  //   const hasNonZeroValues = row.cells.some(
-  //     (cell) => typeof cell.value === 'number' && cell.value !== 0,
-  //   );
-  //   if (!hasNonZeroValues) {
-  //     r.hidden = true;
-  //   }
-  // }
-
   return { widths };
 }
 
@@ -399,7 +390,7 @@ async function addTrialBalance(
 
   const year = date.format('YYYY');
 
-  ws.addRow([`Trial Balance`]);
+  ws.addRow([`Trial balance`]);
   ws.addRow([`As of ${date.format('MMMM D, YYYY')}`]);
   ws.addRow([]);
   ws.addRow([]);
@@ -436,13 +427,13 @@ async function addTrialBalance(
   const header = ws.addRow([
     'Account',
     'Balance',
-    'BS Mapping',
+    'BS mapping',
     '',
     'Totals',
     '',
     '',
-    'Account Types',
-    'Num Accounts',
+    'Account types',
+    'Num accounts',
   ]);
   ws.getCell(`B${header.number}`).alignment = { horizontal: 'right' };
   header.font = { bold: true };
