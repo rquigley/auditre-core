@@ -4,15 +4,22 @@ import dedent from 'dedent';
 import { SendVerificationRequestParams } from 'next-auth/providers';
 import { uuidv7 } from 'uuidv7';
 
+import { getByEmail } from '@/controllers/user';
 import { getSESClient } from './aws';
 
 export async function sendVerificationRequest(
   params: SendVerificationRequestParams,
 ) {
+  const user = await getByEmail(params.identifier);
+  if (!user) {
+    throw new Error('No user found');
+  }
+  const isVerification = user.emailVerified === null;
+  const subject = isVerification ? 'Verify your email' : 'Your login link';
   return await sendEmail({
     from: 'noreply@auditre.co',
     to: params.identifier,
-    subject: 'Your login link',
+    subject,
     html: `<div><a href="${params.url}">Login</a></div>`,
   });
 }
