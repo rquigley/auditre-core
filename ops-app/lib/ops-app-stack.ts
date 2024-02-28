@@ -432,7 +432,7 @@ export class OpsAppStack extends Stack {
     const appPolicy = new iam.ManagedPolicy(this, 'AppPolicy', {
       statements: [
         new iam.PolicyStatement({
-          actions: ['ses:SendEmail'],
+          actions: ['ses:SendEmail', 'ses:SendRawEmail'],
 
           resources: ['*'],
         }),
