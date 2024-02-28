@@ -1,7 +1,6 @@
-import exp from 'constants';
-
 import { db } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
+import { getOrgById } from './org';
 
 import type {
   InvitationId,
@@ -73,11 +72,16 @@ export async function sendInviteEmail(inviteId: InvitationId) {
   if (!invite) {
     throw new Error('Invitation not found');
   }
+  const org = await getOrgById(invite.orgId);
+  if (!org) {
+    throw new Error('Organization not found');
+  }
   await sendEmail({
+    from: 'noreply@auditre.co',
     to: invite.email,
-    subject: 'You have been invited to join an organization',
+    subject: `You have been invited to join ${org.name} on AuditRe`,
     html: `
-    <p>You have been invited to join an organization.</p>
+    <p>You have been invited to join ${org.name} on AuditRe</p>
     <p>
       <a href="${process.env.NEXTAUTH_URL}/invite?id=${invite.id}&email=${encodeURIComponent(invite.email)}">Click here to accept the invitation</a>
     </p>
