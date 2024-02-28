@@ -147,13 +147,6 @@ export const {
             if (changes.name || changes.image) {
               await updateUser(existingUser.id, changes);
             }
-            //   name: profile?.name || !existingUser.name,
-            //   image: profile?.picture || !existingUser.image,
-            //   emailVerified:
-            //     !existingUser.emailVerified && profile?.email_verified
-            //       ? new Date()
-            //       : undefined,
-            // });
           }
           return true;
         }

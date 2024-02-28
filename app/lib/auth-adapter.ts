@@ -219,9 +219,7 @@ export function AuthAdapter(): Adapter {
     },
 
     createVerificationToken: async (data) => {
-      const verificationToken = await createVerificationToken(data);
-
-      return verificationToken as VerificationToken;
+      return await createVerificationToken(data);
     },
 
     useVerificationToken: async ({ identifier, token }) => {
