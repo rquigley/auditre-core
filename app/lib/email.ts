@@ -17,7 +17,7 @@ export async function sendVerificationRequest(
   const isVerification = user.emailVerified === null;
   const subject = isVerification ? 'Verify your email' : 'Your login link';
   return await sendEmail({
-    from: 'noreply@auditre.co',
+    from: 'AuditRe <noreply@auditre.co>',
     to: params.identifier,
     subject,
     html: `<div><a href="${params.url}">Login</a></div>`,
@@ -26,7 +26,7 @@ export async function sendVerificationRequest(
 
 export async function sendEmail({
   to,
-  from = 'noreply@auditre.co',
+  from = 'AuditRe <noreply@auditre.co>',
   subject,
   html,
   plainText,

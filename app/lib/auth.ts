@@ -19,7 +19,7 @@ export const {
     EmailProvider({
       name: 'email',
       server: '',
-      from: 'AuditRe (eg: team@auditre.co)',
+      from: 'AuditRe <noreply@auditre.co>',
       sendVerificationRequest,
     }),
     GoogleProvider({
