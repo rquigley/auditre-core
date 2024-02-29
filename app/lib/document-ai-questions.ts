@@ -112,7 +112,7 @@ export const documentAiQuestions: Partial<
   TRIAL_BALANCE: {
     trialBalanceDate: {
       label: 'Date of trial balance export',
-      question: `What is the date this trial balance was exported? ${questionDate}`,
+      question: `What is the date this trial balance was exported? ${questionDate}. If the day is not available, but the month and year are, return the last day of the month for the date, e.g. "Dec 2022" returns "2022-12-31"`,
       preProcess: (val: string) => head(val, 10),
       validate: dateSchema,
     },
