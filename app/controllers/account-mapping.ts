@@ -865,7 +865,8 @@ async function getDocumentData(
         .min(1)
         .max(256)
         // Naive, but "total" is common and we don't want it.
-        .refine((val) => val.toUpperCase() !== 'TOTAL'),
+        // Using .startsWith() because NetSuite totals each category of account.
+        .refine((val) => val.toUpperCase().startsWith('TOTAL') === false),
       credit: z.coerce.string(),
       debit: z.coerce.string(),
     })
