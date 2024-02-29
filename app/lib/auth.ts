@@ -68,6 +68,7 @@ export const {
   // },
   callbacks: {
     // https://authjs.dev/reference/core/types#jwt
+    // @ts-expect-error
     session: async ({
       session,
       token,
