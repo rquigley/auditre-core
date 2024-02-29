@@ -67,16 +67,7 @@ export const {
   //   },
   // },
   callbacks: {
-    // https://next-auth.js.org/configuration/callbacks#jwt-callback
-    // NOT INVOKED IF USING DB SESSIONS
-    // jwt: async ({ token, user }) => {
-    //   console.log('jwt callback', token, user);
-    //   if (user) {
-    //     token.user = user;
-    //   }
-    //   return token;
-    // },
-    // https://next-auth.js.org/configuration/callbacks#session-callback
+    // https://authjs.dev/reference/core/types#jwt
     // @ts-expect-error
     session: async ({
       session,
@@ -164,13 +155,13 @@ export const {
   },
   // logger: {
   //   error(code, metadata) {
-  //     console.error('error', code, metadata);
+  //     console.error('auth error', code, metadata);
   //   },
   //   warn(code) {
-  //     console.warn('warn', code);
+  //     console.warn('auth warn', code);
   //   },
   //   debug(code, metadata) {
-  //     console.debug('debug', code, metadata);
+  //     console.debug('auth debug', code, metadata);
   //   },
   // },
 });

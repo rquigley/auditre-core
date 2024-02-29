@@ -865,7 +865,8 @@ async function getDocumentData(
         .min(1)
         .max(256)
         // Naive, but "total" is common and we don't want it.
-        .refine((val) => val.toUpperCase() !== 'TOTAL'),
+        // Using .startsWith() because NetSuite totals each category of account.
+        .refine((val) => val.toUpperCase().startsWith('TOTAL') === false),
       credit: z.coerce.string(),
       debit: z.coerce.string(),
     })
@@ -1098,6 +1099,12 @@ async function getColIdxs(document: Document) {
     res.creditColumnIdx === -1
   ) {
     throw new Error('Missing required columnMappings');
+  }
+
+  // If accountIdColumnIdx is the same as accountNameColumnIdx, ignore it.
+  // The LLM will sometimes hallucinate the same value for both.
+  if (res.accountIdColumnIdx === res.accountNameColumnIdx) {
+    res.accountIdColumnIdx = -1;
   }
   return res;
 }
