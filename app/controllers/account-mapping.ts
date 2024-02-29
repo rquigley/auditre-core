@@ -1100,5 +1100,11 @@ async function getColIdxs(document: Document) {
   ) {
     throw new Error('Missing required columnMappings');
   }
+
+  // If accountIdColumnIdx is the same as accountNameColumnIdx, ignore it.
+  // The LLM will sometimes hallucinate the same value for both.
+  if (res.accountIdColumnIdx === res.accountNameColumnIdx) {
+    res.accountIdColumnIdx = -1;
+  }
   return res;
 }
