@@ -22,7 +22,7 @@ import {
 
 import { AuditData, getAuditData } from '@/controllers/audit';
 import { fOut } from '@/lib/finance';
-import { getParser } from '@/lib/formula-parser';
+import { getParser } from '@/lib/parser';
 import { ppCurrency, ppNumber } from '@/lib/util';
 import {
   buildBalanceSheet,
@@ -36,9 +36,9 @@ import {
 } from '../financial-statement/template';
 
 import type { Template } from '../financial-statement/template';
+import type { Parser } from '@/lib/formula-parser/index';
 import type { Row as ARRow, Table as ARTable } from '@/lib/table';
 import type { AuditId } from '@/types';
-import type { Parser } from 'hot-formula-parser';
 
 export async function generate(auditId: AuditId) {
   const data = await getAuditData(auditId);
@@ -347,7 +347,7 @@ function buildTableRow(row: ARRow, parser: Parser) {
       let value;
 
       if (typeof cell.value === 'string' && cell.value.startsWith('=')) {
-        const parsed = parser.parse(cell.value.substring(1));
+        const parsed = parser.parse(cell.value.substring(1), cell.address);
         if (parsed.error) {
           value = `Error: ${parsed.error}`;
           hideRow = false;

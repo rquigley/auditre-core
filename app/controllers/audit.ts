@@ -10,7 +10,7 @@ import {
 } from '@/controllers/document';
 import { db } from '@/lib/db';
 import { fOut } from '@/lib/finance';
-import { getParser } from '@/lib/formula-parser';
+import { getParser } from '@/lib/parser';
 import { isFormFieldFile } from '@/lib/request-types';
 import {
   getLastDayOfMonth,

@@ -11,7 +11,7 @@ import {
   tableMap,
 } from '@/controllers/financial-statement/table';
 import { fOut } from '@/lib/finance';
-import { getParser } from '@/lib/formula-parser';
+import { getParser } from '@/lib/parser';
 import { ppCurrency, ppNumber } from '@/lib/util';
 import { AuditId } from '@/types';
 import { getAuditData, getWarningsForAudit } from '../audit';
@@ -22,8 +22,8 @@ import {
 
 import type { AuditData } from '@/controllers/audit';
 import type { Section } from '@/controllers/financial-statement/template';
+import type { Parser } from '@/lib/formula-parser/index';
 import type { Row, Table } from '@/lib/table';
-import type { Parser } from 'hot-formula-parser';
 
 const financeFont = Inconsolata({
   subsets: ['latin'],
@@ -281,7 +281,7 @@ function buildTableRow(
       {row.cells.map((cell, idx) => {
         let value;
         if (typeof cell.value === 'string' && cell.value.startsWith('=')) {
-          const parsed = parser.parse(cell.value.substring(1));
+          const parsed = parser.parse(cell.value.substring(1), cell.address);
           if (parsed.error) {
             value = `Error: ${parsed.error}`;
             hideRow = false;
