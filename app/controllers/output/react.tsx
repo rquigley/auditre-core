@@ -283,6 +283,12 @@ function buildTableRow(
         if (typeof cell.value === 'string' && cell.value.startsWith('=')) {
           const parsed = parser.parse(cell.value.substring(1), cell.address);
           if (parsed.error) {
+            console.log('Error parsing cell', {
+              table: cell.table.name,
+              address: cell.address,
+              value: cell.value,
+              error: parsed.error,
+            });
             value = `Error: ${parsed.error}`;
             hideRow = false;
           } else {
@@ -362,6 +368,8 @@ function buildTableRow(
           ...indentStyles,
           'pt-2': cell.style.padTop,
           'text-right': cell.style.align === 'right',
+          'text-xs': cell.style.textSize === 'xs',
+          'p-0.5': true,
         });
 
         return (
