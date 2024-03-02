@@ -410,7 +410,7 @@ function TableOfContents({
         2. Consolidated statement of operations
       </a>
       <a
-        href="#section-income-statement"
+        href="#section-sose"
         className="block text-slate-700 underline hover:no-underline"
       >
         3. Conslidated statement of stockholders&apos; equity (deficit)
