@@ -19,13 +19,13 @@ import {
   isCFType,
   isYearType,
   yearTypeToYear,
-} from '@/lib/formula-parser';
+} from '@/lib/parser';
 import { AuditId } from '@/types';
 import { getAllAccountBalancesByAuditIdAndYear } from '../account-mapping';
 import { getAuditData } from '../audit';
 
 import type { AuditData } from '@/controllers/audit';
-import type { Table, Cell as TableCell, Row as TableRow } from '@/lib/table';
+import type { Table, Row as TableRow } from '@/lib/table';
 
 const numFmt = '_($* #,##0_);_($* (#,##0);_($* "-"??_);_(@_)';
 const numFmtWithCents = '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
@@ -219,6 +219,7 @@ async function addCashFlow({
 }
 
 function parseFormula(value: string, table: Table, data: AuditData) {
+  value = fixTableOffsets(value, table);
   value = replaceTBLOOKUP(value, data);
   value = replaceGET_BY_ID(value, table);
   value = replaceSUMTAGCOL(value, table);
@@ -307,6 +308,21 @@ function replaceCF(inputString: string, data: AuditData) {
         data.cashFlow[prevType][cfType].balance,
     );
   });
+}
+
+function fixTableOffsets(inputString: string, table: Table) {
+  const regex = /([A-Z]+)(\d+)/g;
+
+  const output = inputString.replace(regex, (match, col, row) => {
+    // CY/PY/PY2 get caught in this regex.
+    if (isYearType(match)) {
+      return match;
+    }
+
+    return `${col}${Number(row) + table.UNSAFE_outputRowOffset}`;
+  });
+
+  return output;
 }
 
 function addTableRow({
