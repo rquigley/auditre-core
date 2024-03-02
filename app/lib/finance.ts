@@ -30,6 +30,8 @@ export const accountTypes = {
   EQUITY_RETAINED_EARNINGS: 'Retained earnings',
 
   INCOME_STATEMENT_COST_OF_REVENUE: 'Cost of revenue',
+  INCOME_STATEMENT_DEPRECIATION_AND_AMORTIZATION:
+    'Depreciation and amortization',
   INCOME_STATEMENT_G_AND_A: 'General and administrative',
   INCOME_STATEMENT_INTEREST_EXPENSE: 'Interest expense',
   INCOME_STATEMENT_INTEREST_INCOME: 'Interest income',
@@ -37,6 +39,7 @@ export const accountTypes = {
   INCOME_STATEMENT_RESEARCH_AND_DEVELOPMENT: 'Research and development',
   INCOME_STATEMENT_REVENUE: 'Revenue',
   INCOME_STATEMENT_SALES_AND_MARKETING: 'Sales and marketing',
+  INCOME_STATEMENT_STOCK_BASED_COMPENSATION: 'Stock-based compensation',
   INCOME_TAXES: 'Income taxes',
   INCOME_STATEMENT_TAXES: 'Income taxes',
 

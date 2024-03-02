@@ -5,6 +5,7 @@ import {
   buildBalanceSheet,
   buildCashFlows,
   buildIncomeStatement,
+  buildStockholderEquity,
 } from '@/controllers/financial-statement/table';
 import {
   AccountTypeGroup,
@@ -37,6 +38,7 @@ export async function generate(auditId: AuditId) {
 
   const bsWorksheet = workbook.addWorksheet('Balance Sheet');
   const isWorksheet = workbook.addWorksheet('IS');
+  const soeWorksheet = workbook.addWorksheet('SOE');
   const cfWorksheet = workbook.addWorksheet('CF');
   workbook.addWorksheet('Support---->');
 
@@ -82,6 +84,12 @@ export async function generate(auditId: AuditId) {
       ws: isWorksheet,
       data,
     });
+
+    addStockholderEquity({
+      ws: soeWorksheet,
+      data,
+    });
+
     await addCashFlow({
       ws: cfWorksheet,
       data,
@@ -165,6 +173,47 @@ function addIncomeStatement({
   });
 
   fadeZeroRows(ws, t);
+
+  // TODO: I think this is setting the widths based on the char length of the formula,
+  // not the numbers themselves. Fake it for now.
+  // widths.forEach((w, i) => {
+  //   ws.getColumn(i + 1).width = widths[0];
+  // });
+  ws.getColumn(1).width = widths[0];
+  ws.getColumn(2).width = 17;
+  ws.getColumn(3).width = 17;
+}
+
+function addStockholderEquity({
+  ws,
+  data,
+}: {
+  ws: ExcelJS.Worksheet;
+  data: AuditData;
+}) {
+  const t = buildStockholderEquity(data);
+
+  ws.addRow([data.rt.basicInfo.businessName]);
+  ws.addRow([`Conslidated statement of stockholders' equity (deficit)`]);
+  ws.addRow([]);
+  ws.addRow([]);
+
+  t.UNSAFE_outputRowOffset = 4;
+
+  const widths: number[] = [];
+  t.rows.forEach((row) => {
+    const { widths: rowWidths } = addTableRow({
+      ws,
+      row,
+      table: t,
+      data,
+    });
+    rowWidths.forEach((w, i) => {
+      widths[i] = Math.max(widths[i] || 0, w);
+    });
+  });
+
+  // fadeZeroRows(ws, t);
 
   // TODO: I think this is setting the widths based on the char length of the formula,
   // not the numbers themselves. Fake it for now.
@@ -370,6 +419,12 @@ function addTableRow({
 
     if (cell.style.borderTop) {
       border.top = { style: cell.style.borderTop, color: { argb: 'FF000000' } };
+    }
+    if (cell.style.wrapText) {
+      xCell.alignment = { ...xCell.alignment, wrapText: true };
+    }
+    if (cell.style.align === 'right') {
+      xCell.alignment = { ...xCell.alignment, horizontal: 'right' };
     }
     if (cell.style.borderBottom) {
       border.bottom = {

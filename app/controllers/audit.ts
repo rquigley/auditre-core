@@ -18,6 +18,7 @@ import {
   kebabToCamel,
   ppCurrency,
 } from '@/lib/util';
+import { getCertificateTransactionDocumentData } from './equity';
 import {
   buildBalanceSheet,
   buildCashFlows,
@@ -226,6 +227,9 @@ export async function getAuditData(auditId: AuditId) {
     getCashflowSupportData(auditId, prevYear2),
   ]);
 
+  const certificateTransactionDocumentData =
+    await getCertificateTransactionDocumentData(auditId);
+
   return {
     auditId,
     totals: {
@@ -252,6 +256,7 @@ export async function getAuditData(auditId: AuditId) {
     fiscalYearEndNoYear,
     fiscalYearEnd: `${fiscalYearEndNoYear}, ${year}`,
     rt: requestDataObj,
+    certificateTransactionDocumentData,
   };
 }
 
