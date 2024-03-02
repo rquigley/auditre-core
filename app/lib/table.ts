@@ -348,6 +348,8 @@ export type Style = {
   numFmt?: NumFmt | { type: NumFmt; cents?: boolean };
   padTop?: boolean;
   align?: 'center' | 'left' | 'right';
+  textSize?: 'xs';
+  wrapText?: boolean;
 };
 
 export function columnToLetter(n: number) {

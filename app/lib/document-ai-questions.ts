@@ -363,6 +363,16 @@ export const documentAiQuestions: Partial<
       validate: dateSchema,
     },
   },
+  STOCK_BASED_COMPENSATION_REPORT: {
+    amtAdditionalPaidInCapital: {
+      label: 'Additional paid-in capital',
+      preProcess: (val: string) =>
+        extractLinesContaining(val, ['capital']).join('\n'),
+      question:
+        'How much paid-in-capital is there? Return only the number without commas. If there are no numbers in your answer, return "-"',
+      validate: numberSchema,
+    },
+  },
   STOCK_PLAN: {
     stockPlanDateOfDocument: {
       label: 'Date of the document',

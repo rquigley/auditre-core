@@ -1,9 +1,12 @@
+import dayjs from 'dayjs';
+
 import { getAccountsForCategory } from '@/controllers/account-mapping';
-import { groupFixedAccountsByCategories } from '@/lib/finance';
+import { fIn, groupFixedAccountsByCategories } from '@/lib/finance';
 import { Table } from '@/lib/table';
 import {
   getCertificateTransactionDocumentData,
   getSBCReportData,
+  getSOEData,
 } from '../equity';
 
 import type { AuditData } from '../audit';
@@ -706,6 +709,168 @@ export function buildIncomeStatement(data: {
     },
   );
 
+  return t;
+}
+
+export function buildStockholderEquity(data: AuditData) {
+  const t = new Table('statement-of-equity');
+
+  const beginningOfPYDate = new Date(
+    Number(data.PY),
+    data.rt.auditInfo.fiscalYearMonthEnd % 12,
+    1,
+  );
+  const endOfPYDate = new Date(
+    Number(data.PY),
+    data.rt.auditInfo.fiscalYearMonthEnd - 1,
+    1,
+  );
+
+  t.columns = [
+    {},
+    { style: { numFmt: 'number', align: 'right' } },
+    { style: { numFmt: 'accounting', align: 'right' } },
+    { style: { numFmt: 'number', align: 'right' } },
+    { style: { numFmt: 'accounting', align: 'right' } },
+    { style: { numFmt: 'accounting', align: 'right' } },
+    { style: { numFmt: 'accounting', align: 'right' } },
+    { style: { numFmt: 'accounting', align: 'right' } },
+    { style: { numFmt: 'accounting', align: 'right' } },
+  ];
+
+  t.addRow(
+    [
+      '',
+      'Convertible preferred stock: shares',
+      'Convertible preferred stock: amount',
+      'Common stock: shares',
+      'Common stock: amount',
+      'Additional paid-in capital',
+      'Accumulated deficit',
+      'Total stockholders’ equity (deficit)',
+    ],
+    {
+      style: {
+        textSize: 'xs',
+        borderBottom: 'thin',
+        wrapText: true,
+      },
+    },
+  );
+  const certData = getSOEData({
+    data,
+    certData: data.certificateTransactionDocumentData,
+    beginningOfPYDate: beginningOfPYDate,
+    endOfPYDate,
+  });
+  const additionalPaidInCapital = fIn(
+    data.rt.equity.stockBasedCompDocumentId.amtAdditionalPaidInCapital,
+  );
+  t.addRow(
+    [
+      `Balance as of ${dayjs(beginningOfPYDate).format('MMMM D, YYYY')}`,
+      certData.numPreferredSharesPrePY,
+      certData.amtPreferredSharesPrePY,
+      certData.numCommonSharesPrePY,
+      certData.amtCommonSharesPrePY,
+      `=TBLOOKUP('EQUITY_PAID_IN_CAPITAL', 'CY') + ${additionalPaidInCapital}`,
+      0,
+      `=C2 + E2 + F2`,
+    ],
+    {
+      cellStyle: [{ bold: true }],
+    },
+  );
+  t.addRow([
+    `Issuance of common stock upon exercise of stock options`,
+    certData.numPreferredSharesPY,
+    certData.amtPreferredSharesPY,
+    certData.numCommonSharesPY,
+    certData.amtCommonSharesPY,
+    0,
+    0,
+    0,
+  ]);
+  t.addRow([
+    'Stock-based compensation',
+    0,
+    0,
+    0,
+    0,
+    additionalPaidInCapital,
+    0,
+    0,
+  ]);
+  t.addRow([
+    'Net loss',
+    0,
+    0,
+    0,
+    0,
+    0,
+    `=-TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'PY')`,
+    0,
+  ]);
+  t.addRow(
+    [
+      `Balance as of ${dayjs(endOfPYDate).format('MMMM D, YYYY')}`,
+      '=SUM(B2:B5)',
+      '=SUM(C2:C5)',
+      '=SUM(D2:D5)',
+      '=SUM(E2:E5)',
+      '=SUM(F2:F5)',
+      '=SUM(G2:G5)',
+      '=SUM(H2:H5)',
+    ],
+    {
+      style: { bold: true, borderTop: 'thin', borderBottom: 'double' },
+    },
+  );
+  t.addRow([
+    `Issuance of common stock upon exercise of stock options`,
+    certData.numPreferredSharesCY,
+    certData.amtPreferredSharesCY,
+    certData.numCommonSharesCY,
+    certData.amtCommonSharesCY,
+    0,
+    0,
+    0,
+  ]);
+  t.addRow([
+    'Stock-based compensation',
+    0,
+    0,
+    0,
+    0,
+    additionalPaidInCapital,
+    0,
+    0,
+  ]);
+  t.addRow([
+    'Net loss',
+    0,
+    0,
+    0,
+    0,
+    0,
+    `=-TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'CY')`,
+    0,
+  ]);
+  t.addRow(
+    [
+      `Balance as of ${data.fiscalYearEndNoYear}, ${data.year}`,
+      '=SUM(B7:B9)',
+      '=SUM(C7:C9)',
+      '=SUM(D7:D9)',
+      '=SUM(E7:E9)',
+      '=SUM(F7:F9)',
+      '=SUM(G7:G9)',
+      '=SUM(H7:H9)',
+    ],
+    {
+      style: { bold: true, borderTop: 'thin', borderBottom: 'double' },
+    },
+  );
   return t;
 }
 

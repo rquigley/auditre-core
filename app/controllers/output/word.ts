@@ -27,6 +27,7 @@ import { ppCurrency, ppNumber } from '@/lib/util';
 import {
   buildBalanceSheet,
   buildIncomeStatement,
+  buildStockholderEquity,
   tableMap,
 } from '../financial-statement/table';
 import {
@@ -162,6 +163,7 @@ export async function generate(auditId: AuditId) {
       independentAuditorsReport(data),
       await balanceSheet(data),
       await incomeStatement(data),
+      await stockholderEquity(data),
       await notes(data),
     ],
   });
@@ -253,6 +255,20 @@ async function incomeStatement(data: AuditData) {
         pageBreakBefore: true,
       }),
       buildTable(buildIncomeStatement(data), data),
+    ],
+  };
+}
+async function stockholderEquity(data: AuditData) {
+  return {
+    ...getPageProperties(),
+
+    children: [
+      new Paragraph({
+        text: `Consolidated statement of stockholders' equity`,
+        heading: HeadingLevel.HEADING_1,
+        pageBreakBefore: true,
+      }),
+      buildTable(buildStockholderEquity(data), data),
     ],
   };
 }
