@@ -182,7 +182,7 @@ function titlePage(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
-        text: 'Conslidated financial statements',
+        text: 'Consolidated financial statements',
         //heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({

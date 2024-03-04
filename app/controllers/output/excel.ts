@@ -194,7 +194,7 @@ function addStockholderEquity({
   const t = buildStockholderEquity(data);
 
   ws.addRow([data.rt.basicInfo.businessName]);
-  ws.addRow([`Conslidated statement of stockholders' equity (deficit)`]);
+  ws.addRow([`Consolidated statement of stockholders' equity (deficit)`]);
   ws.addRow([]);
   ws.addRow([]);
 

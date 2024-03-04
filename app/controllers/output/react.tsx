@@ -49,7 +49,7 @@ export async function AuditPreview({
 
       <div className="rounded-md p-4">
         <h1 className="text-lg font-bold">{data.rt.basicInfo.businessName}</h1>
-        <div>Conslidated financial statements</div>
+        <div>Consolidated financial statements</div>
         <div>Year ended {data.fiscalYearEnd}</div>
       </div>
 
@@ -95,7 +95,7 @@ export async function AuditPreview({
       <div id="section-sose" className="max-w-5xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
           <a href="#section-sose" className="group relative">
-            3. Conslidated statement of stockholders&apos; equity (deficit)
+            3. Consolidated statement of stockholders&apos; equity (deficit)
             <Paperclip />
           </a>
         </h2>
@@ -106,7 +106,7 @@ export async function AuditPreview({
       <div id="section-socf" className="max-w-5xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
           <a href="#section-socf" className="group relative">
-            4. Conslidated statement of cash flows
+            4. Consolidated statement of cash flows
             <Paperclip />
           </a>
         </h2>
@@ -413,13 +413,13 @@ function TableOfContents({
         href="#section-sose"
         className="block text-slate-700 underline hover:no-underline"
       >
-        3. Conslidated statement of stockholders&apos; equity (deficit)
+        3. Consolidated statement of stockholders&apos; equity (deficit)
       </a>
       <a
         href="#section-income-statement"
         className="block text-slate-700 underline hover:no-underline"
       >
-        4. Conslidated statement of cash flows
+        4. Consolidated statement of cash flows
       </a>
       <a
         href="#section-org"
