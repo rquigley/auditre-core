@@ -417,7 +417,8 @@ export const getPolicySections = () => [
   }),
   generateSection({
     header: 'Equity incentive plan',
-    body: (data) => `
+    body: (data) => {
+      return `
       On [insert adoption date from ESOP document "January 15, 20XX"], the Company adopted the [insert title from ESOP document] (“Equity Incentive Plan”) to permit the grant of share-based awards, such as stock grants and incentive and non-statutory stock options to employees, directors and consultants. As of [${data.fiscalYearEnd}], a total of [insert stock subject to this plan] shares of the Company’s common stock were reserved for issuance under the Equity Incentive Plan, of which [insert number from Carta] were available for grant.
 
       Restricted stock awards
@@ -483,7 +484,8 @@ export const getPolicySections = () => [
 
       Common Stock Price
       Share-based awards are granted at fair value as determined by the board of directors at the date of grant based on information available at that time, including valuation analyses performed by an independent valuation expert.
-    `,
+    `;
+    },
     pageBreakBefore: true,
   }),
   generateSection({
