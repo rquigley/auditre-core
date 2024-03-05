@@ -300,6 +300,7 @@ export const getOrgsForUserIdCached = unstable_cache(
   async (id) => getOrgsForUserId(id),
   ['orgs-for-user'],
   {
+    tags: ['orgs-for-user'],
     revalidate: 60 * 5,
   },
 );
