@@ -48,7 +48,9 @@ export function columnLabelToIndex(label) {
     label = label.toUpperCase();
 
     for (let i = 0, j = label.length - 1; i < label.length; i += 1, j -= 1) {
-      result += Math.pow(COLUMN_LABEL_BASE_LENGTH, j) * (COLUMN_LABEL_BASE.indexOf(label[i]) + 1);
+      result +=
+        Math.pow(COLUMN_LABEL_BASE_LENGTH, j) *
+        (COLUMN_LABEL_BASE.indexOf(label[i]) + 1);
     }
   }
   --result;
@@ -66,7 +68,8 @@ export function columnIndexToLabel(column) {
   let result = '';
 
   while (column >= 0) {
-    result = String.fromCharCode((column % COLUMN_LABEL_BASE_LENGTH) + 97) + result;
+    result =
+      String.fromCharCode((column % COLUMN_LABEL_BASE_LENGTH) + 97) + result;
     column = Math.floor(column / COLUMN_LABEL_BASE_LENGTH) - 1;
   }
 
@@ -85,7 +88,9 @@ export function extractLabel(label) {
   if (typeof label !== 'string' || !LABEL_EXTRACT_REGEXP.test(label)) {
     return [];
   }
-  const [, columnAbs, column, rowAbs, row] = label.toUpperCase().match(LABEL_EXTRACT_REGEXP);
+  const [, columnAbs, column, rowAbs, row] = label
+    .toUpperCase()
+    .match(LABEL_EXTRACT_REGEXP);
 
   return [
     {
@@ -110,7 +115,8 @@ export function extractLabel(label) {
  */
 export function toLabel(row, column) {
   const rowLabel = (row.isAbsolute ? '$' : '') + rowIndexToLabel(row.index);
-  const columnLabel = (column.isAbsolute ? '$' : '') + columnIndexToLabel(column.index);
+  const columnLabel =
+    (column.isAbsolute ? '$' : '') + columnIndexToLabel(column.index);
 
   return columnLabel + rowLabel;
 }
