@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { PrimaryButton } from '@/components/button';
-import { delay } from '@/lib/util';
 
 import type { AuditId } from '@/types';
 
@@ -16,7 +15,6 @@ export function GenerateDocButton({ auditId }: { auditId: AuditId }) {
       submitting={submitting}
       onClick={async () => {
         setSubmitting(true);
-        await delay(5000);
         toast.success('Report generated. Downloading');
         await forceDownload(`/audit/${auditId}/generate-doc`);
         setSubmitting(false);
@@ -34,8 +32,6 @@ export function GenerateExcelButton({ auditId }: { auditId: AuditId }) {
       submitting={submitting}
       onClick={async () => {
         setSubmitting(true);
-        //await delay(5000);
-        toast.success('Report generated. Downloading');
         await forceDownload(`/audit/${auditId}/generate-excel`);
         setSubmitting(false);
       }}
