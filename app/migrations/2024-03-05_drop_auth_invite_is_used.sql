@@ -1,0 +1,1 @@
+ALTER TABLE auth.invitation DROP COLUMN is_used;
