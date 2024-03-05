@@ -30,7 +30,6 @@ export async function getInvitationsByEmail(email: string) {
   return await db
     .selectFrom('auth.invitation')
     .where('email', '=', email)
-    .where('isUsed', '=', false)
     .where('expiresAt', '>', new Date())
     .select(['id', 'orgId'])
     .execute();
@@ -40,7 +39,6 @@ export async function getInvitationsByOrgId(orgId: OrgId) {
   return await db
     .selectFrom('auth.invitation')
     .where('orgId', '=', orgId)
-    .where('isUsed', '=', false)
     .selectAll()
     .execute();
 }
@@ -76,6 +74,7 @@ export async function sendInviteEmail(inviteId: InvitationId) {
   if (!org) {
     throw new Error('Organization not found');
   }
+
   await sendEmail({
     from: 'noreply@auditre.co',
     to: invite.email,
@@ -83,7 +82,7 @@ export async function sendInviteEmail(inviteId: InvitationId) {
     html: `
     <p>You have been invited to join ${org.name} on AuditRe</p>
     <p>
-      <a href="${process.env.NEXTAUTH_URL}/invite?id=${invite.id}&email=${encodeURIComponent(invite.email)}">Click here to accept the invitation</a>
+      <a href="${process.env.BASE_URL}/invite?id=${invite.id}&email=${encodeURIComponent(invite.email)}">Click here to accept the invitation</a>
     </p>
   `,
   });

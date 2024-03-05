@@ -87,8 +87,7 @@ export interface AuthInvitationTable {
   orgId: OrgId;
   email: string;
   createdAt: ColumnType<Date, string | undefined, never>;
-  expiresAt: ColumnType<Date, string | undefined, never>;
-  isUsed: ColumnType<boolean, never, boolean>;
+  expiresAt: ColumnType<Date, string | undefined, Date>;
 }
 
 export type InvitationUpdate = Updateable<AuthInvitationTable>;
