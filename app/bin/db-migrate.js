@@ -106,7 +106,8 @@ const migrateToLatest = async () => {
   let files = fs
     .readdirSync(migrationDir)
     .filter((file) => file.endsWith('.sql'))
-    .sort();
+    .sort((a, b) => a.localeCompare(b));
+  console.log(files);
   if (lastMigration) {
     files = takeAfter(files, lastMigration);
   }
