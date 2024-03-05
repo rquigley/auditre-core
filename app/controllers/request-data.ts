@@ -156,6 +156,7 @@ export async function getChangesForRequestType(
       'requestData.actorUserId',
       'requestData.createdAt',
       'u.name',
+      'u.email',
       'u.image',
     ])
     .distinctOn(['requestData.auditId', 'requestData.createdAt'])

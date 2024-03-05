@@ -305,3 +305,10 @@ export const zUrlOrEmptyString = z.string().refine(
     message: 'Must be an empty string or a valid URL',
   },
 );
+
+export function emailToName(email: string | undefined | null) {
+  if (!email) {
+    return '';
+  }
+  return email.split('@')[0];
+}
