@@ -90,7 +90,7 @@ export const getByIdForClientCached = unstable_cache(
   async (auditId: AuditId) => getByIdForClient(auditId),
   ['audit-getByIdForClient'],
   {
-    tags: [`client-audit`],
+    tags: ['client-audit'],
   },
 );
 
