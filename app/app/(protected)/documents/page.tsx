@@ -40,7 +40,7 @@ export default async function DocumentsPage() {
                     Last modified
                   </th> */}
 
-              <th scope="col" className="pr-5 py-3.5 text-right font-normal">
+              <th scope="col" className="py-3.5 pr-5 text-right font-normal">
                 Uploaded
               </th>
             </tr>

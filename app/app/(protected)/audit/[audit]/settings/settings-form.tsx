@@ -50,7 +50,7 @@ export function SettingsForm({
             <div>
               <label
                 htmlFor={'name'}
-                className="block text-sm font-medium leading-6 text-gray-900 text-left"
+                className="block text-left text-sm font-medium leading-6 text-gray-900"
               >
                 Name
               </label>

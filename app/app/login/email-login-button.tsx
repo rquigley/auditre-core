@@ -6,7 +6,7 @@ export default function EmailLoginButton() {
   return (
     <Link
       href="/login?s=email-login"
-      className="bg-white hover:bg-stone-50 active:bg-stone-100 group my-2 flex h-10 w-full items-center justify-center space-x-2 rounded-md border border-stone-200 transition-colors duration-75 focus:outline-none"
+      className="group my-2 flex h-10 w-full items-center justify-center space-x-2 rounded-md border border-stone-200 bg-white transition-colors duration-75 hover:bg-stone-50 focus:outline-none active:bg-stone-100"
     >
       <>
         <svg
@@ -15,7 +15,7 @@ export default function EmailLoginButton() {
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className="w-6 h-6"
+          className="size-6"
         >
           <path
             strokeLinecap="round"

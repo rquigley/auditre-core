@@ -89,7 +89,7 @@ export default function NewAuditModal() {
                         <div className="block">
                           <label
                             htmlFor="name"
-                            className="block text-sm font-medium leading-6 text-gray-900 text-left"
+                            className="block text-left text-sm font-medium leading-6 text-gray-900"
                           >
                             Name
                           </label>
@@ -102,7 +102,7 @@ export default function NewAuditModal() {
                         <div className="align-left">
                           <label
                             htmlFor="name"
-                            className="block text-sm font-medium leading-6 text-gray-900 text-left"
+                            className="block text-left text-sm font-medium leading-6 text-gray-900"
                           >
                             Year
                           </label>

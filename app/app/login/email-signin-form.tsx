@@ -43,7 +43,7 @@ export default function EmailSigninForm() {
           <div className="block">
             <label
               htmlFor="name"
-              className="block text-sm font-medium leading-6 text-gray-900 text-left"
+              className="block text-left text-sm font-medium leading-6 text-gray-900"
             >
               Email
             </label>
@@ -54,7 +54,7 @@ export default function EmailSigninForm() {
             />
           </div>
         </div>
-        <div className="mt-2 mb-2 grid grid-flow-row-dense grid-cols-2 gap-3">
+        <div className="mb-2 mt-2 grid grid-flow-row-dense grid-cols-2 gap-3">
           <button
             type="submit"
             disabled={!formState.isDirty || formState.isSubmitting}

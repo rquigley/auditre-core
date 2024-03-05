@@ -104,26 +104,26 @@ export function CalendarCell({ state, date, currentMonth }) {
   return (
     <td
       {...cellProps}
-      className={`py-0.5 relative ${isFocusVisible ? 'z-10' : 'z-0'}`}
+      className={`relative py-0.5 ${isFocusVisible ? 'z-10' : 'z-0'}`}
     >
       <div
         {...mergeProps(buttonProps, focusProps)}
         // @ts-expect-error
         ref={ref}
         hidden={isOutsideMonth}
-        className={`w-10 h-10 outline-none group ${
+        className={`group h-10 w-10 outline-none ${
           isRoundedLeft ? 'rounded-l-full' : ''
         } ${isRoundedRight ? 'rounded-r-full' : ''} ${
           isSelected ? 'bg-violet-300' : ''
         } ${isDisabled ? 'disabled' : ''}`}
       >
         <div
-          className={`w-full h-full rounded-full flex items-center justify-center ${
+          className={`flex h-full w-full items-center justify-center rounded-full ${
             isDisabled ? 'text-gray-400' : ''
           } ${
             // Focus ring, visible while the cell has keyboard focus.
             isFocusVisible
-              ? 'ring-2 group-focus:z-2 ring-sky-700 ring-offset-2'
+              ? 'group-focus:z-2 ring-2 ring-sky-700 ring-offset-2'
               : ''
           } ${
             // Darker selection background for the start and end.
@@ -231,7 +231,7 @@ export function CalendarHeader({
         // and the calendar itself describes the individual month
         // so we don't need to repeat that here for screen reader users.
         aria-hidden
-        className="flex-1 align-center font-bold text-xl text-center"
+        className="align-center flex-1 text-center text-xl font-bold"
       >
         {monthDateFormatter.format(
           state.visibleRange.start.toDate(state.timeZone),
@@ -263,10 +263,10 @@ export function Button(props) {
       {...mergeProps(buttonProps, focusProps)}
       // @ts-expect-error
       ref={ref}
-      className={`p-2 rounded-full ${props.isDisabled ? 'text-gray-400' : ''} ${
+      className={`rounded-full p-2 ${props.isDisabled ? 'text-gray-400' : ''} ${
         !props.isDisabled ? 'hover:bg-violet-100 active:bg-violet-200' : ''
       } outline-none ${
-        isFocusVisible ? 'ring-2 ring-offset-2 ring-purple-600' : ''
+        isFocusVisible ? 'ring-2 ring-purple-600 ring-offset-2' : ''
       }`}
     >
       {props.children}

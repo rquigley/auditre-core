@@ -86,7 +86,7 @@ function DeleteForm({
       <button
         className={clsx(
           active ? 'bg-gray-50' : '',
-          'w-full text-left block px-3 py-1 text-sm leading-6 text-gray-900',
+          'block w-full px-3 py-1 text-left text-sm leading-6 text-gray-900',
         )}
       >
         Delete<span className="sr-only">, {invitation.email}</span>

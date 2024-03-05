@@ -6,8 +6,8 @@ export async function Content({
   pad?: boolean;
 }) {
   return (
-    <div className="my-14 pb-14 w-full h-full flex flex-col">
-      <div className="overflow-auto h-full">
+    <div className="my-14 flex h-full w-full flex-col pb-14">
+      <div className="h-full overflow-auto">
         {pad ? <div className="m-5">{children}</div> : children}
       </div>
     </div>

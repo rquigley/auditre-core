@@ -16,25 +16,25 @@ export default function ChildOrgs({ orgs }: { orgs: OrgWithChildren[] }) {
           <tr className="divide-x divide-gray-200 text-slate-600">
             <th
               scope="col"
-              className="align-bottom whitespace-nowrap py-1 pl-2 pr-3 text-left text-xs font-medium"
+              className="whitespace-nowrap py-1 pl-2 pr-3 text-left align-bottom text-xs font-medium"
             >
               Organization
             </th>
             <th
               scope="col"
-              className="align-bottom whitespace-nowrap py-1 pl-2 pr-3 text-left text-xs font-medium"
+              className="whitespace-nowrap py-1 pl-2 pr-3 text-left align-bottom text-xs font-medium"
             >
               Audits
             </th>
             <th
               scope="col"
-              className="align-bottom whitespace-nowrap py-1 pl-2 pr-3 text-left text-xs font-medium"
+              className="whitespace-nowrap py-1 pl-2 pr-3 text-left align-bottom text-xs font-medium"
             >
               Users
             </th>
             <th
               scope="col"
-              className="align-bottom whitespace-nowrap py-1 pl-2 pr-3 text-left text-xs font-medium"
+              className="whitespace-nowrap py-1 pl-2 pr-3 text-left align-bottom text-xs font-medium"
             >
               Can create child orgs
             </th>
@@ -68,7 +68,7 @@ export default function ChildOrgs({ orgs }: { orgs: OrgWithChildren[] }) {
                     viewBox="0 0 24 24"
                     strokeWidth="1.5"
                     stroke="currentColor"
-                    className="w-5 h-5 text-green-500"
+                    className="h-5 w-5 text-green-500"
                   >
                     <path
                       strokeLinecap="round"

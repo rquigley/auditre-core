@@ -130,7 +130,7 @@ export function Table({ auditId }: { auditId: AuditId }) {
     <div className="mt-8">
       {isProcessing ? (
         <div className="flex">
-          <div className="flex items-center text-xs text-gray-400 mt-3">
+          <div className="mt-3 flex items-center text-xs text-gray-400">
             <Spinner />
             {numToProcessTotal === -1 ? (
               <>Extracting</>
@@ -147,14 +147,14 @@ export function Table({ auditId }: { auditId: AuditId }) {
           <tr className="divide-x divide-gray-200 text-slate-600">
             <th
               scope="col"
-              className="align-bottom whitespace-nowrap py-1 pl-2 pr-3 text-left text-xs font-medium"
+              className="whitespace-nowrap py-1 pl-2 pr-3 text-left align-bottom text-xs font-medium"
             >
               <SortableHeader column="account">Account</SortableHeader>
             </th>
 
             <th
               scope="col"
-              className="align-bottom whitespace-nowrap px-2 py-1 text-xs text-left font-medium"
+              className="whitespace-nowrap px-2 py-1 text-left align-bottom text-xs font-medium"
             >
               <AccountTypeMappingKey />
 
@@ -162,7 +162,7 @@ export function Table({ auditId }: { auditId: AuditId }) {
             </th>
             <th
               scope="col"
-              className="align-bottom whitespace-nowrap min-w-min px-2 py-1 text-xs font-medium"
+              className="min-w-min whitespace-nowrap px-2 py-1 align-bottom text-xs font-medium"
             >
               <SortableHeader column="balance1">
                 {year1 || 'Previous year'}
@@ -170,7 +170,7 @@ export function Table({ auditId }: { auditId: AuditId }) {
             </th>
             <th
               scope="col"
-              className="align-bottom whitespace-nowrap min-w-min px-2 py-1 text-xs font-medium"
+              className="min-w-min whitespace-nowrap px-2 py-1 align-bottom text-xs font-medium"
             >
               <SortableHeader column="balance2">
                 {year2 || 'Current year'}
@@ -178,7 +178,7 @@ export function Table({ auditId }: { auditId: AuditId }) {
             </th>
             <th
               scope="col"
-              className="align-bottom whitespace-nowrap min-w-min px-2 py-1 text-xs font-medium"
+              className="min-w-min whitespace-nowrap px-2 py-1 align-bottom text-xs font-medium"
             >
               <SortableHeader column="balance3">
                 {year3 || 'Current year'}
@@ -217,11 +217,11 @@ export function Table({ auditId }: { auditId: AuditId }) {
                     </span>
                   ) : null}
                 </td>
-                <td className="px-2 py-2 text-xs text-gray-900 text-left">
+                <td className="px-2 py-2 text-left text-xs text-gray-900">
                   <span className="block h-7">
                     {isProcessing && row.accountType === 'UNKNOWN' ? (
-                      <span className="h-full text-gray-400 flex items-center">
-                        <span className="mr-2 animate-ping w-1.5 h-1.5 block rounded-full bg-gray-400 opacity-75"></span>{' '}
+                      <span className="flex h-full items-center text-gray-400">
+                        <span className="mr-2 block h-1.5 w-1.5 animate-ping rounded-full bg-gray-400 opacity-75"></span>{' '}
                         <span>Classifying</span>
                       </span>
                     ) : (
@@ -266,21 +266,21 @@ export function Table({ auditId }: { auditId: AuditId }) {
                   </span>
                 </td>
                 <td
-                  className={`px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className} group-hover:font-bold`}
+                  className={`px-2 py-2 text-right text-sm text-gray-900 ${financeFont.className} group-hover:font-bold`}
                 >
                   {ppCurrency(fOut(row.balance1), {
                     cents: true,
                   })}
                 </td>
                 <td
-                  className={`px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className} group-hover:font-bold`}
+                  className={`px-2 py-2 text-right text-sm text-gray-900 ${financeFont.className} group-hover:font-bold`}
                 >
                   {ppCurrency(fOut(row.balance2), {
                     cents: true,
                   })}
                 </td>
                 <td
-                  className={`px-2 py-2 text-sm text-gray-900 text-right ${financeFont.className} group-hover:font-bold`}
+                  className={`px-2 py-2 text-right text-sm text-gray-900 ${financeFont.className} group-hover:font-bold`}
                 >
                   {ppCurrency(fOut(row.balance3), {
                     cents: true,
@@ -297,13 +297,13 @@ export function Table({ auditId }: { auditId: AuditId }) {
 
 function AccountTypeMappingKey() {
   return (
-    <div className="flex text-xs space-x-2 font-normal mb-1">
+    <div className="mb-1 flex space-x-2 text-xs font-normal">
       {Object.keys(groupLabels).map((group) => (
         <div
           key={group}
           className={clsx(
             accountTypeGroupBGColors[group as keyof typeof groupLabels],
-            'px-1 py-0.5 rounded text-gray-600',
+            'rounded px-1 py-0.5 text-gray-600',
           )}
         >
           {getGroupLabel(group as keyof typeof groupLabels)}

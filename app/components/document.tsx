@@ -29,7 +29,7 @@ export function Document({
         disabled={!documentId}
         className={clsx(
           documentId ? 'hover:border-slate-300' : 'cursor-auto',
-          'flex items-center h-9 border border-white  p-1 cursor-pointer',
+          'flex h-9 cursor-pointer items-center border  border-white p-1',
         )}
       >
         <FiletypeIcon filename={docKey} />

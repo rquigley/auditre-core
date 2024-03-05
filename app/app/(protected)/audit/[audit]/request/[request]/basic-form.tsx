@@ -108,7 +108,7 @@ export function BasicForm({
             {request.type == 'USER_REQUESTED' ? request.name : config.name}
           </h2> */}
           {request.description && (
-            <p className="mt-1 text-sm leading-6 text-gray-600 mb-10">
+            <p className="mb-10 mt-1 text-sm leading-6 text-gray-600">
               {request.description}
             </p>
           )}
@@ -124,7 +124,7 @@ export function BasicForm({
                   className={clsx(
                     isVisible ? '' : 'hidden',
                     fieldConfig.input === 'fileupload'
-                      ? 'border rounded-md p-4'
+                      ? 'rounded-md border p-4'
                       : '',
                     'sm:col-span-8',
                   )}

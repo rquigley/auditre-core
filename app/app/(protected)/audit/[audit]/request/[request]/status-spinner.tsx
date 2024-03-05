@@ -37,7 +37,7 @@ export function StatusSpinner({ auditId }: { auditId: AuditId }) {
   }
   return (
     <div className="flex">
-      <div className="flex items-center text-sm text-gray-600 mt-3">
+      <div className="mt-3 flex items-center text-sm text-gray-600">
         <Spinner />
         Mapping {status?.numToProcessTotal - status?.numToProcess}/
         {status?.numToProcessTotal} accounts

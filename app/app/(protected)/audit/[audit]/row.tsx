@@ -59,7 +59,7 @@ export default function Row({
 }) {
   return (
     <tr key={request.id} className="hover:bg-gray-100">
-      <td className="pl-4 sm:pl-2 py-5 text-sm text-gray-500">
+      <td className="py-5 pl-4 text-sm text-gray-500 sm:pl-2">
         <Suspense fallback={<StatusBadge status="loading" />}>
           <Await promise={statusesP}>
             {(s) => <StatusBadge status={s[request.id].status} />}
@@ -67,10 +67,10 @@ export default function Row({
         </Suspense>
       </td>
       <td className="py-5 text-sm">
-        <div className="text-gray-900 font-semibold">
+        <div className="font-semibold text-gray-900">
           <Link
             href={`/audit/${request.auditId}/request/${request.id}`}
-            className="hover:underline hover:text-blue-500"
+            className="hover:text-blue-500 hover:underline"
           >
             {request.name}
           </Link>
@@ -79,7 +79,7 @@ export default function Row({
         <div className="text-gray-900">{request.description}</div>
       </td>
 
-      <td className="whitespace-nowrap pr-4 sm:pr-2 py-5 text-sm text-gray-500">
+      <td className="whitespace-nowrap py-5 pr-4 text-sm text-gray-500 sm:pr-2">
         {/* {request.owners
           ? request.owners.map((owner: string) => (
               <div key={owner}>{owner}</div>
