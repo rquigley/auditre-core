@@ -421,7 +421,7 @@ export const getPolicySections = () => [
       On [insert adoption date from ESOP document "January 15, 20XX"], the Company adopted the [insert title from ESOP document] (“Equity Incentive Plan”) to permit the grant of share-based awards, such as stock grants and incentive and non-statutory stock options to employees, directors and consultants. As of [${data.fiscalYearEnd}], a total of [insert stock subject to this plan] shares of the Company’s common stock were reserved for issuance under the Equity Incentive Plan, of which [insert number from Carta] were available for grant.
 
       Restricted stock awards
-      "Restricted stock awards (“RSAs”) granted to date total [insert Variable 6 from Certificate Transaction Report] shares and were granted to the Company’s founders in [insert Variable 7 from SBC Report Template], and 25% of the shares vested immediately upon the grant date with the remaining shares subject ot a four-year vesting period.
+      "Restricted stock awards (“RSAs”) granted to date total [insert Variable 6 from Certificate Transaction Report] shares and were granted to the Company’s founders in [insert Variable 7 from SBC Report Template], and 25% of the shares vested immediately upon the grant date with the remaining shares subject to a four-year vesting period.
 
       The Company had the following activity for RSAs for the year ended [${data.fiscalYearEnd}]:"
 
