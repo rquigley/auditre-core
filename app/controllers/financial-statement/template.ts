@@ -542,7 +542,7 @@ export const getPolicySections = () => [
       if (data.rt.relatedPartyTransactions.hasRelatedPartyTransactions) {
         return `The company [${data.rt.relatedPartyTransactions.relatedPartyTransactions}].`;
       } else {
-        return `The company has no related party transactions, druing the year ending [${data.fiscalYearEnd}]`;
+        return `The company has no related party transactions, during the year ending [${data.fiscalYearEnd}]`;
       }
     },
     pageBreakBefore: true,
