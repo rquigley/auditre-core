@@ -7,10 +7,11 @@ import {
   buildBalanceSheet,
   buildCashFlows,
   buildIncomeStatement,
+  buildStockholderEquity,
   tableMap,
 } from '@/controllers/financial-statement/table';
 import { fOut } from '@/lib/finance';
-import { getParser } from '@/lib/formula-parser';
+import { getParser } from '@/lib/parser';
 import { ppCurrency, ppNumber } from '@/lib/util';
 import { AuditId } from '@/types';
 import { getAuditData, getWarningsForAudit } from '../audit';
@@ -21,8 +22,8 @@ import {
 
 import type { AuditData } from '@/controllers/audit';
 import type { Section } from '@/controllers/financial-statement/template';
+import type { Parser } from '@/lib/formula-parser/index';
 import type { Row, Table } from '@/lib/table';
-import type { Parser } from 'hot-formula-parser';
 
 const financeFont = Inconsolata({
   subsets: ['latin'],
@@ -43,16 +44,16 @@ export async function AuditPreview({
   const warnings = getWarningsForAudit(data);
 
   return (
-    <div className="text-sm text-slate-800 max-w-3xl">
-      <div className=" mb-4 border rounded-md p-4">
+    <div className="text-sm text-slate-800 max-w-5xl">
+      {warnings.length > 0 && <Warning warnings={warnings} />}
+
+      <div className="rounded-md p-4">
         <h1 className="text-lg font-bold">{data.rt.basicInfo.businessName}</h1>
-        <div>Conslidated financial statements</div>
+        <div>Consolidated financial statements</div>
         <div>Year ended {data.fiscalYearEnd}</div>
       </div>
 
-      {warnings.length > 0 && <Warning warnings={warnings} />}
-
-      <div className="max-w-3xl mb-4 border rounded-md p-4">
+      <div className="max-w-5xl mb-4  rounded-md p-4">
         <h2 className="text-lg font-bold">Contents</h2>
 
         <TableOfContents
@@ -65,7 +66,7 @@ export async function AuditPreview({
 
       <div
         id="section-balance-sheet"
-        className="max-w-3xl mb-4 border rounded-md p-4"
+        className="max-w-5xl mb-4 border rounded-md p-4"
       >
         <h2 className="text-lg font-bold">
           <a href="#section-balance-sheet" className="group relative">
@@ -79,7 +80,7 @@ export async function AuditPreview({
 
       <div
         id="section-income-statement"
-        className="max-w-3xl mb-4 border rounded-md p-4"
+        className="max-w-5xl mb-4 border rounded-md p-4"
       >
         <h2 className="text-lg font-bold">
           <a href="#section-income-statement" className="group relative">
@@ -91,23 +92,21 @@ export async function AuditPreview({
         {buildTable(buildIncomeStatement(data), data)}
       </div>
 
-      <div id="section-sose" className="max-w-3xl mb-4 border rounded-md p-4">
+      <div id="section-sose" className="max-w-5xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
           <a href="#section-sose" className="group relative">
-            3. Conslidated statement of stockholders&apos; equity (deficit)
+            3. Consolidated statement of stockholders&apos; equity (deficit)
             <Paperclip />
           </a>
         </h2>
 
-        {/* <table className="w-full mt-2">
-          <tbody>TODO</tbody>
-        </table> */}
+        {buildTable(buildStockholderEquity(data), data)}
       </div>
 
-      <div id="section-socf" className="max-w-3xl mb-4 border rounded-md p-4">
+      <div id="section-socf" className="max-w-5xl mb-4 border rounded-md p-4">
         <h2 className="text-lg font-bold">
           <a href="#section-socf" className="group relative">
-            4. Conslidated statement of cash flows
+            4. Consolidated statement of cash flows
             <Paperclip />
           </a>
         </h2>
@@ -282,8 +281,14 @@ function buildTableRow(
       {row.cells.map((cell, idx) => {
         let value;
         if (typeof cell.value === 'string' && cell.value.startsWith('=')) {
-          const parsed = parser.parse(cell.value.substring(1));
+          const parsed = parser.parse(cell.value.substring(1), cell.address);
           if (parsed.error) {
+            console.log('Error parsing cell', {
+              table: cell.table.name,
+              address: cell.address,
+              value: cell.value,
+              error: parsed.error,
+            });
             value = `Error: ${parsed.error}`;
             hideRow = false;
           } else {
@@ -363,6 +368,8 @@ function buildTableRow(
           ...indentStyles,
           'pt-2': cell.style.padTop,
           'text-right': cell.style.align === 'right',
+          'text-xs': cell.style.textSize === 'xs',
+          'p-0.5': true,
         });
 
         return (
@@ -403,16 +410,16 @@ function TableOfContents({
         2. Consolidated statement of operations
       </a>
       <a
-        href="#section-income-statement"
+        href="#section-sose"
         className="block text-slate-700 underline hover:no-underline"
       >
-        3. Conslidated statement of stockholders&apos; equity (deficit)
+        3. Consolidated statement of stockholders&apos; equity (deficit)
       </a>
       <a
         href="#section-income-statement"
         className="block text-slate-700 underline hover:no-underline"
       >
-        4. Conslidated statement of cash flows
+        4. Consolidated statement of cash flows
       </a>
       <a
         href="#section-org"
@@ -493,7 +500,7 @@ function Warning({
   }[];
 }) {
   return (
-    <div className="rounded-md bg-red-50 p-4 my-4">
+    <div className="rounded-md bg-red-50 p-4 my-4 max-w-3xl">
       <div className="flex">
         <div className="flex-shrink-0">
           <XCircleIcon className="size-5 text-red-400" aria-hidden="true" />
@@ -503,7 +510,7 @@ function Warning({
             There are errors:
           </h3>
           <div className="mt-2 text-sm text-red-700">
-            <ul role="list" className="list-disc space-y-1 pl-5">
+            <ul role="list" className="list-disc space-y-4 pl-5">
               {warnings.map((warning, idx) => (
                 <li key={idx}>
                   <span>
@@ -513,7 +520,8 @@ function Warning({
                     >
                       {warning.previewSection}
                     </a>
-                    : {warning.message}
+                    <br />
+                    {warning.message}
                   </span>
                 </li>
               ))}

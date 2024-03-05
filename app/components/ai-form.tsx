@@ -61,7 +61,7 @@ export default function AI({
             errors.query
               ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
               : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
-            'block w-full rounded-md border-0 py-1.5 px-2.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
+            'block w-full rounded-md border-0 px-2.5 py-1.5  shadow-sm ring-1 ring-inset  focus:ring-2 focus:ring-inset  sm:text-sm sm:leading-6',
           )}
           onKeyDown={handleKeyDown}
         />
@@ -71,7 +71,7 @@ export default function AI({
           <div className="w-40">
             <select
               {...register('model')}
-              className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 bg-white text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-sky-600 sm:text-sm sm:leading-6"
+              className="mt-2 block w-full rounded-md border-0 bg-white py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-sky-600 sm:text-sm sm:leading-6"
             >
               <option disabled>AI Model</option>
               {models.map((model) => (

@@ -75,6 +75,16 @@ export class Table {
     return this.getRow(row).cells[column];
   }
 
+  getCellByAddress(address: string) {
+    const match = address.match(/^([A-Za-z]+)(\d+)$/);
+    if (!match) {
+      throw new Error(`Invalid address: ${address}`);
+    }
+    const col = letterToColumn(match[1]);
+    const row = parseInt(match[2], 10) - 1;
+    return this.getCell(row, col);
+  }
+
   getCellByIdAndCol(id: string, column: number) {
     return this.getRowById(id).cells[column];
   }
@@ -83,6 +93,30 @@ export class Table {
     return this.getCellByIdAndCol(rowId, column)?.value || '';
   }
 
+  getRange(
+    startCellAddr: string,
+    endCellAddr: string,
+    currentCellAddr: string,
+  ) {
+    const startCell = this.getCellByAddress(startCellAddr);
+    const startRow = startCell.row;
+    const endCell = this.getCellByAddress(endCellAddr);
+    const endRow = endCell.row;
+    const startColumn = startCell.column;
+    const endColumn = endCell.column;
+
+    const ret = [];
+    for (let row = startRow; row <= endRow; row++) {
+      for (let column = startColumn; column <= endColumn; column++) {
+        ret.push(this.getCell(row, column));
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * @deprecated - use getRange instead
+   */
   getAddressRange(colNum: number, rows: Row[], rowOffset: number) {
     const isContinuous =
       rows.every((row, i) => row.rowNum === rows[0].rowNum + i) &&
@@ -314,6 +348,8 @@ export type Style = {
   numFmt?: NumFmt | { type: NumFmt; cents?: boolean };
   padTop?: boolean;
   align?: 'center' | 'left' | 'right';
+  textSize?: 'xs';
+  wrapText?: boolean;
 };
 
 export function columnToLetter(n: number) {

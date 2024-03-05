@@ -73,13 +73,13 @@ export default async function OrganizationSettingsPage() {
       <Header title="Organization Settings" />
       <Content pad={true}>
         <div className="mb-4">
-          <div className="font-lg border-b pb-1 mb-3">Users</div>
+          <div className="font-lg mb-3 border-b pb-1">Users</div>
 
           <Users users={users} currentUser={user} />
         </div>
 
         <div className="mb-4">
-          <div className="font-lg border-b pb-1 mb-3">Invitations</div>
+          <div className="font-lg mb-3 border-b pb-1">Invitations</div>
           <Invitations invitations={invitations} />
           <NewInviteForm createInvite={createInvite} />
         </div>
@@ -110,7 +110,7 @@ async function Users({
       {users.map((user) => (
         <li
           key={user.email}
-          className="relative flex justify-between gap-x-2 pt-3 pb-5 max-w-xl"
+          className="relative flex max-w-xl justify-between gap-x-2 pb-5 pt-3"
         >
           <div className="flex min-w-0 gap-x-4">
             {user.image ? (

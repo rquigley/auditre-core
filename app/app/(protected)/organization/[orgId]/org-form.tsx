@@ -44,7 +44,7 @@ export default function OrgForm({ id, data, userCanSetChildOrgs }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="pb-12 max-w-md">
+      <div className="max-w-md pb-12">
         <div className="mb-3">
           <label
             htmlFor="name"

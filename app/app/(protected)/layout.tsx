@@ -30,7 +30,7 @@ export default async function RootLayout({
     <html lang="en" className={inter.className}>
       <link rel="icon shortcut" href="/img/favicon.ico" type="image/x-icon" />
       <body className="bg-white">
-        <div className="h-screen flex">
+        <div className="flex h-screen">
           <Navbar
             orgName={user.orgName}
             userName={user.name}
@@ -40,7 +40,7 @@ export default async function RootLayout({
             canManageOrgSettings={user.hasPermForAnyOrg('org:manage-users')}
             canManageOrgs={user.hasPermForAnyOrg('org:can-add-child-orgs')}
           />
-          <div className="lg:pl-56 w-screen bg-white h-screen overflow-clip ">
+          <div className="h-screen w-screen overflow-clip bg-white lg:pl-56">
             <Suspense fallback={<PageSpinner />}>{children}</Suspense>
           </div>
         </div>

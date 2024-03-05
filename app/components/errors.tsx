@@ -2,7 +2,7 @@ import { XCircleIcon } from '@heroicons/react/20/solid';
 
 export function Errors({ messages }: { messages: React.ReactNode[] }) {
   return (
-    <div className="rounded-md bg-red-50 p-4 my-4">
+    <div className="my-4 rounded-md bg-red-50 p-4">
       <div className="flex">
         <div className="flex-shrink-0">
           <XCircleIcon className="size-5 text-red-400" aria-hidden="true" />

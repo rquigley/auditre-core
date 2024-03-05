@@ -1,6 +1,6 @@
 'use client';
-import { redirect } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+
+import { redirect, useSearchParams } from 'next/navigation';
 
 export default function Redirector({ hasUser }: { hasUser: boolean }) {
   const searchParams = useSearchParams();

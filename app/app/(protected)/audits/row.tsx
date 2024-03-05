@@ -17,7 +17,7 @@ export default function Row({
       href={`/audit/${audit.id}/request/${audit.firstRequestSlug}`}
       // className="flex items-center gap-x-1"
     >
-      <li className="border-b border-gray-200 flex items-center p-0 pl-4 hover:bg-gray-100 text-gray-500">
+      <li className="flex items-center border-b border-gray-200 p-0 pl-4 text-gray-500 hover:bg-gray-100">
         <span className="py-2 text-sm">
           {audit.name} ({audit.year})
         </span>

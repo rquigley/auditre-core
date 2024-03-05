@@ -1,6 +1,6 @@
 export function PageSpinner() {
   return (
-    <div className="flex items-center justify-center my-6">
+    <div className="my-6 flex items-center justify-center">
       <Spinner textColorClass="text-slate-700" />
     </div>
   );

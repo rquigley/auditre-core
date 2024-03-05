@@ -9,7 +9,7 @@ export function Arrow({ isActive }: { isActive: boolean }) {
     <span
       className={clsx(
         isActive ? 'text-sky-700' : 'text-slate-300',
-        'rounded block bg-white group-hover:bg-slate-50 p-0.5 ',
+        'block rounded bg-white p-0.5 group-hover:bg-slate-50 ',
       )}
     >
       <svg
@@ -56,7 +56,7 @@ export function SortableHeader({
           });
         }
       }}
-      className="hover:underline group flex items-center"
+      className="group flex items-center hover:underline"
     >
       <span
         className={clsx(
@@ -71,7 +71,7 @@ export function SortableHeader({
       <span
         className={clsx(
           isActive && currentOrder === 'asc' ? 'rotate-180' : '',
-          'block ml-1 transition-all',
+          'ml-1 block transition-all',
         )}
       >
         <Arrow isActive={isActive} />
@@ -84,7 +84,7 @@ export function Help({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <>
-      <span className="inline-block align-middle ml-1 text-slate-500 hover:text-slate-800">
+      <span className="ml-1 inline-block align-middle text-slate-500 hover:text-slate-800">
         <button
           onMouseOver={() => setIsOpen(true)}
           onMouseLeave={() => setIsOpen(false)}
@@ -93,7 +93,7 @@ export function Help({ children }: { children: React.ReactNode }) {
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
-            className="w-5 h-5"
+            className="h-5 w-5"
           >
             <path
               fillRule="evenodd"
@@ -104,7 +104,7 @@ export function Help({ children }: { children: React.ReactNode }) {
         </button>
       </span>
       {isOpen && (
-        <div className="absolute z-10 w-80 p-4 mt-2 text-xs leading-5 text-gray-600 bg-white border border-gray-300 rounded-md shadow-lg">
+        <div className="absolute z-10 mt-2 w-80 rounded-md border border-gray-300 bg-white p-4 text-xs leading-5 text-gray-600 shadow-lg">
           {children}
         </div>
       )}

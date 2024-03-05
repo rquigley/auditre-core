@@ -27,7 +27,7 @@ export async function Requests({ auditId }: { auditId: AuditId }) {
         }
         return (
           <Fragment key={group.name}>
-            <li className=" py-2 pl-4 pr-3 text-left text-xs font-medium text-gray-900 border-b border-gray-200">
+            <li className=" border-b border-gray-200 py-2 pl-4 pr-3 text-left text-xs font-medium text-gray-900">
               {group.name}
             </li>
             {group.rows.map((row) => (

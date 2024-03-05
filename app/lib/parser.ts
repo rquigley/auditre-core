@@ -1,4 +1,4 @@
-import { Parser } from 'hot-formula-parser';
+import { Parser } from '@/lib/formula-parser/index';
 
 import type { AccountType } from './finance';
 import type { Table } from './table';
@@ -7,9 +7,9 @@ import type { AuditData } from '@/controllers/audit';
 export function getParser(table: Table, data: AuditData) {
   const parser = new Parser();
 
-  function parseCell(value: string | number) {
+  function parseCell(value: string | number | undefined, cellAddress: string) {
     if (typeof value === 'string' && value.startsWith('=')) {
-      const parsed = parser.parse(value.substring(1));
+      const parsed = parser.parse(value.substring(1), cellAddress);
       if (parsed.error) {
         throw new Error(parsed.error);
       } else {
@@ -19,6 +19,31 @@ export function getParser(table: Table, data: AuditData) {
       return value;
     }
   }
+
+  parser.on('callCellValue', (cellCoord, done, cellAddress) => {
+    if (!cellAddress) {
+      throw new Error('No cell address');
+    }
+
+    const cell = table.getCellByAddress(cellCoord.label);
+    done(parseCell(cell.value, cellAddress));
+  });
+
+  parser.on(
+    'callRangeValue',
+    (startCellCoord, endCellCoord, done, cellAddress) => {
+      if (!cellAddress) {
+        throw new Error('No cell address');
+      }
+
+      const range = table.getRange(
+        startCellCoord.label,
+        endCellCoord.label,
+        cellAddress,
+      );
+      done(range.map((cell) => parseCell(cell.value, cell.address)));
+    },
+  );
 
   parser.setFunction('TBLOOKUP', (params) => {
     if (
@@ -59,7 +84,7 @@ export function getParser(table: Table, data: AuditData) {
       console.log(msg);
       throw new Error(msg);
     }
-    return parseCell(cell.value || '');
+    return parseCell(cell.value || '', cell.address);
   });
 
   parser.setFunction('IS_NETLOSS', (params) => {
@@ -127,7 +152,7 @@ export function getParser(table: Table, data: AuditData) {
         console.log(msg);
         throw new Error(msg);
       }
-      return acc + Number(parseCell(cell.value || ''));
+      return acc + Number(parseCell(cell.value || '', cell.address));
     }, 0);
   });
 

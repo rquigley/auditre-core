@@ -45,7 +45,7 @@ export function Text({ field, register, errors }: FormFieldProps) {
           errors
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
-          'block w-full rounded-md border-0 py-1.5 px-2.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6',
+          'block w-full rounded-md border-0 px-2.5 py-1.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6',
         )}
       />
 
@@ -66,7 +66,7 @@ export function Textarea({ field, register, errors }: FormFieldProps) {
           errors
             ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
             : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
-          'block w-full rounded-md border-0 py-1.5 px-2.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6',
+          'block w-full rounded-md border-0 px-2.5 py-1.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6',
         )}
       />
 
@@ -128,7 +128,7 @@ export function Year({
     <>
       <select
         {...register(field)}
-        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+        className="block rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
       >
         <option key={0} value="">
           -
@@ -172,7 +172,7 @@ export function Month({
     <>
       <select
         {...register(field)}
-        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+        className="block rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
       >
         <option key={0} value="">
           -
@@ -208,7 +208,7 @@ export function Checkbox({
         <label
           htmlFor={`checkbox-${model.type}`}
           key={model.type}
-          className="relative flex items-start my-2"
+          className="relative my-2 flex items-start"
         >
           <div className="flex h-6 items-center">
             <input
@@ -457,8 +457,8 @@ export function FileUpload({
               fileState.state === 'processing' ||
               fileState.state === 'readyToSave'
               ? 'cursor-not-allowed hover:bg-white'
-              : 'hover:bg-gray-50 cursor-pointer',
-            ' inline-flex items-center mb-2 rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300',
+              : 'cursor-pointer hover:bg-gray-50',
+            ' mb-2 inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300',
           )}
         >
           {fileState.state === 'uploading' ||
@@ -562,9 +562,9 @@ export function FileUpload({
                     'hidden sm:flex',
                   )}
                 >
-                  <div className="flex items-center text-xs mx-4 text-slate-500">
+                  <div className="mx-4 flex items-center text-xs text-slate-500">
                     <div>to replace</div>
-                    <ArrowLongRightIcon className="h-4 ml-1" />
+                    <ArrowLongRightIcon className="ml-1 h-4" />
                   </div>
                   {documents[0].doc}
                 </div>

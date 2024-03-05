@@ -22,11 +22,12 @@ import {
 
 import { AuditData, getAuditData } from '@/controllers/audit';
 import { fOut } from '@/lib/finance';
-import { getParser } from '@/lib/formula-parser';
+import { getParser } from '@/lib/parser';
 import { ppCurrency, ppNumber } from '@/lib/util';
 import {
   buildBalanceSheet,
   buildIncomeStatement,
+  buildStockholderEquity,
   tableMap,
 } from '../financial-statement/table';
 import {
@@ -36,9 +37,9 @@ import {
 } from '../financial-statement/template';
 
 import type { Template } from '../financial-statement/template';
+import type { Parser } from '@/lib/formula-parser/index';
 import type { Row as ARRow, Table as ARTable } from '@/lib/table';
 import type { AuditId } from '@/types';
-import type { Parser } from 'hot-formula-parser';
 
 export async function generate(auditId: AuditId) {
   const data = await getAuditData(auditId);
@@ -162,6 +163,7 @@ export async function generate(auditId: AuditId) {
       independentAuditorsReport(data),
       await balanceSheet(data),
       await incomeStatement(data),
+      await stockholderEquity(data),
       await notes(data),
     ],
   });
@@ -180,7 +182,7 @@ function titlePage(data: AuditData) {
         heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
-        text: 'Conslidated financial statements',
+        text: 'Consolidated financial statements',
         //heading: HeadingLevel.HEADING_1,
       }),
       new Paragraph({
@@ -253,6 +255,20 @@ async function incomeStatement(data: AuditData) {
         pageBreakBefore: true,
       }),
       buildTable(buildIncomeStatement(data), data),
+    ],
+  };
+}
+async function stockholderEquity(data: AuditData) {
+  return {
+    ...getPageProperties(),
+
+    children: [
+      new Paragraph({
+        text: `Consolidated statement of stockholders' equity`,
+        heading: HeadingLevel.HEADING_1,
+        pageBreakBefore: true,
+      }),
+      buildTable(buildStockholderEquity(data), data),
     ],
   };
 }
@@ -347,7 +363,7 @@ function buildTableRow(row: ARRow, parser: Parser) {
       let value;
 
       if (typeof cell.value === 'string' && cell.value.startsWith('=')) {
-        const parsed = parser.parse(cell.value.substring(1));
+        const parsed = parser.parse(cell.value.substring(1), cell.address);
         if (parsed.error) {
           value = `Error: ${parsed.error}`;
           hideRow = false;

@@ -27,7 +27,7 @@ function StatusBadge({ status }: { status: string }) {
             viewBox="0 0 24 24"
             strokeWidth="1.5"
             stroke="currentColor"
-            className="w-6 h-6 text-gray-200"
+            className="h-6 w-6 text-gray-200"
           >
             <path
               strokeLinecap="round"
@@ -50,7 +50,7 @@ function StatusBadge({ status }: { status: string }) {
             viewBox="0 0 24 24"
             strokeWidth="1.5"
             stroke="currentColor"
-            className="w-6 h-6 text-green-500"
+            className="h-6 w-6 text-green-500"
           >
             <path
               strokeLinecap="round"
@@ -95,13 +95,13 @@ export default function Request({
       <li
         className={clsx(
           pathId === request.id
-            ? 'text-gray-900 bg-gray-50'
-            : 'hover:bg-gray-100 text-gray-500',
-          'border-b border-gray-200 flex items-center p-0 pl-4',
+            ? 'bg-gray-50 text-gray-900'
+            : 'text-gray-500 hover:bg-gray-100',
+          'flex items-center border-b border-gray-200 p-0 pl-4',
         )}
       >
         {/* <td className="pl-4 sm:pl-2 py-3 text-sm "> */}
-        <div className="flex items-center space-x-3 w-7">
+        <div className="flex w-7 items-center space-x-3">
           <Suspense fallback={<StatusBadge status="loading" />}>
             <Await promise={statusesP}>
               {(s) => <StatusBadge status={s[request.id].status} />}

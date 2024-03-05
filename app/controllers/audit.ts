@@ -10,7 +10,7 @@ import {
 } from '@/controllers/document';
 import { db } from '@/lib/db';
 import { fOut } from '@/lib/finance';
-import { getParser } from '@/lib/formula-parser';
+import { getParser } from '@/lib/parser';
 import { isFormFieldFile } from '@/lib/request-types';
 import {
   getLastDayOfMonth,
@@ -18,6 +18,7 @@ import {
   kebabToCamel,
   ppCurrency,
 } from '@/lib/util';
+import { getCertificateTransactionDocumentData } from './equity';
 import {
   buildBalanceSheet,
   buildCashFlows,
@@ -89,7 +90,7 @@ export const getByIdForClientCached = unstable_cache(
   async (auditId: AuditId) => getByIdForClient(auditId),
   ['audit-getByIdForClient'],
   {
-    tags: [`client-audit`],
+    tags: ['client-audit'],
   },
 );
 
@@ -226,6 +227,9 @@ export async function getAuditData(auditId: AuditId) {
     getCashflowSupportData(auditId, prevYear2),
   ]);
 
+  const certificateTransactionDocumentData =
+    await getCertificateTransactionDocumentData(auditId);
+
   return {
     auditId,
     totals: {
@@ -252,6 +256,7 @@ export async function getAuditData(auditId: AuditId) {
     fiscalYearEndNoYear,
     fiscalYearEnd: `${fiscalYearEndNoYear}, ${year}`,
     rt: requestDataObj,
+    certificateTransactionDocumentData,
   };
 }
 

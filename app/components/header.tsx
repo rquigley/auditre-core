@@ -19,15 +19,15 @@ type Props = {
 
 export function Header({ title, subtitle, breadcrumbs, settings }: Props) {
   return (
-    <div className="w-screen bg-white h-14 fixed border-b border-gray-200 pl-14 lg:pl-4 flex lg:pr-56 items-center justify-between">
+    <div className="fixed flex h-14 w-screen items-center justify-between border-b border-gray-200 bg-white pl-14 lg:pl-4 lg:pr-56">
       <div className="flex-0 flex items-center">
-        <h2 className="text-sm sm:truncate sm:tracking-tight text-gray-700">
+        <h2 className="text-sm text-gray-700 sm:truncate sm:tracking-tight">
           {breadcrumbs &&
             breadcrumbs.map((b, idx) => (
               <span key={b.name}>
                 {idx > 0 ? (
                   <ChevronRightIcon
-                    className="size-4 text-gray-400 inline"
+                    className="inline size-4 text-gray-400"
                     aria-hidden="true"
                   />
                 ) : null}
@@ -38,7 +38,7 @@ export function Header({ title, subtitle, breadcrumbs, settings }: Props) {
                   {b.name}
                   {idx === breadcrumbs.length - 1 ? (
                     <ChevronRightIcon
-                      className="size-4 text-gray-400 inline"
+                      className="inline size-4 text-gray-400"
                       aria-hidden="true"
                     />
                   ) : (
@@ -56,7 +56,7 @@ export function Header({ title, subtitle, breadcrumbs, settings }: Props) {
 
       {process.env.NEXT_PUBLIC_ENVIRONMENT !== 'production' && <Search />}
 
-      <div className="self-end w-20">{/* Options here */}</div>
+      <div className="w-20 self-end">{/* Options here */}</div>
     </div>
   );
 }
@@ -67,7 +67,7 @@ function Search() {
     <div
       className={clsx(
         focused ? 'bg-red-400' : '',
-        'flex-0 self-center w-96 relative',
+        'flex-0 relative w-96 self-center',
       )}
     >
       <label htmlFor="search" className="sr-only">
@@ -92,7 +92,7 @@ function Search() {
       </div>
       {/* <div className="absolute -l-4 -r-4 border bg-red-500 w-full"> </div> */}
       {focused ? (
-        <div className="absolute h-60 border bg-white w-full">Search here</div>
+        <div className="absolute h-60 w-full border bg-white">Search here</div>
       ) : null}
     </div>
   );
@@ -101,7 +101,7 @@ function Search() {
 function Settings({ options }: { options: React.ReactNode }) {
   return (
     <Menu as="div" className="relative">
-      <Menu.Button className="text-gray-500 hover:text-gray-900 p-2 hover:bg-gray-50 rounded-sm">
+      <Menu.Button className="rounded-sm p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-900">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
