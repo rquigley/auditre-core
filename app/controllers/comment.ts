@@ -43,6 +43,7 @@ export async function getAllForRequest(auditId: AuditId, requestType: string) {
       'comment.createdAt',
       'comment.comment',
       'u.name',
+      'u.email',
       'u.image',
     ])
     .where('comment.auditId', '=', auditId)

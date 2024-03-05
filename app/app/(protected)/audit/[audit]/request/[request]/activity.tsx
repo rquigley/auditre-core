@@ -10,6 +10,7 @@ import {
 } from '@/controllers/comment';
 import { getChangesForRequestType } from '@/controllers/request-data';
 import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
+import { emailToName } from '@/lib/util';
 import CommentForm from './comment-form';
 
 import type { Request } from '@/controllers/request';
@@ -162,7 +163,7 @@ async function getFeed(auditId: AuditId, request: Request) {
     if (change.actorUserId) {
       actor = {
         type: 'USER',
-        name: change.name,
+        name: change.name || emailToName(change.email),
         image: change.image,
       } as UserActor;
     } else {
@@ -183,7 +184,7 @@ async function getFeed(auditId: AuditId, request: Request) {
       createdAt: comment.createdAt,
       actor: {
         type: 'USER',
-        name: comment.name || '',
+        name: comment.name || emailToName(comment.email) || '',
         image: comment.image || '',
       },
       comment: comment.comment,
