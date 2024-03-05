@@ -114,7 +114,7 @@ function AwaitDocument({ documentId }: { documentId: DocumentId }) {
     return null;
   }
   return (
-    <Suspense fallback={<div className="h-12 flex items-center"></div>}>
+    <Suspense fallback={<div className="flex h-12 items-center"></div>}>
       <Await promise={getDocumentById(documentId)}>
         {(d) => (
           <Document documentId={documentId} docKey={d.key} name={d.name} />
@@ -164,7 +164,7 @@ function DataRow({
   }
   return (
     <div className="mb-2">
-      <div className="text-xs leading-5 font-semibold text-gray-600">
+      <div className="text-xs font-semibold leading-5 text-gray-600">
         {data.label}
       </div>
       <p className="text-xs leading-5 text-gray-600">

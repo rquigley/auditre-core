@@ -31,7 +31,7 @@ export function AuditHeader(props: Props) {
 
   return (
     <div className="">
-      <div className="mt-4 sm:mt-3 border-b border-gray-200 pb-5 sm:pb-0 pl-4">
+      <div className="mt-4 border-b border-gray-200 pb-5 pl-4 sm:mt-3 sm:pb-0">
         <div className="sm:hidden">
           <label htmlFor="current-tab" className="sr-only">
             Select a tab
@@ -60,7 +60,7 @@ export function AuditHeader(props: Props) {
                   matchPath === tab.href
                     ? 'border-sky-700 text-sky-700'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-                  'whitespace-nowrap border-b-2 px-1 pb-2 text-xs select-none transition-all',
+                  'select-none whitespace-nowrap border-b-2 px-1 pb-2 text-xs transition-all',
                 )}
                 aria-current={matchPath === tab.href ? 'page' : undefined}
               >

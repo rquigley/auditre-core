@@ -59,7 +59,7 @@ export function Navbar({
     <>
       {/* Menu button */}
       <button
-        className="lg:hidden fixed z-50 p-5"
+        className="fixed z-50 p-5 lg:hidden"
         type="button"
         onClick={() => setSidebarOpen(!sidebarOpen)}
       >
@@ -82,9 +82,9 @@ export function Navbar({
         onClick={() => setSidebarOpen(false)}
         className={clsx(
           sidebarOpen
-            ? 'inset-0 h-screen w-screen opacity-100 absolute'
-            : 'opacity-0 w-0',
-          'bg-gray-200 opacity-40 z-30 lg:hidden transition-opacity',
+            ? 'absolute inset-0 h-screen w-screen opacity-100'
+            : 'w-0 opacity-0',
+          'z-30 bg-gray-200 opacity-40 transition-opacity lg:hidden',
         )}
       ></div>
 
@@ -94,13 +94,13 @@ export function Navbar({
           sidebarOpen
             ? 'left-0'
             : ' -left-72 overflow-hidden lg:overflow-visible',
-          'h-screen lg:left-0 w-56 fixed z-40 transition-[left]',
+          'fixed z-40 h-screen w-56 transition-[left] lg:left-0',
         )}
       >
-        <div className="flex w-56 grow flex-col h-full border-r border-gray-200 bg-gray-50 transition-none shadow-md">
-          <div className="flex justify-between mt-8 lg:mt-0 h-14 w-full shrink-0 items-center pl-5 pr-1">
+        <div className="flex h-full w-56 grow flex-col border-r border-gray-200 bg-gray-50 shadow-md transition-none">
+          <div className="mt-8 flex h-14 w-full shrink-0 items-center justify-between pl-5 pr-1 lg:mt-0">
             <Menu as="div">
-              <Menu.Button className="flex hover:bg-slate-100 cursor-pointer select-none rounded-md p-2 -ml-2">
+              <Menu.Button className="-ml-2 flex cursor-pointer select-none rounded-md p-2 hover:bg-slate-100">
                 <Image
                   width="28"
                   height="30"
@@ -111,7 +111,7 @@ export function Navbar({
                 <div
                   className={clsx(
                     orgName.length > 18 ? 'text-xs' : 'text-sm',
-                    'ml-2 text-gray-600 whitespace-nowrap',
+                    'ml-2 whitespace-nowrap text-gray-600',
                   )}
                 >
                   {orgName}
@@ -126,7 +126,7 @@ export function Navbar({
             </Menu>
             <Menu as="div" className="relative">
               <Menu.Button className="p-3 hover:bg-gray-50">
-                <div className="size-5 rounded-full bg-gray-200 overflow-hidden flex justify-center items-center">
+                <div className="flex size-5 items-center justify-center overflow-hidden rounded-full bg-gray-200">
                   {userImage ? (
                     <Image
                       width="36"
@@ -200,7 +200,7 @@ function OrgMenuItems({
                   }}
                   className={clsx(
                     active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                    'flex justify-between w-full items-center rounded-md px-4 py-2 text-xs',
+                    'flex w-full items-center justify-between rounded-md px-4 py-2 text-xs',
                   )}
                 >
                   <span className="inline-block text-left">{org.name}</span>
@@ -234,7 +234,7 @@ function OrgMenuItems({
                   href="/organization-settings"
                   className={clsx(
                     active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                    'block px-4 py-2 text-xs rounded-md',
+                    'block rounded-md px-4 py-2 text-xs',
                   )}
                 >
                   Organization settings
@@ -251,7 +251,7 @@ function OrgMenuItems({
                   href="/organizations"
                   className={clsx(
                     active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                    'block px-4 py-2 text-xs rounded-md',
+                    'block rounded-md px-4 py-2 text-xs',
                   )}
                 >
                   Manage organizations
@@ -284,7 +284,7 @@ function AccountMenuItems() {
                 href="/settings"
                 className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block px-4 py-2 text-xs rounded-md',
+                  'block rounded-md px-4 py-2 text-xs',
                 )}
               >
                 Account settings
@@ -297,7 +297,7 @@ function AccountMenuItems() {
                 href="/support"
                 className={clsx(
                   active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                  'block px-4 py-2 text-xs rounded-md',
+                  'block rounded-md px-4 py-2 text-xs',
                 )}
               >
                 Support
@@ -360,8 +360,8 @@ function NavItem({
         className={clsx(
           isSelected
             ? ' bg-slate-200 '
-            : 'text-gray-500 hover:bg-slate-200 active:bg-slate-300 active-text-gray-400',
-          'group w-full flex gap-x-3 rounded-md py-1 px-3 text-sm text-gray-700 leading-6 transition-colors select-none',
+            : 'active-text-gray-400 text-gray-500 hover:bg-slate-200 active:bg-slate-300',
+          'group flex w-full select-none gap-x-3 rounded-md px-3 py-1 text-sm leading-6 text-gray-700 transition-colors',
         )}
       >
         {item.name}

@@ -32,11 +32,11 @@ export default async function AuditPage({
       </div>
 
       <div className="mt-4">
-        <div className="font-lg border-b pb-1 mb-3">Source Documents</div>
+        <div className="font-lg mb-3 border-b pb-1">Source Documents</div>
         {documents.map((document) => (
           <div key={document.id}>
             <Row auditId={audit.id} document={document} />
-            <div className="w-48 border-b my-4"></div>
+            <div className="my-4 w-48 border-b"></div>
           </div>
         ))}
       </div>

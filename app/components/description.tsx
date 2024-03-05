@@ -8,7 +8,7 @@ export function DescriptionLink({
   return (
     <a
       target="_blank"
-      className="text-slate-500 hover:text-sky-700 underline hover:no-underline"
+      className="text-slate-500 underline hover:text-sky-700 hover:no-underline"
       href={href}
     >
       {children}
@@ -17,5 +17,5 @@ export function DescriptionLink({
 }
 
 export function DescriptionList({ children }: { children: React.ReactNode }) {
-  return <ul className="list-disc ml-4">{children}</ul>;
+  return <ul className="ml-4 list-disc">{children}</ul>;
 }

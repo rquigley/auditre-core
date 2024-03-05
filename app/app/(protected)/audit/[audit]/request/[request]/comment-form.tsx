@@ -55,7 +55,7 @@ export default function CommentForm({
             errors.comment
               ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
               : 'text-gray-900 ring-gray-300 placeholder:text-gray-400 focus:ring-sky-700',
-            'block w-full resize-none border-0 bg-transparent py-1.5 px-2 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6',
+            'block w-full resize-none border-0 bg-transparent px-2 py-1.5 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6',
           )}
           placeholder="Add your comment..."
           onKeyDown={handleKeyDown}
@@ -72,7 +72,7 @@ export default function CommentForm({
           className={clsx(
             !isDirty
               ? 'text-gray-300 ring-gray-100'
-              : 'text-gray-900 hover:bg-gray-50 ring-gray-300',
+              : 'text-gray-900 ring-gray-300 hover:bg-gray-50',
             'rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold  shadow-sm ring-1 ring-inset ',
           )}
         >

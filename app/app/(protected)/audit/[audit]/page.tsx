@@ -39,7 +39,7 @@ export default async function AuditPage({
         <tr>
           <th
             scope="col"
-            className="w-20 pl-4 sm:pl-2 py-3.5 text-left text-sm font-semibold text-gray-900"
+            className="w-20 py-3.5 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-2"
           >
             Status
           </th>

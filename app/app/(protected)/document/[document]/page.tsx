@@ -29,7 +29,7 @@ export default async function DocumentPage({
     <>
       <Header title={document.name} breadcrumbs={breadcrumbs} />
       <Content pad={true}>
-        <div className="text-sm mb-4">
+        <div className="mb-4 text-sm">
           <div>Classified as: {document.classifiedType}</div>
           {document.usage ? (
             <ul className="text-sm">
@@ -43,7 +43,7 @@ export default async function DocumentPage({
           ) : null}
         </div>
         <div className="text-med leading-6 text-gray-500">Raw Content</div>
-        <div className="text-xs h-48 overflow-y-scroll p-4 rounded-lg shadow-sm ring-1 ring-inset ring-gray-300">
+        <div className="h-48 overflow-y-scroll rounded-lg p-4 text-xs shadow-sm ring-1 ring-inset ring-gray-300">
           {document.extracted}
         </div>
 

@@ -33,12 +33,12 @@ export default async function AI({ document }: { document: Document }) {
 
   return (
     <div className="">
-      <div className="text-med leading-6 text-gray-500 mt-4">AI</div>
+      <div className="text-med mt-4 leading-6 text-gray-500">AI</div>
       <div className="text-xs ">
         {queries.map((query) => (
           <div
             key={query.id}
-            className="my-4 p-4 border border-1 border-slate-300 rounded-md "
+            className="border-1 my-4 rounded-md border border-slate-300 p-4 "
           >
             <div className="mb-2">
               Identifier: {query.identifier}
@@ -61,7 +61,7 @@ export default async function AI({ document }: { document: Document }) {
                 Q: {nl2br(query.query.messages[0].content)}
               </span>
             </div>
-            <div className="text-xs text-gray-500 mt-2">
+            <div className="mt-2 text-xs text-gray-500">
               <pre
                 className="w-180 whitespace-normal"
                 id={`result-${query.id}`}

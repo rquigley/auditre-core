@@ -13,11 +13,11 @@ export default async function RequestLayout({
 
   return (
     <div className="flex h-full gap-y-10">
-      <div className="flex-auto basis-1/4 h-full w-full overflow-auto pt-4 border-r border-gray-200 flex flex-col">
+      <div className="flex h-full w-full flex-auto basis-1/4 flex-col overflow-auto border-r border-gray-200 pt-4">
         <Requests auditId={auditId} />
       </div>
 
-      <div className="basis-3/4 w-1/2 max-w-3xl xl:max-w-5xl overflow-y-auto">
+      <div className="w-1/2 max-w-3xl basis-3/4 overflow-y-auto xl:max-w-5xl">
         {children}
       </div>
     </div>

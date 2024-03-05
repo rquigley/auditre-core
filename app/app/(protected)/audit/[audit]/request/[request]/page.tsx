@@ -40,7 +40,7 @@ export default async function RequestPage({
   return (
     <div className="m-8 mt-7">
       <Suspense fallback={<PageSpinner />}>
-        <h1 className="text-lg mb-4 leading-6 text-gray-900">{request.name}</h1>
+        <h1 className="mb-4 text-lg leading-6 text-gray-900">{request.name}</h1>
         <FormContainer
           request={request}
           userId={user.id}
