@@ -105,7 +105,8 @@ const migrateToLatest = async () => {
   const lastMigration = rowCount ? rows[0].migration : '';
   let files = fs
     .readdirSync(migrationDir)
-    .filter((file) => file.endsWith('.sql'));
+    .filter((file) => file.endsWith('.sql'))
+    .sort();
   if (lastMigration) {
     files = takeAfter(files, lastMigration);
   }
