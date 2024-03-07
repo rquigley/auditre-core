@@ -1,26 +1,55 @@
 import { SendRawEmailCommand } from '@aws-sdk/client-ses';
 import * as Sentry from '@sentry/nextjs';
 import dedent from 'dedent';
-import { SendVerificationRequestParams } from 'next-auth/providers';
+import { NodemailerConfig } from 'next-auth/providers/nodemailer';
 import { uuidv7 } from 'uuidv7';
 
 import { getByEmail } from '@/controllers/user';
 import { getSESClient } from './aws';
 
 export async function sendVerificationRequest(
-  params: SendVerificationRequestParams,
+  params: Parameters<NodemailerConfig['sendVerificationRequest']>[0],
 ) {
   const user = await getByEmail(params.identifier);
   if (!user) {
     throw new Error('No user found');
   }
-  const isVerification = user.emailVerified === null;
-  const subject = isVerification ? 'Verify your email' : 'Your login link';
+  // const isVerification = user.emailVerified === null;
+
+  const subject = `AuditRe confirmation code: ${params.token}`;
+  const body = `
+    <h1>Confirm your email address</h1>
+    <p>Your confirmation code is below. Enter it in your open browser window to finish your signup.</p>
+
+    <p style="font-size: 24px; font-weight: bold;">${params.token}</p>
+
+    <p>If you didnt request this code, you can safely ignore this email. There is nothing to worry about.</p>
+  `;
+  const plainText = `
+    Confirm your email address
+    Your confirmation code is below. Enter it in your open browser window to finish your signup:
+
+    ${params.token}
+
+    If you didnt request this code, you can safely ignore this email. There is nothing to worry about.
+  `;
+
+  const html = `
+    <div>
+      ${body}
+    </div>
+    <div>
+      &copy;AuditRe, Inc.<br>
+      228 Park Ave South, PMB 71384, New York NY 10003-1502
+    </div>
+  `;
+
   return await sendEmail({
     from: 'AuditRe <noreply@auditre.co>',
     to: params.identifier,
     subject,
-    html: `<div><a href="${params.url}">Login</a></div>`,
+    html,
+    plainText,
   });
 }
 
@@ -43,12 +72,16 @@ export async function sendEmail({
   if (!plainText) {
     plainText = textFromHtml(html);
   }
-
   const rawMessage = dedent`
     From: ${from}
     To: ${to}
     Subject: ${subject}
-    ${allowThreading ? '' : `References: <${uuidv7()}@auditre.co>`}MIME-Version: 1.0
+    ${
+      allowThreading
+        ? ''
+        : `References: <${uuidv7()}@auditre.co>
+    `
+    }MIME-Version: 1.0
     Content-Type: multipart/alternative; boundary="${boundary}"
 
     --${boundary}

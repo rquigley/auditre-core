@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
@@ -104,7 +105,9 @@ const migrateToLatest = async () => {
   const lastMigration = rowCount ? rows[0].migration : '';
   let files = fs
     .readdirSync(migrationDir)
-    .filter((file) => file.endsWith('.sql'));
+    .filter((file) => file.endsWith('.sql'))
+    .sort((a, b) => a.localeCompare(b));
+
   if (lastMigration) {
     files = takeAfter(files, lastMigration);
   }

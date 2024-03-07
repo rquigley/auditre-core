@@ -30,7 +30,6 @@ export async function getInvitationsByEmail(email: string) {
   return await db
     .selectFrom('auth.invitation')
     .where('email', '=', email)
-    .where('isUsed', '=', false)
     .where('expiresAt', '>', new Date())
     .select(['id', 'orgId'])
     .execute();
@@ -40,9 +39,17 @@ export async function getInvitationsByOrgId(orgId: OrgId) {
   return await db
     .selectFrom('auth.invitation')
     .where('orgId', '=', orgId)
-    .where('isUsed', '=', false)
     .selectAll()
     .execute();
+}
+
+export async function getInvitationByOrgAndEmail(orgId: OrgId, email: string) {
+  return await db
+    .selectFrom('auth.invitation')
+    .where('orgId', '=', orgId)
+    .where('email', '=', email)
+    .selectAll()
+    .executeTakeFirst();
 }
 
 export async function updateInvitation(
@@ -76,15 +83,33 @@ export async function sendInviteEmail(inviteId: InvitationId) {
   if (!org) {
     throw new Error('Organization not found');
   }
+
+  const inviteLink = getInviteLink(invite);
+  const html = `
+    <p>You have been invited to join ${org.name} on AuditRe</p>
+    <p>
+      <a href="${inviteLink}">Click here to accept the invitation</a>
+    </p>
+  `;
+
+  const plainText = `
+    You have been invited to join ${org.name} on AuditRe.
+
+    Visit ${inviteLink} to accept the invitation.
+  `;
+
+  // TODO: Remove this debug log
+  console.log(`DEBUG, sendInviteEmail: ${inviteLink}`);
+
   await sendEmail({
     from: 'noreply@auditre.co',
     to: invite.email,
     subject: `You have been invited to join ${org.name} on AuditRe`,
-    html: `
-    <p>You have been invited to join ${org.name} on AuditRe</p>
-    <p>
-      <a href="${process.env.NEXTAUTH_URL}/invite?id=${invite.id}&email=${encodeURIComponent(invite.email)}">Click here to accept the invitation</a>
-    </p>
-  `,
+    html,
+    plainText,
   });
+}
+
+export function getInviteLink(invite: { id: InvitationId; email: string }) {
+  return `${process.env.BASE_URL}/invite?id=${invite.id}&email=${encodeURIComponent(invite.email)}`;
 }

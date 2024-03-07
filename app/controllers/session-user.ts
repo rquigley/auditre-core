@@ -167,6 +167,7 @@ const getByIdCached = unstable_cache(
   ['user-by-id'],
   {
     revalidate: 60 * 5,
+    tags: ['user-by-id'],
   },
 );
 

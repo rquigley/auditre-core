@@ -27,6 +27,15 @@ import {
   process as processDocument,
   reAskQuestion,
 } from '@/controllers/document';
+import {
+  getInviteLink as _getInviteLink,
+  deleteInvitation,
+  deleteInvitationsByEmail,
+  getInvitationById,
+  getInvitationsByEmail,
+  sendInviteEmail,
+  updateInvitation,
+} from '@/controllers/invitation';
 import { getKV } from '@/controllers/kv';
 import {
   createOrg as _createOrg,
@@ -44,8 +53,10 @@ import {
 } from '@/controllers/session-user';
 import {
   changeUserRole as _changeUserRole,
+  createUser,
   getOrgsForUserIdCached,
 } from '@/controllers/user';
+import { checkVerificationToken } from '@/controllers/verification-token';
 import { getPresignedUrl } from '@/lib/aws';
 import { getRequestTypeForId } from '@/lib/request-types';
 
@@ -526,4 +537,83 @@ export async function updateOrg(
   });
   revalidatePath('/');
   return res;
+}
+
+export async function getInviteLink(orgId: OrgId, inviteId: string) {
+  'use server';
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const org = await getOrgById(orgId);
+  if (!user.canAccessOrg(org.id)) {
+    throw new UnauthorizedError();
+  }
+
+  const invite = await getInvitationById(inviteId);
+  if (invite) {
+    return _getInviteLink(invite);
+  } else {
+    return null;
+  }
+}
+
+export async function deleteInvite(orgId: OrgId, inviteId: string) {
+  'use server';
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const org = await getOrgById(orgId);
+  if (!user.canAccessOrg(org.id)) {
+    throw new UnauthorizedError();
+  }
+
+  await deleteInvitation(inviteId);
+
+  revalidatePath('/organization-settings');
+}
+
+export async function resendInvite(orgId: OrgId, inviteId: string) {
+  'use server';
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const org = await getOrgById(orgId);
+  if (!user.canAccessOrg(org.id)) {
+    throw new UnauthorizedError();
+  }
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+
+  updateInvitation(inviteId, {
+    expiresAt,
+  });
+
+  await sendInviteEmail(inviteId);
+
+  revalidatePath('/organization-settings');
+}
+
+export async function acceptAllInvites(email: string) {
+  const invites = await getInvitationsByEmail(email);
+
+  if (invites.length === 0) {
+    throw new Error('No invite found for email');
+  }
+
+  await createUser(
+    invites.map((i) => i.orgId),
+    {
+      email,
+    },
+  );
+
+  await deleteInvitationsByEmail(email);
+}
+
+export async function checkValidationToken(email: string, token: string) {
+  return await checkVerificationToken(email, token);
 }
