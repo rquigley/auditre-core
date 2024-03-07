@@ -1,3 +1,4 @@
+import { promises as fs } from 'fs';
 import { SendRawEmailCommand } from '@aws-sdk/client-ses';
 import * as Sentry from '@sentry/nextjs';
 import dedent from 'dedent';
@@ -17,14 +18,11 @@ export async function sendVerificationRequest(
   // const isVerification = user.emailVerified === null;
 
   const subject = `AuditRe confirmation code: ${params.token}`;
-  const body = `
-    <h1>Confirm your email address</h1>
-    <p>Your confirmation code is below. Enter it in your open browser window to finish your signup.</p>
 
-    <p style="font-size: 24px; font-weight: bold;">${params.token}</p>
+  const html = await getTemplate('confirmation', {
+    CODE: params.token,
+  });
 
-    <p>If you didnt request this code, you can safely ignore this email. There is nothing to worry about.</p>
-  `;
   const plainText = `
     Confirm your email address
     Your confirmation code is below. Enter it in your open browser window to finish your signup:
@@ -32,16 +30,6 @@ export async function sendVerificationRequest(
     ${params.token}
 
     If you didnt request this code, you can safely ignore this email. There is nothing to worry about.
-  `;
-
-  const html = `
-    <div>
-      ${body}
-    </div>
-    <div>
-      &copy;AuditRe, Inc.<br>
-      228 Park Ave South, PMB 71384, New York NY 10003-1502
-    </div>
   `;
 
   return await sendEmail({
@@ -125,4 +113,32 @@ function textFromHtml(html: string): string {
   text = text.replace(/&gt;/gi, '>');
 
   return text;
+}
+
+export async function getTemplate(
+  template: 'invitation' | 'confirmation',
+  data: Record<string, string>,
+) {
+  const filePath =
+    template === 'invitation'
+      ? './lib/email-templates/invitation.html'
+      : './lib/email-templates/confirmation.html';
+
+  try {
+    let htmlContent = await fs.readFile(filePath, 'utf8');
+
+    for (const key in data) {
+      const value = data[key];
+      const regex = new RegExp(`___${key}___`, 'g');
+      htmlContent = htmlContent.replace(regex, value);
+    }
+
+    return htmlContent;
+  } catch (error) {
+    Sentry.captureException(error);
+
+    throw new Error(
+      `Failed to process the template: ${(error as Error).message}`,
+    );
+  }
 }
