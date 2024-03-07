@@ -1,0 +1,59 @@
+<mjml>
+  <mj-body>
+    <mj-section background-color="#ffffff"
+      ><mj-column>
+        <mj-image
+          width="120px"
+          height="44px"
+          src="https://auditre.co/auditre.png"
+          alt="AuditRe"
+        /> </mj-column
+    ></mj-section>
+
+    <mj-section background-color="#ffffff">
+      <mj-column width="400px">
+        <mj-text
+          font-size="20px"
+          line-height="27px"
+          font-family="Helvetica Neue, Arial, sans-serif"
+          color="#111111"
+          >You have been invited to join ___ORG_NAME___ on AuditRe</mj-text
+        >
+
+        <mj-text
+          font-size="12px"
+          line-height="18px"
+          font-family="Helvetica Neue, Arial, sans-serif"
+          color="#333333"
+        >
+          Visit the following link to join the organization:
+          <a href="___INVITE_LINK___">___INVITE_LINK___</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#ffffff">
+      <mj-column width="400px">
+        <!-- <mj-image
+          align="left"
+          width="120px"
+          height="44px"
+          src="https://auditre.co/auditre.png"
+          alt="AuditRe"
+        /> -->
+
+        <mj-text
+          color="#666666"
+          font-size="9px"
+          line-height="12px"
+          font-size="12px"
+          font-family="Helvetica Neue, Arial, sans-serif"
+        >
+          &copy; AuditRe, Inc.<br />
+          228 Park Ave South, PMB 71384, New York NY 10003-1502<br />
+          All rights reserved
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
