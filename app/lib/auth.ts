@@ -52,6 +52,9 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
       },
     }),
   ],
+  // Trying this to fix the following error in prod:
+  // [31m[auth][error] UntrustedHost: Host must be trusted. URL was: http://app.auditre.co/api/auth/session .Read more at https://errors.authjs.dev#untrustedhost
+  trustHost: true,
 
   pages: {
     signIn: '/login',
