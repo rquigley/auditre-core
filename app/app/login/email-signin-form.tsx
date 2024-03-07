@@ -33,7 +33,9 @@ export default function EmailSigninForm() {
       redirect: false,
     });
 
-    router.replace('/login?s=code-sent');
+    router.replace(
+      '/login?s=code-sent&email=' + encodeURIComponent(data.email),
+    );
   }
 
   return (

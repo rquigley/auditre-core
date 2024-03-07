@@ -3,11 +3,13 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import * as z from 'zod';
 
+import AuthMagicCodeForm from '@/components/auth-magic-code-form';
+import AuthServiceButton from '@/components/auth-service-button';
 import { getInvitationById } from '@/controllers/invitation';
+import { getOrgById } from '@/controllers/org';
 import { getCurrent } from '@/controllers/session-user';
-import VerifyEmailButton from './verify-email-button';
 
-const schema = z.object({
+const searchParamsSchema = z.object({
   id: z.string().length(36),
   email: z.string().email(),
 });
@@ -21,21 +23,12 @@ export default async function InvitePage({
   if (user) {
     redirect('/');
   }
-  let verificationSent = false;
-  const parsed = schema.safeParse(searchParams);
-  if (searchParams?.verification === 'sent') {
-    verificationSent = true;
-  } else {
-    verificationSent = false;
-    if (!parsed.success) {
-      return redirect('/login');
-    }
-    const invite = await getInvitationById(parsed.data.id);
-    if (!invite || invite.email !== parsed.data.email) {
-      return redirect('/login');
-    }
+  const parsed = searchParamsSchema.safeParse(searchParams);
+  if (!parsed.success) {
+    return redirect('/login');
   }
 
+  const verificationSent = searchParams?.verification === 'sent';
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
       <div className="z-10 w-full max-w-md overflow-hidden rounded-2xl border border-gray-100 shadow-xl">
@@ -49,32 +42,44 @@ export default async function InvitePage({
               alt="AuditRe"
             />
           </Link>
-          <h3 className="text-xl font-semibold text-slate-800">
-            Email verification
-          </h3>
-
           {verificationSent ? (
-            <div className="pb-4 text-sm text-slate-700">
-              Please check your inbox. We&apos;ve sent you a verification link
-              to complete your account setup.
-            </div>
+            <AuthMagicCodeForm email={parsed.data.email} />
           ) : (
-            <>
-              <div className="pb-4 text-sm text-slate-700">
-                We need to verify your email address in order to complete your
-                account setup.
-              </div>
-              {parsed.success && (
-                <VerifyEmailButton email={parsed.data.email} />
-              )}
-            </>
+            <InnerInvite id={parsed.data.id} email={parsed.data.email} />
           )}
-
-          {/* <p className="text-sm text-gray-500">
-            Use your email and password to sign in
-          </p> */}
         </div>
       </div>
     </div>
+  );
+}
+
+async function InnerInvite({ id, email }: { id: string; email: string }) {
+  const invite = await getInvitationById(id);
+  if (!invite || invite.email !== email) {
+    return redirect('/login');
+  }
+  const org = await getOrgById(invite.orgId);
+
+  return (
+    <>
+      <h3 className="text-xl font-semibold text-slate-800">
+        You&apos;ve been invited to join
+        <br />
+        {org.name}
+      </h3>
+
+      <div className="pb-4 text-sm text-slate-700">
+        Please choose a sign-in method to complete your account setup. The email
+        address you were invited with is {invite.email}.
+      </div>
+
+      <AuthServiceButton service="google" type="create" email={invite.email} />
+      {/* <AuthServiceButton
+            service="outlook"
+            type="create"
+            email={invite.email}
+          /> */}
+      <AuthServiceButton service="email" type="create" email={invite.email} />
+    </>
   );
 }

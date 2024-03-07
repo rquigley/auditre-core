@@ -18,10 +18,7 @@ import {
   getById as getUserById,
   updateUser,
 } from '@/controllers/user';
-import {
-  createUserAccount,
-  deleteUserAccount,
-} from '@/controllers/user-account';
+import { createUserAccount } from '@/controllers/user-account';
 import {
   createVerificationToken,
   deleteVerificationTokens,
@@ -34,7 +31,6 @@ import type {
   AdapterAccount,
   AdapterSession,
   AdapterUser,
-  VerificationToken,
 } from '@auth/core/adapters';
 
 function userToAdapterUser(
@@ -116,13 +112,15 @@ export function AuthAdapter(): Adapter {
       return userToAdapterUser(user2) as AdapterUser;
     },
 
-    deleteUser: async (id) => {
-      const user = await getUserById(id);
-      await updateUser(user.id, {
-        isDeleted: true,
-      });
-      revalidatePath('/');
-    },
+    // Not yet invoked by Auth.js
+    // https://authjs.dev/guides/adapters/creating-a-database-adapter#user-management
+    // deleteUser: async (id) => {
+    //   const user = await getUserById(id);
+    //   await updateUser(user.id, {
+    //     isDeleted: true,
+    //   });
+    //   revalidatePath('/');
+    // },
 
     linkAccount: async (account) => {
       // https://github.com/nextauthjs/next-auth/discussions/1601
@@ -151,12 +149,14 @@ export function AuthAdapter(): Adapter {
       }) as unknown as AdapterAccount;
     },
 
-    unlinkAccount: ({ provider, providerAccountId }) => {
-      return deleteUserAccount(
-        provider,
-        providerAccountId,
-      ) as unknown as AdapterAccount;
-    },
+    // Not yet invoked by Auth.js
+    // https://authjs.dev/guides/adapters/creating-a-database-adapter#user-management
+    // unlinkAccount: ({ provider, providerAccountId }) => {
+    //   return deleteUserAccount(
+    //     provider,
+    //     providerAccountId,
+    //   ) as unknown as AdapterAccount;
+    // },
 
     getSessionAndUser: async (sessionToken) => {
       const userAndSession = await getBySessionTokenCached(sessionToken);

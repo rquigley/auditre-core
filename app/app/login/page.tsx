@@ -1,12 +1,19 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { z } from 'zod';
 
+import AuthMagicCodeForm from '@/components/auth-magic-code-form';
 import { getCurrent } from '@/controllers/session-user';
-import EmailLoginButton from './email-login-button';
+import AuthEmailButton from '../../components/auth-email-button';
+import AuthServiceButton from '../../components/auth-service-button';
 import EmailSigninForm from './email-signin-form';
-import LoginButton from './login-button';
 import Redirector from './redirector';
+
+const searchParamsSchema = z.object({
+  s: z.enum(['code-sent', 'email-login']).optional(),
+  email: z.string().email().optional(),
+});
 
 export default async function Login({
   searchParams = {},
@@ -16,6 +23,12 @@ export default async function Login({
   const { user } = await getCurrent();
   if (user) {
     redirect('/');
+  }
+
+  const parsed = searchParamsSchema.safeParse(searchParams);
+
+  if (!parsed.success) {
+    return redirect('/login');
   }
 
   let urlState = 'initial';
@@ -43,23 +56,21 @@ export default async function Login({
             <p className="text-sm text-gray-500">
               We&apos;ll send you a one-time login link to your email.
             </p>
-          ) : urlState === 'code-sent' ? (
-            <p className="text-sm text-gray-500">
-              We&apos;ve emailed you a one-time link to log in.{' '}
-              <Link href="/login">Click here</Link> if you haven&apos;t received
-              it and want to try again.
-            </p>
           ) : null}
         </div>
-        {urlState === 'email-login' ? (
+        {urlState === 'initial' ? (
+          <div className="px-2">
+            <AuthServiceButton service="google" type="login" />
+            {/* <AuthServiceButton service="outlook" type="login" /> */}
+            <AuthEmailButton />
+          </div>
+        ) : urlState === 'email-login' ? (
           <div className="px-2">
             <EmailSigninForm />
           </div>
-        ) : urlState === 'initial' ? (
-          <div className="px-2">
-            {/* <LoginButton service="github" /> */}
-            <LoginButton service="google" />
-            <EmailLoginButton />
+        ) : urlState === 'code-sent' && parsed.data.email ? (
+          <div className="mt-4 flex w-full flex-col items-center justify-center px-2 text-center">
+            <AuthMagicCodeForm email={parsed.data.email} />
           </div>
         ) : null}
       </div>
