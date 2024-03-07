@@ -4,20 +4,15 @@ import { Menu, Transition } from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
 import clsx from 'clsx';
 import { Fragment } from 'react';
-import { useFormState } from 'react-dom';
+
+import { deleteInvite, getInviteLink, resendInvite } from '@/lib/actions';
 
 import type { Invitation } from '@/types';
 
 export default function InviteSubmenu({
   invitation,
-  deleteInvite,
 }: {
   invitation: Invitation;
-  deleteInvite: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    prevState: any,
-    formData: FormData,
-  ) => Promise<{ message: string }>;
 }) {
   return (
     <Menu as="div" className="relative flex-none">
@@ -37,8 +32,30 @@ export default function InviteSubmenu({
         <Menu.Items className="absolute right-0 z-10 mt-2 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
           <Menu.Item>
             {({ active }) => (
-              <a
-                href="#"
+              <button
+                type="button"
+                onClick={async () => {
+                  const link = await getInviteLink(
+                    invitation.orgId,
+                    invitation.id,
+                  );
+                  navigator.clipboard.writeText(String(link));
+                }}
+                className={clsx(
+                  active ? 'bg-gray-50' : '',
+                  'block px-3 py-1 text-sm leading-6 text-gray-900',
+                )}
+              >
+                Copy link
+                <span className="sr-only">to {invitation.email}</span>
+              </button>
+            )}
+          </Menu.Item>
+          <Menu.Item>
+            {({ active }) => (
+              <button
+                type="button"
+                onClick={() => resendInvite(invitation.orgId, invitation.id)}
                 className={clsx(
                   active ? 'bg-gray-50' : '',
                   'block px-3 py-1 text-sm leading-6 text-gray-900',
@@ -46,51 +63,26 @@ export default function InviteSubmenu({
               >
                 Resend invite
                 <span className="sr-only">to {invitation.email}</span>
-              </a>
+              </button>
             )}
           </Menu.Item>
           <Menu.Item>
             {({ active }) => (
-              <div>
-                <DeleteForm
-                  invitation={invitation}
-                  active={active}
-                  deleteInvite={deleteInvite}
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() => deleteInvite(invitation.orgId, invitation.id)}
+                className={clsx(
+                  active ? 'bg-gray-50' : '',
+                  'block px-3 py-1 text-sm leading-6 text-gray-900',
+                )}
+              >
+                Delete
+                <span className="sr-only">to {invitation.email}</span>
+              </button>
             )}
           </Menu.Item>
         </Menu.Items>
       </Transition>
     </Menu>
-  );
-}
-
-function DeleteForm({
-  invitation,
-  active,
-  deleteInvite,
-}: {
-  invitation: Invitation;
-  active: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  deleteInvite: any;
-}) {
-  const initialState = {
-    message: null,
-  };
-  const [_state, formAction] = useFormState(deleteInvite, initialState);
-  return (
-    <form action={formAction}>
-      <input type="hidden" name="inviteId" value={invitation.id} />
-      <button
-        className={clsx(
-          active ? 'bg-gray-50' : '',
-          'block w-full px-3 py-1 text-left text-sm leading-6 text-gray-900',
-        )}
-      >
-        Delete<span className="sr-only">, {invitation.email}</span>
-      </button>
-    </form>
   );
 }

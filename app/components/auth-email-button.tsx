@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-export default function EmailLoginButton() {
+export default function AuthEmailButton() {
   return (
     <Link
       href="/login?s=email-login"

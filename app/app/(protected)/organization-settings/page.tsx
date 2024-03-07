@@ -10,7 +10,7 @@ import Datetime from '@/components/datetime';
 import { Header } from '@/components/header';
 import {
   createInvitation,
-  deleteInvitation,
+  getInvitationByOrgAndEmail,
   getInvitationsByOrgId,
   sendInviteEmail,
 } from '@/controllers/invitation';
@@ -32,9 +32,6 @@ type User = Awaited<ReturnType<typeof getUsers>>[number];
 const createInviteSchema = z.object({
   email: z.string().email(),
 });
-const deleteInviteSchema = z.object({
-  inviteId: z.string(),
-});
 
 export default async function OrganizationSettingsPage() {
   const { user, authRedirect } = await getCurrent();
@@ -55,6 +52,13 @@ export default async function OrganizationSettingsPage() {
       const data = createInviteSchema.parse({
         email: formData.get('email'),
       });
+      const existingInvite = await getInvitationByOrgAndEmail(
+        user.orgId,
+        data.email,
+      );
+      if (existingInvite) {
+        return { message: 'Invite already exists' };
+      }
 
       const invite = await createInvitation({
         email: data.email,
@@ -72,13 +76,13 @@ export default async function OrganizationSettingsPage() {
     <>
       <Header title="Organization Settings" />
       <Content pad={true}>
-        <div className="mb-4">
+        <div className="mb-4 max-w-2xl">
           <div className="font-lg mb-3 border-b pb-1">Users</div>
 
           <Users users={users} currentUser={user} />
         </div>
 
-        <div className="mb-4">
+        <div className="mb-4 max-w-2xl">
           <div className="font-lg mb-3 border-b pb-1">Invitations</div>
           <Invitations invitations={invitations} />
           <NewInviteForm createInvite={createInvite} />
@@ -165,47 +169,26 @@ async function Users({
     </ul>
   );
 }
+
 function Invitations({ invitations }: { invitations: Invitation[] }) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async function deleteInvite(prevState: any, formData: FormData) {
-    'use server';
-    const { user } = await getCurrent();
-    if (!user) {
-      return notFound();
-    }
-
-    try {
-      const data = deleteInviteSchema.parse({
-        inviteId: formData.get('inviteId'),
-      });
-
-      await deleteInvitation(data.inviteId);
-
-      revalidatePath('/organization-settings');
-      return { message: `Deleted` };
-    } catch (error) {
-      return { message: 'Failed to delete invite' };
-    }
-  }
-
   const now = Date.now();
   return (
     <ul role="list" className="divide-y divide-gray-100">
       {invitations.length === 0 && (
         <div className="mb-8 text-xs text-slate-700">No invitations</div>
       )}
-      {invitations.map((user) => {
-        const isExpired = user.expiresAt.getTime() - now < 0;
+      {invitations.map((invite) => {
+        const isExpired = invite.expiresAt.getTime() - now < 0;
         return (
           <li
-            key={user.id}
+            key={invite.id}
             className="relative flex justify-between gap-x-6 pb-5"
           >
             <div className="flex min-w-0 gap-x-4">
               <div className="min-w-0 flex-auto">
                 <p className="text-sm font-semibold leading-6 text-gray-900">
                   <span className="absolute inset-x-0 -top-px bottom-0" />
-                  {user.email}
+                  {invite.email}
                 </p>
                 <p
                   className={clsx(
@@ -216,12 +199,12 @@ function Invitations({ invitations }: { invitations: Invitation[] }) {
                   <span className="mr-1">
                     {isExpired ? 'Expired ' : 'Expires '}
                   </span>
-                  <Datetime dateTime={user.expiresAt} />
+                  <Datetime dateTime={invite.expiresAt} />
                 </p>
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-x-4">
-              <InviteSubmenu invitation={user} deleteInvite={deleteInvite} />
+              <InviteSubmenu invitation={invite} />
             </div>
           </li>
         );
