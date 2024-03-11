@@ -41,7 +41,7 @@
           line-height="18px"
           font-family="Helvetica Neue, Arial, sans-serif"
           color="#333333"
-          >If you didnt request this code, you can safely ignore this email.
+          >If you didn't request this code, you can safely ignore this email.
           There is nothing to worry about.</mj-text
         >
       </mj-column>
