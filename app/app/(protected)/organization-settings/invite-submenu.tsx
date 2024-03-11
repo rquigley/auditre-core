@@ -43,7 +43,7 @@ export default function InviteSubmenu({
                 }}
                 className={clsx(
                   active ? 'bg-gray-50' : '',
-                  'block px-3 py-1 text-sm leading-6 text-gray-900',
+                  'flex w-full px-3 py-1 text-sm leading-6 text-gray-900',
                 )}
               >
                 Copy link
@@ -58,7 +58,7 @@ export default function InviteSubmenu({
                 onClick={() => resendInvite(invitation.orgId, invitation.id)}
                 className={clsx(
                   active ? 'bg-gray-50' : '',
-                  'block px-3 py-1 text-sm leading-6 text-gray-900',
+                  'flex w-full px-3 py-1 text-sm leading-6 text-gray-900',
                 )}
               >
                 Resend invite
@@ -73,7 +73,7 @@ export default function InviteSubmenu({
                 onClick={() => deleteInvite(invitation.orgId, invitation.id)}
                 className={clsx(
                   active ? 'bg-gray-50' : '',
-                  'block px-3 py-1 text-sm leading-6 text-gray-900',
+                  'flex w-full px-3 py-1 text-sm leading-6 text-gray-900',
                 )}
               >
                 Delete
