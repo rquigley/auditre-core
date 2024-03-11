@@ -33,7 +33,7 @@ export async function sendVerificationRequest(
 
     ${params.token}
 
-    If you didnt request this code, you can safely ignore this email. There is nothing to worry about.
+    If you didn't request this code, you can safely ignore this email. There is nothing to worry about.
   `;
 
   return await sendEmail({
