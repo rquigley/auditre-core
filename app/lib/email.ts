@@ -7,7 +7,7 @@ import dedent from 'dedent';
 import { NodemailerConfig } from 'next-auth/providers/nodemailer';
 import { uuidv7 } from 'uuidv7';
 
-import { getByEmail } from '@/controllers/user';
+import { getUserByEmail } from '@/controllers/user';
 import { getSESClient } from './aws';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -15,7 +15,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export async function sendVerificationRequest(
   params: Parameters<NodemailerConfig['sendVerificationRequest']>[0],
 ) {
-  const user = await getByEmail(params.identifier);
+  const user = await getUserByEmail(params.identifier);
   if (!user) {
     throw new Error('No user found');
   }
@@ -33,7 +33,7 @@ export async function sendVerificationRequest(
 
     ${params.token}
 
-    If you didnt request this code, you can safely ignore this email. There is nothing to worry about.
+    If you didn't request this code, you can safely ignore this email. There is nothing to worry about.
   `;
 
   return await sendEmail({

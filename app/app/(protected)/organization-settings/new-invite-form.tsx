@@ -1,44 +1,42 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import clsx from 'clsx';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
-const initialState = {
-  email: '',
-};
+import { Text } from '@/components/form-fields';
+import { createInvite } from '@/lib/actions';
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      aria-disabled={pending}
-      className={clsx(
-        pending
-          ? 'bg-gray-400'
-          : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
-        'mt-6 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm',
-      )}
-    >
-      Send Invite
-    </button>
-  );
-}
+const schema = z.object({
+  email: z.string().email(),
+});
 
-export default function NewInviteForm({
-  createInvite,
-}: {
-  createInvite: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    prevState: any,
-    formData: FormData,
-  ) => Promise<{ message: string }>;
-}) {
-  // @ts-expect-error
-  const [state, formAction] = useFormState(createInvite, initialState);
+export default function NewInviteForm() {
+  const { register, handleSubmit, reset, formState, setError } = useForm<
+    z.infer<typeof schema>
+  >({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      email: '',
+    },
+  });
+
+  async function onSubmit(data: z.infer<typeof schema>) {
+    const res = await createInvite(data);
+    if (!res.success) {
+      setError('email', {
+        type: 'manual',
+        message: res.message,
+      });
+      return;
+    }
+    console.log(res);
+    reset();
+  }
 
   return (
-    <form action={formAction}>
+    <form onSubmit={handleSubmit(onSubmit)}>
       <div className="sm:col-span-4">
         <label
           htmlFor="email"
@@ -46,19 +44,26 @@ export default function NewInviteForm({
         >
           New invite email
         </label>
-        <div className="mt-2">
-          <input
-            id="email"
-            name="email"
-            type="text"
-            className="w-70 block rounded-md border-0 p-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+        <div className="mt-2 w-72">
+          <Text
+            field="email"
+            register={register}
+            errors={formState.errors['email']}
           />
         </div>
       </div>
-      <SubmitButton />
-      <p aria-live="polite" className="sr-only" role="status">
-        {state?.message}
-      </p>
+      <button
+        type="submit"
+        disabled={!formState.isDirty || formState.isSubmitting}
+        className={clsx(
+          !formState.isDirty || formState.isSubmitting
+            ? 'bg-gray-400'
+            : 'bg-sky-700 hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700',
+          'mt-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm transition',
+        )}
+      >
+        Send Invite
+      </button>
     </form>
   );
 }

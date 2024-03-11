@@ -14,7 +14,7 @@ async function main() {
       image: '',
     });
     for (let n = 0; n < 5; n++) {
-      const user = await createUser([org.id], {
+      const user = await createUser({
         email: `user${n}@test-${dn}-org${m}.debug`,
       });
       const audit = await createAudit({

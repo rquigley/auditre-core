@@ -1,5 +1,7 @@
 'use server';
 
+import * as Sentry from '@sentry/node';
+
 import 'server-only';
 
 import { randomUUID } from 'node:crypto';
@@ -29,10 +31,10 @@ import {
 } from '@/controllers/document';
 import {
   getInviteLink as _getInviteLink,
+  createInvitation,
   deleteInvitation,
-  deleteInvitationsByEmail,
   getInvitationById,
-  getInvitationsByEmail,
+  getInvitationByOrgAndEmail,
   sendInviteEmail,
   updateInvitation,
 } from '@/controllers/invitation';
@@ -53,8 +55,10 @@ import {
 } from '@/controllers/session-user';
 import {
   changeUserRole as _changeUserRole,
-  createUser,
   getOrgsForUserIdCached,
+  getUserByEmail,
+  getUserRole,
+  invitesToUser,
 } from '@/controllers/user';
 import { checkVerificationToken } from '@/controllers/verification-token';
 import { getPresignedUrl } from '@/lib/aws';
@@ -540,78 +544,126 @@ export async function updateOrg(
 }
 
 export async function getInviteLink(orgId: OrgId, inviteId: string) {
-  'use server';
-  const { user } = await getCurrent();
-  if (!user) {
-    throw new UnauthorizedError();
-  }
-  const org = await getOrgById(orgId);
-  if (!user.canAccessOrg(org.id)) {
-    throw new UnauthorizedError();
-  }
+  try {
+    const { user } = await getCurrent();
+    if (!user) {
+      throw new UnauthorizedError();
+    }
+    const org = await getOrgById(orgId);
+    if (!user.canAccessOrg(org.id)) {
+      throw new UnauthorizedError();
+    }
 
-  const invite = await getInvitationById(inviteId);
-  if (invite) {
-    return _getInviteLink(invite);
-  } else {
+    const invite = await getInvitationById(inviteId);
+    if (invite) {
+      return _getInviteLink(invite);
+    } else {
+      return null;
+    }
+  } catch (e) {
+    Sentry.captureException(e);
     return null;
   }
 }
 
+export async function createInvite(rawData: { email: string }) {
+  const schema = z.object({
+    email: z.string().email(),
+  });
+  try {
+    const { user } = await getCurrent();
+    if (!user) {
+      throw new UnauthorizedError();
+    }
+
+    const orgId = user.orgId;
+    const data = schema.parse({
+      email: rawData.email,
+    });
+
+    const existingUser = await getUserByEmail(data.email);
+    if (existingUser && (await getUserRole(existingUser.id, orgId))) {
+      return { success: false, message: 'User already exists' };
+    }
+
+    const existingInvite = await getInvitationByOrgAndEmail(orgId, data.email);
+    if (existingInvite) {
+      return { success: false, message: 'Invite already exists' };
+    }
+
+    const invite = await createInvitation({
+      email: data.email,
+      orgId,
+    });
+    await sendInviteEmail(invite.id);
+    revalidatePath('/organization-settings');
+    return { success: true, message: `Invited ${data.email}` };
+  } catch (error) {
+    Sentry.captureException(error);
+    return { success: false, message: 'Failed to create invite' };
+  }
+}
+
 export async function deleteInvite(orgId: OrgId, inviteId: string) {
-  'use server';
-  const { user } = await getCurrent();
-  if (!user) {
-    throw new UnauthorizedError();
-  }
-  const org = await getOrgById(orgId);
-  if (!user.canAccessOrg(org.id)) {
-    throw new UnauthorizedError();
-  }
+  try {
+    const { user } = await getCurrent();
+    if (!user) {
+      throw new UnauthorizedError();
+    }
+    const org = await getOrgById(orgId);
+    if (!user.canAccessOrg(org.id)) {
+      throw new UnauthorizedError();
+    }
 
-  await deleteInvitation(inviteId);
+    await deleteInvitation(inviteId);
 
-  revalidatePath('/organization-settings');
+    revalidatePath('/organization-settings');
+    return { success: true };
+  } catch (e) {
+    Sentry.captureException(e);
+    return { success: false };
+  }
 }
 
 export async function resendInvite(orgId: OrgId, inviteId: string) {
-  'use server';
-  const { user } = await getCurrent();
-  if (!user) {
-    throw new UnauthorizedError();
+  try {
+    const { user } = await getCurrent();
+    if (!user) {
+      throw new UnauthorizedError();
+    }
+    const org = await getOrgById(orgId);
+    if (!user.canAccessOrg(org.id)) {
+      throw new UnauthorizedError();
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    updateInvitation(inviteId, {
+      expiresAt,
+    });
+
+    await sendInviteEmail(inviteId);
+
+    revalidatePath('/organization-settings');
+    return { success: true };
+  } catch (e) {
+    Sentry.captureException(e);
+    return { success: false };
   }
-  const org = await getOrgById(orgId);
-  if (!user.canAccessOrg(org.id)) {
-    throw new UnauthorizedError();
-  }
-
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7);
-
-  updateInvitation(inviteId, {
-    expiresAt,
-  });
-
-  await sendInviteEmail(inviteId);
-
-  revalidatePath('/organization-settings');
 }
 
 export async function acceptAllInvites(email: string) {
-  const invites = await getInvitationsByEmail(email);
-
-  if (invites.length === 0) {
-    throw new Error('No invite found for email');
+  try {
+    const res = await invitesToUser(email);
+    if (!res.success) {
+      return { success: false, error: res.error };
+    }
+    return { success: true };
+  } catch (e) {
+    Sentry.captureException(e);
+    return { success: false, error: 'exception' };
   }
-
-  await createUser(
-    invites.map((i) => i.orgId),
-    {
-      email,
-    },
-  );
-
-  await deleteInvitationsByEmail(email);
 }
 
 export async function checkValidationToken(email: string, token: string) {

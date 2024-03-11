@@ -1,19 +1,11 @@
 import { ChevronRightIcon } from '@heroicons/react/20/solid';
 import clsx from 'clsx';
-import { revalidatePath } from 'next/cache';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
-import { z } from 'zod';
 
 import { Content } from '@/components/content';
 import Datetime from '@/components/datetime';
 import { Header } from '@/components/header';
-import {
-  createInvitation,
-  getInvitationByOrgAndEmail,
-  getInvitationsByOrgId,
-  sendInviteEmail,
-} from '@/controllers/invitation';
+import { getInvitationsByOrgId } from '@/controllers/invitation';
 import {
   getAvailableRolesForRole,
   getCurrent,
@@ -29,48 +21,14 @@ import type { Invitation } from '@/types';
 
 type User = Awaited<ReturnType<typeof getUsers>>[number];
 
-const createInviteSchema = z.object({
-  email: z.string().email(),
-});
-
 export default async function OrganizationSettingsPage() {
   const { user, authRedirect } = await getCurrent();
   if (!user) {
     return authRedirect();
   }
-  const users = await getUsers(user.orgId);
-  const invitations = await getInvitationsByOrgId(user.orgId);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async function createInvite(prevState: any, formData: FormData) {
-    'use server';
-    try {
-      const { user } = await getCurrent();
-      if (!user) {
-        throw new UnauthorizedError();
-      }
-      const data = createInviteSchema.parse({
-        email: formData.get('email'),
-      });
-      const existingInvite = await getInvitationByOrgAndEmail(
-        user.orgId,
-        data.email,
-      );
-      if (existingInvite) {
-        return { message: 'Invite already exists' };
-      }
-
-      const invite = await createInvitation({
-        email: data.email,
-        orgId: user.orgId,
-      });
-      await sendInviteEmail(invite.id);
-      revalidatePath('/organization-settings');
-      return { message: `Invited ${data.email}` };
-    } catch (error) {
-      return { message: 'Failed to create invite' };
-    }
-  }
+  const orgId = user.orgId;
+  const users = await getUsers(orgId);
+  const invitations = await getInvitationsByOrgId(orgId);
 
   return (
     <>
@@ -85,7 +43,7 @@ export default async function OrganizationSettingsPage() {
         <div className="mb-4 max-w-2xl">
           <div className="font-lg mb-3 border-b pb-1">Invitations</div>
           <Invitations invitations={invitations} />
-          <NewInviteForm createInvite={createInvite} />
+          <NewInviteForm />
         </div>
       </Content>
     </>
