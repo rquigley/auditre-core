@@ -304,3 +304,12 @@ export const getOrgsForUserIdCached = unstable_cache(
     revalidate: 60 * 5,
   },
 );
+
+export async function getUserRole(userId: OrgId, orgId: OrgId) {
+  return await db
+    .selectFrom('auth.userRole')
+    .select(['role'])
+    .where('userId', '=', userId)
+    .where('orgId', '=', orgId)
+    .executeTakeFirst();
+}
