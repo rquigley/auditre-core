@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 
 import { Spinner } from '@/components/spinner';
 import { getAccountMappingStatus } from '@/lib/actions';
-import { AuditId } from '@/types';
+
+import type { AuditId } from '@/types';
 
 type StatusRes = {
   numToProcess: number;

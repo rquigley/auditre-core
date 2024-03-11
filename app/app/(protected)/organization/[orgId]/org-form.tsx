@@ -8,7 +8,8 @@ import { z } from 'zod';
 import { BooleanField, Text } from '@/components/form-fields';
 import { updateOrg } from '@/lib/actions';
 import { zUrlOrEmptyString } from '@/lib/util';
-import { OrgId } from '@/types';
+
+import type { OrgId } from '@/types';
 
 const schema = z.object({
   name: z.string().min(1),

@@ -1,4 +1,4 @@
-import { OrgId } from '@/types';
+import type { OrgId } from '@/types';
 
 export function groupOrgs<
   T extends {

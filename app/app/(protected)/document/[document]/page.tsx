@@ -7,8 +7,6 @@ import { Header } from '@/components/header';
 import { getById } from '@/controllers/document';
 import { getCurrent } from '@/controllers/session-user';
 
-// import { Document } from '@/types';
-
 export default async function DocumentPage({
   params: { document: id },
 }: {

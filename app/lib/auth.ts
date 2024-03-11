@@ -9,8 +9,8 @@ import { getByEmail as getUserByEmail, updateUser } from '@/controllers/user';
 //import GitHubProvider from 'next-auth/providers/github';
 import { AuthAdapter } from '@/lib/auth-adapter';
 import { sendVerificationRequest } from '@/lib/email';
-import { OrgId } from '@/types';
 
+import type { OrgId } from '@/types';
 import type { AdapterSession, AdapterUser } from '@auth/core/adapters';
 import type { JWT } from '@auth/core/jwt';
 import type { Session } from '@auth/core/types';
