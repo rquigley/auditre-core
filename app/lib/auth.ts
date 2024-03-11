@@ -5,13 +5,12 @@ import GoogleProvider from 'next-auth/providers/google';
 import { revalidateTag } from 'next/cache';
 
 import { getInvitationsByEmail } from '@/controllers/invitation';
-import { getByEmail as getUserByEmail, updateUser } from '@/controllers/user';
+import { getUserByEmail, updateUser } from '@/controllers/user';
 //import GitHubProvider from 'next-auth/providers/github';
 import { AuthAdapter } from '@/lib/auth-adapter';
 import { sendVerificationRequest } from '@/lib/email';
 
-import type { OrgId } from '@/types';
-import type { AdapterSession, AdapterUser } from '@auth/core/adapters';
+import type { AdapterUser } from '@auth/core/adapters';
 import type { JWT } from '@auth/core/jwt';
 import type { Session } from '@auth/core/types';
 

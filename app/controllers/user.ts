@@ -2,75 +2,94 @@ import DataLoader from 'dataloader';
 import { unstable_cache } from 'next/cache';
 
 import { db, sql } from '@/lib/db';
+import { deleteInvitationsByEmail, getInvitationsByEmail } from './invitation';
 
-import type {
-  AuthRole,
-  NewUser,
-  OrgId,
-  User,
-  UserId,
-  UserUpdate,
-} from '@/types';
+import type { AuthRole, NewUser, OrgId, UserId, UserUpdate } from '@/types';
 
-export async function createUser(orgIds: OrgId[], user: NewUser) {
-  const orgUserCounts = await db
-    .selectFrom('auth.userRole')
-    .select(({ fn }) => ['orgId', fn.count<number>('orgId').as('userCount')])
-    .where('orgId', 'in', orgIds)
-    .groupBy('orgId')
-    .execute();
+export async function invitesToUser(
+  email: string,
+  extra?: {
+    name: string | null | undefined;
+    image: string | null | undefined;
+    emailVerified: Date | null;
+  },
+) {
+  const invites = await getInvitationsByEmail(email);
 
-  return await db.transaction().execute(async (trx) => {
-    const userRes = await trx
-      .insertInto('auth.user')
-      .values({
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+  if (invites.length === 0) {
+    return { success: false, error: 'no-invites' };
+  }
 
-    for (const orgId of orgIds) {
-      const userExists = orgUserCounts.some((o) => o.orgId === orgId);
-
-      await trx
-        .insertInto('auth.userRole')
-        .values({
-          userId: userRes.id,
-          orgId,
-          // Does any other user exist for this org? If not, make this user an owner.
-          role: userExists ? 'USER' : 'OWNER',
-        })
-        .executeTakeFirstOrThrow();
-    }
-
-    return {
-      id: userRes.id,
-      name: userRes.name,
-      email: userRes.email,
-      image: userRes.image,
-      emailVerified: userRes.emailVerified,
+  let ret;
+  const existingUser = await getUserByEmail(email);
+  if (existingUser) {
+    ret = {
+      id: existingUser.id,
+      email: existingUser.email,
+      name: existingUser.name,
+      image: existingUser.image,
+      emailVerified: existingUser.emailVerified,
     };
-  });
+  } else {
+    const user = await createUser({
+      email,
+      name: extra?.name || undefined,
+      image: extra?.image || undefined,
+      emailVerified: extra?.emailVerified || undefined,
+    });
+    ret = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      image: user.image,
+      emailVerified: user.emailVerified,
+    };
+  }
+
+  for (const orgId of invites.map((i) => i.orgId)) {
+    await addUserRole({ userId: ret.id, orgId });
+  }
+
+  await deleteInvitationsByEmail(email);
+  return { success: true, user: ret };
+}
+
+export async function createUser(user: NewUser) {
+  return await db
+    .insertInto('auth.user')
+    .values({
+      name: user.name,
+      email: user.email,
+      emailVerified: user.emailVerified,
+      image: user.image,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
 }
 
 export async function addUserRole({
   userId,
   orgId,
-  role,
 }: {
   userId: UserId;
   orgId: OrgId;
-  role: AuthRole;
 }) {
+  if (await getUserRole(userId, orgId)) {
+    return;
+  }
+
+  const orgHasUsers = await db
+    .selectFrom('auth.userRole')
+    .where('orgId', '=', orgId)
+    .limit(1)
+    .executeTakeFirst();
+
   return await db
     .insertInto('auth.userRole')
     .values({
       userId,
       orgId,
-      role,
+      role: orgHasUsers ? 'USER' : 'OWNER',
     })
     .execute();
 }
@@ -127,7 +146,7 @@ export const userLoader = new DataLoader((userIds) =>
 type QueryOpts = {
   comment?: string;
 };
-export async function getByEmail(email: string, queryOpts?: QueryOpts) {
+export async function getUserByEmail(email: string, queryOpts?: QueryOpts) {
   let commentStr = sql.raw('');
   if (queryOpts?.comment) {
     commentStr = sql.raw('-- ' + queryOpts.comment);

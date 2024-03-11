@@ -111,46 +111,57 @@ export default function AuthServiceButton({
     label = `Login with ${ucFirst(service)}`;
   }
   return (
-    <button
-      disabled={loading}
-      onClick={async () => {
-        setLoading(true);
+    <>
+      <button
+        disabled={loading}
+        onClick={async () => {
+          setLoading(true);
 
-        if (type === 'create') {
-          if (email) {
-            await acceptAllInvites(email);
+          if (type === 'create') {
+            if (email) {
+              const { success, error } = await acceptAllInvites(email);
+              if (!success) {
+                setLoading(false);
+                router.push(
+                  pathname +
+                    `?${searchParams}&error=${encodeURIComponent(String(error))}`,
+                );
+                return;
+              }
+            }
+
+            if (service === 'email') {
+              await signIn('email', {
+                email,
+                callbackUrl: `/`,
+                redirect: false,
+              });
+
+              router.replace(`${pathname}?${searchParams}&verification=sent`);
+
+              return;
+            }
           }
 
-          if (service === 'email') {
-            await signIn('email', {
-              email,
-              callbackUrl: `/`,
-              redirect: false,
-            });
+          signIn(service);
+        }}
+        className={`${
+          loading
+            ? 'cursor-not-allowed bg-stone-50'
+            : 'bg-white hover:bg-stone-50 active:bg-stone-100'
+        } group my-2 flex h-10 w-full items-center justify-center space-x-2 rounded-md border border-stone-200 transition-colors duration-75 focus:outline-none`}
+      >
+        {loading ? (
+          <LoadingDots color="#A8A29E" />
+        ) : (
+          <>
+            {icon[service]}
 
-            router.replace(`${pathname}?${searchParams}&verification=sent`);
-
-            return;
-          }
-        }
-
-        signIn(service);
-      }}
-      className={`${
-        loading
-          ? 'cursor-not-allowed bg-stone-50'
-          : 'bg-white hover:bg-stone-50 active:bg-stone-100'
-      } group my-2 flex h-10 w-full items-center justify-center space-x-2 rounded-md border border-stone-200 transition-colors duration-75 focus:outline-none`}
-    >
-      {loading ? (
-        <LoadingDots color="#A8A29E" />
-      ) : (
-        <>
-          {icon[service]}
-
-          <p className="text-sm font-medium text-slate-600">{label}</p>
-        </>
-      )}
-    </button>
+            <p className="text-sm font-medium text-slate-600">{label}</p>
+          </>
+        )}
+      </button>
+      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+    </>
   );
 }

@@ -1,21 +1,18 @@
+import * as Sentry from '@sentry/node';
 import { revalidatePath, revalidateTag } from 'next/cache';
 
-import {
-  deleteInvitationsByEmail,
-  getInvitationsByEmail,
-} from '@/controllers/invitation';
 import {
   createSession,
   deleteSession,
   updateSession,
 } from '@/controllers/session';
 import {
-  createUser,
   getBySessionTokenCached,
   getOrgsForUserIdCached,
   getByAccountProviderAndProviderId as getUserByAccountProviderAndProviderId,
-  getByEmail as getUserByEmail,
+  getUserByEmail,
   getById as getUserById,
+  invitesToUser,
   updateUser,
 } from '@/controllers/user';
 import { createUserAccount } from '@/controllers/user-account';
@@ -50,23 +47,19 @@ function userToAdapterUser(
 export function AuthAdapter(): Adapter {
   return {
     createUser: async (data) => {
-      const invites = await getInvitationsByEmail(data.email);
-      if (invites.length === 0) {
-        throw new Error('No invite found for email');
+      const res = await invitesToUser(data.email, {
+        name: data.name,
+        image: data.image,
+        emailVerified: data.emailVerified,
+      });
+      if (!res.success || !res.user) {
+        const err = new Error('Failed to create user');
+        Sentry.captureException(err);
+        throw err;
       }
-      const user = await createUser(
-        invites.map((i) => i.orgId),
-        {
-          name: data.name,
-          email: data.email,
-          image: data.image,
-          emailVerified: data.emailVerified,
-        },
-      );
-      await deleteInvitationsByEmail(data.email);
 
       revalidatePath('/');
-      return userToAdapterUser(user) as AdapterUser;
+      return userToAdapterUser(res.user) as AdapterUser;
     },
 
     getUser: async (id: string) => {
