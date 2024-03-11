@@ -3,7 +3,8 @@
 import clsx from 'clsx';
 
 import { changeUserRole } from '@/lib/actions';
-import { AuthRole, UserId } from '@/types';
+
+import type { AuthRole, UserId } from '@/types';
 
 export function RoleSelector({
   userId,

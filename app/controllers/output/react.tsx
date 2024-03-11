@@ -13,7 +13,6 @@ import {
 import { fOut } from '@/lib/finance';
 import { getParser } from '@/lib/parser';
 import { ppCurrency, ppNumber } from '@/lib/util';
-import { AuditId } from '@/types';
 import { getAuditData, getWarningsForAudit } from '../audit';
 import {
   getOrganizationSections,
@@ -24,6 +23,7 @@ import type { AuditData } from '@/controllers/audit';
 import type { Section } from '@/controllers/financial-statement/template';
 import type { Parser } from '@/lib/formula-parser/index';
 import type { Row, Table } from '@/lib/table';
+import type { AuditId } from '@/types';
 
 const financeFont = Inconsolata({
   subsets: ['latin'],
