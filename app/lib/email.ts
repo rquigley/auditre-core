@@ -1,4 +1,6 @@
 import { promises as fs } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { SendRawEmailCommand } from '@aws-sdk/client-ses';
 import * as Sentry from '@sentry/nextjs';
 import dedent from 'dedent';
@@ -7,6 +9,8 @@ import { uuidv7 } from 'uuidv7';
 
 import { getByEmail } from '@/controllers/user';
 import { getSESClient } from './aws';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export async function sendVerificationRequest(
   params: Parameters<NodemailerConfig['sendVerificationRequest']>[0],
@@ -119,13 +123,13 @@ export async function getTemplate(
   template: 'invitation' | 'confirmation',
   data: Record<string, string>,
 ) {
-  const filePath =
-    template === 'invitation'
-      ? './lib/email-templates/invitation.html'
-      : './lib/email-templates/confirmation.html';
-
+  const filepath = path.resolve(
+    __dirname,
+    'email-templates',
+    `${template}.html`,
+  );
   try {
-    let htmlContent = await fs.readFile(filePath, 'utf8');
+    let htmlContent = await fs.readFile(filepath, 'utf8');
 
     for (const key in data) {
       const value = data[key];
