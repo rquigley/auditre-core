@@ -9,7 +9,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Fragment, useState } from 'react';
 
 import { switchOrg } from '@/lib/actions';
-import { OrgId } from '@/types';
+
+import type { OrgId } from '@/types';
 
 type Props = {
   userName: string | null;

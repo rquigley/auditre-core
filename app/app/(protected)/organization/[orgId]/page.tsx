@@ -5,9 +5,10 @@ import { Content } from '@/components/content';
 import { Header } from '@/components/header';
 import { getChildOrgsWithMeta, getOrgById } from '@/controllers/org';
 import { getCurrent } from '@/controllers/session-user';
-import { OrgId } from '@/types';
 import NewOrgForm from './new-org-form';
 import OrgForm from './org-form';
+
+import type { OrgId } from '@/types';
 
 export default async function OrgPage({
   params: { orgId },

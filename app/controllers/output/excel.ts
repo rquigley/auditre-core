@@ -21,12 +21,12 @@ import {
   isYearType,
   yearTypeToYear,
 } from '@/lib/parser';
-import { AuditId } from '@/types';
 import { getAllAccountBalancesByAuditIdAndYear } from '../account-mapping';
 import { getAuditData } from '../audit';
 
 import type { AuditData } from '@/controllers/audit';
 import type { Table, Row as TableRow } from '@/lib/table';
+import type { AuditId } from '@/types';
 
 const numFmt = '_($* #,##0_);_($* (#,##0);_($* "-"??_);_(@_)';
 const numFmtWithCents = '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';

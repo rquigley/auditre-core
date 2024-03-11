@@ -7,7 +7,8 @@ import { z } from 'zod';
 
 import { Text } from '@/components/form-fields';
 import { createOrg } from '@/lib/actions';
-import { OrgId } from '@/types';
+
+import type { OrgId } from '@/types';
 
 const schema = z.object({
   name: z.string().min(1).max(100),

@@ -5,11 +5,10 @@ import { notFound } from 'next/navigation';
 import { nl2br } from '@/components/nl2br';
 import { askQuestion, getAllByDocumentId } from '@/controllers/ai-query';
 import { getCurrent } from '@/controllers/session-user';
-import { OpenAIModel } from '@/types';
 import AIForm from './ai-form';
 import Datetime from './datetime';
 
-import type { Document } from '@/types';
+import type { Document, OpenAIModel } from '@/types';
 
 export default async function AI({ document }: { document: Document }) {
   const queries = await getAllByDocumentId(document.id);

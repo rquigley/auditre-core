@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { sendEmail } from '@/lib/email';
+import { getTemplate, sendEmail } from '@/lib/email';
 import { getOrgById } from './org';
 
 import type {
@@ -85,12 +85,10 @@ export async function sendInviteEmail(inviteId: InvitationId) {
   }
 
   const inviteLink = getInviteLink(invite);
-  const html = `
-    <p>You have been invited to join ${org.name} on AuditRe</p>
-    <p>
-      <a href="${inviteLink}">Click here to accept the invitation</a>
-    </p>
-  `;
+  const html = await getTemplate('invitation', {
+    INVITE_LINK: inviteLink,
+    ORG_NAME: org.name,
+  });
 
   const plainText = `
     You have been invited to join ${org.name} on AuditRe.
