@@ -66,7 +66,7 @@ export default async function Activity({
             </div>
             {item.type === 'COMMENT' ? (
               <>
-                {item.actor.type === 'USER' && item.actor.image && (
+                {item.actor.type === 'USER' && item.actor.image ? (
                   <Image
                     src={item.actor.image}
                     alt=""
@@ -74,6 +74,10 @@ export default async function Activity({
                     height="36"
                     className="relative mt-3 size-6 flex-none rounded-full bg-gray-50"
                   />
+                ) : (
+                  <div className="relative flex size-6 flex-none items-center justify-center bg-white">
+                    <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
+                  </div>
                 )}
                 <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-lime-500">
                   <div className="flex justify-between gap-x-4">
