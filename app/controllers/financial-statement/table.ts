@@ -26,6 +26,7 @@ export const tableMap = {
 } as const;
 
 const nonCashCurrentAssetTypes = [
+  { key: 'ASSET_ACCOUNTS_RECEIVABLE', label: 'Accounts receivable' },
   { key: 'ASSET_INVENTORY', label: 'Inventory' },
   { key: 'ASSET_PREPAID_EXPENSES', label: 'Prepaid expenses' },
   {
