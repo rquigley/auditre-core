@@ -208,44 +208,55 @@ export async function getAuditIdsForDocument(documentId: DocumentId) {
   return rows.map((r) => r.auditId);
 }
 
-export async function unlinkDocumentFromRequestData({
+export async function unlinkDocument({
   documentId,
   auditId,
-  requestType,
-  requestId,
   actorUserId,
 }: {
   documentId: DocumentId;
   auditId: AuditId;
-  requestType: string;
-  requestId: string;
-  actorUserId?: UserId;
+  actorUserId: UserId;
 }) {
-  const existingRow = await getDataForRequestAttribute(
-    auditId,
-    requestType,
-    requestId,
-  );
-  if (!existingRow) {
-    throw new Error('No request data found');
-  }
-  if (!Array.isArray(existingRow.data.value)) {
-    throw new Error('Request data is not a document type');
-  }
-  const newDocumentIds = existingRow.data.value.filter(
-    (id) => id !== documentId,
-  );
+  const rows = await db
+    .with('latestRequestData', (qb) =>
+      qb
+        .selectFrom('requestData')
+        .distinctOn(['requestType', 'requestId'])
+        .select(['id', 'requestType', 'requestId', 'data'])
+        .where('auditId', '=', auditId)
+        .orderBy(['requestType', 'requestId', 'createdAt desc']),
+    )
+    .selectFrom('requestDataDocument')
+    .innerJoin(
+      'latestRequestData',
+      'requestDataDocument.requestDataId',
+      'latestRequestData.id',
+    )
+    .select([
+      'requestDataId',
+      'latestRequestData.requestId',
+      'latestRequestData.requestType',
+      'data',
+    ])
+    .where('documentId', '=', documentId)
+    .execute();
 
-  await create({
-    auditId: auditId,
-    requestType,
-    requestId,
-    data: { value: newDocumentIds } as const,
-    actorUserId: actorUserId || null,
-  });
+  for (const row of rows) {
+    if (!Array.isArray(row.data.value)) {
+      throw new Error('Request data is not a document type');
+    }
+    const newDocumentIds = row.data.value.filter((id) => id !== documentId);
+    await deleteRequestDataDocument({
+      requestDataId: row.requestDataId,
+      documentId,
+    });
 
-  await deleteRequestDataDocument({
-    requestDataId: existingRow.id,
-    documentId,
-  });
+    await create({
+      auditId: auditId,
+      requestType: row.requestType,
+      requestId: row.requestId,
+      data: { value: newDocumentIds } as const,
+      actorUserId: actorUserId || null,
+    });
+  }
 }

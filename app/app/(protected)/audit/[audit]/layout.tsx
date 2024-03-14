@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 
 import { Content } from '@/components/content';
 import { DeleteModal } from '@/components/delete-modal';
+import { DocumentOverlay } from '@/components/document-overlay';
 import { AuditSettings, Header } from '@/components/header';
 import { getByIdForClientCached } from '@/controllers/audit';
 import { getCurrent } from '@/controllers/session-user';
@@ -52,6 +53,7 @@ export default async function AuditLayout({
         }}
         postActionUrl="/audits"
       />
+      <DocumentOverlay auditId={auditId} />
     </>
   );
 }
