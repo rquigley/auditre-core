@@ -1,11 +1,12 @@
 import { deepCopy } from './util';
 
 export const accountTypes = {
+  ASSET_ACCOUNTS_RECEIVABLE: 'Accounts receivable',
   ASSET_CASH_AND_CASH_EQUIVALENTS: 'Cash and cash equivalents',
+  ASSET_CURRENT_OTHER: 'Other current assets',
   ASSET_INTANGIBLE_ASSETS: 'Intangible assets, net',
   ASSET_INVENTORY: 'Inventory',
   ASSET_OPERATING_LEASE_RIGHT_OF_USE: 'Operating lease right-of-use assets',
-  ASSET_CURRENT_OTHER: 'Other current assets',
   ASSET_OTHER: 'Other assets',
   ASSET_PREPAID_EXPENSES: 'Prepaid expenses',
   ASSET_PROPERTY_AND_EQUIPMENT: 'Property and equipment, net',
