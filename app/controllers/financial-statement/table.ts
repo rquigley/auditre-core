@@ -953,14 +953,31 @@ export function buildCashFlows(data: AuditData) {
     cellStyle: [{ indent: 3 }],
   });
 
-  const liabilityTypesWithoutShortTermDebt = liabilityTypes.filter(
-    (liabilityType) => liabilityType.key !== 'LIABILITY_DEBT_SHORT',
+  // Property and equipment is repeated in investing activities. Remove from operating activities
+  const otherAssetTypesWithoutPropertyAndEquipment = otherAssetTypes.filter(
+    (assetType) => assetType.key !== 'ASSET_PROPERTY_AND_EQUIPMENT',
   );
   [
     ...nonCashCurrentAssetTypes,
-    ...otherAssetTypes,
-    ...liabilityTypesWithoutShortTermDebt,
+    ...otherAssetTypesWithoutPropertyAndEquipment,
   ].forEach((assetType) => {
+    t.addRow(
+      [
+        assetType.label,
+        `=TBLOOKUP('${assetType.key}', 'PY') - TBLOOKUP('${assetType.key}', 'CY')`,
+        `=TBLOOKUP('${assetType.key}', 'PY2') - TBLOOKUP('${assetType.key}', 'PY')`,
+      ],
+      {
+        tags: ['net-cash-op-activity', 'hide-if-zero'],
+        cellStyle: [{ indent: 4 }],
+      },
+    );
+  });
+
+  const liabilityTypesWithoutShortTermDebt = liabilityTypes.filter(
+    (liabilityType) => liabilityType.key !== 'LIABILITY_DEBT_SHORT',
+  );
+  liabilityTypesWithoutShortTermDebt.forEach((assetType) => {
     t.addRow(
       [
         assetType.label,
