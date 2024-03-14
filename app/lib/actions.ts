@@ -45,8 +45,8 @@ import {
   getOrgById,
 } from '@/controllers/org';
 import {
+  unlinkDocument as _unlinkDocument,
   create as addRequestData,
-  unlinkDocumentFromRequestData,
 } from '@/controllers/request-data';
 import {
   switchOrg as _switchOrg,
@@ -317,13 +317,9 @@ export async function getDocumentStatus(id: DocumentId) {
 export async function unlinkDocument({
   documentId,
   auditId,
-  requestType,
-  requestId,
 }: {
   documentId: DocumentId;
   auditId: AuditId;
-  requestType: string;
-  requestId: string;
 }) {
   const { user } = await getCurrent();
   if (!user) {
@@ -334,17 +330,13 @@ export async function unlinkDocument({
     throw new UnauthorizedError();
   }
 
-  await unlinkDocumentFromRequestData({
+  await _unlinkDocument({
     documentId,
     auditId,
-    requestType,
-    requestId,
     actorUserId: user.id,
   });
-  // TODO: Refine
-  console.log(`/audit/${auditId}/request/${requestType}`);
-  revalidatePath(`/audit/${auditId}/request/${requestType}`);
-  revalidatePath(`/`);
+
+  revalidatePath(`/audit/${auditId}`);
 }
 
 const bucketSchema = z.string();

@@ -17,52 +17,19 @@ import useSWR from 'swr';
 // import { Await } from '@/components/await';
 import { FiletypeIcon } from '@/components/filetype-icon';
 import { MiniSpinner, PageSpinner } from '@/components/spinner';
-import { reprocessDocument, reprocessDocumentQuery } from '@/lib/actions';
+import {
+  reprocessDocument,
+  reprocessDocumentQuery,
+  unlinkDocument,
+} from '@/lib/actions';
 import { useIntercom } from '@/lib/hooks/use-intercom';
 import Datetime from './datetime';
+import { DeleteModal2 } from './delete-modal';
 
 import type { DocumentDetails } from '@/app/(protected)/document/[document]/detail/route';
-import type { DocumentId } from '@/types';
+import type { AuditId, DocumentId } from '@/types';
 
-// const team = [
-//   {
-//     name: 'Tom Cook',
-//     email: 'tom.cook@example.com',
-//     href: '#',
-//     imageUrl:
-//       'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-//   },
-//   {
-//     name: 'Whitney Francis',
-//     email: 'whitney.francis@example.com',
-//     href: '#',
-//     imageUrl:
-//       'https://images.unsplash.com/photo-1517365830460-955ce3ccd263?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-//   },
-//   {
-//     name: 'Leonard Krasner',
-//     email: 'leonard.krasner@example.com',
-//     href: '#',
-//     imageUrl:
-//       'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-//   },
-//   {
-//     name: 'Floyd Miles',
-//     email: 'floyd.miles@example.com',
-//     href: '#',
-//     imageUrl:
-//       'https://images.unsplash.com/photo-1463453091185-61582044d556?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-//   },
-//   {
-//     name: 'Emily Selman',
-//     email: 'emily.selman@example.com',
-//     href: '#',
-//     imageUrl:
-//       'https://images.unsplash.com/photo-1502685104226-ee32379fefbe?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-//   },
-// ];
-
-export function DocumentOverlay() {
+export function DocumentOverlay({ auditId }: { auditId?: AuditId }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -95,6 +62,7 @@ export function DocumentOverlay() {
                       <Suspense fallback={<PageSpinner />}>
                         <Document
                           documentId={currentDocumentId}
+                          auditId={auditId}
                           onClose={onClose}
                         />{' '}
                       </Suspense>
@@ -131,90 +99,94 @@ function useDocument(documentId: DocumentId) {
 
 function Document({
   documentId,
+  auditId,
   onClose,
 }: {
   documentId: DocumentId;
+  auditId?: AuditId;
   onClose: () => void;
 }) {
   const { document } = useDocument(documentId);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   return (
-    <div className="flex h-full flex-col divide-y divide-gray-200">
-      <div className="h-0 flex-1 overflow-y-auto">
-        <div className="bg-white px-4 py-6 sm:px-6 pt-24 lg:pt-6">
-          <div className="flex items-center justify-between">
-            <Dialog.Title className="text-base font-semibold leading-6 text-slate-700 flex">
-              <FiletypeIcon filename={document.key} />
-              <Link href={`/document/${document.id}`} className="ml-2">
-                {document.name}
-              </Link>
-            </Dialog.Title>
-            <div className="ml-3 flex h-7 items-center">
-              <button
-                type="button"
-                className="relative rounded-md bg-gray-100 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white"
-                onClick={onClose}
-              >
-                <span className="absolute -inset-2.5" />
-                <span className="sr-only">Close panel</span>
-                <XMarkIcon className="size-6" aria-hidden="true" />
-              </button>
+    <>
+      <div className="flex h-full flex-col divide-y divide-gray-200">
+        <div className="h-0 flex-1 overflow-y-auto">
+          <div className="bg-white px-4 py-6 pt-24 sm:px-6 lg:pt-6">
+            <div className="flex items-center justify-between">
+              <Dialog.Title className="flex text-base font-semibold leading-6 text-slate-700">
+                <FiletypeIcon filename={document.key} />
+                <Link href={`/document/${document.id}`} className="ml-2">
+                  {document.name}
+                </Link>
+              </Dialog.Title>
+              <div className="ml-3 flex h-7 items-center">
+                <button
+                  type="button"
+                  className="relative rounded-md bg-gray-100 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white"
+                  onClick={onClose}
+                >
+                  <span className="absolute -inset-2.5" />
+                  <span className="sr-only">Close panel</span>
+                  <XMarkIcon className="size-6" aria-hidden="true" />
+                </button>
+              </div>
             </div>
-          </div>
 
-          <dl className="-my-3 divide-y divide-gray-100 px-1 py-4 text-sm leading-6">
-            <div className="flex justify-between gap-x-4 py-3">
-              <dt className="text-slate-500">Created</dt>
-              <dd className="text-slate-900 font-medium">
-                <Datetime dateTime={document.createdAt} />
-              </dd>
-            </div>
-            <div className="flex justify-between gap-x-4 py-3">
-              <dt className="text-slate-500">File last modified</dt>
-              <dd className="text-slate-900 font-medium">
-                <Datetime dateTime={document.fileLastModified} />
-              </dd>
-            </div>
-            {document.uploadedByUser ? (
-              <div className="flex align-middle justify-between gap-x-4 py-3">
-                <dt className="text-slate-500">Uploaded by</dt>
-                <dd className="text-slate-900 font-medium">
-                  {document.uploadedByUser.image ? (
-                    <Image
-                      src={document.uploadedByUser.image}
-                      alt={document.uploadedByUser.name || ''}
-                      width="36"
-                      height="36"
-                      className="inline-block size-5 mr-2 rounded-full"
-                    />
-                  ) : null}
-                  {document.uploadedByUser.name}
+            <dl className="-my-3 divide-y divide-gray-100 px-1 py-4 text-sm leading-6">
+              <div className="flex justify-between gap-x-4 py-3">
+                <dt className="text-slate-500">Created</dt>
+                <dd className="font-medium text-slate-900">
+                  <Datetime dateTime={document.createdAt} />
                 </dd>
               </div>
-            ) : null}
-            <div className="flex justify-between gap-x-4 py-3">
-              <dt className="text-slate-500">Classified as</dt>
-              <dd className="text-slate-900 font-medium">
-                {document.classifiedType}
-              </dd>
-            </div>
-
-            <div className="mt-1">
-              <div className="text-sm text-slate-500 mt-3">
-                {Object.keys(document.dataWithLabels).map((identifier) => (
-                  <DataRow
-                    key={identifier}
-                    documentId={documentId}
-                    identifier={identifier}
-                    data={document.dataWithLabels[identifier]}
-                  />
-                ))}
+              <div className="flex justify-between gap-x-4 py-3">
+                <dt className="text-slate-500">File last modified</dt>
+                <dd className="font-medium text-slate-900">
+                  <Datetime dateTime={document.fileLastModified} />
+                </dd>
               </div>
-            </div>
-          </dl>
-        </div>
+              {document.uploadedByUser ? (
+                <div className="flex justify-between gap-x-4 py-3 align-middle">
+                  <dt className="text-slate-500">Uploaded by</dt>
+                  <dd className="font-medium text-slate-900">
+                    {document.uploadedByUser.image ? (
+                      <Image
+                        src={document.uploadedByUser.image}
+                        alt={document.uploadedByUser.name || ''}
+                        width="36"
+                        height="36"
+                        className="mr-2 inline-block size-5 rounded-full"
+                      />
+                    ) : null}
+                    {document.uploadedByUser.name}
+                  </dd>
+                </div>
+              ) : null}
+              <div className="flex justify-between gap-x-4 py-3">
+                <dt className="text-slate-500">Classified as</dt>
+                <dd className="font-medium text-slate-900">
+                  {document.classifiedType}
+                </dd>
+              </div>
 
-        {/* <div className="flex flex-1 flex-col justify-between">
+              <div className="mt-1">
+                <div className="mt-3 text-sm text-slate-500">
+                  {Object.keys(document.dataWithLabels).map((identifier) => (
+                    <DataRow
+                      key={identifier}
+                      documentId={documentId}
+                      identifier={identifier}
+                      data={document.dataWithLabels[identifier]}
+                    />
+                  ))}
+                </div>
+              </div>
+            </dl>
+          </div>
+
+          {/* <div className="flex flex-1 flex-col justify-between">
           <div className="divide-y divide-gray-200 px-4 sm:px-6">
             <div className="space-y-6 pb-5 pt-6">
               <div>
@@ -396,35 +368,52 @@ function Document({
             </div>
           </div>
         </div> */}
-      </div>
-      <div className="flex flex-shrink-0 justify-end px-4 py-4">
-        {/* <button
-          type="button"
-          className="mr-2 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-          onClick={async () => {
-            onClose();
-            await deleteDocument(documentId);
-          }}
-        >
-          Delete
-        </button> */}
-        {process.env.NEXT_PUBLIC_ENVIRONMENT !== 'production' && (
-          <button
-            type="button"
-            className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-            onClick={() => reprocessDocument(documentId)}
+        </div>
+        <div className="flex flex-shrink-0 px-4 py-4">
+          {auditId ? (
+            <button
+              type="button"
+              className="mr-2 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-red-500"
+              onClick={async () => {
+                setShowDeleteModal(true);
+              }}
+            >
+              Remove from audit
+            </button>
+          ) : null}
+          <div className="flex-1" />
+          {process.env.NEXT_PUBLIC_ENVIRONMENT !== 'production' && (
+            <button
+              type="button"
+              className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+              onClick={() => reprocessDocument(documentId)}
+            >
+              Reprocess
+            </button>
+          )}
+          <a
+            href={`/document/${documentId}/download`}
+            className="ml-4 inline-flex justify-center rounded-md bg-slate-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-600"
           >
-            Reprocess
-          </button>
-        )}
-        <a
-          href={`/document/${documentId}/download`}
-          className="ml-4 inline-flex justify-center rounded-md bg-slate-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-600"
-        >
-          Download
-        </a>
+            Download
+          </a>
+        </div>
       </div>
-    </div>
+      <DeleteModal2
+        label="Remove document from audit"
+        description="Are you sure you want to remove this document? It will still be available in the Documents section"
+        show={showDeleteModal}
+        setShow={setShowDeleteModal}
+        action={async () => {
+          onClose();
+          if (auditId) {
+            await unlinkDocument({ documentId, auditId });
+          } else {
+            alert('Not implemented');
+          }
+        }}
+      />
+    </>
   );
 }
 
@@ -447,7 +436,7 @@ function DataRow({
   }
   return (
     <div className="mb-2">
-      <div className="flex  items-center text-xs leading-5 font-semibold text-gray-600">
+      <div className="flex  items-center text-xs font-semibold leading-5 text-gray-600">
         <span className="inline-block">{data.label}</span>
         <button
           onClick={async () => {
@@ -455,7 +444,7 @@ function DataRow({
             await reprocessDocumentQuery(documentId, identifier);
             setProcessing(false);
           }}
-          className="ml-1 hover:bg-slate-100 rounded p-0.5"
+          className="ml-1 rounded p-0.5 hover:bg-slate-100"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
