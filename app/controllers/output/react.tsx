@@ -277,7 +277,7 @@ function buildTableRow(
   let hideRow = row.hasTag('hide-if-zero');
 
   const ret = (
-    <tr key={row.rowNum} className={row.rowNum % 2 === 0 ? 'bg-slate-100' : ''}>
+    <tr key={row.rowNum} className="even:bg-slate-100">
       {row.cells.map((cell, idx) => {
         let value;
         if (typeof cell.value === 'string' && cell.value.startsWith('=')) {
