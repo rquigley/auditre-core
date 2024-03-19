@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
@@ -70,6 +70,14 @@ export function BasicForm({
     resolver: zodResolver(schema),
     defaultValues: requestData,
   });
+
+  // We need to reset twice in order to ensure that isSubmitSuccessful is reset
+  // The reset() within the onSubmit handler is to save the new data as default values.
+  useEffect(() => {
+    if (formState.isSubmitSuccessful) {
+      reset();
+    }
+  }, [formState, reset]);
 
   async function onSubmit(data: z.infer<typeof schema>) {
     const { data: newData, postSaveAction } = await saveData(data);
@@ -144,6 +152,8 @@ export function BasicForm({
                   <div className="pt-2">
                     {fieldConfig.input === 'fileupload' ? (
                       <FileUpload
+                        requestType={request.id}
+                        auditId={auditId}
                         field={field}
                         register={register}
                         errors={formState.errors[field]}
