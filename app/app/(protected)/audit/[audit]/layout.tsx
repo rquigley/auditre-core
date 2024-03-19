@@ -53,7 +53,7 @@ export default async function AuditLayout({
         }}
         postActionUrl="/audits"
       />
-      <DocumentOverlay auditId={auditId} />
+      <DocumentOverlay />
     </>
   );
 }
