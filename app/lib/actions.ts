@@ -317,26 +317,37 @@ export async function getDocumentStatus(id: DocumentId) {
 export async function unlinkDocument({
   documentId,
   auditId,
+  requestType,
+  requestId,
 }: {
   documentId: DocumentId;
   auditId: AuditId;
+  requestType: string;
+  requestId: string;
 }) {
-  const { user } = await getCurrent();
-  if (!user) {
-    throw new UnauthorizedError();
-  }
-  const document = await getDocumentById(documentId);
-  if (document.orgId !== user.orgId) {
-    throw new UnauthorizedError();
-  }
+  try {
+    const { user } = await getCurrent();
+    if (!user) {
+      throw new UnauthorizedError();
+    }
+    const document = await getDocumentById(documentId);
+    if (document.orgId !== user.orgId) {
+      throw new UnauthorizedError();
+    }
 
-  await _unlinkDocument({
-    documentId,
-    auditId,
-    actorUserId: user.id,
-  });
+    await _unlinkDocument({
+      documentId,
+      auditId,
+      requestType,
+      requestId,
+      actorUserId: user.id,
+    });
 
-  revalidatePath(`/audit/${auditId}`);
+    revalidatePath(`/audit/${auditId}`);
+  } catch (e) {
+    Sentry.captureException(e);
+    return null;
+  }
 }
 
 const bucketSchema = z.string();

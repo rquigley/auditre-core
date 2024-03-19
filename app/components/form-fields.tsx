@@ -1,25 +1,26 @@
 'use client';
 
 import { Switch } from '@headlessui/react';
+import { XMarkIcon } from '@heroicons/react/16/solid';
 import {
-  ArrowLongRightIcon,
   CheckCircleIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import * as Sentry from '@sentry/nextjs';
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 
 // import Calendar from '@/components/calendar';
-import { Document } from '@/components/document';
 import { Spinner } from '@/components/spinner';
 import {
   createDocument,
-  // deleteDocument,
   getPresignedUploadUrl,
+  unlinkDocument,
 } from '@/lib/actions';
 import { fetchWithProgress } from '@/lib/fetch-with-progress';
 import { FormFieldCheckbox, FormFieldFile } from '@/lib/request-types';
 import { delay, pWithResolvers, ucFirst } from '@/lib/util';
+import { DeleteModal2 } from './delete-modal';
 
 import type { DocumentId, S3File } from '@/types';
 import type {
@@ -275,39 +276,317 @@ export function BooleanField({
   );
 }
 
-type FileState =
-  | { state: 'idle' }
-  | { state: 'uploading'; pct: number }
+type FileState = {
+  state: 'idle' | 'working';
+  files: {
+    id: number;
+    state:
+      | 'uploading'
+      | 'uploaded'
+      | 'processing'
+      | 'readyToSave'
+      | 'classifyTypeMismatch'
+      | 'error';
+    pct: number;
+    documentId: string;
+    name: string;
+    key: string;
+    classifiedType: string;
+    message: string;
+  }[];
+};
+
+type FileAction =
   | {
-      state: 'uploaded';
+      type: 'init';
+      id: number;
+      name: string;
+    }
+  | {
+      type: 'set-signed';
+      id: number;
+      key: string;
+    }
+  | {
+      type: 'uploading';
+      id: number;
       pct: number;
     }
   | {
-      state: 'processing';
-      documentId: string;
-      name: string;
-      key: string;
+      type: 'uploaded';
+      id: number;
     }
   | {
-      state: 'readyToSave';
+      type: 'processing';
+      id: number;
       documentId: string;
-      name: string;
-      key: string;
+    }
+  | {
+      type: 'readyToSave';
+      id: number;
+    }
+  | {
+      type: 'classifyTypeMismatch';
+      id: number;
       classifiedType: string;
     }
   | {
-      state: 'classifyTypeMismatch';
-      documentId: string;
-      name: string;
-      key: string;
-      classifiedType: string;
-    }
-  | {
-      state: 'error';
+      type: 'error';
+      id: number;
       message: string;
+    }
+  | {
+      type: 'cancel';
+      id: number;
+    }
+  | { type: 'clear' };
+
+function fileReducer(state: FileState, action: FileAction): FileState {
+  let newState: FileState;
+  if (action.type === 'init') {
+    newState = {
+      state: 'working',
+      files: [
+        ...state.files,
+        {
+          state: 'uploading',
+          id: action.id,
+          pct: 0,
+          documentId: '',
+          name: action.name,
+          key: '',
+          classifiedType: '',
+          message: '',
+        },
+      ],
     };
+  } else if (action.type === 'set-signed') {
+    newState = {
+      state: 'working',
+      files: state.files.map((file) =>
+        action.id === file.id
+          ? {
+              ...file,
+              state: 'uploading',
+              key: action.key,
+            }
+          : file,
+      ),
+    };
+  } else if (action.type === 'uploading' || action.type === 'uploaded') {
+    newState = {
+      state: 'working',
+      files: state.files.map((file) =>
+        action.id === file.id
+          ? {
+              ...file,
+              state: action.type,
+              pct: action.type === 'uploading' ? action.pct : 100,
+            }
+          : file,
+      ),
+    };
+  } else if (action.type === 'processing') {
+    newState = {
+      state: 'working',
+      files: state.files.map((file) =>
+        action.id === file.id
+          ? {
+              ...file,
+              state: action.type,
+              documentId: action.documentId,
+            }
+          : file,
+      ),
+    };
+  } else if (action.type === 'readyToSave') {
+    newState = {
+      state: 'working',
+      files: state.files.map((file) =>
+        action.id === file.id
+          ? {
+              ...file,
+              state: action.type,
+            }
+          : file,
+      ),
+    };
+  } else if (action.type === 'cancel') {
+    newState = {
+      state: 'working',
+      files: state.files.filter((file) => action.id !== file.id),
+    };
+  } else if (action.type === 'classifyTypeMismatch') {
+    newState = {
+      state: 'working',
+      files: state.files.map((file) =>
+        action.id === file.id
+          ? {
+              ...file,
+              state: action.type,
+              classifiedType: action.classifiedType,
+            }
+          : file,
+      ),
+    };
+  } else if (action.type === 'error') {
+    newState = {
+      state: 'working',
+      files: state.files.map((file) =>
+        action.id === file.id
+          ? {
+              ...file,
+              state: action.type,
+              message: action.message,
+            }
+          : file,
+      ),
+    };
+  } else if (action.type === 'clear') {
+    newState = {
+      state: 'idle',
+      files: [],
+    };
+  } else {
+    throw new Error(`Invalid action: ${JSON.stringify(action)}`);
+  }
+  newState.state = newState.files.every((file) =>
+    ['readyToSave', 'error', 'classifyTypeMismatch'].includes(file.state),
+  )
+    ? 'idle'
+    : 'working';
+  return newState;
+}
+
+async function uploadDocument({
+  file,
+  // fileIdx,
+  dispatch,
+  config,
+  getValues,
+  setValue,
+}: {
+  file: File;
+  // fileIdx: number;
+  dispatch: (action: FileAction) => void;
+  config: FormFieldFile;
+  getValues: () => string[];
+  setValue: (documentIds: string[]) => void;
+}) {
+  const id = Date.now() + Math.random() * 1000;
+  const filename = encodeURIComponent(file.name);
+  //const fileType = encodeURIComponent(file.type);
+  dispatch({ type: 'init', id, name: file.name });
+
+  const signedUrl = await getPresignedUploadUrl({
+    filename,
+    contentType: file.type,
+  });
+  dispatch({ type: 'set-signed', id, key: file.name });
+
+  // For visual effect, ensure uplading takes at least 2s. This also
+  // reduces the perception of the processing time, which can currently go > 20s
+  const { promise, resolve } = pWithResolvers();
+  delay(2000).then(resolve);
+
+  dispatch({ type: 'uploading', id, pct: 1 });
+
+  // setFileState({ state: 'uploading', pct: 0 });
+  // setNumFilesUplading((val: number) => val + 1);
+  const resp = await fetchWithProgress(signedUrl.url, file, async (ev) => {
+    if (ev.lengthComputable) {
+      if (ev.loaded === ev.total) {
+        dispatch({ type: 'uploaded', id });
+      } else {
+        dispatch({
+          type: 'uploading',
+          id,
+          pct: Math.round((ev.loaded / ev.total) * 100),
+        });
+      }
+    }
+  });
+
+  if (!resp.ok) {
+    dispatch({ type: 'error', id, message: 'Error uploading file' });
+    Sentry.captureException('Error uploading file');
+  }
+
+  const toSave: S3File = {
+    documentId: signedUrl.documentId,
+    key: signedUrl.key,
+    bucket: signedUrl.bucket,
+    name: file.name,
+    size: file.size,
+    lastModified: file.lastModified,
+    type: file.type,
+  };
+
+  const { id: documentId, name, key } = await createDocument(toSave);
+
+  await promise;
+
+  dispatch({
+    type: 'processing',
+    id,
+    documentId,
+  });
+
+  const { classifiedType } = await getClassificationStatus(documentId);
+
+  // setNumFilesUplading((val: number) => val - 1);
+
+  if (classifiedType === 'UNKNOWN') {
+    dispatch({
+      type: 'error',
+      id,
+      message: 'Could not determine the type of document',
+    });
+    return;
+  } else if (classifiedType !== config.aiClassificationType) {
+    dispatch({
+      type: 'classifyTypeMismatch',
+      id,
+      classifiedType,
+    });
+    console.log(
+      `Mismatch on classified type, expected ${config.aiClassificationType} got ${classifiedType}`,
+    );
+    return;
+  } else {
+    dispatch({
+      type: 'readyToSave',
+      id,
+    });
+  }
+
+  const documentIds = getValues();
+  let newDocumentIds;
+  if (config.allowMultiple) {
+    newDocumentIds = [...documentIds, documentId];
+  } else {
+    newDocumentIds = [documentId];
+  }
+  setValue(newDocumentIds);
+}
+
+type FileUplaodAddlProps = {
+  auditId: string;
+  requestType: string;
+  config: FormFieldFile;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setValue: UseFormSetValue<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getValues: UseFormGetValues<any>;
+  isSubmitSuccessful: boolean;
+  documents: { id: DocumentId; doc: JSX.Element; data: JSX.Element }[];
+  resetField: (field: string) => void;
+  setNumFilesUplading: (val: number) => void;
+};
 
 export function FileUpload({
+  auditId,
+  requestType,
   field,
   register,
   setValue,
@@ -317,304 +596,190 @@ export function FileUpload({
   documents,
   resetField,
   setNumFilesUplading,
-}: FormFieldProps & {
-  config: FormFieldFile;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setValue: UseFormSetValue<any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getValues: UseFormGetValues<any>;
-  isSubmitSuccessful: boolean;
-  documents: { id: DocumentId; doc: JSX.Element; data: JSX.Element }[];
-  resetField: (field: string) => void;
-  setNumFilesUplading: (cb: (val: number) => number) => void;
-}) {
-  const [fileState, setFileState] = useState<FileState>({ state: 'idle' });
+}: FormFieldProps & FileUplaodAddlProps) {
+  const [fileState, dispatch] = useReducer(fileReducer, {
+    state: 'idle',
+    files: [],
+  });
+  const [documentIdToDelete, setDocumentIdToDelete] = useState('');
 
   useEffect(() => {
-    if (isSubmitSuccessful && fileState.state === 'readyToSave') {
-      setFileState({ state: 'idle' });
-    }
-  }, [isSubmitSuccessful, fileState]);
+    setNumFilesUplading(fileState.state === 'working' ? 1 : 0);
+  }, [fileState.state, setNumFilesUplading]);
 
-  async function uploadDocument(e: React.ChangeEvent<HTMLInputElement>) {
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      dispatch({ type: 'clear' });
+    }
+  }, [isSubmitSuccessful]);
+
+  function uploadDocuments(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) {
       return;
     }
+    if (!config.allowMultiple && files.length > 1) {
+      // dispatch({
+      //   type: 'error',
+      //   fileIdx: 0,
+      //   message: 'Only one file can be uploaded',
+      // });
+      return;
+    }
 
-    setFileState({ state: 'uploading', pct: 0 });
-    setNumFilesUplading((val: number) => val + 1);
-
-    const file = files[0];
-    const filename = encodeURIComponent(file.name);
-    //const fileType = encodeURIComponent(file.type);
-
-    const signedUrl = await getPresignedUploadUrl({
-      filename,
-      contentType: file.type,
-    });
-
-    // For visual effect, ensure uplading takes at least 2s. This also
-    // reduces the perception of the processing time, which can currently go > 20s
-    const { promise, resolve } = pWithResolvers();
-    delay(2000).then(resolve);
-
-    setFileState({
-      state: 'uploading',
-      pct: 1,
-    });
-    const resp = await fetchWithProgress(signedUrl.url, file, async (ev) => {
-      if (ev.lengthComputable) {
-        if (ev.loaded === ev.total) {
-          setFileState({ state: 'uploaded', pct: 100 });
-        } else {
-          setFileState({
-            state: 'uploading',
-            pct: Math.round((ev.loaded / ev.total) * 100),
+    for (let i = 0; i < files.length; i++) {
+      uploadDocument({
+        file: files[i],
+        dispatch,
+        config,
+        getValues: () => getValues(field) || [],
+        setValue: (documentIds: string[]) => {
+          setValue(field, documentIds, {
+            shouldDirty: true,
+            shouldTouch: true,
           });
-        }
-      }
-    });
-
-    if (resp.ok) {
-      const toSave: S3File = {
-        documentId: signedUrl.documentId,
-        key: signedUrl.key,
-        bucket: signedUrl.bucket,
-        name: file.name,
-        size: file.size,
-        lastModified: file.lastModified,
-        type: file.type,
-      };
-
-      const { id, name, key } = await createDocument(toSave);
-
-      await promise;
-
-      setFileState({
-        state: 'processing',
-        documentId: id,
-        name,
-        key,
+        },
       });
-
-      const { classifiedType } = await getClassificationStatus(id);
-
-      setNumFilesUplading((val: number) => val - 1);
-
-      if (classifiedType === 'UNKNOWN') {
-        setFileState({
-          state: 'error',
-          message: 'Could not determine the type of document',
-        });
-        return;
-      } else if (classifiedType !== config.aiClassificationType) {
-        setFileState({
-          state: 'classifyTypeMismatch',
-          documentId: id,
-          name,
-          key,
-          classifiedType,
-        });
-        console.log(
-          `Mismatch on classified type, expected ${config.aiClassificationType} got ${classifiedType}`,
-        );
-        return;
-      } else {
-        setFileState({
-          state: 'readyToSave',
-          documentId: id,
-          name,
-          key,
-          classifiedType,
-        });
-      }
-
-      const documentIds = getValues(field) || [];
-      let newDocumentIds;
-      if (config.allowMultiple) {
-        newDocumentIds = [...documentIds, id];
-      } else {
-        newDocumentIds = [id];
-      }
-      setValue(field, newDocumentIds, { shouldDirty: true, shouldTouch: true });
-    } else {
-      setFileState({ state: 'error', message: 'Error uploading file' });
-      Sentry.captureException('Error uploading file');
     }
   }
 
   const currentDocumentIds = getValues(field) || [];
 
+  const showNewFileButton =
+    config.allowMultiple ||
+    (currentDocumentIds.length === 0 && fileState.files.length === 0);
   return (
     <>
-      <div className="flex">
-        <label
-          htmlFor={`${field}-file`}
-          className={clsx(
-            fileState.state === 'uploading' ||
-              fileState.state === 'uploaded' ||
-              fileState.state === 'processing' ||
-              fileState.state === 'readyToSave'
-              ? 'cursor-not-allowed hover:bg-white'
-              : 'cursor-pointer hover:bg-gray-50',
-            ' mb-2 inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300',
-          )}
-        >
-          {fileState.state === 'uploading' ||
-          fileState.state === 'uploaded' ||
-          fileState.state === 'processing' ? (
-            <>
-              <Spinner />
-              {ucFirst(fileState.state)}
-              {fileState.state === 'uploading' || fileState.state === 'uploaded'
-                ? ` ${fileState.pct}%`
-                : ''}
-            </>
-          ) : fileState.state === 'readyToSave' ? (
-            <>
-              <CheckCircleIcon
-                className="-ml-0.5 mr-1 size-5 text-green-700"
-                aria-hidden="true"
-              />
-              Ready to save
-            </>
-          ) : (
-            <>
-              {currentDocumentIds.length > 0 && !config.allowMultiple
-                ? 'Replace document'
-                : 'Add document'}
-            </>
-          )}
-          <input
-            id={`${field}-file`}
-            name={`${field}-file`}
-            type="file"
-            className="sr-only"
-            multiple={false}
-            onChange={uploadDocument}
-            disabled={
-              fileState.state === 'uploading' ||
-              fileState.state === 'processing' ||
-              fileState.state === 'readyToSave'
-            }
-
-            // accept="image/png, image/jpeg"
-          />
-        </label>
-        {fileState.state === 'readyToSave' ||
-        fileState.state === 'classifyTypeMismatch' ||
-        // A bug exists here that if a user cancels while in "processing"
-        // the system can still mark it as "readyToSave". TODO: Fix this
-        fileState.state === 'processing' ? (
-          <a
-            href="#"
-            onClick={() => {
-              setFileState({ state: 'idle' });
-              resetField(field);
-            }}
-            className="ml-4 p-2 text-xs text-slate-500 hover:text-slate-700"
-          >
-            Cancel
-          </a>
-        ) : null}
-      </div>
-
-      <input {...register(field, { required: true })} type="hidden" />
-
-      {config.allowMultiple ? (
-        <>
-          {fileState.state === 'processing' ||
-          fileState.state === 'readyToSave' ||
-          fileState.state === 'classifyTypeMismatch' ? (
-            <Document
-              documentId={fileState.documentId}
-              docKey={fileState.key}
-              name={fileState.name}
-            />
-          ) : null}
+      {documents.length > 0 && (
+        <div className="mb-8">
           {documents.map((d, idx) => (
             <div
               key={idx}
               className={clsx(idx !== documents.length - 1 ? 'mb-10' : '')}
             >
-              {d.doc}
-              <div className={fileState.state !== 'idle' ? 'opacity-20' : ''}>
-                {d.data}
+              <div className="-ml-2 flex">
+                {d.doc}
+                <button
+                  type="button"
+                  onClick={() => setDocumentIdToDelete(d.id)}
+                  className="-mt-0.5 ml-2 p-1 text-xs text-slate-400 hover:text-red-700"
+                  title="Unlink document from audit"
+                >
+                  <XMarkIcon className="size-4" />
+                </button>
               </div>
+              {d.data}
             </div>
           ))}
-        </>
-      ) : (
-        <>
-          {fileState.state === 'processing' ||
-          fileState.state === 'readyToSave' ||
-          fileState.state === 'classifyTypeMismatch' ? (
-            <div className="flex items-center">
-              <Document docKey={fileState.key} name={fileState.name} />
-
-              {documents[0] ? (
-                <div
-                  className={clsx(
-                    fileState.state === 'classifyTypeMismatch'
-                      ? 'opacity-20'
-                      : '',
-                    'hidden sm:flex',
-                  )}
-                >
-                  <div className="mx-4 flex items-center text-xs text-slate-500">
-                    <div>to replace</div>
-                    <ArrowLongRightIcon className="ml-1 h-4" />
-                  </div>
-                  {documents[0].doc}
-                </div>
-              ) : null}
-            </div>
-          ) : documents[0] ? (
-            <>
-              <div
-                className={clsx(
-                  fileState.state === 'uploading' ||
-                    fileState.state === 'uploaded'
-                    ? 'opacity-20'
-                    : '',
-                )}
-              >
-                {documents[0].doc}
-                <div className={fileState.state !== 'idle' ? 'opacity-20' : ''}>
-                  {documents[0] ? documents[0].data : null}
-                </div>
-              </div>
-            </>
-          ) : null}
-        </>
-      )}
-
-      {/* <p className="text-xs leading-5 text-gray-600">
-          {config.extensions.join(', ')} up to {config.maxFilesizeMB}MB
-        </p> */}
-      {fileState.state === 'classifyTypeMismatch' && (
-        <div className="mt-2 text-sm text-red-900">
-          It looks like you&lsquo;re trying to upload a different type of file (
-          {fileState.classifiedType}). Please try again.
         </div>
       )}
-      {fileState.state === 'error' && (
-        <p className="mt-2 text-sm text-red-600" id={`${field}-error`}>
-          {fileState.message}
-        </p>
-      )}
 
-      {/* {value && (
-          <div className="mt-2">
-            <p className="text-xs leading-5 text-gray-600">
-              File has been uploaded but not saved
-            </p>
+      {fileState.files.map((file) => (
+        <div key={file.id} className="mb-2 flex ">
+          <button
+            type="button"
+            onClick={() => {
+              const documentId = file.documentId;
+              dispatch({ type: 'cancel', id: file.id });
+              const documentIds = getValues(field) || [];
+              setValue(
+                field,
+                documentIds.filter((id: string) => id !== documentId),
+              );
+            }}
+            className="-ml-2 -mt-0.5 mr-1 p-1 text-xs text-slate-400 hover:text-red-700"
+            title="Cancel upload"
+          >
+            <XMarkIcon className="size-4" />
+          </button>
+          <div className="flext-col">
+            <div className="flex items-center bg-white text-sm text-gray-900">
+              {file.state === 'uploading' ||
+              file.state === 'uploaded' ||
+              file.state === 'processing' ? (
+                <>
+                  <Spinner />
+                  {file.name} -{' '}
+                  <b className="ml-1">
+                    {ucFirst(file.state)}
+                    {file.state === 'uploading' || file.state === 'uploaded'
+                      ? ` ${file.pct}%`
+                      : ''}
+                  </b>
+                </>
+              ) : file.state === 'readyToSave' ? (
+                <>
+                  <CheckCircleIcon
+                    className="-ml-0.5 mr-2 size-5 text-green-700"
+                    aria-hidden="true"
+                  />
+                  {file.name} {/*- Ready to save*/}
+                </>
+              ) : (
+                <>
+                  <ExclamationTriangleIcon
+                    className="-ml-0.5 mr-2 size-5 text-red-700"
+                    aria-hidden="true"
+                  />
+                  {file.name}
+                  {file.state !== 'classifyTypeMismatch' && (
+                    <>
+                      {' '}
+                      - <b className="ml-1">{file.state}</b>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+            {file.state === 'classifyTypeMismatch' ? (
+              <div className="my-1 ml-7 text-xs text-red-900">
+                This file was classified as a {file.classifiedType}. Please try
+                a different file.
+              </div>
+            ) : null}
           </div>
-        )} */}
-      {/* <div className={fileState.state !== 'idle' ? 'opacity-20' : ''}>
-        {documents[0] ? documents[0].data : null}
-      </div> */}
+        </div>
+      ))}
+      {showNewFileButton ? (
+        <div className="flex">
+          <label
+            htmlFor={`${field}-file`}
+            className="mb-2 inline-flex cursor-pointer items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          >
+            <input
+              id={`${field}-file`}
+              name={`${field}-file`}
+              type="file"
+              className="sr-only"
+              multiple={config.allowMultiple}
+              onChange={uploadDocuments}
+              // accept="image/png, image/jpeg"
+            />
+            Add document
+          </label>
+
+          <input {...register(field, { required: true })} type="hidden" />
+        </div>
+      ) : null}
+      <DeleteModal2
+        label="Remove document from audit"
+        description="Are you sure you want to remove this document? It will still be available in the Documents section"
+        show={documentIdToDelete !== ''}
+        setShow={() => setDocumentIdToDelete('')}
+        action={async () => {
+          const documentIds = getValues(field) || [];
+          setValue(
+            field,
+            documentIds.filter((id: string) => id !== documentIdToDelete),
+          );
+          await unlinkDocument({
+            documentId: documentIdToDelete,
+            auditId,
+            requestType,
+            requestId: field,
+          });
+        }}
+      />
     </>
   );
 }

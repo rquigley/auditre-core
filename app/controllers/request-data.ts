@@ -211,52 +211,35 @@ export async function getAuditIdsForDocument(documentId: DocumentId) {
 export async function unlinkDocument({
   documentId,
   auditId,
+  requestId,
+  requestType,
   actorUserId,
 }: {
   documentId: DocumentId;
   auditId: AuditId;
+  requestId: string;
+  requestType: string;
   actorUserId: UserId;
 }) {
-  const rows = await db
-    .with('latestRequestData', (qb) =>
-      qb
-        .selectFrom('requestData')
-        .distinctOn(['requestType', 'requestId'])
-        .select(['id', 'requestType', 'requestId', 'data'])
-        .where('auditId', '=', auditId)
-        .orderBy(['requestType', 'requestId', 'createdAt desc']),
-    )
-    .selectFrom('requestDataDocument')
-    .innerJoin(
-      'latestRequestData',
-      'requestDataDocument.requestDataId',
-      'latestRequestData.id',
-    )
-    .select([
-      'requestDataId',
-      'latestRequestData.requestId',
-      'latestRequestData.requestType',
-      'data',
-    ])
-    .where('documentId', '=', documentId)
-    .execute();
-
-  for (const row of rows) {
-    if (!Array.isArray(row.data.value)) {
-      throw new Error('Request data is not a document type');
-    }
-    const newDocumentIds = row.data.value.filter((id) => id !== documentId);
-    await deleteRequestDataDocument({
-      requestDataId: row.requestDataId,
-      documentId,
-    });
-
-    await create({
-      auditId: auditId,
-      requestType: row.requestType,
-      requestId: row.requestId,
-      data: { value: newDocumentIds } as const,
-      actorUserId: actorUserId || null,
-    });
+  const res = await getDataForRequestAttribute(auditId, requestType, requestId);
+  if (!res) {
+    throw new Error('Request data not found for document');
   }
+  if (!Array.isArray(res.data.value)) {
+    throw new Error('Request data is not a document type');
+  }
+  const requestDataId = res.id;
+  const exstingDocumentIds = res.data.value || [];
+  const newDocumentIds = exstingDocumentIds.filter((id) => id !== documentId);
+  await deleteRequestDataDocument({
+    requestDataId,
+    documentId,
+  });
+  await create({
+    auditId,
+    requestType,
+    requestId,
+    data: { value: newDocumentIds } as const,
+    actorUserId: actorUserId || null,
+  });
 }
