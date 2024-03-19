@@ -4,7 +4,6 @@ import { Inter } from 'next/font/google';
 import { Suspense } from 'react';
 import { Toaster } from 'sonner';
 
-import { DocumentOverlay } from '@/components/document-overlay';
 import Intercom from '@/components/intercom';
 import { Navbar } from '@/components/navbar';
 import { PageSpinner } from '@/components/spinner';
@@ -45,7 +44,6 @@ export default async function RootLayout({
           </div>
         </div>
         <Toaster richColors />
-        <DocumentOverlay />
         <Intercom name={user.name} email={user.email || ''} />
       </body>
     </html>

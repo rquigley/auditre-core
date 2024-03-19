@@ -45,8 +45,8 @@ import {
   getOrgById,
 } from '@/controllers/org';
 import {
+  unlinkDocument as _unlinkDocument,
   create as addRequestData,
-  unlinkDocumentFromRequestData,
 } from '@/controllers/request-data';
 import {
   switchOrg as _switchOrg,
@@ -325,26 +325,29 @@ export async function unlinkDocument({
   requestType: string;
   requestId: string;
 }) {
-  const { user } = await getCurrent();
-  if (!user) {
-    throw new UnauthorizedError();
-  }
-  const document = await getDocumentById(documentId);
-  if (document.orgId !== user.orgId) {
-    throw new UnauthorizedError();
-  }
+  try {
+    const { user } = await getCurrent();
+    if (!user) {
+      throw new UnauthorizedError();
+    }
+    const document = await getDocumentById(documentId);
+    if (document.orgId !== user.orgId) {
+      throw new UnauthorizedError();
+    }
 
-  await unlinkDocumentFromRequestData({
-    documentId,
-    auditId,
-    requestType,
-    requestId,
-    actorUserId: user.id,
-  });
-  // TODO: Refine
-  console.log(`/audit/${auditId}/request/${requestType}`);
-  revalidatePath(`/audit/${auditId}/request/${requestType}`);
-  revalidatePath(`/`);
+    await _unlinkDocument({
+      documentId,
+      auditId,
+      requestType,
+      requestId,
+      actorUserId: user.id,
+    });
+
+    revalidatePath(`/audit/${auditId}`);
+  } catch (e) {
+    Sentry.captureException(e);
+    return null;
+  }
 }
 
 const bucketSchema = z.string();

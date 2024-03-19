@@ -208,44 +208,38 @@ export async function getAuditIdsForDocument(documentId: DocumentId) {
   return rows.map((r) => r.auditId);
 }
 
-export async function unlinkDocumentFromRequestData({
+export async function unlinkDocument({
   documentId,
   auditId,
-  requestType,
   requestId,
+  requestType,
   actorUserId,
 }: {
   documentId: DocumentId;
   auditId: AuditId;
-  requestType: string;
   requestId: string;
-  actorUserId?: UserId;
+  requestType: string;
+  actorUserId: UserId;
 }) {
-  const existingRow = await getDataForRequestAttribute(
-    auditId,
-    requestType,
-    requestId,
-  );
-  if (!existingRow) {
-    throw new Error('No request data found');
+  const res = await getDataForRequestAttribute(auditId, requestType, requestId);
+  if (!res) {
+    throw new Error('Request data not found for document');
   }
-  if (!Array.isArray(existingRow.data.value)) {
+  if (!Array.isArray(res.data.value)) {
     throw new Error('Request data is not a document type');
   }
-  const newDocumentIds = existingRow.data.value.filter(
-    (id) => id !== documentId,
-  );
-
+  const requestDataId = res.id;
+  const exstingDocumentIds = res.data.value || [];
+  const newDocumentIds = exstingDocumentIds.filter((id) => id !== documentId);
+  await deleteRequestDataDocument({
+    requestDataId,
+    documentId,
+  });
   await create({
-    auditId: auditId,
+    auditId,
     requestType,
     requestId,
     data: { value: newDocumentIds } as const,
     actorUserId: actorUserId || null,
-  });
-
-  await deleteRequestDataDocument({
-    requestDataId: existingRow.id,
-    documentId,
   });
 }
