@@ -345,24 +345,9 @@ export function buildBalanceSheet(data: AuditData) {
 
   t.addRow(
     [
-      'Retained earnings',
+      `=IF(TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'CY') > 0, "Retained earnings", "Accumulated Deficit")`,
       `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'CY')`,
       `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'PY')`,
-    ],
-    {
-      tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-      cellStyle: [
-        { indent: 1 },
-        { hideCurrency: true },
-        { hideCurrency: true },
-      ],
-    },
-  );
-  t.addRow(
-    [
-      'Accumulated deficit',
-      `=TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'CY')`,
-      `=TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'PY')`,
     ],
     {
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
@@ -809,7 +794,7 @@ export function buildStockholderEquity(data: AuditData) {
     0,
     0,
     0,
-    `=-TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'PY')`,
+    `=-TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'PY')`,
     0,
   ]);
   t.addRow(
@@ -854,7 +839,7 @@ export function buildStockholderEquity(data: AuditData) {
     0,
     0,
     0,
-    `=-TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'CY')`,
+    `=-TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'CY')`,
     0,
   ]);
   t.addRow(
