@@ -886,11 +886,6 @@ export function buildCashFlows(data: AuditData) {
   t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, data.prevYear], {
     style: { bold: true, borderBottom: 'thin' },
   });
-  t.addRow(['Operating expenses:', '', ''], {
-    style: {
-      padTop: true,
-    },
-  });
 
   t.addRow(['Cash flows from operating activities:', '', ''], {
     style: {
@@ -914,7 +909,7 @@ export function buildCashFlows(data: AuditData) {
   );
   t.addRow(
     [
-      'Adjustments to reconcile net loss to net cash used in operating activities:',
+      'Adjustments to reconcile net loss to net cash provided by (used in) operating activities:',
       '',
       '',
     ],
