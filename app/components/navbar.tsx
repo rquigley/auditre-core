@@ -197,7 +197,7 @@ function OrgMenuItems({
                   type="button"
                   onClick={async () => {
                     await switchOrg(org.id);
-                    router.refresh();
+                    router.push('/');
                   }}
                   className={clsx(
                     active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
