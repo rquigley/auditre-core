@@ -31,7 +31,7 @@ const nonCashCurrentAssetTypes = [
   { key: 'ASSET_PREPAID_EXPENSES', label: 'Prepaid expenses' },
   {
     key: 'ASSET_CURRENT_OTHER',
-    label: 'Prepaid expenses and other current assets',
+    label: 'Other current assets',
   },
 ];
 
