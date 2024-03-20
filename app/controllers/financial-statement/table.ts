@@ -555,8 +555,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Revenue',
-      `=-TBLOOKUP('INCOME_STATEMENT_REVENUE', 'CY')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_REVENUE', 'PY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_REVENUE', 'CY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_REVENUE', 'PY')`,
     ],
     {
       id: 'REVENUE',
@@ -566,8 +566,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Cost of revenue',
-      `=-TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', 'CY')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', 'PY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', 'CY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', 'PY')`,
     ],
     {
       id: 'COST-OF-REVENUE',
@@ -577,8 +577,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Gross profit',
-      `=GET_BY_ID('REVENUE', 1) - GET_BY_ID('COST-OF-REVENUE', 1)`,
-      `=GET_BY_ID('REVENUE', 2) - GET_BY_ID('COST-OF-REVENUE', 2)`,
+      `=GET_BY_ID('REVENUE', 1) + GET_BY_ID('COST-OF-REVENUE', 1)`,
+      `=GET_BY_ID('REVENUE', 2) + GET_BY_ID('COST-OF-REVENUE', 2)`,
     ],
     {
       tags: ['total-gross-profit', 'hide-if-zero'],
@@ -631,8 +631,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Loss from operations',
-      `=-SUMTAGCOL('total-opex', 1)`,
-      `=-SUMTAGCOL('total-opex', 2)`,
+      `=SUMTAGCOL('total-opex', 1)`,
+      `=SUMTAGCOL('total-opex', 2)`,
     ],
     {
       tags: ['net-loss'],
@@ -646,9 +646,9 @@ export function buildIncomeStatement(data: {
   });
   t.addRow(
     [
-      'Interest expense, net',
-      `=-(TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', 'CY') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', 'CY'))`,
-      `=-(TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', 'PY') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', 'PY'))`,
+      `=IF(AND(B${t.row} > 0, C${t.row} > 0), "Interest income, net", IF(AND(B${t.row} < 0, C${t.row} < 0), "Interest expense, net", IF(AND(B${t.row} > 0, C${t.row} < 0), "Interest income (expense), net", "Interest (expense) income, net")))`,
+      `=TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', 'CY') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', 'CY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', 'PY') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', 'PY')`,
     ],
     {
       tags: ['total-other-income-expense-net', 'hide-if-zero'],
@@ -657,9 +657,9 @@ export function buildIncomeStatement(data: {
   );
   t.addRow(
     [
-      'Other income, net',
-      `=-TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', 'CY')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', 'PY')`,
+      'Other income (expenses), net',
+      `=TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', 'CY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', 'PY')`,
     ],
     {
       tags: ['total-other-income-expense-net', 'hide-if-zero'],
