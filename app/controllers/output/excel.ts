@@ -397,9 +397,6 @@ function addTableRow({
       };
     }
 
-    if (idx === 0 && cell.style.indent) {
-      return `${'    '.repeat(cell.style.indent)}${val}`;
-    }
     return val;
   });
 
@@ -425,6 +422,9 @@ function addTableRow({
     }
     if (cell.style.align === 'right') {
       xCell.alignment = { ...xCell.alignment, horizontal: 'right' };
+    }
+    if (idx === 0 && cell.style.indent) {
+      xCell.alignment = { ...xCell.alignment, indent: cell.style.indent };
     }
     if (cell.style.borderBottom) {
       border.bottom = {
