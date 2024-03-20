@@ -31,14 +31,14 @@ const nonCashCurrentAssetTypes = [
   { key: 'ASSET_PREPAID_EXPENSES', label: 'Prepaid expenses' },
   {
     key: 'ASSET_CURRENT_OTHER',
-    label: 'Prepaid expenses and other current assets',
+    label: 'Other current assets',
   },
 ];
 
 const otherAssetTypes = [
   {
     key: 'ASSET_PROPERTY_AND_EQUIPMENT',
-    label: 'Property and equipment, .net',
+    label: 'Property and equipment, net',
   },
   { key: 'ASSET_INTANGIBLE_ASSETS', label: 'Intangible assets, net' },
   {
@@ -246,7 +246,7 @@ export function buildBalanceSheet(data: AuditData) {
 
   t.addRow(
     [
-      'Long term debt',
+      'Long term debt, net of current portion',
       `=TBLOOKUP('LIABILITY_DEBT_LONG', 'CY')`,
       `=TBLOOKUP('LIABILITY_DEBT_LONG', 'PY')`,
     ],
@@ -345,24 +345,9 @@ export function buildBalanceSheet(data: AuditData) {
 
   t.addRow(
     [
-      'Retained earnings',
+      `=IF(B${t.row}, "Retained earnings", "Accumulated Deficit")`,
       `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'CY')`,
       `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'PY')`,
-    ],
-    {
-      tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
-      cellStyle: [
-        { indent: 1 },
-        { hideCurrency: true },
-        { hideCurrency: true },
-      ],
-    },
-  );
-  t.addRow(
-    [
-      'Accumulated deficit',
-      `=TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'CY')`,
-      `=TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'PY')`,
     ],
     {
       tags: ['total-equity', 'hide-if-zero', 'hide-if-less-than-5-percent'],
@@ -376,7 +361,8 @@ export function buildBalanceSheet(data: AuditData) {
 
   t.addRow(
     [
-      'Total stockholders’ deficit',
+      `=IF(B${t.row}, "Total stockholders’ deficit", "Total stockholders’ equity")`,
+
       `=SUMTAGCOL('total-equity', 1)`,
       `=SUMTAGCOL('total-equity', 2)`,
     ],
@@ -569,8 +555,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Revenue',
-      `=-TBLOOKUP('INCOME_STATEMENT_REVENUE', 'CY')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_REVENUE', 'PY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_REVENUE', 'CY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_REVENUE', 'PY')`,
     ],
     {
       id: 'REVENUE',
@@ -580,8 +566,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Cost of revenue',
-      `=-TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', 'CY')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', 'PY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', 'CY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_COST_OF_REVENUE', 'PY')`,
     ],
     {
       id: 'COST-OF-REVENUE',
@@ -591,8 +577,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Gross profit',
-      `=GET_BY_ID('REVENUE', 1) - GET_BY_ID('COST-OF-REVENUE', 1)`,
-      `=GET_BY_ID('REVENUE', 2) - GET_BY_ID('COST-OF-REVENUE', 2)`,
+      `=GET_BY_ID('REVENUE', 1) + GET_BY_ID('COST-OF-REVENUE', 1)`,
+      `=GET_BY_ID('REVENUE', 2) + GET_BY_ID('COST-OF-REVENUE', 2)`,
     ],
     {
       tags: ['total-gross-profit', 'hide-if-zero'],
@@ -645,8 +631,8 @@ export function buildIncomeStatement(data: {
   t.addRow(
     [
       'Loss from operations',
-      `=-SUMTAGCOL('total-opex', 1)`,
-      `=-SUMTAGCOL('total-opex', 2)`,
+      `=SUMTAGCOL('total-opex', 1)`,
+      `=SUMTAGCOL('total-opex', 2)`,
     ],
     {
       tags: ['net-loss'],
@@ -660,9 +646,9 @@ export function buildIncomeStatement(data: {
   });
   t.addRow(
     [
-      'Interest expense, net',
-      `=-(TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', 'CY') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', 'CY'))`,
-      `=-(TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', 'PY') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', 'PY'))`,
+      `=IF(AND(B${t.row} > 0, C${t.row} > 0), "Interest income, net", IF(AND(B${t.row} < 0, C${t.row} < 0), "Interest expense, net", IF(AND(B${t.row} > 0, C${t.row} < 0), "Interest income (expense), net", "Interest (expense) income, net")))`,
+      `=TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', 'CY') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', 'CY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_INTEREST_EXPENSE', 'PY') + TBLOOKUP('INCOME_STATEMENT_INTEREST_INCOME', 'PY')`,
     ],
     {
       tags: ['total-other-income-expense-net', 'hide-if-zero'],
@@ -671,9 +657,9 @@ export function buildIncomeStatement(data: {
   );
   t.addRow(
     [
-      'Other income, net',
-      `=-TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', 'CY')`,
-      `=-TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', 'PY')`,
+      'Other income (expenses), net',
+      `=TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', 'CY')`,
+      `=TBLOOKUP('INCOME_STATEMENT_OTHER_INCOME', 'PY')`,
     ],
     {
       tags: ['total-other-income-expense-net', 'hide-if-zero'],
@@ -809,7 +795,7 @@ export function buildStockholderEquity(data: AuditData) {
     0,
     0,
     0,
-    `=-TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'PY')`,
+    `=-TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'PY')`,
     0,
   ]);
   t.addRow(
@@ -854,7 +840,7 @@ export function buildStockholderEquity(data: AuditData) {
     0,
     0,
     0,
-    `=-TBLOOKUP('EQUITY_ACCUMULATED_DEFICIT', 'CY')`,
+    `=-TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'CY')`,
     0,
   ]);
   t.addRow(
@@ -886,11 +872,6 @@ export function buildCashFlows(data: AuditData) {
   t.addRow([`As of ${data.fiscalYearEndNoYear},`, data.year, data.prevYear], {
     style: { bold: true, borderBottom: 'thin' },
   });
-  t.addRow(['Operating expenses:', '', ''], {
-    style: {
-      padTop: true,
-    },
-  });
 
   t.addRow(['Cash flows from operating activities:', '', ''], {
     style: {
@@ -914,7 +895,7 @@ export function buildCashFlows(data: AuditData) {
   );
   t.addRow(
     [
-      'Adjustments to reconcile net loss to net cash used in operating activities:',
+      'Adjustments to reconcile net loss to net cash provided by (used in) operating activities:',
       '',
       '',
     ],

@@ -491,20 +491,18 @@ export const getPolicySections = () => [
   generateSection({
     header: 'Income taxes',
     body: async (data) => {
-      const accumulatedDeficit = data.totals.CY.get(
-        'EQUITY_ACCUMULATED_DEFICIT',
-      );
+      const retainedEarnings = data.totals.CY.get('EQUITY_RETAINED_EARNINGS');
 
-      let accumulatedDeficitStr = '';
-      if (accumulatedDeficit < 0) {
-        accumulatedDeficitStr =
+      let retainedEarningsStr = '';
+      if (retainedEarnings < 0) {
+        retainedEarningsStr =
           'The Company has incurred net operating losses since inception for both federal and state purposes and, as a result, has paid no federal and only minimal state income taxes.';
       } else {
-        accumulatedDeficitStr = `The Company has incurred net operating gains for both federal and state purposes and, as a result, has paid [insert manual number from tax provisions] in federal income tax and [insert manual number from tax provisions] state income taxes.`;
+        retainedEarningsStr = `The Company has incurred net operating gains for both federal and state purposes and, as a result, has paid [insert manual number from tax provisions] in federal income tax and [insert manual number from tax provisions] state income taxes.`;
       }
 
       return `
-        ${accumulatedDeficitStr}
+        ${retainedEarningsStr}
 
         For the year ended [${data.fiscalYearEnd}], the provision for income tax expense was [insert manual number from tax provision].
 
