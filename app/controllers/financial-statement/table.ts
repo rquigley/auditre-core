@@ -38,7 +38,7 @@ const nonCashCurrentAssetTypes = [
 const otherAssetTypes = [
   {
     key: 'ASSET_PROPERTY_AND_EQUIPMENT',
-    label: 'Property and equipment, .net',
+    label: 'Property and equipment, net',
   },
   { key: 'ASSET_INTANGIBLE_ASSETS', label: 'Intangible assets, net' },
   {
@@ -246,7 +246,7 @@ export function buildBalanceSheet(data: AuditData) {
 
   t.addRow(
     [
-      'Long term debt',
+      'Long term debt, net of current portion',
       `=TBLOOKUP('LIABILITY_DEBT_LONG', 'CY')`,
       `=TBLOOKUP('LIABILITY_DEBT_LONG', 'PY')`,
     ],
