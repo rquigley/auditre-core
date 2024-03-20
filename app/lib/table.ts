@@ -22,6 +22,12 @@ export class Table {
     return n;
   }
 
+  // shortcut to reference the current row within a formula
+  // e.g. `=IF(B${t.row}, "Foo", "Bar")`,
+  get row() {
+    return this.lastRowNumber + 1;
+  }
+
   private get nextRow() {
     return this.lastRowNumber;
   }

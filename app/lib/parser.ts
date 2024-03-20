@@ -64,6 +64,16 @@ export function getParser(table: Table, data: AuditData) {
     return data.totals[yearType].get(account as AccountType);
   });
 
+  parser.on('callFunction', function (name, params, done) {
+    if (name === 'IF') {
+      if (!Array.isArray(params) || params.length !== 3) {
+        console.log(`Invalid IF ${String(params)}`);
+        throw new Error('Invalid IF');
+      }
+      done(params[0] ? params[1] : params[2]);
+    }
+  });
+
   parser.setFunction('GET_BY_ID', (params) => {
     if (
       !Array.isArray(params) ||

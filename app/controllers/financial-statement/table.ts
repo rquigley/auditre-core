@@ -345,7 +345,7 @@ export function buildBalanceSheet(data: AuditData) {
 
   t.addRow(
     [
-      `=IF(TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'CY') > 0, "Retained earnings", "Accumulated Deficit")`,
+      `=IF(B${t.row}, "Retained earnings", "Accumulated Deficit")`,
       `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'CY')`,
       `=TBLOOKUP('EQUITY_RETAINED_EARNINGS', 'PY')`,
     ],
@@ -361,7 +361,8 @@ export function buildBalanceSheet(data: AuditData) {
 
   t.addRow(
     [
-      'Total stockholders’ deficit',
+      `=IF(B${t.row}, "Total stockholders’ deficit", "Total stockholders’ equity")`,
+
       `=SUMTAGCOL('total-equity', 1)`,
       `=SUMTAGCOL('total-equity', 2)`,
     ],
