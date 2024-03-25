@@ -4,16 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import clsx from 'clsx';
 import { Inconsolata } from 'next/font/google';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import {
-  Button,
-  Dialog,
-  DialogTrigger,
-  Heading,
-  OverlayArrow,
-  Popover,
-  Switch,
-} from 'react-aria-components';
+import { useRef, useState } from 'react';
+import { Button, Dialog, OverlayArrow, Popover } from 'react-aria-components';
 import { useForm } from 'react-hook-form';
 import useSWR, { useSWRConfig } from 'swr';
 import * as z from 'zod';
@@ -117,22 +109,23 @@ export function TrialBalanceTable({ auditId }: { auditId: AuditId }) {
     years.add(row.year1);
     years.add(row.year2);
     years.add(row.year3);
+
     return {
       ...row,
       balance1: getBalance({
         accountType: row.accountType,
-        credit: row.credit1,
-        debit: row.debit1,
+        credit: row.credit1 + row.adjustment1.credit,
+        debit: row.debit1 + row.adjustment1.debit,
       }),
       balance2: getBalance({
         accountType: row.accountType,
-        credit: row.credit2,
-        debit: row.debit2,
+        credit: row.credit2 + row.adjustment2.credit,
+        debit: row.debit2 + row.adjustment2.debit,
       }),
       balance3: getBalance({
         accountType: row.accountType,
-        credit: row.credit3,
-        debit: row.debit3,
+        credit: row.credit3 + row.adjustment3.credit,
+        debit: row.debit3 + row.adjustment3.debit,
       }),
     };
   });
@@ -314,16 +307,31 @@ function Balance({
   year: 1 | 2 | 3;
 }) {
   const balance = row[`balance${year}`];
+  const [isOpen, setOpen] = useState(false);
+  const triggerRef = useRef(null);
+
   return (
-    <DialogTrigger>
+    <>
       <Button
-        className={`w-full border border-transparent p-1 text-right text-sm text-gray-900 hover:border-slate-400 hover:text-black ${financeFont.className}`}
+        ref={triggerRef}
+        onPress={() => setOpen(true)}
+        className={clsx(
+          row[`adjustment${year}`].hasAdjustment
+            ? 'bg-yellow-300 text-yellow-900 ring-yellow-300'
+            : '',
+          `w-full rounded-md border border-transparent p-1 text-right text-sm text-gray-900 hover:border-slate-400 hover:text-black ${financeFont.className}`,
+        )}
       >
         {ppCurrency(fOut(balance), {
           cents: true,
         })}
       </Button>
-      <OverridePopover className="w-50 h-50 border bg-white p-3">
+      <OverridePopover
+        triggerRef={triggerRef}
+        isOpen={isOpen}
+        onOpenChange={setOpen}
+        className="w-50 h-50 border bg-white p-3"
+      >
         <OverlayArrow>
           <svg
             viewBox="0 0 12 12"
@@ -334,11 +342,16 @@ function Balance({
         </OverlayArrow>
         <Dialog className="p-3 text-gray-700 outline-none">
           <div className="flex flex-col">
-            <BalanceOverrideForm auditId={auditId} row={row} year={year} />
+            <BalanceOverrideForm
+              auditId={auditId}
+              row={row}
+              year={year}
+              setOpen={setOpen}
+            />
           </div>
         </Dialog>
       </OverridePopover>
-    </DialogTrigger>
+    </>
   );
 }
 
@@ -346,10 +359,12 @@ function BalanceOverrideForm({
   auditId,
   row,
   year,
+  setOpen,
 }: {
   auditId: AuditId;
   row: AccountBalanceRow2;
   year: 1 | 2 | 3;
+  setOpen: (open: boolean) => void;
 }) {
   const { mutate } = useSWRConfig();
 
@@ -368,12 +383,6 @@ function BalanceOverrideForm({
   });
 
   async function onSubmit(data: z.infer<typeof schema>) {
-    // const ret = fIn(v.replaceAll(',', ''));
-    // return ppCurrency(fOut(ret), {
-    //   cents: true,
-    // });
-    console.log(data);
-    console.log(row);
     await overrideAccountBalance({
       auditId,
       accountMappingId: row.id,
@@ -383,18 +392,12 @@ function BalanceOverrideForm({
       comment: data.comment,
     });
     mutate(`/audit/${auditId}/account-balance`);
+    setOpen(false);
   }
 
-  const {
-    register,
-    setValue,
-    getValues,
-    handleSubmit,
-    reset,
-    resetField,
-    watch,
-    formState,
-  } = useForm<z.infer<typeof schema>>({
+  const { register, handleSubmit, reset, formState } = useForm<
+    z.infer<typeof schema>
+  >({
     resolver: zodResolver(schema),
     defaultValues: {
       credit: String(fOut(row[`adjustment${year}`].credit || 0)),
@@ -413,14 +416,14 @@ function BalanceOverrideForm({
 
   return (
     <div>
-      <div className="mb-2 text-xs  text-gray-700">Make adjustment:</div>
+      <div className="mb-2 text-xs font-semibold text-gray-700">Adjustment</div>
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="mb-2">
           <label htmlFor="debit" className="block text-xs text-gray-700">
             <span className="flex justify-between">
-              <span className="font-medium">Debit</span>
+              <span>Debit</span>
               <span>
-                initial:{' '}
+                orig:{' '}
                 <span className={financeFont.className}>
                   {ppCurrency(fOut(row[`debit${year}`]), {
                     cents: true,
@@ -430,7 +433,7 @@ function BalanceOverrideForm({
             </span>
           </label>
           <div className={`flex ${financeFont.className} `}>
-            <div className="pr-2 pt-1">$</div>
+            <div className="text-nowrap pr-2 pt-1">+$</div>
             <input
               data-1p-ignore
               onFocus={(e) => {
@@ -438,13 +441,14 @@ function BalanceOverrideForm({
                 target.select();
               }}
               type="text"
+              pattern="[0-9]+(\.[0-9]{1,2})?"
               autoComplete="off"
               {...register('debit')}
               className={clsx(
                 formState.errors.debit
                   ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
                   : 'text-gray-900 placeholder:text-gray-400',
-                'block w-full border-0 px-1 py-1 text-right',
+                'block w-full border-0 px-1 py-1 text-right focus:outline-none',
               )}
             />
           </div>
@@ -452,9 +456,9 @@ function BalanceOverrideForm({
         <div className="mb-2">
           <label htmlFor="credit" className="block text-xs text-gray-700">
             <span className="flex justify-between">
-              <span className="font-medium">Credit</span>
+              <span>Credit</span>
               <span>
-                initial:{' '}
+                orig:{' '}
                 <span className={financeFont.className}>
                   {ppCurrency(fOut(row[`credit${year}`]), {
                     cents: true,
@@ -464,7 +468,7 @@ function BalanceOverrideForm({
             </span>
           </label>
           <div className={`flex ${financeFont.className} `}>
-            <div className="pr-2 pt-1">$</div>
+            <div className="text-nowrap pr-2 pt-1">+$</div>
             <input
               data-1p-ignore
               onFocus={(e) => {
@@ -472,22 +476,20 @@ function BalanceOverrideForm({
                 target.select();
               }}
               type="text"
+              pattern="[0-9]+(\.[0-9]{1,2})?"
               autoComplete="off"
               {...register('credit')}
               className={clsx(
                 formState.errors.credit
                   ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
                   : 'text-gray-900 placeholder:text-gray-400',
-                'block w-full border-0 px-1 py-1 text-right',
+                'block w-full border-0 px-1 py-1 text-right focus:outline-none',
               )}
             />
           </div>
         </div>
         <div className="mb-2">
-          <label
-            htmlFor="balance"
-            className="block text-xs font-medium text-gray-700"
-          >
+          <label htmlFor="balance" className="block text-xs text-gray-700">
             Comment
           </label>
           <textarea
@@ -496,7 +498,7 @@ function BalanceOverrideForm({
           />
         </div>
         <div className="flex justify-end">
-          {enableSubmit && formState.isDirty ? (
+          {row[`adjustment${year}`].hasAdjustment ? (
             <button
               type="button"
               className="mr-4 text-xs leading-6 text-gray-400 hover:text-gray-900"
@@ -508,7 +510,7 @@ function BalanceOverrideForm({
                 })
               }
             >
-              Reset
+              Remove adjustment
             </button>
           ) : null}
           <button
@@ -521,7 +523,7 @@ function BalanceOverrideForm({
               'rounded-md px-3 py-1 text-xs  text-white shadow-sm',
             )}
           >
-            Save
+            {row[`adjustment${year}`].hasAdjustment ? 'Update' : 'Adjust'}
           </button>
         </div>
       </form>

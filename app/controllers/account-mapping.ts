@@ -60,8 +60,8 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
           .select([
             'accountMappingId',
             'year',
-            sql<number>`ROUND(debit * 100)`.as('debit'),
-            sql<number>`ROUND(credit * 100)`.as('credit'),
+            sql<string>`ROUND(debit * 100)`.as('debit'),
+            sql<string>`ROUND(credit * 100)`.as('credit'),
             // account_mapping_id should be camelCase
             sql`ROW_NUMBER() OVER (PARTITION BY account_mapping_id ORDER BY year DESC)`.as(
               'row_number',
@@ -86,28 +86,28 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
       sql<string>`MAX(CASE WHEN ab.row_number = 1 THEN ab.year END)`.as(
         'year1',
       ),
-      sql<number>`MAX(CASE WHEN ab.row_number = 1 THEN ab.debit END)`.as(
+      sql<string>`MAX(CASE WHEN ab.row_number = 1 THEN ab.debit END)`.as(
         'debit1',
       ),
-      sql<number>`MAX(CASE WHEN ab.row_number = 1 THEN ab.credit END)`.as(
+      sql<string>`MAX(CASE WHEN ab.row_number = 1 THEN ab.credit END)`.as(
         'credit1',
       ),
       sql<string>`MAX(CASE WHEN ab.row_number = 2 THEN ab.year END)`.as(
         'year2',
       ),
-      sql<number>`MAX(CASE WHEN ab.row_number = 2 THEN ab.debit END)`.as(
+      sql<string>`MAX(CASE WHEN ab.row_number = 2 THEN ab.debit END)`.as(
         'debit2',
       ),
-      sql<number>`MAX(CASE WHEN ab.row_number = 2 THEN ab.credit END)`.as(
+      sql<string>`MAX(CASE WHEN ab.row_number = 2 THEN ab.credit END)`.as(
         'credit2',
       ),
       sql<string>`MAX(CASE WHEN ab.row_number = 3 THEN ab.year END)`.as(
         'year3',
       ),
-      sql<number>`MAX(CASE WHEN ab.row_number = 3 THEN ab.debit END)`.as(
+      sql<string>`MAX(CASE WHEN ab.row_number = 3 THEN ab.debit END)`.as(
         'debit3',
       ),
-      sql<number>`MAX(CASE WHEN ab.row_number = 3 THEN ab.credit END)`.as(
+      sql<string>`MAX(CASE WHEN ab.row_number = 3 THEN ab.credit END)`.as(
         'credit3',
       ),
     ])
@@ -122,8 +122,8 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
     .select([
       'accountMappingId',
       'year',
-      sql<number>`ROUND(debit * 100)`.as('debit'),
-      sql<number>`ROUND(credit * 100)`.as('credit'),
+      sql<string>`ROUND(debit * 100)`.as('debit'),
+      sql<string>`ROUND(credit * 100)`.as('credit'),
       'comment',
     ])
     .where(
@@ -134,53 +134,83 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
     .execute();
 
   const adjustmentsMap = new Map(
-    adjustments.map((r) => [`${r.accountMappingId}-${r.year}`, r]),
+    adjustments.map((r) => [
+      `${r.accountMappingId}-${r.year}`,
+      {
+        hasAdjustment: true,
+        accountMappingId: r.accountMappingId,
+        year: r.year,
+        debit: Number(r.debit),
+        credit: Number(r.credit),
+        comment: r.comment,
+      },
+    ]),
   );
 
   return data.map((r) => {
     const adjustment1 = adjustmentsMap.get(`${r.id}-${r.year1}`) || {
+      hasAdjustment: false,
       debit: 0,
       credit: 0,
       comment: '',
     };
     const adjustment2 = adjustmentsMap.get(`${r.id}-${r.year2}`) || {
+      hasAdjustment: false,
       debit: 0,
       credit: 0,
       comment: '',
     };
     const adjustment3 = adjustmentsMap.get(`${r.id}-${r.year3}`) || {
+      hasAdjustment: false,
       debit: 0,
       credit: 0,
       comment: '',
     };
+
+    const credit1 = Number(r.credit1);
+    const debit1 = Number(r.debit1);
+    const credit2 = Number(r.credit2);
+    const debit2 = Number(r.debit2);
+    const credit3 = Number(r.credit3);
+    const debit3 = Number(r.debit3);
+
     return {
       ...r,
+      credit1,
+      debit1,
+      credit2,
+      debit2,
+      credit3,
+      debit3,
       balance1: getBalance({
         accountType: r.accountType,
-        credit: r.credit1 + adjustment1.credit,
-        debit: r.debit1 + adjustment1.debit,
+        credit: credit1 + adjustment1.credit,
+        debit: debit1 + adjustment1.debit,
       }),
       balance2: getBalance({
         accountType: r.accountType,
-        credit: r.credit2 + adjustment2.credit,
-        debit: r.debit2 + adjustment2.debit,
+        credit: credit2 + adjustment2.credit,
+        debit: debit2 + adjustment2.debit,
       }),
       balance3: getBalance({
         accountType: r.accountType,
-        credit: r.credit3 + adjustment3.credit,
-        debit: r.debit3 + adjustment3.debit,
+        credit: credit3 + adjustment3.credit,
+        debit: debit3 + adjustment3.debit,
       }),
       adjustment1: {
+        hasAdjustment: adjustment1.hasAdjustment,
         credit: adjustment1.credit,
         debit: adjustment1.debit,
         comment: adjustment1.comment,
       },
       adjustment2: {
+        hasAdjustment: adjustment2.hasAdjustment,
         credit: adjustment2.credit,
         debit: adjustment2.debit,
         comment: adjustment2.comment,
       },
       adjustment3: {
+        hasAdjustment: adjustment3.hasAdjustment,
         credit: adjustment3.credit,
         debit: adjustment3.debit,
         comment: adjustment3.comment,
@@ -213,10 +243,10 @@ export async function getAllAccountBalancesByAuditIdAndYear(
         .as('accountType'),
       'am.sortIdx',
       'am.classificationScore',
-      sql<number>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
+      sql<string>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
         'debit',
       ),
-      sql<number>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
+      sql<string>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
         'credit',
       ),
     ])
@@ -230,8 +260,8 @@ export async function getAllAccountBalancesByAuditIdAndYear(
     ...r,
     balance: getBalance({
       accountType: r.accountType,
-      credit: r.credit,
-      debit: r.debit,
+      credit: Number(r.credit),
+      debit: Number(r.debit),
     }),
   }));
 }
@@ -255,10 +285,10 @@ export async function getBalancesByAccountType(auditId: AuditId, year: string) {
               sql<'UNKNOWN'>`'UNKNOWN'`,
             )
             .as('accountTypeMerged'),
-          sql<number>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
+          sql<string>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
             'debit',
           ),
-          sql<number>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
+          sql<string>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
             'credit',
           ),
         ])
@@ -269,8 +299,8 @@ export async function getBalancesByAccountType(auditId: AuditId, year: string) {
     .selectFrom('account')
     .select([
       'accountTypeMerged',
-      sql<number>`SUM(ROUND(debit * 100))`.as('debit'),
-      sql<number>`SUM(ROUND(credit * 100))`.as('credit'),
+      sql<string>`SUM(ROUND(debit * 100))`.as('debit'),
+      sql<string>`SUM(ROUND(credit * 100))`.as('credit'),
     ])
     .groupBy('accountTypeMerged')
     .execute();
@@ -279,8 +309,8 @@ export async function getBalancesByAccountType(auditId: AuditId, year: string) {
 
     balance: getBalance({
       accountType: r.accountTypeMerged,
-      credit: r.credit,
-      debit: r.debit,
+      credit: Number(r.credit),
+      debit: Number(r.debit),
     }),
   }));
 
@@ -315,10 +345,10 @@ export async function getAccountByFuzzyMatch(
       eb
         .fn<number>('similarity', ['accountName', eb.val(searchString)])
         .as('score'),
-      sql<number>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
+      sql<string>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
         'debit',
       ),
-      sql<number>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
+      sql<string>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
         'credit',
       ),
     ])
@@ -347,8 +377,8 @@ export async function getAccountByFuzzyMatch(
     ...row,
     balance: getBalance({
       accountType: row.accountType,
-      credit: row.credit,
-      debit: row.debit,
+      credit: Number(row.credit),
+      debit: Number(row.debit),
     }),
   };
 }
@@ -379,10 +409,10 @@ export async function getAccountsByFuzzyMatch(
       eb
         .fn<number>('similarity', ['accountName', eb.val(searchString)])
         .as('score'),
-      sql<number>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
+      sql<string>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
         'debit',
       ),
-      sql<number>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
+      sql<string>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
         'credit',
       ),
     ])
@@ -406,8 +436,8 @@ export async function getAccountsByFuzzyMatch(
     ...r,
     balance: getBalance({
       accountType: r.accountType,
-      credit: r.credit,
-      debit: r.debit,
+      credit: Number(r.credit),
+      debit: Number(r.debit),
     }),
   }));
 
@@ -1163,10 +1193,10 @@ export async function getAccountsForCategory(
     )
     .select([
       'accountName',
-      sql<number>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
+      sql<string>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
         'debit',
       ),
-      sql<number>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
+      sql<string>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
         'credit',
       ),
     ])
@@ -1179,8 +1209,8 @@ export async function getAccountsForCategory(
     accountName: r.accountName,
     balance: getBalance({
       accountType,
-      credit: r.credit,
-      debit: r.debit,
+      credit: Number(r.credit),
+      debit: Number(r.debit),
     }),
   }));
 }
