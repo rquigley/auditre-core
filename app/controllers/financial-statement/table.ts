@@ -423,7 +423,11 @@ export async function buildPropertyAndEquipmentNet(data: AuditData) {
     assetCategories = [];
   }
   const accounts = (
-    await getAccountsForCategory(data.auditId, 'ASSET_PROPERTY_AND_EQUIPMENT')
+    await getAccountsForCategory(
+      data.auditId,
+      'ASSET_PROPERTY_AND_EQUIPMENT',
+      data.CY,
+    )
   ).map((a) => ({
     name: a.accountName,
     balance: a.balance,
