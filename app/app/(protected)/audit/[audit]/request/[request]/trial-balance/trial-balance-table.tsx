@@ -1,27 +1,43 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import clsx from 'clsx';
 import { Inconsolata } from 'next/font/google';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import useSWR from 'swr';
+import {
+  Button,
+  Dialog,
+  DialogTrigger,
+  Heading,
+  OverlayArrow,
+  Popover,
+  Switch,
+} from 'react-aria-components';
+import { useForm } from 'react-hook-form';
+import useSWR, { useSWRConfig } from 'swr';
+import * as z from 'zod';
 
 import { Spinner } from '@/components/spinner';
 import { SortableHeader } from '@/components/table';
-import { overrideAccountMapping } from '@/lib/actions';
+import { overrideAccountBalance, overrideAccountMapping } from '@/lib/actions';
 import {
   AccountType,
+  fIn,
   fOut,
   getBalance,
   getGroupLabel,
   groupLabels,
 } from '@/lib/finance';
 import { ppCurrency } from '@/lib/util';
-import { AccountBalanceResp } from '../../../account-balance/route';
 import { AccountMapping } from './account-mapping';
 import { accountTypeGroupBGColors, sortRows } from './util';
 
+import type { AccountBalanceResp } from '../../../account-balance/route';
 import type { AuditId } from '@/types';
+import type { PopoverProps } from 'react-aria-components';
+
+type AccountBalanceRow = AccountBalanceResp['rows'][number];
 
 const financeFont = Inconsolata({
   subsets: ['latin'],
@@ -69,7 +85,7 @@ function useAccountBalances(auditId: AuditId) {
   };
 }
 
-export function Table({ auditId }: { auditId: AuditId }) {
+export function TrialBalanceTable({ auditId }: { auditId: AuditId }) {
   const searchParams = useSearchParams();
 
   const currentSort = searchParams.get('sort') as string;
@@ -181,7 +197,7 @@ export function Table({ auditId }: { auditId: AuditId }) {
               className="min-w-min whitespace-nowrap px-2 py-1 align-bottom text-xs font-medium"
             >
               <SortableHeader column="balance3">
-                {year3 || 'Current year'}
+                {year3 || 'Initial year'}
               </SortableHeader>
             </th>
           </tr>
@@ -265,26 +281,14 @@ export function Table({ auditId }: { auditId: AuditId }) {
                     )}
                   </span>
                 </td>
-                <td
-                  className={`px-2 py-2 text-right text-sm text-gray-900 ${financeFont.className} group-hover:font-bold`}
-                >
-                  {ppCurrency(fOut(row.balance1), {
-                    cents: true,
-                  })}
+                <td className={`px-1 py-1 text-right  group-hover:font-bold`}>
+                  <Balance auditId={auditId} row={row} year={1} />
                 </td>
-                <td
-                  className={`px-2 py-2 text-right text-sm text-gray-900 ${financeFont.className} group-hover:font-bold`}
-                >
-                  {ppCurrency(fOut(row.balance2), {
-                    cents: true,
-                  })}
+                <td className={`px-1 py-1 text-right  group-hover:font-bold`}>
+                  <Balance auditId={auditId} row={row} year={2} />
                 </td>
-                <td
-                  className={`px-2 py-2 text-right text-sm text-gray-900 ${financeFont.className} group-hover:font-bold`}
-                >
-                  {ppCurrency(fOut(row.balance3), {
-                    cents: true,
-                  })}
+                <td className={`px-1 py-1 text-right  group-hover:font-bold`}>
+                  <Balance auditId={auditId} row={row} year={3} />
                 </td>
               </tr>
             ))
@@ -292,6 +296,257 @@ export function Table({ auditId }: { auditId: AuditId }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+type AccountBalanceRow2 = AccountBalanceRow & {
+  balance1: number;
+  balance2: number;
+  balance3: number;
+};
+function Balance({
+  auditId,
+  row,
+  year,
+}: {
+  auditId: AuditId;
+  row: AccountBalanceRow2;
+  year: 1 | 2 | 3;
+}) {
+  const balance = row[`balance${year}`];
+  return (
+    <DialogTrigger>
+      <Button
+        className={`w-full border border-transparent p-1 text-right text-sm text-gray-900 hover:border-slate-400 hover:text-black ${financeFont.className}`}
+      >
+        {ppCurrency(fOut(balance), {
+          cents: true,
+        })}
+      </Button>
+      <OverridePopover className="w-50 h-50 border bg-white p-3">
+        <OverlayArrow>
+          <svg
+            viewBox="0 0 12 12"
+            className="block h-4 w-4 rotate-180 fill-white"
+          >
+            <path d="M0 0L6 6L12 0" />
+          </svg>
+        </OverlayArrow>
+        <Dialog className="p-3 text-gray-700 outline-none">
+          <div className="flex flex-col">
+            <BalanceOverrideForm auditId={auditId} row={row} year={year} />
+          </div>
+        </Dialog>
+      </OverridePopover>
+    </DialogTrigger>
+  );
+}
+
+function BalanceOverrideForm({
+  auditId,
+  row,
+  year,
+}: {
+  auditId: AuditId;
+  row: AccountBalanceRow2;
+  year: 1 | 2 | 3;
+}) {
+  const { mutate } = useSWRConfig();
+
+  const schema = z.object({
+    credit: z
+      .string()
+      .regex(/^[\d,]+(\.\d{1,2})?$/)
+      .transform((v) => v.replaceAll(',', '')),
+
+    debit: z
+      .string()
+      .regex(/^[\d,]+(\.\d{1,2})?$/)
+      .transform((v) => v.replaceAll(',', '')),
+
+    comment: z.string(),
+  });
+
+  async function onSubmit(data: z.infer<typeof schema>) {
+    // const ret = fIn(v.replaceAll(',', ''));
+    // return ppCurrency(fOut(ret), {
+    //   cents: true,
+    // });
+    console.log(data);
+    console.log(row);
+    await overrideAccountBalance({
+      auditId,
+      accountMappingId: row.id,
+      year: row[`year${year}`],
+      credit: data.credit,
+      debit: data.debit,
+      comment: data.comment,
+    });
+    mutate(`/audit/${auditId}/account-balance`);
+  }
+
+  const {
+    register,
+    setValue,
+    getValues,
+    handleSubmit,
+    reset,
+    resetField,
+    watch,
+    formState,
+  } = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      credit: String(fOut(row[`adjustment${year}`].credit || 0)),
+      debit: String(fOut(row[`adjustment${year}`].debit || 0)),
+      comment: row[`adjustment${year}`].comment,
+    },
+  });
+  let enableSubmit;
+  if (formState.isSubmitting) {
+    enableSubmit = false;
+  } else if (formState.isDirty) {
+    enableSubmit = true;
+  } else {
+    enableSubmit = false;
+  }
+
+  return (
+    <div>
+      <div className="mb-2 text-xs  text-gray-700">Make adjustment:</div>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="mb-2">
+          <label htmlFor="debit" className="block text-xs text-gray-700">
+            <span className="flex justify-between">
+              <span className="font-medium">Debit</span>
+              <span>
+                initial:{' '}
+                <span className={financeFont.className}>
+                  {ppCurrency(fOut(row[`debit${year}`]), {
+                    cents: true,
+                  })}
+                </span>
+              </span>
+            </span>
+          </label>
+          <div className={`flex ${financeFont.className} `}>
+            <div className="pr-2 pt-1">$</div>
+            <input
+              data-1p-ignore
+              onFocus={(e) => {
+                const target = e.target as HTMLInputElement;
+                target.select();
+              }}
+              type="text"
+              autoComplete="off"
+              {...register('debit')}
+              className={clsx(
+                formState.errors.debit
+                  ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
+                  : 'text-gray-900 placeholder:text-gray-400',
+                'block w-full border-0 px-1 py-1 text-right',
+              )}
+            />
+          </div>
+        </div>
+        <div className="mb-2">
+          <label htmlFor="credit" className="block text-xs text-gray-700">
+            <span className="flex justify-between">
+              <span className="font-medium">Credit</span>
+              <span>
+                initial:{' '}
+                <span className={financeFont.className}>
+                  {ppCurrency(fOut(row[`credit${year}`]), {
+                    cents: true,
+                  })}
+                </span>
+              </span>
+            </span>
+          </label>
+          <div className={`flex ${financeFont.className} `}>
+            <div className="pr-2 pt-1">$</div>
+            <input
+              data-1p-ignore
+              onFocus={(e) => {
+                const target = e.target as HTMLInputElement;
+                target.select();
+              }}
+              type="text"
+              autoComplete="off"
+              {...register('credit')}
+              className={clsx(
+                formState.errors.credit
+                  ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
+                  : 'text-gray-900 placeholder:text-gray-400',
+                'block w-full border-0 px-1 py-1 text-right',
+              )}
+            />
+          </div>
+        </div>
+        <div className="mb-2">
+          <label
+            htmlFor="balance"
+            className="block text-xs font-medium text-gray-700"
+          >
+            Comment
+          </label>
+          <textarea
+            {...register('comment')}
+            className="mt-1 block w-full rounded-sm border-gray-300 px-1.5 py-1 text-xs shadow-sm focus:border-sky-700 focus:ring focus:ring-sky-700 focus:ring-opacity-50"
+          />
+        </div>
+        <div className="flex justify-end">
+          {enableSubmit && formState.isDirty ? (
+            <button
+              type="button"
+              className="mr-4 text-xs leading-6 text-gray-400 hover:text-gray-900"
+              onClick={() =>
+                reset({
+                  credit: String(fOut(row[`adjustment${year}`].credit || 0)),
+                  debit: String(fOut(row[`adjustment${year}`].debit || 0)),
+                  comment: row[`adjustment${year}`].comment,
+                })
+              }
+            >
+              Reset
+            </button>
+          ) : null}
+          <button
+            type="submit"
+            disabled={enableSubmit === false}
+            className={clsx(
+              enableSubmit === false
+                ? 'bg-gray-400'
+                : 'bg-sky-700 hover:bg-sky-900',
+              'rounded-md px-3 py-1 text-xs  text-white shadow-sm',
+            )}
+          >
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function OverridePopover(props: PopoverProps) {
+  return (
+    <Popover
+      {...props}
+      className={({ isEntering, isExiting }) => `
+        placement-bottom:mt-2 placement-top:mb-2 group w-[280px] rounded-lg bg-white ring-1 ring-black/10 drop-shadow-lg
+        ${
+          isEntering
+            ? 'animate-in fade-in placement-bottom:slide-in-from-top-1 placement-top:slide-in-from-bottom-1 duration-200 ease-out'
+            : ''
+        }
+        ${
+          isExiting
+            ? 'animate-out fade-out placement-bottom:slide-out-to-top-1 placement-top:slide-out-to-bottom-1 duration-150 ease-in'
+            : ''
+        }
+      `}
+    />
   );
 }
 

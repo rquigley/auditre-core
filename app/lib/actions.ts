@@ -13,6 +13,7 @@ import * as z from 'zod';
 
 import {
   extractTrialBalance as _extractTrialBalance,
+  overrideAccountBalance as _overrideAccountBalance,
   classifyTrialBalanceTypes,
   updateAccountMappingType,
 } from '@/controllers/account-mapping';
@@ -445,6 +446,55 @@ export async function overrideAccountMapping({
     throw new UnauthorizedError();
   }
   await updateAccountMappingType(accountMappingId, accountType);
+}
+
+export async function overrideAccountBalance({
+  auditId,
+  accountMappingId,
+  year,
+  credit,
+  debit,
+  comment,
+}: {
+  auditId: AuditId;
+  accountMappingId: AccountMappingId;
+  year: string;
+  credit: string;
+  debit: string;
+  comment: string;
+}) {
+  const { user } = await getCurrent();
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+  const audit = await getAuditById(auditId);
+  if (audit.orgId !== user.orgId) {
+    throw new UnauthorizedError();
+  }
+  const schema = z.object({
+    year: z.string(),
+    credit: z.string().transform((v) => parseFloat(v)),
+    debit: z.string().transform((v) => parseFloat(v)),
+    comment: z.string(),
+  });
+  const parsed = schema.parse({
+    year,
+    credit,
+    debit,
+    comment,
+  });
+  try {
+    await _overrideAccountBalance({
+      accountMappingId,
+      year: parsed.year,
+      credit: parsed.credit,
+      debit: parsed.debit,
+      comment: parsed.comment,
+      actorUserId: user.id,
+    });
+  } catch (e) {
+    Sentry.captureException(e);
+  }
 }
 
 export async function createOrg(

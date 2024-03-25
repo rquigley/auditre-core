@@ -24,7 +24,6 @@ export const accountTypes = {
     'Operating lease liabilities, net of current portion',
   LIABILITY_OTHER: 'Other current liabilities',
 
-  EQUITY_ACCUMULATED_DEFICIT: 'Accumulated deficit',
   EQUITY_COMMON_STOCK: 'Common stock',
   EQUITY_PAID_IN_CAPITAL: 'Additional paid-in capital',
   EQUITY_PREFERRED_STOCK: 'Convertible preferred stock',
@@ -194,7 +193,10 @@ export function accountTypeGroupToLabel(
   return groupLabels[type];
 }
 
-export function fIn(num: number) {
+export function fIn(num: number | string) {
+  if (typeof num === 'string') {
+    num = parseFloat(num);
+  }
   return Math.round(num * 100);
 }
 

@@ -300,6 +300,7 @@ export interface AccountMappingTable {
   context: string | null;
   classificationScore: number | null;
   reasoning: string | null;
+  isAdjustmentAccount: boolean;
   createdAt: ColumnType<Date, string | undefined, never>;
   isDeleted: ColumnType<boolean, never, boolean>;
 }
@@ -316,6 +317,18 @@ export interface AccountBalanceTable {
 }
 export type AccountBalance = Selectable<AccountBalanceTable>;
 
+export interface AccountBalanceOverrideTable {
+  id: GeneratedAlways<number>;
+  accountMappingId: AccountMappingId | null;
+  year: string;
+  debit: number;
+  credit: number;
+  comment: string;
+  actorUserId: UserId;
+  createdAt: ColumnType<Date, string | undefined, never>;
+}
+export type AccountBalanceOverride = Selectable<AccountBalanceOverrideTable>;
+
 export interface KVTable {
   id: GeneratedAlways<number>;
   key: string;
@@ -331,6 +344,7 @@ export interface Database extends Kysely<Database> {
   'auth.userRole': AuthUserRoleTable;
   'auth.verificationToken': AuthVerificationTokenTable;
   accountBalance: AccountBalanceTable;
+  accountBalanceOverride: AccountBalanceOverrideTable;
   accountMapping: AccountMappingTable;
   aiQuery: AiQueryTable;
   audit: AuditTable;

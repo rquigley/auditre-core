@@ -38,6 +38,7 @@ import type {
   Document,
   OpenAIModel,
   OrgId,
+  UserId,
 } from '@/types';
 
 export async function getAllAccountMappingsByAuditId(auditId: AuditId) {
@@ -72,6 +73,7 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
     .select((eb) => [
       'am.id',
       'am.accountName',
+      'am.isAdjustmentAccount',
       eb.fn
         .coalesce(
           'am.accountTypeOverride',
@@ -115,24 +117,76 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
     .orderBy(['am.sortIdx'])
     .execute();
 
-  return data.map((r) => ({
-    ...r,
-    balance1: getBalance({
-      accountType: r.accountType,
-      credit: r.credit1,
-      debit: r.debit1,
-    }),
-    balance2: getBalance({
-      accountType: r.accountType,
-      credit: r.credit2,
-      debit: r.debit2,
-    }),
-    balance3: getBalance({
-      accountType: r.accountType,
-      credit: r.credit3,
-      debit: r.debit3,
-    }),
-  }));
+  const adjustments = await db
+    .selectFrom('accountBalanceOverride')
+    .select([
+      'accountMappingId',
+      'year',
+      sql<number>`ROUND(debit * 100)`.as('debit'),
+      sql<number>`ROUND(credit * 100)`.as('credit'),
+      'comment',
+    ])
+    .where(
+      'accountMappingId',
+      'in',
+      data.map((r) => r.id),
+    )
+    .execute();
+
+  const adjustmentsMap = new Map(
+    adjustments.map((r) => [`${r.accountMappingId}-${r.year}`, r]),
+  );
+
+  return data.map((r) => {
+    const adjustment1 = adjustmentsMap.get(`${r.id}-${r.year1}`) || {
+      debit: 0,
+      credit: 0,
+      comment: '',
+    };
+    const adjustment2 = adjustmentsMap.get(`${r.id}-${r.year2}`) || {
+      debit: 0,
+      credit: 0,
+      comment: '',
+    };
+    const adjustment3 = adjustmentsMap.get(`${r.id}-${r.year3}`) || {
+      debit: 0,
+      credit: 0,
+      comment: '',
+    };
+    return {
+      ...r,
+      balance1: getBalance({
+        accountType: r.accountType,
+        credit: r.credit1 + adjustment1.credit,
+        debit: r.debit1 + adjustment1.debit,
+      }),
+      balance2: getBalance({
+        accountType: r.accountType,
+        credit: r.credit2 + adjustment2.credit,
+        debit: r.debit2 + adjustment2.debit,
+      }),
+      balance3: getBalance({
+        accountType: r.accountType,
+        credit: r.credit3 + adjustment3.credit,
+        debit: r.debit3 + adjustment3.debit,
+      }),
+      adjustment1: {
+        credit: adjustment1.credit,
+        debit: adjustment1.debit,
+        comment: adjustment1.comment,
+      },
+      adjustment2: {
+        credit: adjustment2.credit,
+        debit: adjustment2.debit,
+        comment: adjustment2.comment,
+      },
+      adjustment3: {
+        credit: adjustment3.credit,
+        debit: adjustment3.debit,
+        comment: adjustment3.comment,
+      },
+    };
+  });
 }
 
 export async function getAllAccountBalancesByAuditIdAndYear(
@@ -141,7 +195,12 @@ export async function getAllAccountBalancesByAuditIdAndYear(
 ) {
   const data = await db
     .selectFrom('accountMapping as am')
-    .innerJoin('accountBalance', 'accountMappingId', 'am.id')
+    .innerJoin('accountBalance as ab', 'ab.accountMappingId', 'am.id')
+    .leftJoin('accountBalanceOverride as abo', (join) =>
+      join
+        .onRef('abo.accountMappingId', '=', 'am.id')
+        .on('abo.year', '=', year),
+    )
     .select((eb) => [
       'am.id',
       'am.accountName',
@@ -154,11 +213,15 @@ export async function getAllAccountBalancesByAuditIdAndYear(
         .as('accountType'),
       'am.sortIdx',
       'am.classificationScore',
-      sql<number>`ROUND(debit * 100)`.as('debit'),
-      sql<number>`ROUND(credit * 100)`.as('credit'),
+      sql<number>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
+        'debit',
+      ),
+      sql<number>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
+        'credit',
+      ),
     ])
     .where('am.auditId', '=', auditId)
-    .where('year', '=', year)
+    .where('ab.year', '=', year)
     .where('am.isDeleted', '=', false)
     .orderBy(['am.sortIdx'])
     .execute();
@@ -175,22 +238,40 @@ export async function getAllAccountBalancesByAuditIdAndYear(
 
 export async function getBalancesByAccountType(auditId: AuditId, year: string) {
   const originalRows = await db
-    .selectFrom('accountMapping')
-    .innerJoin('accountBalance', 'accountMappingId', 'accountMapping.id')
-    .select((eb) => [
-      eb.fn
-        .coalesce(
-          'accountTypeOverride',
-          'accountType',
-          sql<'UNKNOWN'>`'UNKNOWN'`,
+    .with('account', (qb) =>
+      qb
+        .selectFrom('accountMapping as am')
+        .innerJoin('accountBalance as ab', 'ab.accountMappingId', 'am.id')
+        .leftJoin('accountBalanceOverride as abo', (join) =>
+          join
+            .onRef('abo.accountMappingId', '=', 'am.id')
+            .on('abo.year', '=', year),
         )
-        .as('accountTypeMerged'),
+        .select((eb) => [
+          eb.fn
+            .coalesce(
+              'accountTypeOverride',
+              'accountType',
+              sql<'UNKNOWN'>`'UNKNOWN'`,
+            )
+            .as('accountTypeMerged'),
+          sql<number>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
+            'debit',
+          ),
+          sql<number>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
+            'credit',
+          ),
+        ])
+        .where('isDeleted', '=', false)
+        .where('auditId', '=', auditId)
+        .where('ab.year', '=', year),
+    )
+    .selectFrom('account')
+    .select([
+      'accountTypeMerged',
       sql<number>`SUM(ROUND(debit * 100))`.as('debit'),
       sql<number>`SUM(ROUND(credit * 100))`.as('credit'),
     ])
-    .where('isDeleted', '=', false)
-    .where('auditId', '=', auditId)
-    .where('year', '=', year)
     .groupBy('accountTypeMerged')
     .execute();
   let rows = originalRows.map((r) => ({
@@ -216,7 +297,12 @@ export async function getAccountByFuzzyMatch(
 ) {
   const row = await db
     .selectFrom('accountMapping as am')
-    .innerJoin('accountBalance', 'accountMappingId', 'am.id')
+    .innerJoin('accountBalance as ab', 'ab.accountMappingId', 'am.id')
+    .leftJoin('accountBalanceOverride as abo', (join) =>
+      join
+        .onRef('abo.accountMappingId', '=', 'am.id')
+        .on('abo.year', '=', year),
+    )
     .select((eb) => [
       'accountName',
       eb.fn
@@ -229,12 +315,16 @@ export async function getAccountByFuzzyMatch(
       eb
         .fn<number>('similarity', ['accountName', eb.val(searchString)])
         .as('score'),
-      sql<number>`ROUND(debit * 100)`.as('debit'),
-      sql<number>`ROUND(credit * 100)`.as('credit'),
+      sql<number>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
+        'debit',
+      ),
+      sql<number>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
+        'credit',
+      ),
     ])
     .where('auditId', '=', auditId)
     .where('isDeleted', '=', false)
-    .where('year', '=', year)
+    .where('ab.year', '=', year)
     .where((eb) =>
       eb.fn('starts_with', ['accountType', eb.val(accountTypeGroup)]),
     )
@@ -271,7 +361,12 @@ export async function getAccountsByFuzzyMatch(
 ) {
   const row = await db
     .selectFrom('accountMapping as am')
-    .innerJoin('accountBalance', 'accountMappingId', 'am.id')
+    .innerJoin('accountBalance as ab', 'ab.accountMappingId', 'am.id')
+    .leftJoin('accountBalanceOverride as abo', (join) =>
+      join
+        .onRef('abo.accountMappingId', '=', 'am.id')
+        .on('abo.year', '=', year),
+    )
     .select((eb) => [
       'accountName',
       eb.fn
@@ -284,12 +379,16 @@ export async function getAccountsByFuzzyMatch(
       eb
         .fn<number>('similarity', ['accountName', eb.val(searchString)])
         .as('score'),
-      sql<number>`ROUND(debit * 100)`.as('debit'),
-      sql<number>`ROUND(credit * 100)`.as('credit'),
+      sql<number>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
+        'debit',
+      ),
+      sql<number>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
+        'credit',
+      ),
     ])
     .where('auditId', '=', auditId)
     .where('isDeleted', '=', false)
-    .where('year', '=', year)
+    .where('ab.year', '=', year)
     .where((eb) =>
       eb.fn('starts_with', ['accountType', eb.val(accountTypeGroup)]),
     )
@@ -330,6 +429,39 @@ export async function updateAccountMappingType(
     .updateTable('accountMapping')
     .set({ accountTypeOverride: accountType })
     .where('id', '=', id)
+    .execute();
+}
+
+export async function overrideAccountBalance({
+  accountMappingId,
+  year,
+  debit,
+  credit,
+  comment,
+  actorUserId,
+}: {
+  accountMappingId: AccountMappingId;
+  year: string;
+  debit: number;
+  credit: number;
+  comment: string;
+  actorUserId: UserId;
+}) {
+  await db
+    .deleteFrom('accountBalanceOverride')
+    .where('accountMappingId', '=', accountMappingId)
+    .where('year', '=', year)
+    .execute();
+  await db
+    .insertInto('accountBalanceOverride')
+    .values({
+      accountMappingId,
+      year,
+      debit: debit,
+      credit: credit,
+      comment,
+      actorUserId,
+    })
     .execute();
 }
 
@@ -955,6 +1087,7 @@ export async function extractTrialBalance(auditId: AuditId) {
         auditId,
         accountName,
         sortIdx,
+        isAdjustmentAccount: false,
       });
     }
 
@@ -1018,17 +1151,28 @@ export async function extractTrialBalance(auditId: AuditId) {
 export async function getAccountsForCategory(
   auditId: AuditId,
   accountType: AccountType,
+  year: string,
 ) {
   const rows = await db
-    .selectFrom('accountBalance')
-    .innerJoin('accountMapping', 'accountMappingId', 'accountMapping.id')
+    .selectFrom('accountMapping as am')
+    .innerJoin('accountBalance as ab', 'ab.accountMappingId', 'am.id')
+    .leftJoin('accountBalanceOverride as abo', (join) =>
+      join
+        .onRef('abo.accountMappingId', '=', 'am.id')
+        .on('abo.year', '=', year),
+    )
     .select([
       'accountName',
-      sql<number>`ROUND(debit * 100)`.as('debit'),
-      sql<number>`ROUND(credit * 100)`.as('credit'),
+      sql<number>`ROUND(ab.debit * 100) + CASE WHEN abo.debit IS NOT NULL THEN ROUND(abo.debit * 100) ELSE 0 END`.as(
+        'debit',
+      ),
+      sql<number>`ROUND(ab.credit * 100) + CASE WHEN abo.credit IS NOT NULL THEN ROUND(abo.credit * 100) ELSE 0 END`.as(
+        'credit',
+      ),
     ])
     .where('isDeleted', '=', false)
     .where('auditId', '=', auditId)
+    .where('ab.year', '=', year)
     .where('accountType', '=', accountType)
     .execute();
   return rows.map((r) => ({
@@ -1042,6 +1186,7 @@ export async function getAccountsForCategory(
 }
 
 export async function getCashflowSupportData(auditId: AuditId, year: string) {
+  // INCOME_STATEMENT_STOCK_BASED_COMPENSATION
   const stockComp = await getAccountByFuzzyMatch(
     auditId,
     year,
@@ -1049,6 +1194,7 @@ export async function getCashflowSupportData(auditId: AuditId, year: string) {
     'stock based compensation',
   );
 
+  // INCOME_STATEMENT_DEPRECIATION_AND_AMORTIZATION
   const depreciation = await getAccountsByFuzzyMatch(
     auditId,
     year,

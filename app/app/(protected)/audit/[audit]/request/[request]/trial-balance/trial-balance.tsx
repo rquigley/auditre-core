@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { Errors } from '@/components/errors';
 import { PageSpinner } from '@/components/spinner';
 import { checkDates } from '@/controllers/account-mapping';
-import { Table } from './table';
+import { TrialBalanceTable } from './trial-balance-table';
 
 import type { AuditId } from '@/types';
 
@@ -13,7 +13,7 @@ export async function TrialBalance({ auditId }: { auditId: AuditId }) {
       <Suspense fallback={<PageSpinner />}>
         <Checks auditId={auditId} />
       </Suspense>
-      <Table auditId={auditId} />
+      <TrialBalanceTable auditId={auditId} />
     </div>
   );
 }
