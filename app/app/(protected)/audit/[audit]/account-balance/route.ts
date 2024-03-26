@@ -43,5 +43,5 @@ export async function GET(
   return Response.json({
     rows,
     ...status,
-  });
+  } satisfies AccountBalanceResp);
 }
