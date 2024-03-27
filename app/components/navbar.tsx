@@ -9,12 +9,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Fragment, useState } from 'react';
 
 import { switchOrg } from '@/lib/actions';
+import { Avatar } from './avatar';
 
 import type { OrgId } from '@/types';
 
 type Props = {
   userName: string | null;
   userImage: string | null;
+  userEmail: string | null;
   orgName: string;
   orgId: OrgId;
   availableOrgs: {
@@ -27,6 +29,7 @@ type Props = {
 export function Navbar({
   userName,
   userImage,
+  userEmail,
   orgName,
   orgId,
   availableOrgs,
@@ -127,20 +130,7 @@ export function Navbar({
             </Menu>
             <Menu as="div" className="relative">
               <Menu.Button className="p-3 hover:bg-gray-50">
-                <div className="flex size-5 items-center justify-center overflow-hidden rounded-full bg-gray-200">
-                  {userImage ? (
-                    <Image
-                      width="36"
-                      height="36"
-                      src={userImage}
-                      alt={userName || ''}
-                    />
-                  ) : (
-                    <div className="text-xs text-slate-800">
-                      {userName?.charAt(0)}
-                    </div>
-                  )}
-                </div>
+                <Avatar name={userName} image={userImage} email={userEmail} />
                 <span className="sr-only">Your profile</span>
               </Menu.Button>
               <AccountMenuItems />

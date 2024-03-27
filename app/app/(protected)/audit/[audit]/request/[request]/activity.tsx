@@ -1,8 +1,8 @@
 import clsx from 'clsx';
 import { revalidatePath } from 'next/cache';
-import Image from 'next/image';
 import z from 'zod';
 
+import { Avatar } from '@/components/avatar';
 import Datetime from '@/components/datetime';
 import {
   create as createComment,
@@ -10,7 +10,6 @@ import {
 } from '@/controllers/comment';
 import { getChangesForRequestType } from '@/controllers/request-data';
 import { getCurrent, UnauthorizedError } from '@/controllers/session-user';
-import { emailToName } from '@/lib/util';
 import CommentForm from './comment-form';
 
 import type { Request } from '@/controllers/request';
@@ -23,12 +22,14 @@ const schema = z.object({
 export default async function Activity({
   auditId,
   request,
-  user,
 }: {
   auditId: AuditId;
   request: Request;
-  user: { image: string | null };
 }) {
+  const { user, authRedirect } = await getCurrent();
+  if (!user) {
+    return authRedirect();
+  }
   const feed = await getFeed(auditId, request);
 
   async function saveData(dataRaw: z.infer<typeof schema>) {
@@ -58,7 +59,7 @@ export default async function Activity({
           <li key={idx} className="relative flex gap-x-4">
             <div
               className={clsx(
-                idx === feed.length - 1 ? 'h-6' : '-bottom-6',
+                idx === feed.length - 1 ? 'h-5' : '-bottom-6',
                 'absolute left-0 top-0 flex w-6 justify-center',
               )}
             >
@@ -66,18 +67,15 @@ export default async function Activity({
             </div>
             {item.type === 'COMMENT' ? (
               <>
-                {item.actor.type === 'USER' && item.actor.image ? (
-                  <Image
-                    src={item.actor.image}
-                    alt=""
-                    width="36"
-                    height="36"
-                    className="relative mt-3 size-6 flex-none rounded-full bg-gray-50"
+                {item.actor.type === 'USER' ? (
+                  <Avatar
+                    id={item.actor.id}
+                    name={item.actor.name}
+                    image={item.actor.image}
+                    email={item.actor.email}
                   />
                 ) : (
-                  <div className="relative flex size-6 flex-none items-center justify-center bg-white">
-                    <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
-                  </div>
+                  <Avatar name="" image="" email="" />
                 )}
                 <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-lime-500">
                   <div className="flex justify-between gap-x-4">
@@ -130,23 +128,21 @@ export default async function Activity({
 
       {/* New comment form */}
       <div className="mt-6 flex gap-x-3">
-        {user.image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <Image
-            src={user.image}
-            width="36"
-            height="36"
-            alt=""
-            className="size-6 flex-none rounded-full bg-gray-50"
-          />
-        )}
+        <Avatar name={user.name} image={user.image} email={user.email} />
+
         <CommentForm saveData={saveData} />
       </div>
     </div>
   );
 }
 
-type UserActor = { type: 'USER'; name: string; image: string | null };
+type UserActor = {
+  type: 'USER';
+  id: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+};
 type SystemActor = { type: 'SYSTEM' };
 export type Change = {
   type: 'CREATED' | 'VALUE' | 'COMMENT';
@@ -167,7 +163,9 @@ async function getFeed(auditId: AuditId, request: Request) {
     if (change.actorUserId) {
       actor = {
         type: 'USER',
-        name: change.name || emailToName(change.email),
+        id: change.actorUserId,
+        name: change.name,
+        email: change.email,
         image: change.image,
       } as UserActor;
     } else {
@@ -188,7 +186,9 @@ async function getFeed(auditId: AuditId, request: Request) {
       createdAt: comment.createdAt,
       actor: {
         type: 'USER',
-        name: comment.name || emailToName(comment.email) || '',
+        id: comment.userId,
+        name: comment.name,
+        email: comment.email,
         image: comment.image || '',
       },
       comment: comment.comment,

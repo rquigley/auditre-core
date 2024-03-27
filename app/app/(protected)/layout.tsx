@@ -34,6 +34,7 @@ export default async function RootLayout({
             orgName={user.orgName}
             userName={user.name}
             userImage={user.image}
+            userEmail={user.email}
             orgId={user.orgId}
             availableOrgs={user.orgs}
             canManageOrgSettings={user.hasPermForAnyOrg('org:manage-users')}
