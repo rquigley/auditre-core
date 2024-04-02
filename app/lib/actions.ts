@@ -448,20 +448,36 @@ export async function overrideAccountMapping({
   await updateAccountMappingType(accountMappingId, accountType);
 }
 
-export async function overrideAccountBalance({
+export async function saveAccountMappingAdjustments({
   auditId,
   accountMappingId,
   year,
-  credit,
-  debit,
-  comment,
+  self,
+  children,
+  other,
 }: {
   auditId: AuditId;
   accountMappingId: AccountMappingId;
   year: string;
-  credit: string;
-  debit: string;
-  comment: string;
+  self: {
+    adjustmentCredit: number;
+    adjustmentDebit: number;
+    comment: string;
+  };
+  children: {
+    accountMappingId: AccountMappingId;
+    adjustmentCredit: number;
+    adjustmentDebit: number;
+    comment: string;
+  }[];
+  other: {
+    // parentAccountMappingId is never null, but TS can't currently infer that
+    // and fixing the type would require too much complexity
+    parentAccountMappingId: AccountMappingId | null;
+    adjustmentCredit: number;
+    adjustmentDebit: number;
+    comment: string;
+  }[];
 }) {
   const { user } = await getCurrent();
   if (!user) {
@@ -471,30 +487,30 @@ export async function overrideAccountBalance({
   if (audit.orgId !== user.orgId) {
     throw new UnauthorizedError();
   }
-  const schema = z.object({
-    year: z.string(),
-    credit: z.string().transform((v) => parseFloat(v)),
-    debit: z.string().transform((v) => parseFloat(v)),
-    comment: z.string(),
-  });
-  const parsed = schema.parse({
-    year,
-    credit,
-    debit,
-    comment,
-  });
-  try {
-    await _overrideAccountBalance({
-      accountMappingId,
-      year: parsed.year,
-      credit: parsed.credit,
-      debit: parsed.debit,
-      comment: parsed.comment,
-      actorUserId: user.id,
-    });
-  } catch (e) {
-    Sentry.captureException(e);
-  }
+  // const schema = z.object({
+  //   year: z.string(),
+  //   adjustmentCredit: z.string().transform((v) => parseFloat(v)),
+  //   adjustmentDebit: z.string().transform((v) => parseFloat(v)),
+  //   comment: z.string(),
+  // });
+  // const parsed = schema.parse({
+  //   year,
+  //   adjustmentCredit,
+  //   adjustmentDebit,
+  //   comment,
+  // });
+  // try {
+  //   await _overrideAccountBalance({
+  //     accountMappingId,
+  //     year: parsed.year,
+  //     credit: parsed.adjustmentCredit,
+  //     debit: parsed.adjustmentDebit,
+  //     comment: parsed.comment,
+  //     actorUserId: user.id,
+  //   });
+  // } catch (e) {
+  //   Sentry.captureException(e);
+  // }
 }
 
 export async function createOrg(

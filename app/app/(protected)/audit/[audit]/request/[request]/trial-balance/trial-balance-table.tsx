@@ -1,21 +1,17 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
 import clsx from 'clsx';
 import { Inconsolata } from 'next/font/google';
 import { useSearchParams } from 'next/navigation';
 import { useRef, useState } from 'react';
-import { Button, Dialog, OverlayArrow, Popover } from 'react-aria-components';
-import { useForm } from 'react-hook-form';
-import useSWR, { useSWRConfig } from 'swr';
-import * as z from 'zod';
+import { Button, Dialog, OverlayArrow } from 'react-aria-components';
+import useSWR from 'swr';
 
 import { Spinner } from '@/components/spinner';
 import { SortableHeader } from '@/components/table';
-import { overrideAccountBalance, overrideAccountMapping } from '@/lib/actions';
+import { overrideAccountMapping } from '@/lib/actions';
 import {
   AccountType,
-  fIn,
   fOut,
   getBalance,
   getGroupLabel,
@@ -23,11 +19,12 @@ import {
 } from '@/lib/finance';
 import { ppCurrency } from '@/lib/util';
 import { AccountMapping } from './account-mapping';
+import { Adjustment, AdjustmentPopover } from './trial-balance-override';
 import { accountTypeGroupBGColors, sortRows } from './util';
 
 import type { AccountBalanceResp } from '../../../account-balance/route';
+import type { UserJSON } from '@/controllers/session-user';
 import type { AuditId } from '@/types';
-import type { PopoverProps } from 'react-aria-components';
 
 type AccountBalanceRow = AccountBalanceResp['rows'][number];
 
@@ -77,7 +74,13 @@ function useAccountBalances(auditId: AuditId) {
   };
 }
 
-export function TrialBalanceTable({ auditId }: { auditId: AuditId }) {
+export function TrialBalanceTable({
+  auditId,
+  currentUser,
+}: {
+  auditId: AuditId;
+  currentUser: UserJSON;
+}) {
   const searchParams = useSearchParams();
 
   const currentSort = searchParams.get('sort') as string;
@@ -274,14 +277,35 @@ export function TrialBalanceTable({ auditId }: { auditId: AuditId }) {
                     )}
                   </span>
                 </td>
-                <td className={`px-1 py-1 text-right  group-hover:font-bold`}>
-                  <Balance auditId={auditId} row={row} year={1} />
+                <td className="px-1 py-1 text-right group-hover:font-bold">
+                  <Balance
+                    auditId={auditId}
+                    row={row}
+                    yearIdx={1}
+                    year={year1}
+                    accounts={rows}
+                    currentUser={currentUser}
+                  />
                 </td>
-                <td className={`px-1 py-1 text-right  group-hover:font-bold`}>
-                  <Balance auditId={auditId} row={row} year={2} />
+                <td className="px-1 py-1 text-right group-hover:font-bold">
+                  <Balance
+                    auditId={auditId}
+                    row={row}
+                    yearIdx={2}
+                    year={year2}
+                    accounts={rows}
+                    currentUser={currentUser}
+                  />
                 </td>
-                <td className={`px-1 py-1 text-right  group-hover:font-bold`}>
-                  <Balance auditId={auditId} row={row} year={3} />
+                <td className="px-1 py-1 text-right group-hover:font-bold">
+                  <Balance
+                    auditId={auditId}
+                    row={row}
+                    yearIdx={3}
+                    year={year3}
+                    accounts={rows}
+                    currentUser={currentUser}
+                  />
                 </td>
               </tr>
             ))
@@ -292,7 +316,7 @@ export function TrialBalanceTable({ auditId }: { auditId: AuditId }) {
   );
 }
 
-type AccountBalanceRow2 = AccountBalanceRow & {
+export type AccountBalanceRow2 = AccountBalanceRow & {
   balance1: number;
   balance2: number;
   balance3: number;
@@ -300,13 +324,19 @@ type AccountBalanceRow2 = AccountBalanceRow & {
 function Balance({
   auditId,
   row,
+  yearIdx,
   year,
+  accounts,
+  currentUser,
 }: {
   auditId: AuditId;
   row: AccountBalanceRow2;
-  year: 1 | 2 | 3;
+  yearIdx: 1 | 2 | 3;
+  year: string;
+  accounts: AccountBalanceRow2[];
+  currentUser: UserJSON;
 }) {
-  const balance = row[`balance${year}`];
+  const balance = row[`balance${yearIdx}`];
   const [isOpen, setOpen] = useState(false);
   const triggerRef = useRef(null);
 
@@ -316,7 +346,7 @@ function Balance({
         ref={triggerRef}
         onPress={() => setOpen(true)}
         className={clsx(
-          row[`adjustment${year}`].hasAdjustment
+          row[`adjustment${yearIdx}`].hasAdjustment
             ? 'bg-yellow-300 text-yellow-900 ring-yellow-300'
             : '',
           `w-full rounded-md border border-transparent p-1 text-right text-sm text-gray-900 hover:border-slate-400 hover:text-black ${financeFont.className}`,
@@ -326,11 +356,10 @@ function Balance({
           cents: true,
         })}
       </Button>
-      <OverridePopover
+      <AdjustmentPopover
         triggerRef={triggerRef}
         isOpen={isOpen}
         onOpenChange={setOpen}
-        className="w-50 h-50 border bg-white p-3"
       >
         <OverlayArrow>
           <svg
@@ -342,213 +371,19 @@ function Balance({
         </OverlayArrow>
         <Dialog className="p-3 text-gray-700 outline-none">
           <div className="flex flex-col">
-            <BalanceOverrideForm
+            <Adjustment
               auditId={auditId}
               row={row}
+              yearIdx={yearIdx}
               year={year}
               setOpen={setOpen}
+              accounts={accounts}
+              currentUser={currentUser}
             />
           </div>
         </Dialog>
-      </OverridePopover>
+      </AdjustmentPopover>
     </>
-  );
-}
-
-function BalanceOverrideForm({
-  auditId,
-  row,
-  year,
-  setOpen,
-}: {
-  auditId: AuditId;
-  row: AccountBalanceRow2;
-  year: 1 | 2 | 3;
-  setOpen: (open: boolean) => void;
-}) {
-  const { mutate } = useSWRConfig();
-
-  const schema = z.object({
-    credit: z
-      .string()
-      .regex(/^[\d,]+(\.\d{1,2})?$/)
-      .transform((v) => v.replaceAll(',', '')),
-
-    debit: z
-      .string()
-      .regex(/^[\d,]+(\.\d{1,2})?$/)
-      .transform((v) => v.replaceAll(',', '')),
-
-    comment: z.string(),
-  });
-
-  async function onSubmit(data: z.infer<typeof schema>) {
-    await overrideAccountBalance({
-      auditId,
-      accountMappingId: row.id,
-      year: row[`year${year}`],
-      credit: data.credit,
-      debit: data.debit,
-      comment: data.comment,
-    });
-    mutate(`/audit/${auditId}/account-balance`);
-    setOpen(false);
-  }
-
-  const { register, handleSubmit, reset, formState } = useForm<
-    z.infer<typeof schema>
-  >({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      credit: String(fOut(row[`adjustment${year}`].credit || 0)),
-      debit: String(fOut(row[`adjustment${year}`].debit || 0)),
-      comment: row[`adjustment${year}`].comment,
-    },
-  });
-  let enableSubmit;
-  if (formState.isSubmitting) {
-    enableSubmit = false;
-  } else if (formState.isDirty) {
-    enableSubmit = true;
-  } else {
-    enableSubmit = false;
-  }
-
-  return (
-    <div>
-      <div className="mb-2 text-xs font-semibold text-gray-700">Adjustment</div>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="mb-2">
-          <label htmlFor="debit" className="block text-xs text-gray-700">
-            <span className="flex justify-between">
-              <span>Debit</span>
-              <span>
-                orig:{' '}
-                <span className={financeFont.className}>
-                  {ppCurrency(fOut(row[`debit${year}`]), {
-                    cents: true,
-                  })}
-                </span>
-              </span>
-            </span>
-          </label>
-          <div className={`flex ${financeFont.className} `}>
-            <div className="text-nowrap pr-2 pt-1">+$</div>
-            <input
-              data-1p-ignore
-              onFocus={(e) => {
-                const target = e.target as HTMLInputElement;
-                target.select();
-              }}
-              type="text"
-              pattern="[0-9]+(\.[0-9]{1,2})?"
-              autoComplete="off"
-              {...register('debit')}
-              className={clsx(
-                formState.errors.debit
-                  ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
-                  : 'text-gray-900 placeholder:text-gray-400',
-                'block w-full border-0 px-1 py-1 text-right focus:outline-none',
-              )}
-            />
-          </div>
-        </div>
-        <div className="mb-2">
-          <label htmlFor="credit" className="block text-xs text-gray-700">
-            <span className="flex justify-between">
-              <span>Credit</span>
-              <span>
-                orig:{' '}
-                <span className={financeFont.className}>
-                  {ppCurrency(fOut(row[`credit${year}`]), {
-                    cents: true,
-                  })}
-                </span>
-              </span>
-            </span>
-          </label>
-          <div className={`flex ${financeFont.className} `}>
-            <div className="text-nowrap pr-2 pt-1">+$</div>
-            <input
-              data-1p-ignore
-              onFocus={(e) => {
-                const target = e.target as HTMLInputElement;
-                target.select();
-              }}
-              type="text"
-              pattern="[0-9]+(\.[0-9]{1,2})?"
-              autoComplete="off"
-              {...register('credit')}
-              className={clsx(
-                formState.errors.credit
-                  ? ' text-red-900 ring-red-300 placeholder:text-red-300  focus:ring-red-500'
-                  : 'text-gray-900 placeholder:text-gray-400',
-                'block w-full border-0 px-1 py-1 text-right focus:outline-none',
-              )}
-            />
-          </div>
-        </div>
-        <div className="mb-2">
-          <label htmlFor="balance" className="block text-xs text-gray-700">
-            Comment
-          </label>
-          <textarea
-            {...register('comment')}
-            className="mt-1 block w-full rounded-sm border-gray-300 px-1.5 py-1 text-xs shadow-sm focus:border-sky-700 focus:ring focus:ring-sky-700 focus:ring-opacity-50"
-          />
-        </div>
-        <div className="flex justify-end">
-          {row[`adjustment${year}`].hasAdjustment ? (
-            <button
-              type="button"
-              className="mr-4 text-xs leading-6 text-gray-400 hover:text-gray-900"
-              onClick={() =>
-                reset({
-                  credit: String(fOut(row[`adjustment${year}`].credit || 0)),
-                  debit: String(fOut(row[`adjustment${year}`].debit || 0)),
-                  comment: row[`adjustment${year}`].comment,
-                })
-              }
-            >
-              Remove adjustment
-            </button>
-          ) : null}
-          <button
-            type="submit"
-            disabled={enableSubmit === false}
-            className={clsx(
-              enableSubmit === false
-                ? 'bg-gray-400'
-                : 'bg-sky-700 hover:bg-sky-900',
-              'rounded-md px-3 py-1 text-xs  text-white shadow-sm',
-            )}
-          >
-            {row[`adjustment${year}`].hasAdjustment ? 'Update' : 'Adjust'}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-function OverridePopover(props: PopoverProps) {
-  return (
-    <Popover
-      {...props}
-      className={({ isEntering, isExiting }) => `
-        placement-bottom:mt-2 placement-top:mb-2 group w-[280px] rounded-lg bg-white ring-1 ring-black/10 drop-shadow-lg
-        ${
-          isEntering
-            ? 'animate-in fade-in placement-bottom:slide-in-from-top-1 placement-top:slide-in-from-bottom-1 duration-200 ease-out'
-            : ''
-        }
-        ${
-          isExiting
-            ? 'animate-out fade-out placement-bottom:slide-out-to-top-1 placement-top:slide-out-to-bottom-1 duration-150 ease-in'
-            : ''
-        }
-      `}
-    />
   );
 }
 

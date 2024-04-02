@@ -30,6 +30,8 @@ type Permission =
   | (typeof permissions)[AuthRole][number]
   | OrgAgnosticPermission;
 
+export type UserJSON = ReturnType<User['toJSON']>;
+
 export class User {
   id: string;
   name: string | null;
@@ -99,6 +101,15 @@ export class User {
 
   get orgName() {
     return this.orgs.find((org) => org.id === this.orgId)?.name || '';
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      email: this.email,
+      image: this.image,
+    };
   }
 }
 

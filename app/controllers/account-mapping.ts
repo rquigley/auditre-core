@@ -122,10 +122,11 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
     .select([
       'accountMappingId',
       'year',
-      sql<string>`ROUND(debit * 100)`.as('debit'),
-      sql<string>`ROUND(credit * 100)`.as('credit'),
-      'comment',
+      sql<string>`SUM(ROUND(debit * 100))`.as('debit'),
+      sql<string>`SUM(ROUND(credit * 100))`.as('credit'),
+      // 'comment',
     ])
+    .groupBy(['accountMappingId', 'year'])
     .where(
       'accountMappingId',
       'in',
@@ -142,7 +143,7 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
         year: r.year,
         debit: Number(r.debit),
         credit: Number(r.credit),
-        comment: r.comment,
+        // comment: r.comment,
       },
     ]),
   );
@@ -152,19 +153,19 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
       hasAdjustment: false,
       debit: 0,
       credit: 0,
-      comment: '',
+      // comment: '',
     };
     const adjustment2 = adjustmentsMap.get(`${r.id}-${r.year2}`) || {
       hasAdjustment: false,
       debit: 0,
       credit: 0,
-      comment: '',
+      // comment: '',
     };
     const adjustment3 = adjustmentsMap.get(`${r.id}-${r.year3}`) || {
       hasAdjustment: false,
       debit: 0,
       credit: 0,
-      comment: '',
+      // comment: '',
     };
 
     const credit1 = Number(r.credit1);
@@ -201,22 +202,107 @@ export async function getAllAccountBalancesByAuditId(auditId: AuditId) {
         hasAdjustment: adjustment1.hasAdjustment,
         credit: adjustment1.credit,
         debit: adjustment1.debit,
-        comment: adjustment1.comment,
+        // comment: adjustment1.comment,
       },
       adjustment2: {
         hasAdjustment: adjustment2.hasAdjustment,
         credit: adjustment2.credit,
         debit: adjustment2.debit,
-        comment: adjustment2.comment,
+        // comment: adjustment2.comment,
       },
       adjustment3: {
         hasAdjustment: adjustment3.hasAdjustment,
         credit: adjustment3.credit,
         debit: adjustment3.debit,
-        comment: adjustment3.comment,
+        // comment: adjustment3.comment,
       },
     };
   });
+}
+
+export async function getAdjustments(
+  accountMappingId: AccountMappingId,
+  year: string,
+) {
+  const data = await db
+    .selectFrom('accountBalanceOverride as abo')
+    .innerJoin('accountMapping as am', 'am.id', 'abo.accountMappingId')
+    .leftJoin('accountMapping as pam', 'pam.id', 'abo.parentAccountMappingId')
+    .innerJoin('accountBalance as ab', 'ab.accountMappingId', 'am.id')
+    .leftJoin('auth.user as u', 'u.id', 'abo.actorUserId')
+    .select([
+      'abo.id',
+      'abo.accountMappingId',
+      'abo.parentAccountMappingId',
+      sql<string>`ROUND(ab.debit * 100)`.as('debit'),
+      sql<string>`ROUND(ab.credit * 100)`.as('credit'),
+      sql<string>`ROUND(abo.debit * 100)`.as('adjustmentDebit'),
+      sql<string>`ROUND(abo.credit * 100)`.as('adjustmentCredit'),
+      'abo.comment',
+      'abo.actorUserId',
+      'u.name',
+      'u.email',
+      'u.image',
+      'am.accountName',
+      'pam.accountName as parentAccountName',
+    ])
+    .where((eb) =>
+      eb.or([
+        eb('abo.accountMappingId', '=', accountMappingId),
+        eb('abo.parentAccountMappingId', '=', accountMappingId),
+      ]),
+    )
+    .where('abo.year', '=', year)
+    .where('ab.year', '=', year)
+    .execute();
+
+  const typedData = data.map((r) => ({
+    id: r.id,
+    accountMappingId: r.accountMappingId,
+    parentAccountMappingId: r.parentAccountMappingId,
+    comment: r.comment,
+    debit: Number(r.debit),
+    credit: Number(r.credit),
+    adjustmentDebit: Number(r.adjustmentDebit),
+    adjustmentCredit: Number(r.adjustmentCredit),
+    accountName: r.accountName,
+    parentAccountName: r.parentAccountName || '',
+    user: {
+      id: r.actorUserId,
+      name: r.name,
+      email: r.email,
+      image: r.image,
+    },
+  }));
+  type TypedData = (typeof typedData)[0];
+
+  // UNIQUE constraint on accountMappingId, parentAccountMappingId, year.
+  const typedIdx = typedData.findIndex(
+    (r) =>
+      r.accountMappingId === accountMappingId &&
+      r.parentAccountMappingId === null,
+  );
+  let self: TypedData | null;
+  let children: TypedData[];
+  if (typedIdx !== -1) {
+    self = typedData.splice(typedIdx, 1)[0];
+    children = typedData.filter(
+      (r) => r.parentAccountMappingId === accountMappingId,
+    );
+  } else {
+    self = null;
+    children = [];
+  }
+  const other = typedData.filter(
+    (r) =>
+      r.accountMappingId === accountMappingId &&
+      r.parentAccountMappingId !== null,
+  );
+  return {
+    self,
+    children,
+    other,
+  };
 }
 
 export async function getAllAccountBalancesByAuditIdAndYear(

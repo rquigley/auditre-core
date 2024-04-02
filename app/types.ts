@@ -318,8 +318,9 @@ export interface AccountBalanceTable {
 export type AccountBalance = Selectable<AccountBalanceTable>;
 
 export interface AccountBalanceOverrideTable {
-  id: GeneratedAlways<number>;
-  accountMappingId: AccountMappingId | null;
+  id: GeneratedAlways<string>;
+  accountMappingId: AccountMappingId;
+  parentAccountMappingId: AccountMappingId | null;
   year: string;
   debit: number;
   credit: number;
