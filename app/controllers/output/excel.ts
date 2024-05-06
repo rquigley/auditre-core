@@ -102,6 +102,60 @@ export async function generate(auditId: AuditId) {
   };
 }
 
+export async function generateTBAdjustments(auditId: AuditId) {
+  const data = await getAuditData(auditId);
+
+  const workbook = new ExcelJS.Workbook();
+
+  const tbAdjustmentsWorksheet = workbook.addWorksheet('TB Adjustments');
+
+  workbook.addWorksheet('Support---->');
+
+  const tbNames = new Set();
+  let tbWorksheet1: ExcelJS.Worksheet | undefined;
+  let tbWorksheet2: ExcelJS.Worksheet | undefined;
+  for (const identifier of [
+    'year1DocumentId',
+    'year2DocumentId',
+    'year3DocumentId',
+  ]) {
+    const dateStr = data.rt.trialBalance[identifier].trialBalanceDate;
+    if (!dateStr) {
+      continue;
+    }
+    const date = dayjs(dateStr);
+    const year = date.format('YYYY');
+    let wsName = `Trial balance - ${year}`;
+    if (tbNames.has(wsName)) {
+      // prevent worksheet name conflicts which throw
+      wsName = `${wsName} (${identifier.substring(4, 1)})`;
+    } else {
+      tbNames.add(wsName);
+    }
+
+    const tbWorksheet = workbook.addWorksheet(wsName);
+
+    await addTrialBalance(tbWorksheet, data, date);
+    if (identifier === 'year1DocumentId') {
+      tbWorksheet1 = tbWorksheet;
+    } else if (identifier === 'year2DocumentId') {
+      tbWorksheet2 = tbWorksheet;
+    }
+  }
+
+  if (tbWorksheet1 && tbWorksheet2) {
+    addTbAdjustments({
+      ws: tbAdjustmentsWorksheet,
+      data,
+    });
+  }
+
+  return {
+    document: workbook,
+    documentName: `TB Adjustments - ${data.rt.basicInfo.businessName} - ${data.rt.auditInfo.year}.xlsx`,
+  };
+}
+
 function addBalanceSheet({
   ws,
   data,
@@ -450,6 +504,47 @@ function addTableRow({
   });
 
   return { widths };
+}
+
+function addTbAdjustments({
+  ws,
+  data,
+}: {
+  ws: ExcelJS.Worksheet;
+  data: AuditData;
+}) {
+  const t = buildBalanceSheet(data);
+
+  ws.addRow([data.rt.basicInfo.businessName]);
+  ws.addRow(['Consolidated balances sheet']);
+  ws.addRow([]);
+  ws.addRow([]);
+
+  t.UNSAFE_outputRowOffset = 4;
+
+  const widths: number[] = [];
+  t.rows.forEach((row) => {
+    const { widths: rowWidths } = addTableRow({
+      ws,
+      row,
+      table: t,
+      data,
+    });
+    rowWidths.forEach((w, i) => {
+      widths[i] = Math.max(widths[i] || 0, w);
+    });
+  });
+
+  fadeZeroRows(ws, t);
+
+  // TODO: I think this is setting the widths based on the char length of the formula,
+  // not the numbers themselves. Fake it for now.
+  // widths.forEach((w, i) => {
+  //   ws.getColumn(i + 1).width = widths[0];
+  // });
+  ws.getColumn(1).width = widths[0];
+  ws.getColumn(2).width = 17;
+  ws.getColumn(3).width = 17;
 }
 
 async function addTrialBalance(
